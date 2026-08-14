@@ -1,0 +1,6 @@
+#!/bin/sh
+bridge_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+app_executable="$bridge_directory/../../MacOS/Decision"
+export ELECTRON_RUN_AS_NODE=1
+export DECISION_BRIDGE_PATH="$bridge_directory/decision-island-bridge"
+exec "$app_executable" "$bridge_directory/decision-bridge.mjs" "$@"

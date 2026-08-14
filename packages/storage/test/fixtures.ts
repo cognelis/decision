@@ -1,0 +1,52 @@
+import type { DecisionRecord } from "@cognelis/decision-core";
+
+export const recordFixture = (
+  overrides: Partial<DecisionRecord> = {},
+): DecisionRecord => ({
+  id: "018f-example-decision",
+  created: "2026-07-24T01:02:03.000Z",
+  status: "completed",
+  sourceClient: "codex",
+  project: "decision",
+  workflow: "superpowers",
+  decisionType: "architecture",
+  question: "Markdown 还是数据库？",
+  contextSummary: "希望数据对人友好，同时可以检索。",
+  context: null,
+  detection: null,
+  options: [
+    {
+      id: "markdown",
+      label: "Markdown",
+      description: "以普通笔记作为事实源",
+      tradeoffs: ["需要额外索引"],
+    },
+    {
+      id: "database",
+      label: "数据库",
+      description: "只写结构化数据库",
+      tradeoffs: ["直接阅读不方便"],
+    },
+  ],
+  selectedAnswer: {
+    kind: "preset",
+    values: ["Markdown"],
+  },
+  llmRecommendation: "markdown",
+  rationaleStatus: "captured",
+  rationaleOriginal: "  因为它对人友好。\n\n而且能直接在 Obsidian 编辑。  ",
+  reasonFactors: ["maintainability", "reversibility"],
+  captureMode: null,
+  captureSemanticKey: null,
+  sourceEventId: null,
+  batchId: null,
+  questionIndex: null,
+  tags: ["storage"],
+  related: [],
+  appliedPrincipleIds: [],
+  supersedes: null,
+  reviewDueDate: null,
+  outcome: null,
+  outcomeReview: null,
+  ...overrides,
+});

@@ -1,0 +1,58 @@
+{
+  "name": "@cognelis/decision",
+  "productName": "Decision",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": ".vite/build/main.cjs",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test",
+    "check:semantic": "npm run evaluate:semantic",
+    "report:semantic": "npm run evaluate:semantic -- --report-only",
+    "quality": "npm run check && npm run check:semantic",
+    "audit:runtime": "npm audit --omit=dev --audit-level=low",
+    "build:bridge": "vite build --config apps/bridge/vite.config.ts",
+    "build:foundation-helper": "sh scripts/build-foundation-model-helper.sh",
+    "build:liquid-glass": "sh scripts/build-liquid-glass-addon.sh",
+    "prepare:model": "node scripts/prepare-local-model.mjs",
+    "evaluate:semantic": "node scripts/evaluate-semantic-classifier.mjs",
+    "build": "npm run typecheck && npm run build:bridge && npm run build:foundation-helper && npm run build:liquid-glass && electron-forge package",
+    "make": "npm run typecheck && npm run build:bridge && npm run build:foundation-helper && npm run build:liquid-glass && electron-forge make",
+    "smoke": "node scripts/smoke.mjs",
+    "release:verify": "node scripts/release-artifact.mjs",
+    "release:verify:distribution": "node scripts/release-artifact.mjs --distribution --require-tag",
+    "release:local": "npm run quality && npm run make && npm run smoke && npm run release:verify",
+    "release:distribution": "npm run audit:runtime && npm run quality && npm run make && npm run smoke && npm run release:verify:distribution"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "7.11.2",
+    "@electron-forge/maker-zip": "7.11.2",
+    "@electron-forge/plugin-vite": "7.11.2",
+    "@testing-library/jest-dom": "7.0.0",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "26.1.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.4",
+    "electron": "43.2.0",
+    "jsdom": "29.1.1",
+    "typescript": "7.0.2",
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
+  },
+  "dependencies": {
+    "node-llama-cpp": "3.19.1"
+  }
+}

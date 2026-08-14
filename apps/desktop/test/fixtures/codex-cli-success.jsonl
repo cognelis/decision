@@ -1,0 +1,5 @@
+{"type":"thread.started","thread_id":"thread-test"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item-1","type":"reasoning","text":"hidden"}}
+{"type":"item.completed","item":{"id":"item-2","type":"agent_message","text":"{\"decisionIntent\":\"decision\",\"answerRelation\":\"answers\",\"question\":\"A or B?\",\"optionLabels\":[\"A\",\"B\"],\"answerExcerpt\":\"A\",\"confidence\":0.94}"}}
+{"type":"turn.completed","usage":{"input_tokens":120,"cached_input_tokens":40,"output_tokens":24,"reasoning_output_tokens":8,"total_tokens":144}}

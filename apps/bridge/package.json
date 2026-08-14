@@ -1,0 +1,16 @@
+{
+  "name": "@cognelis/decision-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "decision-bridge": "./dist/cli.js"
+  },
+  "dependencies": {
+    "@cognelis/decision-integrations": "1.0.0",
+    "@cognelis/decision-protocol": "1.0.0",
+    "@cognelis/decision-storage": "1.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.4.3"
+  }
+}

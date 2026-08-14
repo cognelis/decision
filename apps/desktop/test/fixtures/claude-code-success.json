@@ -1,0 +1,24 @@
+{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "duration_ms": 940,
+  "duration_api_ms": 720,
+  "num_turns": 1,
+  "result": "{\"decisionIntent\":\"decision\",\"answerRelation\":\"answers\",\"question\":\"A or B?\",\"optionLabels\":[\"A\",\"B\"],\"answerExcerpt\":\"A\",\"confidence\":0.94}",
+  "structured_output": {
+    "decisionIntent": "decision",
+    "answerRelation": "answers",
+    "question": "A or B?",
+    "optionLabels": ["A", "B"],
+    "answerExcerpt": "A",
+    "confidence": 0.94
+  },
+  "session_id": "must-not-persist",
+  "total_cost_usd": 0.0012,
+  "usage": {
+    "input_tokens": 100,
+    "cache_read_input_tokens": 30,
+    "output_tokens": 20
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "qwen3.5-2b-q4-k-m",
+  "fileName": "Qwen_Qwen3.5-2B-Q4_K_M.gguf",
+  "url": "https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF/resolve/915a52556175c333102d04f996380950d35155d9/Qwen_Qwen3.5-2B-Q4_K_M.gguf",
+  "bytes": 1329766560,
+  "sha256": "84aeb7fe40e7b833d71303d7f1b9f9c1991b931b5dbd214e0aa48d56a0af1f85",
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "qwen3-embedding-0.6b-q8-0",
+  "fileName": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+  "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/d20cf9c16f82914a21dbd9c645f56895fb1d7750/Qwen3-Embedding-0.6B-Q8_0.gguf",
+  "bytes": 639150592,
+  "sha256": "06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439",
+  "license": "Apache-2.0"
+}

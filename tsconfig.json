@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@cognelis/decision-core/rationale-factors": [
+        "./packages/core/src/rationale-factors.ts"
+      ],
+      "@cognelis/decision-protocol": [
+        "./packages/protocol/src/index.ts"
+      ],
+      "@cognelis/decision-core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@cognelis/decision-storage": [
+        "./packages/storage/src/index.ts"
+      ],
+      "@cognelis/decision-integrations": [
+        "./packages/integrations/src/index.ts"
+      ]
+    },
+    "types": [
+      "node",
+      "vitest/globals",
+      "@electron-forge/plugin-vite/forge-vite-env"
+    ]
+  },
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "config/**/*.mts",
+    "scripts/**/*.mjs",
+    "forge.config.ts",
+    "vitest.config.ts"
+  ]
+}

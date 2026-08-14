@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="appBackground" x1="150" y1="112" x2="872" y2="914" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.48" stop-color="#F5F7F6"/>
+      <stop offset="1" stop-color="#E7ECEA"/>
+    </linearGradient>
+    <radialGradient id="appHighlight" cx="0" cy="0" r="1" gradientTransform="translate(276 172) rotate(43) scale(670 600)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.84"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="decisionGradient" x1="480" y1="802" x2="730" y2="338" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6F4DFF"/>
+      <stop offset="0.55" stop-color="#9270FF"/>
+      <stop offset="1" stop-color="#C3B4FF"/>
+    </linearGradient>
+    <linearGradient id="secondaryGradient" x1="508" y1="602" x2="304" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3D4852"/>
+      <stop offset="1" stop-color="#8B98A3"/>
+    </linearGradient>
+    <filter id="markShadow" x="174" y="184" width="700" height="760" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#4937A3" flood-opacity="0.22"/>
+    </filter>
+    <filter id="selectedGlow" x="628" y="166" width="220" height="220" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+  <rect data-app-background="true" width="1024" height="1024" fill="url(#appBackground)"/>
+  <rect data-app-background="true" width="1024" height="1024" fill="url(#appHighlight)"/>
+  <circle data-app-background="true" cx="746" cy="264" r="88" fill="#9270FF" fill-opacity="0.2" filter="url(#selectedGlow)"/>
+  <g data-decision-mark="true" transform="translate(512 440) scale(1.22) translate(-512 -512)" filter="url(#markShadow)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M512 612C512 556 476 526 432 486L320 382" stroke="url(#secondaryGradient)" stroke-width="62"/>
+    <path d="M512 790V612C512 556 548 526 592 486L704 382" stroke="url(#decisionGradient)" stroke-width="78"/>
+    <circle cx="320" cy="368" r="40" fill="url(#secondaryGradient)"/>
+    <circle cx="704" cy="368" r="50" fill="url(#decisionGradient)"/>
+  </g>
+</svg>
