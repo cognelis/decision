@@ -52,6 +52,9 @@ const scanTextFile = async (path, displayPath) => {
   return true;
 };
 
+export const normalizeAsarEntry = (entry) =>
+  String(entry).replaceAll("\\", "/").replace(/^\/+/u, "");
+
 const scanAsar = (path) => {
   const entries = listPackage(path);
   const forbidden = findForbiddenReleasePath(entries);
@@ -61,7 +64,7 @@ const scanAsar = (path) => {
 
   let textFilesScanned = 0;
   for (const entry of entries) {
-    const archivePath = entry.replace(/^\//u, "");
+    const archivePath = normalizeAsarEntry(entry);
     const info = statFile(path, archivePath);
     if (info.files !== undefined) {
       continue;

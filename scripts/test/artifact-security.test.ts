@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   findForbiddenReleasePath,
   findSensitiveReleaseText,
+  normalizeAsarEntry,
   scanReleasePayload,
 } from "../artifact-security.mjs";
 
@@ -22,6 +23,15 @@ afterEach(async () => {
 });
 
 describe("packaged payload security", () => {
+  it("normalizes ASAR entries emitted with either host separator", () => {
+    expect(normalizeAsarEntry("/.vite/build/main.cjs")).toBe(
+      ".vite/build/main.cjs",
+    );
+    expect(normalizeAsarEntry("\\.vite\\build\\main.cjs")).toBe(
+      ".vite/build/main.cjs",
+    );
+  });
+
   it("rejects credential, source-map, fixture, database, and model paths", () => {
     expect(
       findForbiddenReleasePath(["Contents/Resources/app.asar"]),
