@@ -70,13 +70,18 @@ export const bridgeProcessInvocation = ({
   commandInterpreter,
 }) => {
   if (platform !== "win32") {
-    return { command: bridge, args: [...args] };
+    return {
+      command: bridge,
+      args: [...args],
+      windowsVerbatimArguments: false,
+    };
   }
   const commandLine = [bridge, ...args]
     .map(quoteWindowsCommandArgument)
     .join(" ");
   return {
     command: commandInterpreter ?? process.env.ComSpec ?? "cmd.exe",
+    windowsVerbatimArguments: true,
     args: [
       "/d",
       "/s",

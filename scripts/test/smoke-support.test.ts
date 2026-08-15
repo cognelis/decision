@@ -45,6 +45,7 @@ describe("packaged bridge invocation", () => {
       }),
     ).toEqual({
       command: "C:\\Windows\\System32\\cmd.exe",
+      windowsVerbatimArguments: true,
       args: [
         "/d",
         "/s",
@@ -66,6 +67,7 @@ describe("packaged bridge invocation", () => {
       command:
         "/Applications/Decision.app/Contents/Resources/bridge/decision-bridge",
       args: ["mcp", "codex"],
+      windowsVerbatimArguments: false,
     });
   });
 

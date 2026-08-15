@@ -132,6 +132,7 @@ const spawnBridge = (arguments_, environment, bridgePath = bridge) => {
   return spawn(invocation.command, invocation.args, {
     env: environment,
     stdio: ["pipe", "pipe", "pipe"],
+    windowsVerbatimArguments: invocation.windowsVerbatimArguments,
   });
 };
 
