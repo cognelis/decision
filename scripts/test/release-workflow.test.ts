@@ -18,7 +18,7 @@ describe("native GitHub release workflow", () => {
     expect(workflow).toContain("--platform=darwin --arch=arm64");
     expect(workflow).toContain("npm run smoke");
     expect(workflow).toContain("npm ci --ignore-scripts");
-    expect(workflow.match(/npm run setup:electron/gu)).toHaveLength(3);
+    expect(workflow.match(/npm run setup:build-runtime/gu)).toHaveLength(3);
     expect(workflow).toContain("node-version: 22");
     expect(workflow.match(/actions\/checkout@v7/gu)).toHaveLength(4);
     expect(workflow.match(/actions\/setup-node@v7/gu)).toHaveLength(3);

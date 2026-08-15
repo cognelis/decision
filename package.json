@@ -21,6 +21,7 @@
     "report:semantic": "npm run evaluate:semantic -- --report-only",
     "quality": "npm run check && npm run check:semantic",
     "audit:runtime": "npm audit --omit=dev --audit-level=low",
+    "setup:build-runtime": "node scripts/setup-build-runtime.mjs",
     "setup:electron": "node node_modules/electron/install.js",
     "build:bridge": "vite build --config apps/bridge/vite.config.ts",
     "build:foundation-helper": "sh scripts/build-foundation-model-helper.sh",

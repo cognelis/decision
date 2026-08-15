@@ -24,8 +24,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Install vetted Electron runtime
-        run: npm run setup:electron
+      - name: Install vetted native build runtime
+        run: npm run setup:build-runtime
       - name: Run the complete quality gate
         run: npm run quality
       - name: Audit shipped dependencies
@@ -43,8 +43,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Install vetted Electron runtime
-        run: npm run setup:electron
+      - name: Install vetted native build runtime
+        run: npm run setup:build-runtime
       - name: Verify Windows historical and pending-state migration
         run: npx vitest run apps/desktop/test/brand-migration.test.ts
       - name: Build Windows x64 installer
@@ -76,8 +76,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Install vetted Electron runtime
-        run: npm run setup:electron
+      - name: Install vetted native build runtime
+        run: npm run setup:build-runtime
       - name: Build Apple Silicon application
         run: npm run make -- --platform=darwin --arch=arm64
       - name: Smoke test packaged macOS application

@@ -61,6 +61,7 @@ describe("root quality scripts", () => {
     expect(packageDocument.scripts).toMatchObject({
       quality: "npm run check && npm run check:semantic",
       "audit:runtime": "npm audit --omit=dev --audit-level=low",
+      "setup:build-runtime": "node scripts/setup-build-runtime.mjs",
       "setup:electron": "node node_modules/electron/install.js",
       "release:verify": "node scripts/release-artifact.mjs",
       "release:verify:set": "node scripts/verify-release-set.mjs",
