@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { join, posix, relative } from "node:path";
 import { mkdtempSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
@@ -45,14 +45,18 @@ const hashes = (root: string): Record<string, string> => {
 describe("Cognelis brand migration", () => {
   it("preserves historical knowledge and every pending local state", () => {
     const home = mkdtempSync(join(tmpdir(), "decision-brand-migration-"));
-    const applicationSupport = join(
+    const applicationSupport = posix.join(
       home,
       "Library",
       "Application Support",
     );
-    const legacyData = join(applicationSupport, "Decision Island");
-    const currentData = join(applicationSupport, "Decision");
-    const legacyVault = join(home, "Documents", "Decision Island Vault");
+    const legacyData = posix.join(applicationSupport, "Decision Island");
+    const currentData = posix.join(applicationSupport, "Decision");
+    const legacyVault = posix.join(
+      home,
+      "Documents",
+      "Decision Island Vault",
+    );
     mkdirSync(legacyData, { recursive: true });
     mkdirSync(legacyVault, { recursive: true });
 

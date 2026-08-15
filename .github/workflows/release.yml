@@ -17,8 +17,8 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -36,8 +36,8 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -59,7 +59,7 @@ jobs:
         if: github.ref_type == 'tag'
         run: node scripts/release-artifact.mjs --platform=win32 --arch=x64 --require-tag
       - name: Upload verified Windows files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: decision-win32-x64-${{ github.sha }}
           path: out/release/*
@@ -69,8 +69,8 @@ jobs:
   build-macos:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -89,7 +89,7 @@ jobs:
         if: github.ref_type == 'tag'
         run: node scripts/release-artifact.mjs --platform=darwin --arch=arm64 --require-tag
       - name: Upload verified macOS files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: decision-darwin-arm64-${{ github.sha }}
           path: out/release/*
@@ -103,9 +103,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download both native release sets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: out/final-release
           merge-multiple: true

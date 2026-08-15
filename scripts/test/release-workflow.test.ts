@@ -20,6 +20,11 @@ describe("native GitHub release workflow", () => {
     expect(workflow).toContain("npm ci --ignore-scripts");
     expect(workflow.match(/npm run setup:electron/gu)).toHaveLength(3);
     expect(workflow).toContain("node-version: 22");
+    expect(workflow.match(/actions\/checkout@v7/gu)).toHaveLength(4);
+    expect(workflow.match(/actions\/setup-node@v7/gu)).toHaveLength(3);
+    expect(workflow.match(/actions\/upload-artifact@v7/gu)).toHaveLength(2);
+    expect(workflow).toContain("actions/download-artifact@v8");
+    expect(workflow).not.toContain("@v4");
     expect(workflow).toContain(
       "npx vitest run apps/desktop/test/brand-migration.test.ts",
     );
