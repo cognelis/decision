@@ -1,5 +1,61 @@
 import { posix, win32 } from "node:path";
 
+export const MCP_REQUEST_TIMEOUT_MS = 20_000;
+
+export const createMcpRequestManager = ({
+  write,
+  timeoutMs = MCP_REQUEST_TIMEOUT_MS,
+}) => {
+  if (typeof write !== "function") {
+    throw new Error("MCP request manager requires a writer");
+  }
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
+    throw new Error("MCP request timeout must be a positive integer");
+  }
+
+  const pending = new Map();
+  const accept = (message) => {
+    const request = pending.get(message?.id);
+    if (request === undefined) {
+      return false;
+    }
+    pending.delete(message.id);
+    clearTimeout(request.timer);
+    request.resolve(message);
+    return true;
+  };
+  const rejectAll = (error) => {
+    for (const request of pending.values()) {
+      clearTimeout(request.timer);
+      request.reject(error);
+    }
+    pending.clear();
+  };
+  const request = (id, method, params = {}) =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        reject(
+          new Error(
+            `packaged MCP ${method} timed out after ${timeoutMs} ms`,
+          ),
+        );
+      }, timeoutMs);
+      pending.set(id, { reject, resolve, timer });
+      try {
+        write(
+          `${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`,
+        );
+      } catch (error) {
+        clearTimeout(timer);
+        pending.delete(id);
+        reject(error);
+      }
+    });
+
+  return { accept, rejectAll, request };
+};
+
 const quoteWindowsCommandArgument = (value) => {
   if (typeof value !== "string" || /\0|\r|\n/u.test(value)) {
     throw new Error("Windows smoke arguments must be single-line strings");

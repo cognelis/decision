@@ -15,6 +15,7 @@ import { scanReleasePayload } from "./artifact-security.mjs";
 import { releaseTarget } from "./platform-artifacts.mjs";
 import {
   bridgeProcessInvocation,
+  createMcpRequestManager,
   resolvePackagedSmokeTarget,
 } from "./smoke-support.mjs";
 
@@ -142,11 +143,24 @@ const runHook = (arguments_, payload, environment, bridgePath = bridge) =>
 
 const runMcpConsultation = async (environment) => {
   const server = spawnBridge(["mcp", "codex"], environment);
-  const pending = new Map();
   const stderr = [];
   let buffer = "";
   let feedbackToken = "";
+  const client = createMcpRequestManager({
+    write: (line) => server.stdin.write(line),
+  });
   server.stderr.on("data", (chunk) => stderr.push(Buffer.from(chunk)));
+  server.once("error", (error) => client.rejectAll(error));
+  server.once("close", (code, signal) => {
+    const detail = Buffer.concat(stderr).toString("utf8").trim();
+    client.rejectAll(
+      new Error(
+        `packaged MCP exited with ${
+          code === null ? `signal ${signal ?? "unknown"}` : `code ${code}`
+        }${detail.length === 0 ? "" : `: ${detail}`}`,
+      ),
+    );
+  });
   server.stdout.on("data", (chunk) => {
     buffer += chunk.toString("utf8");
     while (buffer.includes("\n")) {
@@ -156,32 +170,16 @@ const runMcpConsultation = async (environment) => {
       if (line.length === 0) {
         continue;
       }
-      const message = JSON.parse(line);
-      const resolve = pending.get(message.id);
-      if (resolve !== undefined) {
-        pending.delete(message.id);
-        resolve(message);
+      try {
+        client.accept(JSON.parse(line));
+      } catch (error) {
+        client.rejectAll(error);
       }
     }
   });
 
-  const request = (id, method, params = {}) =>
-    new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        pending.delete(id);
-        reject(new Error(`packaged MCP ${method} timed out`));
-      }, 5_000);
-      pending.set(id, (message) => {
-        clearTimeout(timer);
-        resolve(message);
-      });
-      server.stdin.write(
-        `${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`,
-      );
-    });
-
   try {
-    const initialized = await request(1, "initialize", {
+    const initialized = await client.request(1, "initialize", {
       protocolVersion: "2025-11-25",
       capabilities: {},
       clientInfo: { name: "packaged-smoke", version: "1.0.0" },
@@ -197,7 +195,7 @@ const runMcpConsultation = async (environment) => {
         method: "notifications/initialized",
       })}\n`,
     );
-    const listed = await request(2, "tools/list");
+    const listed = await client.request(2, "tools/list");
     const tool = listed.result?.tools?.find(
       (candidate) => candidate.name === "consult_decision_principles",
     );
@@ -219,7 +217,7 @@ const runMcpConsultation = async (environment) => {
     ) {
       throw new Error("packaged MCP did not advertise anonymous consultation feedback");
     }
-    const called = await request(3, "tools/call", {
+    const called = await client.request(3, "tools/call", {
       name: "consult_decision_principles",
       arguments: {
         question: "打包版本发布前是否需要先核对兼容边界？",
@@ -245,7 +243,7 @@ const runMcpConsultation = async (environment) => {
     if (feedbackToken.length === 0) {
       throw new Error("packaged MCP consultation omitted its anonymous receipt");
     }
-    const rated = await request(4, "tools/call", {
+    const rated = await client.request(4, "tools/call", {
       name: "record_decision_consultation_feedback",
       arguments: { token: feedbackToken, rating: "helpful" },
     });
