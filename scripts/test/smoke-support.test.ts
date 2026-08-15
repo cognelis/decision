@@ -50,7 +50,7 @@ describe("packaged bridge invocation", () => {
         "/s",
         "/v:off",
         "/c",
-        '"C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" "hook" "stop" "codex"',
+        '""C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" "hook" "stop" "codex""',
       ],
     });
   });
