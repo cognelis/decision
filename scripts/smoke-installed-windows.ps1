@@ -30,6 +30,13 @@ try {
     Where-Object { $_.Path -eq $installedExecutable } |
     Stop-Process -Force
 
+  # Squirrel may auto-launch the app and create this runtime log after install.
+  # Remove it before scanning so the check covers installer payload files only.
+  $squirrelLog = Join-Path $packageRoot "Squirrel-UpdateSelf.log"
+  if (Test-Path -LiteralPath $squirrelLog -PathType Leaf) {
+    Remove-Item -LiteralPath $squirrelLog -Force
+  }
+
   $env:DECISION_SMOKE_PACKAGE_ROOT = $packageRoot
   npm run smoke
   if ($LASTEXITCODE -ne 0) {

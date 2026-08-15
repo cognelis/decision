@@ -32,6 +32,18 @@ describe("native GitHub release workflow", () => {
     expect(workflow).toContain("scripts/smoke-installed-windows.ps1");
     expect(windowsSmoke).toContain('ArgumentList "--silent"');
     expect(windowsSmoke).toContain("Stop-Process -Force");
+    expect(windowsSmoke).toContain(
+      '$squirrelLog = Join-Path $packageRoot "Squirrel-UpdateSelf.log"',
+    );
+    const stopInstalledApp = windowsSmoke.indexOf("Stop-Process -Force");
+    const removeRuntimeLog = windowsSmoke.indexOf(
+      "Remove-Item -LiteralPath $squirrelLog -Force",
+    );
+    const beginPayloadSmoke = windowsSmoke.indexOf(
+      "$env:DECISION_SMOKE_PACKAGE_ROOT = $packageRoot",
+    );
+    expect(removeRuntimeLog).toBeGreaterThan(stopInstalledApp);
+    expect(removeRuntimeLog).toBeLessThan(beginPayloadSmoke);
     expect(windowsSmoke).toContain("DECISION_SMOKE_PACKAGE_ROOT");
     expect(windowsSmoke).toContain('ArgumentList "--uninstall", "-s"');
   });
