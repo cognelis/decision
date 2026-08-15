@@ -10,6 +10,7 @@ import {
   findSensitiveReleaseText,
   normalizeAsarEntry,
   scanReleasePayload,
+  toAsarLookupPath,
 } from "../artifact-security.mjs";
 
 const temporaryDirectories: string[] = [];
@@ -29,6 +30,15 @@ describe("packaged payload security", () => {
     );
     expect(normalizeAsarEntry("\\.vite\\build\\main.cjs")).toBe(
       ".vite/build/main.cjs",
+    );
+  });
+
+  it("keeps ASAR lookup paths native to the archive reader host", () => {
+    expect(toAsarLookupPath("/.vite/build/main.cjs", "/")).toBe(
+      ".vite/build/main.cjs",
+    );
+    expect(toAsarLookupPath("\\.vite\\build\\main.cjs", "\\")).toBe(
+      ".vite\\build\\main.cjs",
     );
   });
 

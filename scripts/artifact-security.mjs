@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { lstat, open, readdir } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 
 import { extractFile, listPackage, statFile } from "@electron/asar";
@@ -55,6 +55,9 @@ const scanTextFile = async (path, displayPath) => {
 export const normalizeAsarEntry = (entry) =>
   String(entry).replaceAll("\\", "/").replace(/^\/+/u, "");
 
+export const toAsarLookupPath = (entry, separator = sep) =>
+  normalizeAsarEntry(entry).replaceAll("/", separator);
+
 const scanAsar = (path) => {
   const entries = listPackage(path);
   const forbidden = findForbiddenReleasePath(entries);
@@ -64,17 +67,18 @@ const scanAsar = (path) => {
 
   let textFilesScanned = 0;
   for (const entry of entries) {
-    const archivePath = normalizeAsarEntry(entry);
-    const info = statFile(path, archivePath);
+    const displayPath = normalizeAsarEntry(entry);
+    const lookupPath = toAsarLookupPath(entry);
+    const info = statFile(path, lookupPath);
     if (info.files !== undefined) {
       continue;
     }
-    const buffer = extractFile(path, archivePath);
+    const buffer = extractFile(path, lookupPath);
     if (!looksTextual(buffer)) {
       continue;
     }
     textFilesScanned += 1;
-    assertSafeText(buffer.toString("utf8"), `app.asar:${entry}`);
+    assertSafeText(buffer.toString("utf8"), `app.asar:${displayPath}`);
   }
   return { filesScanned: entries.length, textFilesScanned };
 };
