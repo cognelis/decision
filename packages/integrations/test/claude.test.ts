@@ -72,6 +72,21 @@ describe("Claude Code integration", () => {
     ).toHaveLength(3);
   });
 
+  it("renders Windows hooks with cmd syntax and a quoted bridge path", () => {
+    const windowsBridge =
+      "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd";
+    const merged = mergeClaudeSettings(
+      existingClaudeSettings,
+      windowsBridge,
+      "win32",
+    );
+    const command = merged.hooks.Stop!.at(-1)?.hooks[0]?.command;
+
+    expect(command).toBe(
+      'set "DECISION_HOOK=1" && call "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" hook stop claude-code',
+    );
+  });
+
   it("replaces an installed legacy bridge path with the current one", () => {
     const legacyPath =
       "/Applications/Decision Island Legacy.app/Contents/Resources/bridge/decision-bridge";

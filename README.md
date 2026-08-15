@@ -1,20 +1,28 @@
 # Decision
 
-Decision 是一个本地优先的 macOS 决策平台。它不会替代 Claude Code 或 Codex 的提问界面；你仍在终端原生界面中完成选择。Agent 可以在提出重要选项或建议前，通过唯一的只读 MCP 工具核对本地已采纳原则；原生问答结束后，Decision 再通过被动 Hook 记录问题与答案，并独立弹出理由面板。
+Decision 是一个面向 Windows 与 macOS 的本地优先决策平台。它不会替代 Claude Code 或 Codex 的提问界面；你仍在终端原生界面中完成选择。Agent 可以在提出重要选项或建议前，通过唯一的只读 MCP 工具核对本地已采纳原则；原生问答结束后，Decision 再通过被动 Hook 记录问题与答案，并独立弹出理由面板。
 
-## 构建
+## 下载与构建
 
-当前桌面产物面向 Apple Silicon macOS。源码构建需要 Node.js 22.13 或更高版本、npm，以及带 Swift 和 macOS SDK 的 Xcode Command Line Tools；本地 ad-hoc 构建不需要 Apple 开发者证书、API Key 或其它私密配置。
+从 `v1.1.0` 开始，GitHub Release 默认同时提供：
+
+- Windows x64：`Decision-<version>-win-x64-Setup.exe`；
+- Apple Silicon macOS：`Decision-darwin-arm64-<version>.zip`。
+
+两个公开制品都不要求购买商业证书：Windows 安装器为 unsigned，macOS App 使用 ad-hoc 签名且不做 Apple 公证。首次运行可能出现 SmartScreen 或 Gatekeeper 提示，请先核对同一 Release 中的 SHA-256，再按[发布说明](docs/release-notes.md)使用系统图形界面继续；不要全局关闭系统安全能力。
+
+源码构建统一使用 Node.js `>=22.13.0 <26` 和 npm，推荐 Node.js 22 LTS。Windows x64 不需要 Xcode；Apple Silicon macOS 还需要 macOS 26 SDK 与 Xcode Command Line Tools。构建不需要 API Key、签名证书或维护者机器上的固定目录。
 
 ```bash
 git clone https://github.com/cognelis/decision.git
 cd decision
-npm ci
+npm ci --ignore-scripts
+npm run setup:electron
 npm run check
 npm run make
 ```
 
-安装包生成在 `out/make/zip/darwin/arm64/`。Qwen 模型权重不进入仓库或安装包；只有需要本地 Qwen 后端时才显式运行 `npm run prepare:model`。完整签名、公证和发行边界见[发布文档](docs/release.md)。
+`npm run make` 会按当前系统生成对应原生制品：Windows 位于 `out/make/squirrel.windows/x64/`，macOS 位于 `out/make/zip/darwin/arm64/`。Qwen 模型权重不进入仓库或安装包；只有需要本地 Qwen 后端时才显式运行 `npm run prepare:model`。完整构建、校验和可选签名边界见[发布文档](docs/release.md)。
 
 ## 工作方式
 
@@ -74,13 +82,13 @@ npm run prepare:model
 npm run prepare:model -- --check
 ```
 
-文件固定为 `Qwen_Qwen3.5-2B-Q4_K_M.gguf` 和 `Qwen3-Embedding-0.6B-Q8_0.gguf`，存放在 `~/Library/Application Support/Decision/models/`；清单固定精确字节数、下载提交和 SHA-256，加载前会再次验证。两者采用 Apache-2.0 许可证，本地运行不需要 Ollama、LM Studio、订阅或云端 API。
+文件固定为 `Qwen_Qwen3.5-2B-Q4_K_M.gguf` 和 `Qwen3-Embedding-0.6B-Q8_0.gguf`，存放在系统的 Decision 应用数据目录（macOS 通常为 `~/Library/Application Support/Decision/models/`，Windows 通常为 `%APPDATA%\Decision\models\`）；清单固定精确字节数、下载提交和 SHA-256，加载前会再次验证。两者采用 Apache-2.0 许可证，本地运行不需要 Ollama、LM Studio、订阅或云端 API。
 
 决策库搜索会先保留精确关键词结果，再用 1024 维本地向量补充含义相近的记录；纯语义命中会明确标记“语义相关”，且限制补充数量。已采纳原则也使用同一索引参与事前核对和原则建议。向量索引位于应用数据目录，可增量更新、可随全文索引重建；嵌入模型缺失、校验失败或运行异常时，搜索和原则召回都会自动退回原有关键词逻辑。
 
 ## 模型后端与调用记录
 
-“模型后端”按列表顺序路由。OpenAI、Anthropic 和 OpenAI 兼容后端可配置模型、HTTPS/本机回环地址、协议、超时和 API Key；密钥使用 macOS 系统加密，仅保存在主进程私有目录，不会返回界面、进入日志或写入 Obsidian / SQLite。
+“模型后端”按列表顺序路由。OpenAI、Anthropic 和 OpenAI 兼容后端可配置模型、HTTPS/本机回环地址、协议、超时和 API Key；密钥使用操作系统加密能力，仅保存在主进程私有目录，不会返回界面、进入日志或写入 Obsidian / SQLite。
 
 Codex 与 Claude Code 后端复用客户端现有登录状态。设置页会显示实际路径、版本、登录状态和安全调用能力，也允许配置绝对路径与模型名。两者都在一次性空目录中以无 shell、无工具、无会话持久化模式运行；Codex 固定为只读沙箱并拒绝批准，Claude 固定为 safe mode、空工具和 `dontAsk`。模型正文只从 stdin 提交，子进程标记会让 Decision Hooks 在读取任何内容前退出，避免递归采集。停用它们不会卸载客户端或退出账号。
 
@@ -136,7 +144,7 @@ Codex 与 Claude Code 后端复用客户端现有登录状态。设置页会显�
 
 ## 首次使用
 
-1. 将 `Decision.app` 放入 `/Applications` 并启动一次。
+1. Windows 运行 Setup 完成安装；macOS 解压后将 `Decision.app` 放入 `/Applications`。然后启动一次。
 2. 应用会优先读取 Obsidian 的最近使用仓库；未发现时使用 `~/Documents/Decision Vault`。
 3. 在“接入”页查看 Claude Code 和 Codex 的连接状态。
 4. 在“模型”页确认当前识别引擎；如需 API 或终端后端，在后端列表中配置、测试后再启用。
@@ -183,7 +191,7 @@ Codex 与 Claude Code 后端复用客户端现有登录状态。设置页会显�
 ~/.codex/hooks.json
 ```
 
-打包后的桥接程序支持：
+打包后的桥接程序支持以下命令；Windows 使用安装目录下的 `resources\bridge\decision-bridge.cmd`，macOS 使用下面的入口：
 
 ```bash
 "/Applications/Decision.app/Contents/Resources/bridge/decision-bridge" install --dry-run
@@ -219,7 +227,7 @@ Hook 命令从 stdin 读取客户端事件，不向 stdout/stderr 输出业务�
 
 ## 当前限制
 
-- 当前产物面向 Apple Silicon macOS；普通 `build` / `make` 明确生成仅供本地验证的 ad-hoc 包。仓库已提供强制 Developer ID、hardened runtime、Apple 公证、Gatekeeper/staple 校验、版本标签和 SHA-256 清单的正式发布模式，但实际公开发行仍需要在受保护的 macOS 构建机配置 Apple 证书与公证凭据；1.0 初始发布采用人工更新，不会在后台访问版本服务器或自动替换 App。完整边界与命令见 [发布文档](docs/release.md)；
+- `v1.1.0` 默认发布 Windows x64 和 Apple Silicon macOS，不包含 Windows ARM64、Intel macOS、Linux、应用商店或自动更新。Windows 为 unsigned，macOS 为 ad-hoc 且未公证；未来可以在不改变制品契约的前提下增加 Authenticode 或 Developer ID，但当前免费发布不会因缺少证书而阻断。更新继续由用户从官方 GitHub Release 手工下载；
 - 首次修改 Hook 集成配置后通常需要重启 Claude Code/Codex；模型后端排序、启停和路径配置不需要重装 Hooks；
 - 远程 API 与 CLI 后端可能消耗额度或产生费用；服务端保留策略由对应提供商和账号配置决定；
 - 识别器会从常见编号列表和经过原文定位的模型建议中恢复选项；无法可靠提取时答案仍按完整自由输入保存；
@@ -240,7 +248,7 @@ npm run smoke
 npm run release:local
 ```
 
-`npm run check` 是日常质量门禁，依次运行类型检查和完整自动化测试。`npm run quality` 是 CI 唯一通过入口，在 `check` 后继续执行严格语义门；`npm run report:semantic` 只生成非阻塞的确定性规则基线。`npm run check:semantic` 未达到 high precision ≥ 95% 且 high + medium recall ≥ 90% 时返回非零状态。当前 64 条合成基线已经通过该门禁，但它不替代至少 500 条分层、脱敏、带独立保留集的产品激活评估。`npm run release:local` 会在质量门之后重新制包、运行隔离冒烟，并生成可核对的 ZIP SHA-256 与版本清单；它仍是本地 ad-hoc 演练，不能替代正式发行验证。正式发行还会先执行 `npm run audit:runtime`，任何随 App 交付的依赖安全告警都会阻止发布。
+`npm run check` 是日常质量门禁，依次运行类型检查和完整自动化测试。`npm run quality` 是 CI 唯一通过入口，在 `check` 后继续执行严格语义门；`npm run report:semantic` 只生成非阻塞的确定性规则基线。`npm run check:semantic` 未达到 high precision ≥ 95% 且 high + medium recall ≥ 90% 时返回非零状态。当前 64 条合成基线已经通过该门禁，但它不替代至少 500 条分层、脱敏、带独立保留集的产品激活评估。`npm run release:local` 会在质量门之后重新制包、运行隔离冒烟，并生成当前平台主制品的 SHA-256 与 schema-v2 清单。正式发行还会先执行 `npm run audit:runtime`，并要求 GitHub 原生 Windows 与 macOS 任务都通过后才一次性创建 Release。
 
 显式使用已启用的本地客户端 profile 评估并统计后端延迟和 Token：
 

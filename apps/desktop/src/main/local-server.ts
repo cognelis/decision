@@ -50,6 +50,7 @@ export interface LocalCaptureServerOptions {
   token: string;
   bodyLimit?: number;
   smokeMode?: boolean;
+  smokeShutdown?: () => void;
 }
 
 export interface LocalServerAddress {
@@ -178,6 +179,7 @@ export class LocalCaptureServer {
   readonly #submitConsultationFeedback: LocalCaptureServerOptions["submitConsultationFeedback"];
   readonly #bodyLimit: number;
   readonly #smokeMode: boolean;
+  readonly #smokeShutdown: (() => void) | undefined;
   #server: Server | null = null;
   #address: LocalServerAddress | null = null;
 
@@ -193,6 +195,7 @@ export class LocalCaptureServer {
     this.#submitConsultationFeedback = options.submitConsultationFeedback;
     this.#bodyLimit = options.bodyLimit ?? DEFAULT_BODY_LIMIT;
     this.#smokeMode = options.smokeMode ?? false;
+    this.#smokeShutdown = options.smokeShutdown;
   }
 
   async start(): Promise<LocalServerAddress> {
@@ -312,6 +315,17 @@ export class LocalCaptureServer {
       this.#smokeMode
     ) {
       await this.#handleSmokeCompletion(request, response);
+      return;
+    }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/v1/smoke/shutdown" &&
+      this.#smokeMode &&
+      this.#smokeShutdown !== undefined
+    ) {
+      sendEmpty(response, 204);
+      queueMicrotask(this.#smokeShutdown);
       return;
     }
 

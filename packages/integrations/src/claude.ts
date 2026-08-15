@@ -7,8 +7,9 @@ import {
 export const mergeClaudeSettings = (
   settings: unknown,
   bridgePath: string,
+  platform: NodeJS.Platform = process.platform,
 ): HookConfigDocument =>
-  mergeHookDocument(settings, bridgePath, "claude-code");
+  mergeHookDocument(settings, bridgePath, "claude-code", platform);
 
 export const claudeMcpCommands = (bridgePath: string): CommandSpec[] => [
   {

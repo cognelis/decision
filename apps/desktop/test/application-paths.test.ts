@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   configureElectronUserDataPath,
   resolveDefaultDecisionVaultPath,
+  resolveDecisionUserData,
+  resolveObsidianConfigurationPath,
   type UserDataFileSystem,
 } from "../src/main/application-paths.js";
 
@@ -49,6 +51,45 @@ const configure = (
 };
 
 describe("Electron application paths", () => {
+  it("uses the roaming profile for Windows data and Obsidian discovery", () => {
+    const fs = fileSystem([]);
+    const result = resolveDecisionUserData(
+      { APPDATA: "D:\\Profiles\\Ada\\Roaming" },
+      {
+        fileSystem: fs,
+        homeDirectory: "C:\\Users\\Ada",
+        platform: "win32",
+      },
+    );
+
+    expect(result.path).toBe("D:\\Profiles\\Ada\\Roaming\\Decision");
+    expect(
+      resolveObsidianConfigurationPath({
+        platform: "win32",
+        homeDirectory: "C:\\Users\\Ada",
+        appData: "D:\\Profiles\\Ada\\Roaming",
+      }),
+    ).toBe("D:\\Profiles\\Ada\\Roaming\\obsidian\\obsidian.json");
+  });
+
+  it("uses native macOS and XDG Obsidian configuration paths", () => {
+    expect(
+      resolveObsidianConfigurationPath({
+        platform: "darwin",
+        homeDirectory: "/Users/ada",
+      }),
+    ).toBe(
+      "/Users/ada/Library/Application Support/obsidian/obsidian.json",
+    );
+    expect(
+      resolveObsidianConfigurationPath({
+        platform: "linux",
+        homeDirectory: "/home/ada",
+        xdgConfigHome: "/mnt/config",
+      }),
+    ).toBe("/mnt/config/obsidian/obsidian.json");
+  });
+
   it("uses the legacy default vault only when it is the existing history", () => {
     const currentVault = "/home/Documents/Decision Vault";
     const legacyVault = "/home/Documents/Decision Island Vault";

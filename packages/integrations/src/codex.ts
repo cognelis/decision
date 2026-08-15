@@ -7,8 +7,9 @@ import {
 export const mergeCodexHooks = (
   hooks: unknown,
   bridgePath: string,
+  platform: NodeJS.Platform = process.platform,
 ): HookConfigDocument =>
-  mergeHookDocument(hooks, bridgePath, "codex");
+  mergeHookDocument(hooks, bridgePath, "codex", platform);
 
 export const codexMcpCommands = (bridgePath: string): CommandSpec[] => [
   {

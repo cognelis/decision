@@ -11,37 +11,45 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+import { scanReleasePayload } from "./artifact-security.mjs";
+import { releaseTarget } from "./platform-artifacts.mjs";
+import {
+  bridgeProcessInvocation,
+  resolvePackagedSmokeTarget,
+} from "./smoke-support.mjs";
+
 const repositoryRoot = process.cwd();
-const appPath = join(
-  repositoryRoot,
-  "out",
-  "Decision-darwin-arm64",
-  "Decision.app",
+const packageDocument = JSON.parse(
+  await readFile(join(repositoryRoot, "package.json"), "utf8"),
 );
-const executable = join(
-  appPath,
-  "Contents",
-  "MacOS",
-  "Decision",
-);
-const bridge = join(
-  appPath,
-  "Contents",
-  "Resources",
-  "bridge",
-  "decision-bridge",
-);
+const platform = process.platform;
+const arch = process.arch;
+const target = resolvePackagedSmokeTarget({
+  target: releaseTarget({
+    repositoryRoot,
+    productName: packageDocument.productName,
+    version: packageDocument.version,
+    platform,
+    arch,
+  }),
+  platform,
+  productName: packageDocument.productName,
+  packageRoot: process.env.DECISION_SMOKE_PACKAGE_ROOT,
+});
+const appPath = target.packageRoot;
+const executable = target.packagedExecutable;
+const bridge = target.bridgePath;
+const resourceRoot =
+  platform === "win32"
+    ? join(appPath, "resources")
+    : join(appPath, "Contents", "Resources");
 const foundationHelper = join(
-  appPath,
-  "Contents",
-  "Resources",
+  resourceRoot,
   "semantic",
   "decision-foundation-model-helper",
 );
 const liquidGlassAddon = join(
-  appPath,
-  "Contents",
-  "Resources",
+  resourceRoot,
   "native",
   "decision-liquid-glass.node",
 );
@@ -67,45 +75,73 @@ const waitFor = async (operation, description, timeout = 20_000) => {
   );
 };
 
-const runJsonProcess = (
-  command,
-  arguments_,
-  payload,
-  environment,
-) =>
+const stopPackagedApplication = async (
+  runtime,
+  applicationProcess,
+  description,
+) => {
+  const response = await fetch(
+    `http://127.0.0.1:${runtime.port}/v1/smoke/shutdown`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${runtime.token}` },
+    },
+  );
+  if (response.status !== 204) {
+    throw new Error(`${description} returned HTTP ${response.status}`);
+  }
+  await waitFor(
+    async () => (applicationProcess.exitCode === null ? undefined : true),
+    description,
+  );
+};
+
+const collectJsonProcess = (child, payload) =>
   new Promise((resolve, reject) => {
-    const hook = spawn(command, arguments_, {
-      env: environment,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
     const stdout = [];
     const stderr = [];
-    hook.stdout.on("data", (chunk) => stdout.push(Buffer.from(chunk)));
-    hook.stderr.on("data", (chunk) => stderr.push(Buffer.from(chunk)));
-    hook.once("error", reject);
-    hook.once("close", (code) =>
+    child.stdout.on("data", (chunk) => stdout.push(Buffer.from(chunk)));
+    child.stderr.on("data", (chunk) => stderr.push(Buffer.from(chunk)));
+    child.once("error", reject);
+    child.once("close", (code) =>
       resolve({
         code,
         stdout: Buffer.concat(stdout).toString("utf8"),
         stderr: Buffer.concat(stderr).toString("utf8"),
       }),
     );
-    hook.stdin.end(JSON.stringify(payload));
+    child.stdin.end(JSON.stringify(payload));
   });
 
-const runHook = (arguments_, payload, environment) =>
-  runJsonProcess(
-    bridge,
-    arguments_,
+const runJsonProcess = (command, arguments_, payload, environment) =>
+  collectJsonProcess(
+    spawn(command, arguments_, {
+      env: environment,
+      stdio: ["pipe", "pipe", "pipe"],
+    }),
     payload,
-    environment,
   );
 
-const runMcpConsultation = async (environment) => {
-  const server = spawn(bridge, ["mcp", "codex"], {
+const spawnBridge = (arguments_, environment, bridgePath = bridge) => {
+  const invocation = bridgeProcessInvocation({
+    platform,
+    bridge: bridgePath,
+    args: arguments_,
+  });
+  return spawn(invocation.command, invocation.args, {
     env: environment,
     stdio: ["pipe", "pipe", "pipe"],
   });
+};
+
+const runHook = (arguments_, payload, environment, bridgePath = bridge) =>
+  collectJsonProcess(
+    spawnBridge(arguments_, environment, bridgePath),
+    payload,
+  );
+
+const runMcpConsultation = async (environment) => {
+  const server = spawnBridge(["mcp", "codex"], environment);
   const pending = new Map();
   const stderr = [];
   let buffer = "";
@@ -220,11 +256,13 @@ const runMcpConsultation = async (environment) => {
     }
   } finally {
     server.stdin.end();
-    server.kill("SIGTERM");
     await Promise.race([
       new Promise((resolve) => server.once("close", resolve)),
       new Promise((resolve) => setTimeout(resolve, 1_000)),
     ]);
+    if (server.exitCode === null) {
+      server.kill("SIGTERM");
+    }
   }
 
   if (stderr.length !== 0) {
@@ -259,43 +297,54 @@ const decisionFraming =
   "规则方案便于解释，本地模型可以在积累语料后接入。";
 let child;
 let succeeded = false;
+let foundationHelperStatus = "unavailable";
 
 try {
   await access(executable);
   await access(bridge);
-  await access(foundationHelper);
-  await access(liquidGlassAddon);
-  const bundleFiles = await readdir(appPath, {
-    recursive: true,
-  });
-  if (
-    bundleFiles.some((entry) =>
-      String(entry).toLowerCase().endsWith(".gguf"),
-    )
-  ) {
-    throw new Error("GGUF model weights must not be bundled in the app");
+  await access(target.legacyBridgePath);
+  await scanReleasePayload(appPath);
+  if (platform === "darwin") {
+    await access(foundationHelper);
+    await access(liquidGlassAddon);
+  } else {
+    for (const appleResource of [foundationHelper, liquidGlassAddon]) {
+      try {
+        await access(appleResource);
+        throw new Error(`Apple-only resource was bundled: ${appleResource}`);
+      } catch (error) {
+        if (
+          typeof error !== "object" ||
+          error === null ||
+          !("code" in error) ||
+          error.code !== "ENOENT"
+        ) {
+          throw error;
+        }
+      }
+    }
   }
-  const helperStatus = await runJsonProcess(
-    foundationHelper,
-    [],
-    { id: "smoke-status", operation: "status" },
-    process.env,
-  );
-  if (
-    helperStatus.code !== 0 ||
-    helperStatus.stderr.length !== 0
-  ) {
-    throw new Error(
-      `Foundation Models helper failed: ${JSON.stringify(helperStatus)}`,
+  if (platform === "darwin") {
+    const helperStatus = await runJsonProcess(
+      foundationHelper,
+      [],
+      { id: "smoke-status", operation: "status" },
+      process.env,
     );
-  }
-  const helperResponse = JSON.parse(helperStatus.stdout.trim());
-  if (
-    helperResponse.id !== "smoke-status" ||
-    helperResponse.ok !== true ||
-    typeof helperResponse.status !== "string"
-  ) {
-    throw new Error("Foundation Models helper status is invalid");
+    if (helperStatus.code !== 0 || helperStatus.stderr.length !== 0) {
+      throw new Error(
+        `Foundation Models helper failed: ${JSON.stringify(helperStatus)}`,
+      );
+    }
+    const helperResponse = JSON.parse(helperStatus.stdout.trim());
+    if (
+      helperResponse.id !== "smoke-status" ||
+      helperResponse.ok !== true ||
+      typeof helperResponse.status !== "string"
+    ) {
+      throw new Error("Foundation Models helper status is invalid");
+    }
+    foundationHelperStatus = helperResponse.status;
   }
   await writeFile(
     transcriptPath,
@@ -454,6 +503,24 @@ try {
         `provider child hook was not silent: ${JSON.stringify(result)}`,
       );
     }
+  }
+  const legacyBridgeResult = await runHook(
+    ["hook", "stop", "codex"],
+    { private: "legacy bridge packaged smoke input" },
+    {
+      ...hookEnvironment,
+      DECISION_PROVIDER_CHILD: "1",
+    },
+    target.legacyBridgePath,
+  );
+  if (
+    legacyBridgeResult.code !== 0 ||
+    legacyBridgeResult.stdout.length !== 0 ||
+    legacyBridgeResult.stderr.length !== 0
+  ) {
+    throw new Error(
+      `legacy bridge was not executable and silent: ${JSON.stringify(legacyBridgeResult)}`,
+    );
   }
   const afterProviderChild =
     await providerChildArtifactSnapshot();
@@ -700,11 +767,7 @@ try {
     );
   }
 
-  child.kill("SIGTERM");
-  await waitFor(
-    async () => (child.exitCode === null ? undefined : true),
-    "application shutdown",
-  );
+  await stopPackagedApplication(runtime, child, "application shutdown");
   await waitFor(async () => {
     try {
       await access(runtimeFile);
@@ -727,7 +790,7 @@ try {
   child.stderr.on("data", (chunk) =>
     errors.push(Buffer.from(chunk)),
   );
-  await waitFor(async () => {
+  const rebuiltRuntime = await waitFor(async () => {
     const parsed = JSON.parse(await readFile(runtimeFile, "utf8"));
     const response = await fetch(
       `http://127.0.0.1:${parsed.port}/health`,
@@ -748,9 +811,9 @@ try {
       return undefined;
     }
   }, "SQLite rebuild from Markdown");
-  child.kill("SIGTERM");
-  await waitFor(
-    async () => (child.exitCode === null ? undefined : true),
+  await stopPackagedApplication(
+    rebuiltRuntime,
+    child,
     "rebuilt application shutdown",
   );
   await waitFor(async () => {
@@ -765,6 +828,8 @@ try {
   process.stdout.write(
     `${JSON.stringify({
       ok: true,
+      platform,
+      arch,
       appPath,
       bridge,
       markdown: true,
@@ -772,6 +837,8 @@ try {
       sqliteRebuiltFromMarkdown: true,
       spoolEmpty: true,
       hybridHooksSilent: true,
+      legacyBridgeExecutable: true,
+      payloadSecurity: true,
       preDecisionConsultation: true,
       contentFreeConsultationMetrics: true,
       anonymousConsultationFeedback: true,
@@ -781,8 +848,8 @@ try {
       providerChildRecursionGuard: true,
       structuredCapture: true,
       markdownAfterRationale: true,
-      foundationHelperStatus: helperResponse.status,
-      liquidGlassAddon: true,
+      foundationHelperStatus,
+      liquidGlassAddon: platform === "darwin",
       modelWeightsBundled: false,
       transcriptPrivacy: true,
       contextualCapture: true,

@@ -7,6 +7,7 @@ import {
   releaseArtifactName,
   resolveReleaseTag,
   validateArchiveEntries,
+  validatePortableExecutable,
   validateReleaseVersion,
 } from "../release-artifact.mjs";
 
@@ -20,6 +21,14 @@ describe("release artifact contract", () => {
         arch: "arm64",
       }),
     ).toBe("Decision-darwin-arm64-0.1.0.zip");
+    expect(
+      releaseArtifactName({
+        productName: "Decision",
+        version: "0.1.0",
+        platform: "win32",
+        arch: "x64",
+      }),
+    ).toBe("Decision-0.1.0-win-x64-Setup.exe");
     expect(
       validateReleaseVersion({
         version: "0.1.0",
@@ -51,13 +60,15 @@ describe("release artifact contract", () => {
       artifactName: "Decision-darwin-arm64-0.1.0.zip",
       bytes: 123_456,
       sha256,
+      signature: "ad-hoc",
+      sourceCommit: "b".repeat(40),
     });
 
     expect(documents.checksum).toBe(
       `${sha256}  Decision-darwin-arm64-0.1.0.zip\n`,
     );
     expect(documents.manifest).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       product: "Decision",
       version: "0.1.0",
       platform: "darwin",
@@ -67,6 +78,8 @@ describe("release artifact contract", () => {
         bytes: 123_456,
         sha256,
       },
+      signature: "ad-hoc",
+      sourceCommit: "b".repeat(40),
       updatePolicy: "manual",
     });
     expect(JSON.stringify(documents)).not.toMatch(
@@ -84,8 +97,53 @@ describe("release artifact contract", () => {
         artifactName: "Decision-darwin-arm64-0.1.0.zip",
         bytes: 0,
         sha256: "not-a-digest",
+        signature: "ad-hoc",
+        sourceCommit: "b".repeat(40),
       }),
     ).toThrow(/artifact bytes/u);
+  });
+
+  it("validates target-specific signature states and source commits", () => {
+    const base = {
+      productName: "Decision",
+      version: "0.1.0",
+      artifactName: "Decision-0.1.0-win-x64-Setup.exe",
+      bytes: 1,
+      sha256: "a".repeat(64),
+      sourceCommit: "b".repeat(40),
+    };
+
+    expect(() =>
+      createReleaseDocuments({
+        ...base,
+        platform: "win32",
+        arch: "x64",
+        signature: "ad-hoc",
+      }),
+    ).toThrow(/signature/u);
+    expect(() =>
+      createReleaseDocuments({
+        ...base,
+        platform: "win32",
+        arch: "x64",
+        signature: "unsigned",
+        sourceCommit: "not-a-commit",
+      }),
+    ).toThrow(/source commit/u);
+  });
+
+  it("rejects a renamed non-PE Windows installer", () => {
+    const executable = Buffer.alloc(68);
+    executable.write("MZ", 0, "ascii");
+    executable.writeUInt32LE(64, 0x3c);
+    executable.write("PE\0\0", 64, "binary");
+    expect(validatePortableExecutable(executable)).toBe(true);
+    expect(() =>
+      validatePortableExecutable(Buffer.from("MZpayload")),
+    ).toThrow(/portable executable/iu);
+    expect(() =>
+      validatePortableExecutable(Buffer.from("not an executable")),
+    ).toThrow(/portable executable/iu);
   });
 
   it("binds verification to exactly one safe App inside the ZIP", () => {

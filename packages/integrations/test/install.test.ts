@@ -3,7 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { installIntegrations, type CommandRunner } from "../src/index.js";
+import {
+  commandInvocation,
+  installIntegrations,
+  type CommandRunner,
+} from "../src/index.js";
 import { existingClaudeSettings, existingCodexHooks } from "./fixtures.js";
 
 const bridgePath =
@@ -33,6 +37,40 @@ const makeConfig = async () => {
 };
 
 describe("installIntegrations", () => {
+  it("runs Windows client shims through the command interpreter", () => {
+    expect(
+      commandInvocation("claude", [
+        "mcp",
+        "add",
+        "--",
+        "C:\\Program Files\\Decision\\decision-bridge.cmd",
+      ], {
+        platform: "win32",
+        commandInterpreter: "C:\\Windows\\System32\\cmd.exe",
+      }),
+    ).toEqual({
+      command: "C:\\Windows\\System32\\cmd.exe",
+      args: [
+        "/d",
+        "/s",
+        "/v:off",
+        "/c",
+        '"claude" "mcp" "add" "--" "C:\\Program Files\\Decision\\decision-bridge.cmd"',
+      ],
+    });
+  });
+
+  it("keeps POSIX client execution argument-safe", () => {
+    expect(
+      commandInvocation("codex", ["mcp", "remove", "decision"], {
+        platform: "darwin",
+      }),
+    ).toEqual({
+      command: "codex",
+      args: ["mcp", "remove", "decision"],
+    });
+  });
+
   it("dry-runs without touching files or executing client commands", async () => {
     const paths = await makeConfig();
     const beforeClaude = await readFile(paths.claudeSettingsPath, "utf8");

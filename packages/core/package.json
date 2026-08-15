@@ -1,6 +1,6 @@
 {
   "name": "@cognelis/decision-core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -8,6 +8,6 @@
     "./rationale-factors": "./src/rationale-factors.ts"
   },
   "dependencies": {
-    "@cognelis/decision-protocol": "1.0.0"
+    "@cognelis/decision-protocol": "1.1.0"
   }
 }

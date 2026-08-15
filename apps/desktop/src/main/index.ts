@@ -1,4 +1,5 @@
 import { installIntegrations } from "@cognelis/decision-integrations";
+import squirrelStartup from "electron-squirrel-startup";
 import {
   assessMethodologyQuality,
   assessPracticeAssetFreshness,
@@ -62,9 +63,11 @@ import { AppController } from "./app-controller.js";
 import {
   configureElectronUserDataPath,
   resolveDefaultDecisionVaultPath,
+  resolveObsidianConfigurationPath,
   type UserDataResolution,
 } from "./application-paths.js";
 import { CaptureRuntime } from "./capture-runtime.js";
+import { resolveBridgeExecutablePath } from "./bridge-path.js";
 import { readDashboardSnapshot } from "./dashboard-snapshot.js";
 import { DecisionAnalyticsService } from "./decision-analytics-service.js";
 import { DecisionConsultationFeedbackService } from "./decision-consultation-feedback-service.js";
@@ -428,9 +431,12 @@ const adaptWindow = (
 });
 
 const bridgeExecutablePath = (): string =>
-  app.isPackaged
-    ? join(process.resourcesPath, "bridge", "decision-bridge")
-    : join(app.getAppPath(), "apps", "bridge", "src", "cli.ts");
+  resolveBridgeExecutablePath({
+    packaged: app.isPackaged,
+    platform: process.platform,
+    resourcesPath: process.resourcesPath,
+    appPath: app.getAppPath(),
+  });
 
 const trayIconPath = (): string =>
   app.isPackaged
@@ -480,13 +486,7 @@ const bootstrap = async (
     settings = withVaultPath(settings, configuredVault);
   } else if (settings.vaultPath === null) {
     const discovered = await discoverObsidianVaults(
-      join(
-        homedir(),
-        "Library",
-        "Application Support",
-        "obsidian",
-        "obsidian.json",
-      ),
+      resolveObsidianConfigurationPath(),
     ).catch(() => []);
     settings = withVaultPath(
       settings,
@@ -818,6 +818,7 @@ const bootstrap = async (
       decisionConsultationFeedback.submit(feedback),
     token,
     smokeMode: readDecisionEnvironment(process.env, "SMOKE") === "1",
+    smokeShutdown: () => app.quit(),
   });
   const liquidGlass = loadLiquidGlassRuntime({
     addonPath: liquidGlassAddonPath(),
@@ -1525,6 +1526,7 @@ const bootstrap = async (
         const report = await installIntegrations({
           mode,
           bridgePath: bridgeExecutablePath(),
+          platform: process.platform,
           ...integrationPaths,
         });
         if (mode === "apply") {
@@ -1661,22 +1663,26 @@ const bootstrap = async (
   }
 };
 
-const userDataResolution = configureElectronUserDataPath(app);
-
-if (!app.requestSingleInstanceLock()) {
+if (squirrelStartup) {
   app.quit();
 } else {
-  app.on("second-instance", () => openDesktopApplication());
-  app.on("activate", () => openDesktopApplication());
-  void app
-    .whenReady()
-    .then(() => bootstrap(userDataResolution))
-    .catch((error: unknown) => {
-      process.stderr.write(
-        `Decision failed to start: ${
-          error instanceof Error ? error.message : String(error)
-        }\n`,
-      );
-      app.exit(1);
-    });
+  const userDataResolution = configureElectronUserDataPath(app);
+
+  if (!app.requestSingleInstanceLock()) {
+    app.quit();
+  } else {
+    app.on("second-instance", () => openDesktopApplication());
+    app.on("activate", () => openDesktopApplication());
+    void app
+      .whenReady()
+      .then(() => bootstrap(userDataResolution))
+      .catch((error: unknown) => {
+        process.stderr.write(
+          `Decision failed to start: ${
+            error instanceof Error ? error.message : String(error)
+          }\n`,
+        );
+        app.exit(1);
+      });
+  }
 }

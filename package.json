@@ -1,7 +1,9 @@
 {
   "name": "@cognelis/decision",
   "productName": "Decision",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "description": "Local-first decision capture and review platform",
+  "author": "Cognelis contributors",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -19,24 +21,31 @@
     "report:semantic": "npm run evaluate:semantic -- --report-only",
     "quality": "npm run check && npm run check:semantic",
     "audit:runtime": "npm audit --omit=dev --audit-level=low",
+    "setup:electron": "node node_modules/electron/install.js",
     "build:bridge": "vite build --config apps/bridge/vite.config.ts",
     "build:foundation-helper": "sh scripts/build-foundation-model-helper.sh",
     "build:liquid-glass": "sh scripts/build-liquid-glass-addon.sh",
+    "build:native": "node scripts/build-native.mjs",
+    "prebuild": "node scripts/check-build-runtime.mjs",
     "prepare:model": "node scripts/prepare-local-model.mjs",
     "evaluate:semantic": "node scripts/evaluate-semantic-classifier.mjs",
-    "build": "npm run typecheck && npm run build:bridge && npm run build:foundation-helper && npm run build:liquid-glass && electron-forge package",
-    "make": "npm run typecheck && npm run build:bridge && npm run build:foundation-helper && npm run build:liquid-glass && electron-forge make",
+    "build": "npm run typecheck && npm run build:bridge && npm run build:native && electron-forge package",
+    "premake": "node scripts/check-build-runtime.mjs",
+    "make": "npm run typecheck && npm run build:bridge && npm run build:native && electron-forge make",
     "smoke": "node scripts/smoke.mjs",
     "release:verify": "node scripts/release-artifact.mjs",
+    "release:verify:set": "node scripts/verify-release-set.mjs",
     "release:verify:distribution": "node scripts/release-artifact.mjs --distribution --require-tag",
     "release:local": "npm run quality && npm run make && npm run smoke && npm run release:verify",
     "release:distribution": "npm run audit:runtime && npm run quality && npm run make && npm run smoke && npm run release:verify:distribution"
   },
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.13.0 <26"
   },
   "devDependencies": {
+    "@electron/asar": "3.4.1",
     "@electron-forge/cli": "7.11.2",
+    "@electron-forge/maker-squirrel": "7.11.2",
     "@electron-forge/maker-zip": "7.11.2",
     "@electron-forge/plugin-vite": "7.11.2",
     "@testing-library/jest-dom": "7.0.0",
@@ -53,6 +62,7 @@
     "vitest": "4.1.10"
   },
   "dependencies": {
+    "electron-squirrel-startup": "1.0.1",
     "node-llama-cpp": "3.19.1"
   }
 }

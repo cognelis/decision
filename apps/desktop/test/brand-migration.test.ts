@@ -126,4 +126,71 @@ describe("Cognelis brand migration", () => {
       expect(hashes(currentData)[path]).toBe(dataBefore[path]);
     }
   });
+
+  it.runIf(process.platform === "win32")(
+    "preserves Windows historical and pending state byte-for-byte",
+    () => {
+      const home = mkdtempSync(join(tmpdir(), "decision-windows-migration-"));
+      const applicationData = join(home, "AppData", "Roaming");
+      const legacyData = join(applicationData, "Decision Island");
+      const currentData = join(applicationData, "Decision");
+      const legacyVault = join(home, "Documents", "Decision Island Vault");
+      mkdirSync(legacyData, { recursive: true });
+      mkdirSync(legacyVault, { recursive: true });
+
+      const files: Record<string, string | Uint8Array> = {
+        "settings.json": JSON.stringify({ vaultPath: legacyVault }),
+        "index.sqlite": new Uint8Array([0x53, 0x51, 0x4c, 0x02]),
+        "semantic-vectors.sqlite": new Uint8Array([0x53, 0x45, 0x4d, 0x02]),
+        "practice-asset-history/history.json": '{"asset":"PRA-WIN"}\n',
+        "methodology-history/history.json": '{"methodology":"MET-WIN"}\n',
+        "model-provider-profiles.json": '{"profile":"windows"}\n',
+        "model-provider-credentials/provider.bin": new Uint8Array([
+          0x43, 0x52, 0x45, 0x44, 0x02,
+        ]),
+        "models/model.gguf": new Uint8Array([0x47, 0x47, 0x55, 0x46, 0x02]),
+        "capture-spool/pending-rationale.json": '{"id":"CAP-WIN"}\n',
+        "capture-spool/corrupt-but-preserved.json": "{not-json",
+        "candidate-spool/pending-candidate.json": '{"id":"CAN-WIN"}\n',
+        "semantic-pair-spool/pending-pair.json": '{"id":"SEM-WIN"}\n',
+        "text-pending/pending-text.json": '{"id":"TXT-WIN"}\n',
+        "manual-form-drafts.json": '{"draft":"FORM-WIN"}\n',
+        "methodology-suggestion-preferences.json":
+          '{"deferred":"SUG-WIN"}\n',
+        "practice-publications/status.json": '{"pending":"PUB-WIN"}\n',
+      };
+      for (const [path, content] of Object.entries(files)) {
+        writeFixture(legacyData, path, content);
+      }
+      writeFixture(
+        legacyVault,
+        "Decisions/DEC-WIN.md",
+        "# Historical Windows decision\n",
+      );
+
+      const dataBefore = hashes(legacyData);
+      const vaultBefore = hashes(legacyVault);
+      const resolution = resolveDecisionUserData(
+        { APPDATA: applicationData },
+        {
+          homeDirectory: home,
+          platform: "win32",
+          now: () => "2026-08-16T00:00:00.000Z",
+        },
+      );
+
+      expect(resolution).toEqual({
+        environmentSource: "default",
+        path: currentData,
+        state: "migrated",
+      });
+      expect(hashes(currentData)).toEqual(dataBefore);
+      expect(hashes(legacyVault)).toEqual(vaultBefore);
+      expect(existsSync(legacyData)).toBe(false);
+      expect(existsSync(currentData)).toBe(true);
+      expect(
+        JSON.parse(readFileSync(join(currentData, "settings.json"), "utf8")),
+      ).toMatchObject({ vaultPath: legacyVault });
+    },
+  );
 });

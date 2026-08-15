@@ -2,21 +2,23 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import {
+  copyFile,
   mkdir,
   mkdtemp,
   readFile,
-  readdir,
   rename,
   rm,
   stat,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import { readDecisionEnvironment } from "../config/decision-environment.mjs";
+import { releaseTarget } from "./platform-artifacts.mjs";
+import { findForbiddenReleasePath } from "./release-security-rules.mjs";
 
 const execFileAsync = promisify(execFile);
 const SEMVER =
@@ -44,7 +46,19 @@ export const releaseArtifactName = ({
   version,
   platform,
   arch,
-}) => `${productName}-${platform}-${arch}-${version}.zip`;
+}) =>
+  releaseTarget({
+    repositoryRoot: process.cwd(),
+    productName,
+    version,
+    platform,
+    arch,
+  }).artifactName;
+
+const SIGNATURES = Object.freeze({
+  darwin: new Set(["ad-hoc", "developer-id"]),
+  win32: new Set(["unsigned", "authenticode"]),
+});
 
 export const createReleaseDocuments = ({
   productName,
@@ -54,6 +68,8 @@ export const createReleaseDocuments = ({
   artifactName,
   bytes,
   sha256,
+  signature,
+  sourceCommit,
 }) => {
   if (!Number.isSafeInteger(bytes) || bytes <= 0) {
     throw new Error("Release artifact bytes must be a positive safe integer");
@@ -61,9 +77,20 @@ export const createReleaseDocuments = ({
   if (typeof sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(sha256)) {
     throw new Error("Release artifact SHA-256 must be a lowercase hex digest");
   }
+  if (!(SIGNATURES[platform]?.has(signature) ?? false)) {
+    throw new Error(
+      `Release signature ${signature} is invalid for ${platform}`,
+    );
+  }
+  if (
+    typeof sourceCommit !== "string" ||
+    !/^[a-f0-9]{40}$/u.test(sourceCommit)
+  ) {
+    throw new Error("Release source commit must be a 40 character Git SHA");
+  }
   return {
     manifest: {
-      schemaVersion: 1,
+      schemaVersion: 2,
       product: productName,
       version,
       platform,
@@ -73,10 +100,32 @@ export const createReleaseDocuments = ({
         bytes,
         sha256,
       },
+      signature,
+      sourceCommit,
       updatePolicy: "manual",
     },
     checksum: `${sha256}  ${artifactName}\n`,
   };
+};
+
+export const validatePortableExecutable = (input) => {
+  if (
+    !Buffer.isBuffer(input) ||
+    input.length < 68 ||
+    input[0] !== 0x4d ||
+    input[1] !== 0x5a
+  ) {
+    throw new Error("Windows installer is not a Portable Executable");
+  }
+  const peOffset = input.readUInt32LE(0x3c);
+  if (
+    peOffset < 64 ||
+    peOffset > input.length - 4 ||
+    input.subarray(peOffset, peOffset + 4).compare(Buffer.from("PE\0\0")) !== 0
+  ) {
+    throw new Error("Windows installer is not a Portable Executable");
+  }
+  return true;
 };
 
 export const resolveReleaseTag = ({
@@ -132,34 +181,15 @@ export const validateArchiveEntries = (entries) => {
 };
 
 export const findForbiddenBundleEntry = (entries) =>
-  entries.find((entry) => {
-    const normalized = String(entry).toLowerCase();
-    const file = basename(normalized);
-    return (
-      normalized.includes("duckdb") ||
-      normalized.endsWith(".gguf") ||
-      normalized.endsWith(".blockmap") ||
-      [
-        "app-update.yaml",
-        "app-update.yml",
-        "dev-app-update.yaml",
-        "dev-app-update.yml",
-        "latest-mac.yaml",
-        "latest-mac.yml",
-        "latest.json",
-        "latest.yaml",
-        "latest.yml",
-        "releases",
-        "releases.json",
-      ].includes(file)
-    );
-  });
+  findForbiddenReleasePath(entries);
 
 const parseArguments = (arguments_) => {
   const result = {
     distribution: false,
     requireTag: false,
     tag: undefined,
+    platform: process.platform,
+    arch: process.arch,
   };
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index];
@@ -172,6 +202,16 @@ const parseArguments = (arguments_) => {
       index += 1;
     } else if (argument?.startsWith("--tag=")) {
       result.tag = argument.slice("--tag=".length);
+    } else if (argument === "--platform") {
+      result.platform = arguments_[index + 1];
+      index += 1;
+    } else if (argument?.startsWith("--platform=")) {
+      result.platform = argument.slice("--platform=".length);
+    } else if (argument === "--arch") {
+      result.arch = arguments_[index + 1];
+      index += 1;
+    } else if (argument?.startsWith("--arch=")) {
+      result.arch = argument.slice("--arch=".length);
     } else {
       throw new Error(`Unknown release verifier argument: ${argument}`);
     }
@@ -223,11 +263,8 @@ const plistValue = async (appPath, key) => {
 };
 
 const validateBundleContents = async (appPath) => {
-  const entries = await readdir(appPath, { recursive: true });
-  const forbidden = findForbiddenBundleEntry(entries);
-  if (forbidden !== undefined) {
-    throw new Error(`Forbidden release bundle content: ${forbidden}`);
-  }
+  const { scanReleasePayload } = await import("./artifact-security.mjs");
+  await scanReleasePayload(appPath);
 };
 
 export const verifyReleaseArtifact = async ({
@@ -235,6 +272,8 @@ export const verifyReleaseArtifact = async ({
   distribution,
   requireTag,
   tag,
+  platform = process.platform,
+  arch = process.arch,
 }) => {
   const packageDocument = JSON.parse(
     await readFile(join(repositoryRoot, "package.json"), "utf8"),
@@ -249,23 +288,17 @@ export const verifyReleaseArtifact = async ({
     throw new Error("package.json productName is required for release");
   }
 
-  const platform = "darwin";
-  const arch = "arm64";
-  const artifactName = releaseArtifactName({
+  if (distribution && platform !== "darwin") {
+    throw new Error("Distribution signing is supported only for macOS");
+  }
+  const target = releaseTarget({
+    repositoryRoot,
     productName,
     version,
     platform,
     arch,
   });
-  const artifactPath = join(
-    repositoryRoot,
-    "out",
-    "make",
-    "zip",
-    platform,
-    arch,
-    artifactName,
-  );
+  const { artifactName, artifactPath } = target;
 
   if (requireTag) {
     const { stdout } = await run("git", [
@@ -283,62 +316,76 @@ export const verifyReleaseArtifact = async ({
     }
   }
 
-  await run("unzip", ["-t", artifactPath]);
-  const archiveListing = await run("unzip", ["-Z1", artifactPath]);
-  const archiveAppName = validateArchiveEntries(
-    archiveListing.stdout.split(/\r?\n/u),
-  );
-  const extractionDirectory = await mkdtemp(
-    join(tmpdir(), "decision-release-verify-"),
-  );
-  try {
-    await run("unzip", ["-qq", artifactPath, "-d", extractionDirectory]);
-    const appPath = join(extractionDirectory, archiveAppName);
-    const [shortVersion, bundleVersion] = await Promise.all([
-      plistValue(appPath, "CFBundleShortVersionString"),
-      plistValue(appPath, "CFBundleVersion"),
-    ]);
-    if (shortVersion !== version || bundleVersion !== version) {
-      throw new Error(
-        `App bundle version ${shortVersion}/${bundleVersion} does not match ${version}`,
-      );
-    }
-
-    await validateBundleContents(appPath);
-    await run("codesign", [
-      "--verify",
-      "--deep",
-      "--strict",
-      "--verbose=2",
-      appPath,
-    ]);
-    const signature = await run("codesign", [
-      "-dv",
-      "--verbose=4",
-      appPath,
-    ]);
-    const signatureDetail = `${signature.stdout}\n${signature.stderr}`;
-    if (distribution) {
-      if (!signatureDetail.includes("Authority=Developer ID Application:")) {
+  if (platform === "darwin") {
+    await run("unzip", ["-t", artifactPath]);
+    const archiveListing = await run("unzip", ["-Z1", artifactPath]);
+    const archiveAppName = validateArchiveEntries(
+      archiveListing.stdout.split(/\r?\n/u),
+    );
+    const extractionDirectory = await mkdtemp(
+      join(tmpdir(), "decision-release-verify-"),
+    );
+    try {
+      await run("unzip", ["-qq", artifactPath, "-d", extractionDirectory]);
+      const appPath = join(extractionDirectory, archiveAppName);
+      const [shortVersion, bundleVersion] = await Promise.all([
+        plistValue(appPath, "CFBundleShortVersionString"),
+        plistValue(appPath, "CFBundleVersion"),
+      ]);
+      if (shortVersion !== version || bundleVersion !== version) {
         throw new Error(
-          "Distribution artifact is not signed by a Developer ID Application",
+          `App bundle version ${shortVersion}/${bundleVersion} does not match ${version}`,
         );
       }
-      await run("spctl", [
-        "--assess",
-        "--type",
-        "execute",
+
+      await validateBundleContents(appPath);
+      await run("codesign", [
+        "--verify",
+        "--deep",
+        "--strict",
+        "--verbose=2",
+        appPath,
+      ]);
+      const signature = await run("codesign", [
+        "-dv",
         "--verbose=4",
         appPath,
       ]);
-      await run("xcrun", ["stapler", "validate", appPath]);
+      const signatureDetail = `${signature.stdout}\n${signature.stderr}`;
+      if (distribution) {
+        if (!signatureDetail.includes("Authority=Developer ID Application:")) {
+          throw new Error(
+            "Distribution artifact is not signed by a Developer ID Application",
+          );
+        }
+        await run("spctl", [
+          "--assess",
+          "--type",
+          "execute",
+          "--verbose=4",
+          appPath,
+        ]);
+        await run("xcrun", ["stapler", "validate", appPath]);
+      }
+    } finally {
+      await rm(extractionDirectory, { recursive: true, force: true });
     }
-  } finally {
-    await rm(extractionDirectory, { recursive: true, force: true });
+  } else {
+    validatePortableExecutable(await readFile(artifactPath));
   }
 
   const artifactStat = await stat(artifactPath);
+  if (artifactStat.size < 1024 * 1024) {
+    throw new Error("Release artifact is unexpectedly small");
+  }
   const sha256 = await fileSha256(artifactPath);
+  const { stdout: commitOutput } = await run("git", [
+    "-C",
+    repositoryRoot,
+    "rev-parse",
+    "HEAD",
+  ]);
+  const sourceCommit = commitOutput.trim();
   const documents = createReleaseDocuments({
     productName,
     version,
@@ -347,12 +394,17 @@ export const verifyReleaseArtifact = async ({
     artifactName,
     bytes: artifactStat.size,
     sha256,
+    signature:
+      distribution && platform === "darwin"
+        ? "developer-id"
+        : target.signature,
+    sourceCommit,
   });
   const releaseDirectory = join(repositoryRoot, "out", "release");
   await mkdir(releaseDirectory, { recursive: true });
-  const checksumName = `${artifactName}.sha256`;
-  const manifestName = `decision-${platform}-${arch}.json`;
+  const { checksumName, manifestName } = target;
   await Promise.all([
+    copyFile(artifactPath, join(releaseDirectory, artifactName)),
     writeAtomic(join(releaseDirectory, checksumName), documents.checksum),
     writeAtomic(
       join(releaseDirectory, manifestName),
@@ -366,6 +418,8 @@ export const verifyReleaseArtifact = async ({
     artifact: artifactName,
     bytes: artifactStat.size,
     sha256,
+    signature: documents.manifest.signature,
+    sourceCommit,
     checksum: checksumName,
     manifest: manifestName,
   };
@@ -393,6 +447,8 @@ const main = async () => {
     distribution: options.distribution,
     requireTag: options.requireTag,
     tag,
+    platform: options.platform,
+    arch: options.arch,
   });
   process.stdout.write(`${JSON.stringify(result)}\n`);
 };

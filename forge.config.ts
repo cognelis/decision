@@ -1,8 +1,10 @@
+import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import type { ForgeConfig } from "@electron-forge/shared-types";
 
 import { readDecisionEnvironment } from "./config/decision-environment.mjs";
+import packageJson from "./package.json";
 
 type MacDistributionConfig = Pick<
   NonNullable<ForgeConfig["packagerConfig"]>,
@@ -137,6 +139,29 @@ const ignorePackagedSource = (file: string): boolean => {
   ) {
     return true;
   }
+  const normalized = file.replaceAll("\\", "/").toLowerCase();
+  const components = normalized.split("/").filter(Boolean);
+  const dependencyCache =
+    normalized.startsWith("/node_modules/") &&
+    components.some((component) =>
+      [".vite", ".vite-temp"].includes(component),
+    );
+  const dependencyDocumentation =
+    normalized.startsWith("/node_modules/") &&
+    /\.(?:markdown|md)$/u.test(normalized);
+  if (
+    normalized.endsWith(".map") ||
+    normalized.endsWith("/.package-lock.json") ||
+    dependencyCache ||
+    dependencyDocumentation ||
+    components.some((component) =>
+      ["__tests__", "fixture", "fixtures", "test", "tests"].includes(
+        component,
+      ),
+    )
+  ) {
+    return true;
+  }
   return !(
     file === "/.vite" ||
     file.startsWith("/.vite/") ||
@@ -155,7 +180,7 @@ const config: ForgeConfig = {
     executableName: "Decision",
     appBundleId: "com.cognelis.decision",
     appCategoryType: "public.app-category.developer-tools",
-    icon: "apps/desktop/assets/app-icon.icns",
+    icon: "apps/desktop/assets/app-icon",
     extraResource: [
       "dist/bridge",
       "dist/semantic",
@@ -168,7 +193,17 @@ const config: ForgeConfig = {
     ...createMacDistributionConfig(process.env),
   },
   rebuildConfig: {},
-  makers: [new MakerZIP({}, ["darwin"])],
+  makers: [
+    new MakerZIP({}, ["darwin"]),
+    new MakerSquirrel({
+      name: "Decision",
+      authors: "Cognelis contributors",
+      description: "Local-first decision capture and review platform",
+      setupExe: `Decision-${packageJson.version}-win-x64-Setup.exe`,
+      setupIcon: "apps/desktop/assets/app-icon.ico",
+      noMsi: true,
+    }),
+  ],
   plugins: [
     new VitePlugin({
       build: [

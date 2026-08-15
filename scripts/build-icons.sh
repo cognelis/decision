@@ -26,8 +26,9 @@ trap cleanup EXIT INT TERM
 app_png="$icon_work_dir/app-1024.png"
 mono_png="$icon_work_dir/template-1024.png"
 iconset="$icon_work_dir/app-icon.iconset"
+ico_dir="$icon_work_dir/app-icon.ico-images"
 electron_bin="$project_root/node_modules/.bin/electron"
-mkdir -p "$iconset"
+mkdir -p "$iconset" "$ico_dir"
 
 if [ ! -x "$electron_bin" ]; then
   echo "Missing Electron runtime: run npm install first" >&2
@@ -75,3 +76,15 @@ make_png "$app_png" 512 "$iconset/icon_512x512.png"
 make_png "$app_png" 1024 "$iconset/icon_512x512@2x.png"
 
 iconutil -c icns "$iconset" -o "$assets_dir/app-icon.icns"
+
+for size in 16 32 48 64 128 256; do
+  make_png "$app_png" "$size" "$ico_dir/$size.png"
+done
+node "$project_root/scripts/build-ico.mjs" \
+  "$assets_dir/app-icon.ico" \
+  "16:$ico_dir/16.png" \
+  "32:$ico_dir/32.png" \
+  "48:$ico_dir/48.png" \
+  "64:$ico_dir/64.png" \
+  "128:$ico_dir/128.png" \
+  "256:$ico_dir/256.png"

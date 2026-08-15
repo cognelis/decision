@@ -7,21 +7,26 @@ const THIS_TEST = "scripts/test/release-portability.test.ts";
 
 const LEGACY_BRAND_ALLOWLIST = new Set([
   "apps/bridge/resources/decision-island-bridge",
+  "apps/bridge/resources/decision-island-bridge.cmd",
   "apps/bridge/src/runtime-client.ts",
   "apps/bridge/test/hooks-cli.test.ts",
   "apps/bridge/test/install-cli.test.ts",
   "apps/bridge/test/runtime-client.test.ts",
+  "apps/bridge/test/vite-config.test.ts",
   "apps/bridge/vite.config.ts",
   "apps/desktop/src/main/application-paths.ts",
   "apps/desktop/src/main/integration-status.ts",
   "apps/desktop/test/application-paths.test.ts",
   "apps/desktop/test/brand-migration.test.ts",
+  "apps/desktop/test/bridge-path.test.ts",
   "apps/desktop/test/forge-config.test.ts",
   "apps/desktop/test/integration-status.test.ts",
   "config/decision-environment.mjs",
   "docs/superpowers/plans/2026-08-15-cognelis-brand-migration.md",
+  "docs/superpowers/plans/2026-08-16-cross-platform-binary-release.md",
   "docs/superpowers/specs/2026-08-14-github-open-source-publishing-design.md",
   "docs/superpowers/specs/2026-08-15-cognelis-migration-and-github-publication-design.md",
+  "docs/superpowers/specs/2026-08-16-cross-platform-binary-release-design.md",
   "packages/integrations/src/claude.ts",
   "packages/integrations/src/codex.ts",
   "packages/integrations/src/hooks.ts",
@@ -34,7 +39,11 @@ const LEGACY_BRAND_ALLOWLIST = new Set([
   "packages/storage/test/methodology.test.ts",
   "scripts/test/decision-environment.test.ts",
   "scripts/build-foundation-model-helper.sh",
+  "scripts/build-native.mjs",
   "scripts/build-liquid-glass-addon.sh",
+  "scripts/platform-artifacts.mjs",
+  "scripts/smoke-support.mjs",
+  "scripts/test/smoke-support.test.ts",
 ]);
 
 const candidateFiles = (): string[] =>
@@ -62,6 +71,23 @@ const matches = (
   files.filter((path) => pattern.test(readFileSync(path, "utf8")));
 
 describe("release candidate portability", () => {
+  it("documents both supported downloads and the unsigned release contract", () => {
+    const readme = readFileSync("README.md", "utf8");
+    const release = readFileSync("docs/release.md", "utf8");
+
+    for (const document of [readme, release]) {
+      expect(document).toContain("Windows x64");
+      expect(document).toContain("Apple Silicon");
+      expect(document).toContain("1.1.0");
+    }
+    expect(release).toMatch(/"?schemaVersion"?: 2/u);
+    expect(release).toContain('signature: "unsigned"');
+    expect(release).toContain('signature: "ad-hoc"');
+    expect(release).toContain("macos-26");
+    expect(release).toContain("manual");
+    expect(release).not.toMatch(/ad-hoc[^\n。]*不能公开/iu);
+  });
+
   it("keeps common local credential files out of version control", () => {
     const ignored = new Set(
       readFileSync(".gitignore", "utf8")

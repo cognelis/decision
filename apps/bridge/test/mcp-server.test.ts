@@ -96,7 +96,7 @@ describe("decision consultation MCP", () => {
     });
     expect(initialized).toMatchObject({
       result: {
-        serverInfo: { name: "decision", version: "1.0.0" },
+        serverInfo: { name: "decision", version: "1.1.0" },
       },
     });
     await clientTransport.send({

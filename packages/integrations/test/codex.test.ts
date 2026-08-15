@@ -63,6 +63,21 @@ describe("Codex integration", () => {
     ).toHaveLength(3);
   });
 
+  it("renders Windows hooks without POSIX environment syntax", () => {
+    const windowsBridge =
+      "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd";
+    const merged = mergeCodexHooks(
+      existingCodexHooks,
+      windowsBridge,
+      "win32",
+    );
+    const command = merged.hooks.Stop!.at(-1)?.hooks[0]?.command;
+
+    expect(command).toBe(
+      'set "DECISION_HOOK=1" && call "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" hook stop codex',
+    );
+  });
+
   it("replaces an installed legacy bridge path with the current one", () => {
     const legacyPath =
       "/Applications/Decision Island Legacy.app/Contents/Resources/bridge/decision-bridge";

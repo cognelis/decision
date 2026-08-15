@@ -8,6 +8,13 @@ import { defineConfig } from "vite";
 
 const outputDirectory = "dist/bridge";
 
+export const bridgeWrapperNames = [
+  "decision-bridge",
+  "decision-island-bridge",
+  "decision-bridge.cmd",
+  "decision-island-bridge.cmd",
+] as const;
+
 export default defineConfig({
   resolve: {
     conditions: ["node"],
@@ -36,12 +43,13 @@ export default defineConfig({
       name: "decision-bridge-wrappers",
       closeBundle: async () => {
         await mkdir(outputDirectory, { recursive: true });
-        const wrappers = ["decision-bridge", "decision-island-bridge"];
         await Promise.all(
-          wrappers.map(async (wrapper) => {
+          bridgeWrapperNames.map(async (wrapper) => {
             const target = `${outputDirectory}/${wrapper}`;
             await copyFile(`apps/bridge/resources/${wrapper}`, target);
-            await chmod(target, 0o755);
+            if (!wrapper.endsWith(".cmd")) {
+              await chmod(target, 0o755);
+            }
           }),
         );
       },

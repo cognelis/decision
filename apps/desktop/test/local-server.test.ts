@@ -36,10 +36,12 @@ const startServer = async (smokeMode = false) => {
     feedbackVersion: DECISION_CONSULTATION_FEEDBACK_VERSION,
     status: "accepted" as const,
   }));
+  const smokeShutdown = vi.fn();
   const server = new LocalCaptureServer({
     queue,
     token,
     smokeMode,
+    smokeShutdown,
     ingestCandidate,
     ingestSemanticPair,
     consult,
@@ -53,6 +55,7 @@ const startServer = async (smokeMode = false) => {
     ingestSemanticPair,
     consult,
     submitConsultationFeedback,
+    smokeShutdown,
     queue,
     server,
   };
@@ -354,6 +357,28 @@ describe("LocalCaptureServer", () => {
 
     expect(completion.status).toBe(204);
     expect(smoke.queue.snapshot().current).toBeNull();
+    await smoke.server.stop();
+  });
+
+  it("exposes graceful shutdown only in explicit smoke mode", async () => {
+    const normal = await startServer();
+    const unavailable = await authorizedFetch(
+      `${normal.baseUrl}/v1/smoke/shutdown`,
+      { method: "POST" },
+    );
+    expect(unavailable.status).toBe(404);
+    expect(normal.smokeShutdown).not.toHaveBeenCalled();
+    await normal.server.stop();
+
+    const smoke = await startServer(true);
+    const shutdown = await authorizedFetch(
+      `${smoke.baseUrl}/v1/smoke/shutdown`,
+      { method: "POST" },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(shutdown.status).toBe(204);
+    expect(smoke.smokeShutdown).toHaveBeenCalledTimes(1);
     await smoke.server.stop();
   });
 });

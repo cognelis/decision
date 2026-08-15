@@ -4,7 +4,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, posix, win32 } from "node:path";
 
 import { readDecisionEnvironmentWithSource } from "../../../../config/decision-environment.mjs";
 
@@ -54,31 +54,68 @@ const defaultDirectories = (
   homeDirectory: string,
   environment: NodeJS.ProcessEnv,
 ): { current: string; legacy: string } => {
+  const paths = platform === "win32" ? win32 : posix;
   if (platform === "darwin") {
-    const applicationSupport = join(
+    const applicationSupport = paths.join(
       homeDirectory,
       "Library",
       "Application Support",
     );
     return {
-      current: join(applicationSupport, "Decision"),
-      legacy: join(applicationSupport, "Decision Island"),
+      current: paths.join(applicationSupport, "Decision"),
+      legacy: paths.join(applicationSupport, "Decision Island"),
     };
   }
   if (platform === "win32") {
     const applicationData =
-      environment.APPDATA ?? join(homeDirectory, "AppData", "Roaming");
+      environment.APPDATA ?? paths.join(homeDirectory, "AppData", "Roaming");
     return {
-      current: join(applicationData, "Decision"),
-      legacy: join(applicationData, "Decision Island"),
+      current: paths.join(applicationData, "Decision"),
+      legacy: paths.join(applicationData, "Decision Island"),
     };
   }
   const configurationHome =
-    environment.XDG_CONFIG_HOME ?? join(homeDirectory, ".config");
+    environment.XDG_CONFIG_HOME ?? paths.join(homeDirectory, ".config");
   return {
-    current: join(configurationHome, "decision"),
-    legacy: join(configurationHome, "decision-island"),
+    current: paths.join(configurationHome, "decision"),
+    legacy: paths.join(configurationHome, "decision-island"),
   };
+};
+
+interface ObsidianConfigurationPathOptions {
+  platform?: NodeJS.Platform;
+  homeDirectory?: string;
+  appData?: string;
+  xdgConfigHome?: string;
+}
+
+export const resolveObsidianConfigurationPath = (
+  options: ObsidianConfigurationPathOptions = {},
+): string => {
+  const platform = options.platform ?? process.platform;
+  const homeDirectory = options.homeDirectory ?? homedir();
+  const paths = platform === "win32" ? win32 : posix;
+  if (platform === "win32") {
+    const applicationData =
+      options.appData ??
+      process.env.APPDATA ??
+      paths.join(homeDirectory, "AppData", "Roaming");
+    return paths.join(applicationData, "obsidian", "obsidian.json");
+  }
+  if (platform === "darwin") {
+    return paths.join(
+      homeDirectory,
+      "Library",
+      "Application Support",
+      "obsidian",
+      "obsidian.json",
+    );
+  }
+  const configurationHome =
+    options.xdgConfigHome ??
+    process.env.XDG_CONFIG_HOME ??
+    paths.join(homeDirectory, ".config");
+  return paths.join(configurationHome, "obsidian", "obsidian.json");
 };
 
 const errorMessage = (error: unknown): string =>

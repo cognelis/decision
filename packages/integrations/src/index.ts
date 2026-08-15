@@ -17,7 +17,7 @@ export type {
   HookGroup,
   HookHandler,
 } from "./hooks.js";
-export { installIntegrations } from "./install.js";
+export { commandInvocation, installIntegrations } from "./install.js";
 export type {
   CommandResult,
   CommandRunner,

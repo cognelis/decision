@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { UserConfig } from "vite";
 
-import bridgeConfig from "../vite.config.js";
+import bridgeConfig, { bridgeWrapperNames } from "../vite.config.js";
 
 describe("bridge Vite config", () => {
   it("bundles stdio dependencies for the Node runtime", () => {
@@ -17,5 +17,14 @@ describe("bridge Vite config", () => {
 
     expect(external).toBeInstanceOf(Array);
     expect(external).toContain("node:sqlite");
+  });
+
+  it("packages current and 1.x-compatible wrappers for both shell families", () => {
+    expect(bridgeWrapperNames).toEqual([
+      "decision-bridge",
+      "decision-island-bridge",
+      "decision-bridge.cmd",
+      "decision-island-bridge.cmd",
+    ]);
   });
 });

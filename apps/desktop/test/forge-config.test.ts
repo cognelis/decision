@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
 import forgeConfig, {
   createMacDistributionConfig,
@@ -133,12 +134,55 @@ describe("macOS packaging", () => {
   });
 
   it("uses the concise product and executable name", () => {
+    expect(packageJson).toMatchObject({
+      author: "Cognelis contributors",
+      description: expect.stringContaining("decision"),
+    });
     expect(packageJson.productName).toBe("Decision");
     expect(forgeConfig.packagerConfig).toMatchObject({
       name: "Decision",
       executableName: "Decision",
       appBundleId: "com.cognelis.decision",
+      icon: "apps/desktop/assets/app-icon",
     });
+  });
+
+  it("builds a deterministic Windows x64 Squirrel installer", () => {
+    expect(packageJson.dependencies).toHaveProperty(
+      "electron-squirrel-startup",
+    );
+    expect(packageJson.devDependencies).toHaveProperty(
+      "@electron-forge/maker-squirrel",
+      "7.11.2",
+    );
+    expect(
+      (forgeConfig.makers ?? []).map((maker) =>
+        typeof maker === "object" && maker !== null && "name" in maker
+          ? maker.name
+          : undefined,
+      ),
+    ).toEqual([
+      "zip",
+      "squirrel",
+    ]);
+    expect(JSON.stringify(forgeConfig.makers)).toContain(
+      `Decision-${packageJson.version}-win-x64-Setup.exe`,
+    );
+    expect(JSON.stringify(forgeConfig.makers)).toContain(
+      "apps/desktop/assets/app-icon.ico",
+    );
+  });
+
+  it("exits before configuring user data for Squirrel lifecycle events", () => {
+    const source = readFileSync(
+      new URL("../src/main/index.ts", import.meta.url),
+      "utf8",
+    );
+
+    expect(source).toContain('from "electron-squirrel-startup"');
+    expect(source).toMatch(
+      /if \(squirrelStartup\) \{\s*app\.quit\(\);\s*\} else \{[\s\S]*configureElectronUserDataPath\(app\)/u,
+    );
   });
 
   it("packages semantic helper metadata but never model weights", () => {
@@ -180,23 +224,21 @@ describe("macOS packaging", () => {
     expect(ignore("/node_modules/@node-llama-cpp")).toBe(false);
     expect(ignore("/node_modules/@duckdb")).toBe(true);
     expect(ignore("/node_modules/.bin")).toBe(true);
+    expect(ignore("/node_modules/.vite/cache.json")).toBe(true);
+    expect(ignore("/node_modules/a/dist/index.js.map")).toBe(true);
+    expect(ignore("/node_modules/a/README.md")).toBe(true);
+    expect(ignore("/node_modules/a/fixtures/secret.json")).toBe(true);
+    expect(ignore("/node_modules/a/test/runtime.test.js")).toBe(true);
+    expect(ignore("/node_modules/.package-lock.json")).toBe(true);
     expect(ignore("/apps")).toBe(true);
   });
 
   it.each(["build", "make"] as const)(
-    "builds native helpers before Forge in %s",
+    "dispatches native helpers before Forge in %s",
     (script) => {
       const command = packageJson.scripts[script];
-      expect(command).toContain(
-        "npm run build:foundation-helper",
-      );
-      expect(command).toContain(
-        "npm run build:liquid-glass",
-      );
-      expect(command.indexOf("build:foundation-helper")).toBeLessThan(
-        command.indexOf("electron-forge"),
-      );
-      expect(command.indexOf("build:liquid-glass")).toBeLessThan(
+      expect(command).toContain("npm run build:native");
+      expect(command.indexOf("build:native")).toBeLessThan(
         command.indexOf("electron-forge"),
       );
     },

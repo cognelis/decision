@@ -35,6 +35,32 @@ export interface CommandSpec {
 const shellQuote = (value: string): string =>
   `'${value.replaceAll("'", `'\"'\"'`)}'`;
 
+const assertSingleLine = (value: string, label: string): void => {
+  if (/\0|\r|\n/u.test(value)) {
+    throw new Error(`${label} must be one command line`);
+  }
+};
+
+const windowsBridgeQuote = (value: string): string => {
+  assertSingleLine(value, "bridge path");
+  if (value.includes('"')) {
+    throw new Error("Windows bridge path cannot contain a quote");
+  }
+  return `"${value.replaceAll("%", "%%")}"`;
+};
+
+const hookCommand = (
+  bridgePath: string,
+  operation: "post-tool-use" | "stop" | "user-prompt-submit",
+  client: HookClient,
+  platform: NodeJS.Platform,
+): string =>
+  platform === "win32"
+    ? `set "${CURRENT_HOOK_MARKER}" && call ${windowsBridgeQuote(
+        bridgePath,
+      )} hook ${operation} ${client}`
+    : `${CURRENT_HOOK_MARKER} ${shellQuote(bridgePath)} hook ${operation} ${client}`;
+
 const parseHandler = (value: unknown, path: string): HookHandler => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(`${path} contains an invalid hook handler`);
@@ -99,6 +125,7 @@ export const mergeHookDocument = (
   input: unknown,
   bridgePath: string,
   client: HookClient,
+  platform: NodeJS.Platform = process.platform,
 ): HookConfigDocument => {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     throw new Error("settings must be a JSON object");
@@ -115,9 +142,7 @@ export const mergeHookDocument = (
     operation: "post-tool-use" | "stop" | "user-prompt-submit",
   ): HookHandler => ({
     type: "command",
-    command:
-      `${CURRENT_HOOK_MARKER} ${shellQuote(bridgePath)} ` +
-      `hook ${operation} ${client}`,
+    command: hookCommand(bridgePath, operation, client, platform),
     timeout: 5,
   });
   events.PostToolUse = [
