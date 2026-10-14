@@ -10,11 +10,14 @@ import {
 } from "../src/main/semantic/qwen-provider.js";
 import {
   QWEN_MODEL_MANIFEST,
+  QWEN_4B_MODEL_MANIFEST,
   type QwenModelVerification,
 } from "../src/main/semantic/model-manifest.js";
 import {
+  qwenSemanticOutputJsonSchema,
   semanticOutputJsonSchema,
   semanticSystemPrompt,
+  SEMANTIC_PROMPT_VERSION,
 } from "../src/main/model/semantic-prompt.js";
 
 const validOutput: SemanticClassification = {
@@ -26,7 +29,7 @@ const validOutput: SemanticClassification = {
   confidence: 0.94,
   provider: "qwen",
   modelVersion: "qwen3.5-2b-q4-k-m",
-  promptVersion: "semantic-v1",
+  promptVersion: SEMANTIC_PROMPT_VERSION,
 };
 
 const availableModel = (): QwenModelVerification => ({
@@ -75,7 +78,7 @@ const createRuntime = (
   const grammar = {};
   const llama = {
     loadModel: vi.fn(async () => model),
-    createGrammarForJsonSchema: vi.fn(async () => grammar),
+    createGrammarForJsonSchema: vi.fn(async (_schema: unknown) => grammar),
     dispose: vi.fn(async () => {
       calls.push("llama");
     }),
@@ -111,6 +114,29 @@ const input = {
 };
 
 describe("QwenModelProvider", () => {
+  it("switches between verified models after the active inference and releases the old runtime", async () => {
+    let finish!: (value: string) => void;
+    const fake = createRuntime(() => new Promise((resolve) => { finish = resolve; }));
+    let model = QWEN_MODEL_MANIFEST as import("../src/main/semantic/model-manifest.js").QwenModelManifest;
+    const provider = new QwenModelProvider({ modelsDirectory: "/models", verifyModel: async () => ({ availability: "available", modelPath: `/models/${model.fileName}`, manifest: model }), loadRuntime: async () => fake.runtime });
+    try {
+      const first = provider.invoke(input);
+      await vi.waitFor(() => expect(fake.session.prompt).toHaveBeenCalledOnce());
+      provider.setModel(QWEN_4B_MODEL_MANIFEST.id);
+      model = QWEN_4B_MODEL_MANIFEST;
+      const second = provider.invoke(input);
+      expect(fake.model.dispose).not.toHaveBeenCalled();
+      const output = JSON.stringify(validOutput);
+      finish(output);
+      expect((await first).classification.modelVersion).toBe(QWEN_MODEL_MANIFEST.id);
+      await vi.waitFor(() => expect(fake.session.prompt).toHaveBeenCalledTimes(2));
+      expect(fake.model.dispose).toHaveBeenCalledOnce();
+      expect(fake.llama.loadModel).toHaveBeenLastCalledWith({ modelPath: `/models/${QWEN_4B_MODEL_MANIFEST.fileName}` });
+      finish(output);
+      expect((await second).classification.modelVersion).toBe(QWEN_4B_MODEL_MANIFEST.id);
+      expect(await provider.status()).toMatchObject({ modelVersion: QWEN_4B_MODEL_MANIFEST.id });
+    } finally { await provider.close(); }
+  });
   it("uses a request-specific system prompt and grammar for generic structured generation", async () => {
     const fake = createRuntime(async () =>
       JSON.stringify({ title: "可逆优先" }),
@@ -160,12 +186,43 @@ describe("QwenModelProvider", () => {
     );
   });
 
+  it("adapts large string bounds before native grammar compilation while retaining the original schema", async () => {
+    const fake = createRuntime(async () => '{"title":"ok"}');
+    fake.llama.createGrammarForJsonSchema.mockImplementation(async (schema: unknown) => {
+      if (JSON.stringify(schema).includes('"maxLength":4000')) throw new Error("Failed to parse grammar");
+      return {};
+    });
+    const provider = new QwenModelProvider({ modelsDirectory: "/models", verifyModel: async () => availableModel(), loadRuntime: async () => fake.runtime });
+    const outputSchema = { type: "object", properties: { title: { type: "string", maxLength: 4000 } }, required: ["title"] };
+    await expect(provider.generate({ requestId: "grammar-test", purpose: "pr-review", promptVersion: "test", schemaVersion: "test", locale: "zh-CN", systemPrompt: "JSON", userPrompt: "test", outputSchema, maxOutputTokens: 100 })).resolves.toMatchObject({ parsedOutput: { title: "ok" }, traceInput: { outputSchema } });
+  });
+
   it("bounds copied semantic fields in the generation grammar", () => {
     const properties = semanticOutputJsonSchema.properties as Record<
       string,
       Record<string, unknown>
     >;
 
+    expect(properties.question).toMatchObject({
+      type: ["string", "null"],
+      maxLength: 160,
+    });
+    expect(properties.answerExcerpt).toMatchObject({
+      type: ["string", "null"],
+      maxLength: 120,
+    });
+    expect(properties.optionLabels).toMatchObject({
+      maxItems: 8,
+      items: expect.objectContaining({ maxLength: 80 }),
+    });
+  });
+
+  it("generates bounded Qwen grammar for nullable semantic excerpts", async () => {
+    const properties =
+      qwenSemanticOutputJsonSchema.properties as Record<
+        string,
+        Record<string, unknown>
+      >;
     expect(properties.question).toMatchObject({
       oneOf: [
         { type: "string", maxLength: 160 },
@@ -178,10 +235,18 @@ describe("QwenModelProvider", () => {
         { type: "null" },
       ],
     });
-    expect(properties.optionLabels).toMatchObject({
-      maxItems: 8,
-      items: expect.objectContaining({ maxLength: 80 }),
-    });
+
+    const { getGbnfGrammarForGbnfJsonSchema } =
+      await import(
+        "../../../node_modules/node-llama-cpp/dist/utils/gbnfJson/getGbnfGrammarForGbnfJsonSchema.js"
+    );
+    const grammar = getGbnfGrammarForGbnfJsonSchema(
+      qwenSemanticOutputJsonSchema as Parameters<
+        typeof getGbnfGrammarForGbnfJsonSchema
+      >[0],
+    );
+    expect(grammar).toContain("{0,160}");
+    expect(grammar).toContain("{0,120}");
   });
 
   it("states copied-field limits because the runtime grammar does not enforce maxLength", () => {
@@ -240,6 +305,9 @@ describe("QwenModelProvider", () => {
       },
       providerDurationMs: expect.any(Number),
     });
+    expect(attempt.traceInput.outputSchema).toEqual(
+      qwenSemanticOutputJsonSchema,
+    );
   });
 
   it("loads one offline runtime, model, context, session, and JSON grammar", async () => {
@@ -283,7 +351,9 @@ describe("QwenModelProvider", () => {
     });
     expect(
       fake.llama.createGrammarForJsonSchema,
-    ).toHaveBeenCalledOnce();
+    ).toHaveBeenCalledWith(
+      qwenSemanticOutputJsonSchema,
+    );
     expect(fake.session.prompt).toHaveBeenCalledWith(
       expect.stringContaining("<assistant_message>"),
       {
@@ -397,7 +467,7 @@ describe("QwenModelProvider", () => {
     ).rejects.toMatchObject({
       code: "timeout",
       diagnosticExcerpt:
-        "Qwen classification timed out after 10 ms",
+        "Qwen inference timed out after 10 ms",
     });
 
     const abortController = new AbortController();
@@ -479,6 +549,8 @@ describe("QwenModelProvider", () => {
 
     await expect(provider.classify(input)).rejects.toMatchObject({
       code: "provider_invalid_output",
+      // Said by its shape: V8's message quoted what the model wrote, kept with trace content turned off.
+      diagnosticExcerpt: expect.stringMatching(/^Qwen output was not valid JSON · length=\d+ opens=object ends=other · stops before it closes$/u),
       usage: {
         source: "runtime_measured",
         inputTokens: 110,

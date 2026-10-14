@@ -18,11 +18,24 @@ export interface MethodologyEvidenceMatchInput {
 
 export interface MethodologyEvidenceMatch {
   sourceDecisionId: string;
+/** How much of the principle's wording this decision reuses, 0 to 100. */
   score: number;
   strength: MethodologyEvidenceMatchStrength;
   reason: string;
   matchedTerms: string[];
   alreadyLinked: boolean;
+  /** How this decision was found. Semantic hits share no wording to show. */
+  matchKind: "keyword" | "semantic";
+}
+
+export interface MethodologyEvidenceSemanticCandidate {
+  sourceDecisionId: string;
+  /**
+   * Order among the semantic candidates, best first at the lowest value. It is
+   * a rank and not a similarity: the retrieval score behind it blends lexical
+   * and vector components, so its magnitude means nothing on its own.
+   */
+  rank: number;
 }
 
 const genericTerms = new Set([
@@ -207,6 +220,7 @@ export const buildMethodologyEvidenceMatches = (
         reason: `${signalText}与这条复盘存在文本重合${termText}。`,
         matchedTerms,
         alreadyLinked: linked.has(item.id),
+        matchKind: "keyword" as const,
         reviewedAt: item.reviewedAt,
       };
     })
@@ -220,4 +234,48 @@ export const buildMethodologyEvidenceMatches = (
     )
     .slice(0, boundedLimit(limit))
     .map(({ reviewedAt: _reviewedAt, ...item }) => item);
+};
+
+/**
+ * Appends decisions that read like the principle but share no wording with it.
+ *
+ * Token overlap can only find a decision that reuses the principle's words, so
+ * a principle written months later in different language matches nothing — and
+ * an empty suggestion list reads as "there is no evidence" rather than "this
+ * matcher cannot see it". These are kept apart from the overlap matches: never
+ * `strong`, never ranked against them, and each says plainly that it has no
+ * shared wording to show for itself.
+ */
+export const withSemanticEvidenceMatches = (
+  matches: MethodologyEvidenceMatch[],
+  candidates: MethodologyEvidenceSemanticCandidate[],
+  linked: ReadonlySet<string>,
+  limit = 3,
+): MethodologyEvidenceMatch[] => {
+  const already = new Set(matches.map((match) => match.sourceDecisionId));
+  const supplements = candidates
+    .filter(
+      (candidate) =>
+        !already.has(candidate.sourceDecisionId) &&
+        candidate.sourceDecisionId.trim().length > 0,
+    )
+    .sort(
+      (left, right) =>
+        left.rank - right.rank ||
+        left.sourceDecisionId.localeCompare(right.sourceDecisionId),
+    )
+    .slice(0, boundedLimit(limit))
+    .map((candidate) => ({
+      sourceDecisionId: candidate.sourceDecisionId,
+      // Zero is the honest value, not a placeholder: no wording overlapped.
+      score: 0,
+      // Nothing explainable backs a semantic hit, so it never claims strength.
+      strength: "possible" as const,
+      reason:
+        "与这条原则语义相近，但没有共同用词可以展示；请自行核对是否确实是同一判断。",
+      matchedTerms: [],
+      alreadyLinked: linked.has(candidate.sourceDecisionId),
+      matchKind: "semantic" as const,
+    }));
+  return [...matches, ...supplements];
 };

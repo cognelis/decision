@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "date": "2026-10-12",
+  "corpusSha256": "be100a9c8036a2b98ab57bfb40451153ee63ea9191fb0784e4cb3dc2af370da9",
+  "promptVersion": "semantic-v2",
+  "before": {
+    "samples": 57,
+    "truePositives": 15,
+    "falsePositives": 9,
+    "falseNegatives": 1,
+    "trueNegatives": 32,
+    "precision": 0.625,
+    "recall": 0.9375,
+    "falsePositiveRate": 0.21951219512195122,
+    "highTruePositives": 2,
+    "highFalsePositives": 1,
+    "mediumFalsePositives": 8,
+    "missCaseIds": [
+      "real-024"
+    ],
+    "falsePositiveCaseIds": [
+      "real-022",
+      "real-023",
+      "real-025",
+      "real-033",
+      "real-036",
+      "real-043",
+      "real-044",
+      "real-045",
+      "real-047"
+    ]
+  },
+  "after": {
+    "samples": 57,
+    "truePositives": 16,
+    "falsePositives": 1,
+    "falseNegatives": 0,
+    "highFalsePositives": 0,
+    "falsePositiveCaseIds": [
+      "real-025"
+    ]
+  },
+  "note": "修复验证使用同一组已标注样本，属于回归验证，不是新的盲测结果。原文与原始输出不进入 Git。"
+}

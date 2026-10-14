@@ -10,24 +10,22 @@ if (theme !== "light" && theme !== "dark") {
   throw new Error(`Unsupported rationale layout theme: ${theme}`);
 }
 if (
-  !["default", "expanded", "expanded-no-record", "hover", "no-record"].includes(
-    interaction,
-  )
+  ![
+    "default",
+    "expanded",
+    "hover",
+    "no-record",
+    "alternatives-expanded",
+  ].includes(interaction)
 ) {
   throw new Error(`Unsupported rationale layout interaction: ${interaction}`);
 }
 let server;
 let window;
 
-const close = async (exitCode) => {
-  if (window !== undefined && !window.isDestroyed()) {
-    window.destroy();
-  }
-  if (server !== undefined) {
-    await server.close();
-  }
-  app.exit(exitCode);
-};
+const close = require("./electron-check-lifecycle.cjs").createElectronCheckLifecycle({
+  app, getWindow: () => window, getServer: () => server,
+});
 
 const measureRationaleLayout = async () => {
   const { createServer } = await import("vite");
@@ -59,11 +57,12 @@ const measureRationaleLayout = async () => {
     frame: false,
     transparent: true,
     backgroundColor: "#00000000",
-    webPreferences: { offscreen: true },
+    webPreferences: { partition: `preview-${process.pid}`, offscreen: true },
   });
   await window.loadURL(
     `http://127.0.0.1:${port}/?preview=rationale&theme=${theme}`,
   );
+  await require("./preview-sidebar.cjs").expandSidebar(window);
 
   const togglePoint = await window.webContents.executeJavaScript(`
     new Promise((resolve, reject) => {
@@ -88,7 +87,7 @@ const measureRationaleLayout = async () => {
     })
   `);
 
-  if (interaction === "expanded" || interaction === "expanded-no-record") {
+  if (interaction === "expanded") {
     await window.webContents.executeJavaScript(`
       document.querySelector(".context-toggle")?.click();
       new Promise((resolve) =>
@@ -96,9 +95,17 @@ const measureRationaleLayout = async () => {
       );
     `);
   }
-  if (interaction === "no-record" || interaction === "expanded-no-record") {
+  if (interaction === "alternatives-expanded") {
     await window.webContents.executeJavaScript(`
-      document.querySelector(".record-toggle input")?.click();
+      document.querySelector(".decision-alternatives-toggle")?.click();
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+      );
+    `);
+  }
+  if (interaction === "no-record") {
+    await window.webContents.executeJavaScript(`
+      document.querySelector(".rationale-discard")?.click();
       new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve))
       );
@@ -121,6 +128,19 @@ const measureRationaleLayout = async () => {
         const workspace = document.querySelector(".decision-workspace");
         const card = document.querySelector(".decision-workspace-inner");
         const actions = document.querySelector(".rationale-actions");
+        const discard = document.querySelector(".rationale-discard");
+        const answerSummary = document.querySelector(
+          ".decision-answer-summary"
+        );
+        const selectedAnswer = document.querySelector(
+          ".decision-answer-item strong"
+        );
+        const alternatives = document.querySelector(
+          ".decision-alternatives"
+        );
+        const alternativeOptions = Array.from(
+          document.querySelectorAll(".decision-alternatives li")
+        );
         const toggle = document.querySelector(".context-toggle");
         const dialog = document.querySelector('[role="dialog"]');
         const dialogContext = document.querySelector(
@@ -133,15 +153,12 @@ const measureRationaleLayout = async () => {
         const principleOptions = Array.from(
           document.querySelectorAll(".rationale-principle-option")
         );
-        const noRecord =
-          ${JSON.stringify(interaction)} === "no-record" ||
-          ${JSON.stringify(interaction)} === "expanded-no-record";
         if (
           appShell === null || sidebar === null || stage === null ||
-          workspace === null || card === null || actions === null ||
-          toggle === null || (!noRecord && textarea === null)
-          || (!noRecord &&
-            (principleSection === null || principleOptions.length !== 3))
+          workspace === null || card === null || actions === null || discard === null ||
+          answerSummary === null || selectedAnswer === null ||
+          alternatives === null || toggle === null ||
+          textarea === null || principleSection === null || principleOptions.length !== 3
         ) {
           if (Date.now() >= deadline) {
             reject(new Error("Desktop rationale layout did not render"));
@@ -166,6 +183,14 @@ const measureRationaleLayout = async () => {
             resolve({
               actionsBottom: actionsRect.bottom,
               actionsHeight: actionsRect.height,
+              answerFontSize: Number.parseFloat(
+                getComputedStyle(selectedAnswer).fontSize
+              ),
+              answerSummaryVisible: answerSummary !== null,
+              answerSummaryFitsWidth:
+                answerSummary.scrollWidth <= answerSummary.clientWidth + 1,
+              alternativeOptionCount: alternativeOptions.length,
+              alternativesVisible: alternatives !== null,
               appClientHeight: appShell.clientHeight,
               appScrollHeight: appShell.scrollHeight,
               backdropFilter: shellStyles.backdropFilter,
@@ -181,6 +206,8 @@ const measureRationaleLayout = async () => {
                 dialog !== null &&
                 dialogContext !== null &&
                 dialog.contains(dialogContext),
+              discardDisabled: discard.disabled,
+              discardLabel: discard.textContent.trim(),
               inlineContextExpanded:
                 document.querySelector(
                   ".decision-context > .decision-context-body"
@@ -211,6 +238,7 @@ const measureRationaleLayout = async () => {
               workspaceClientHeight: workspace.clientHeight,
               workspaceOverflowY: workspaceStyles.overflowY,
               workspaceScrollHeight: workspace.scrollHeight,
+              workspaceScrollTop: workspace.scrollTop,
             });
           });
         });

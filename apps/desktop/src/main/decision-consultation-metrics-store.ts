@@ -8,13 +8,13 @@ import {
   type DecisionConsultationFeedbackRating,
   type DecisionConsultationResponse,
 } from "@cognelis/decision-protocol";
+import { renameReplacing } from "@cognelis/decision-storage";
 import { randomUUID } from "node:crypto";
 import {
   chmod,
   lstat,
   mkdir,
   readFile,
-  rename,
   stat,
   unlink,
   writeFile,
@@ -266,7 +266,7 @@ export class DecisionConsultationMetricsStore {
         mode: 0o600,
         flag: "wx",
       });
-      await rename(temporary, this.#path);
+      await renameReplacing(temporary, this.#path);
       await chmod(this.#path, 0o600);
     } finally {
       await unlink(temporary).catch(() => undefined);

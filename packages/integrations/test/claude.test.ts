@@ -72,24 +72,42 @@ describe("Claude Code integration", () => {
     ).toHaveLength(3);
   });
 
-  it("renders Windows hooks with cmd syntax and a quoted bridge path", () => {
+  it("runs Windows hooks through cmd without a shell, replacing the cmd-syntax ones", () => {
     const windowsBridge =
       "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd";
-    const merged = mergeClaudeSettings(
-      existingClaudeSettings,
-      windowsBridge,
-      "win32",
-    );
-    const command = merged.hooks.Stop!.at(-1)?.hooks[0]?.command;
+    const before = {
+      hooks: {
+        Stop: [{ hooks: [{ type: "command", command: `set "DECISION_HOOK=1" && call "${windowsBridge}" hook stop claude-code` }] }],
+      },
+    };
+    const merged = mergeClaudeSettings(before, windowsBridge, "win32");
 
-    expect(command).toBe(
-      'set "DECISION_HOOK=1" && call "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" hook stop claude-code',
-    );
+    // Claude Code runs a hook's command in Git Bash, or PowerShell without it: cmd's `set "…" && call` ran in neither.
+    expect(merged.hooks.Stop).toEqual([
+      {
+        hooks: [
+          {
+            type: "command",
+            command: "cmd.exe",
+            args: ["/d", "/v:off", "/c", "call", windowsBridge, "hook", "stop", "claude-code", "DECISION_HOOK=2"],
+            timeout: 5,
+          },
+        ],
+      },
+    ]);
+    expect(() => mergeClaudeSettings({}, "C:\\Users\\R&D\\decision-bridge.cmd", "win32")).toThrow(/^Decision 所在的路径里有命令行会另作解释的字符/u);
+  });
+
+  it("starts the MCP bridge through cmd on Windows, where it is a .cmd", () => {
+    const windowsBridge = "C:\\Users\\Ada Lovelace\\Decision\\decision-bridge.cmd";
+    expect(claudeMcpCommands(windowsBridge, "win32").at(-1)!.args.slice(5)).toEqual([
+      "--", "cmd", "/d", "/v:off", "/c", "call", windowsBridge, "mcp", "claude-code",
+    ]);
   });
 
   it("replaces an installed legacy bridge path with the current one", () => {
     const legacyPath =
-      "/Applications/Decision Island Legacy.app/Contents/Resources/bridge/decision-bridge";
+      "/Applications/Decision Previous.app/Contents/Resources/bridge/decision-bridge";
     const legacy = mergeClaudeSettings(existingClaudeSettings, legacyPath);
 
     const merged = mergeClaudeSettings(legacy, bridgePath);
@@ -108,7 +126,7 @@ describe("Claude Code integration", () => {
               hooks: [
                 {
                   type: "command",
-                  command: "DECISION_ISLAND_HOOK=1 old hook stop",
+                  command: "DECISION_HOOK=3 old hook stop claude-code",
                 },
                 {
                   type: "command",
@@ -122,11 +140,22 @@ describe("Claude Code integration", () => {
       bridgePath,
     );
 
-    expect(JSON.stringify(merged)).not.toContain("DECISION_ISLAND_HOOK=1");
+    expect(JSON.stringify(merged)).not.toContain("DECISION_HOOK=3");
     expect(JSON.stringify(merged)).toContain("echo keep-me");
     expect(
       JSON.stringify(merged).match(/DECISION_HOOK=1/gu),
     ).toHaveLength(3);
+  });
+
+  it("keeps a reader's own hook that only mentions the marker or the bridge's words", () => {
+    const own = [
+      { type: "command", command: "SKIP_DECISION_HOOK=1 ~/bin/notify-done.sh" },
+      { type: "command", command: "DECISION_HOOK=1 ~/bin/notify-done.sh" },
+      { type: "command", command: "~/bin/log.sh hook stop claude-code" },
+    ];
+    const merged = mergeClaudeSettings({ hooks: { Stop: [{ hooks: own }] } }, bridgePath);
+
+    expect(merged.hooks.Stop![0]).toEqual({ hooks: own });
   });
 
   it("preserves unknown fields and non-command hook handlers", () => {
@@ -161,12 +190,7 @@ describe("Claude Code integration", () => {
 
   it("replaces the user-scoped MCP with the read-only bridge server", () => {
     expect(claudeMcpCommands(bridgePath)).toEqual([
-      {
-        command: "claude",
-        args: ["mcp", "remove", "--scope", "user", "decision-island"],
-        tolerateFailure: true,
-        absentMcpName: "decision-island",
-      },
+      { command: "claude", args: ["mcp", "get", "decision"], tolerateFailure: true, expectsBridgeFor: "claude-code" },
       {
         command: "claude",
         args: ["mcp", "remove", "--scope", "user", "decision"],

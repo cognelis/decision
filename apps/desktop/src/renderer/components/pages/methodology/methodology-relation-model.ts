@@ -122,21 +122,6 @@ export const buildRelationReviewQueue = (
   );
 };
 
-export const pendingRelationCount = (records: MethodologyItem[]): number => {
-  const pairs = new Set<string>();
-  for (const record of records) {
-    if (record.status !== "candidate" && record.status !== "accepted") {
-      continue;
-    }
-    for (const relation of record.quality.relations) {
-      if (relation.resolution === null || relation.resolution === undefined) {
-        pairs.add(relationPairKey(record.id, relation.id));
-      }
-    }
-  }
-  return pairs.size;
-};
-
 export const qualityBadgeFor = (
   item: MethodologyItem,
 ): MethodologyQualityBadge | null => {

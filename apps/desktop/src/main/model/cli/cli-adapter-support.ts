@@ -1,3 +1,5 @@
+import type { ModelProxy } from "@cognelis/decision-protocol";
+import { providerProxyEnvironment, proxyEnvironmentNames } from "../provider-network.js";
 import {
   mkdtemp,
   rm,
@@ -59,6 +61,7 @@ export const createCliWorkspace =
 export const minimalClientEnvironment = (
   source: NodeJS.ProcessEnv,
   extraNames: readonly string[] = [],
+  proxy?: ModelProxy,
 ): NodeJS.ProcessEnv => {
   const inheritedNames = [
     "HOME",
@@ -69,10 +72,21 @@ export const minimalClientEnvironment = (
     "LC_ALL",
     "CODEX_HOME",
     "VOLTA_HOME",
-    "HTTPS_PROXY",
-    "HTTP_PROXY",
     "SSL_CERT_FILE",
     "NODE_EXTRA_CA_CERTS",
+    // What a process needs on Windows to start, reach the network (Winsock wants SystemRoot), find its own
+    // files and sign in; there for no one else.
+    "SystemRoot",
+    "windir",
+    "ComSpec",
+    "PATHEXT",
+    "TEMP",
+    "TMP",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "HOMEDRIVE",
+    "HOMEPATH",
     ...extraNames,
   ] as const;
   const environment: NodeJS.ProcessEnv = {};
@@ -82,6 +96,8 @@ export const minimalClientEnvironment = (
       environment[name] = value;
     }
   }
+  for (const name of proxyEnvironmentNames) delete environment[name];
+  Object.assign(environment, providerProxyEnvironment(source, proxy));
   environment.DECISION_PROVIDER_CHILD = "1";
   return environment;
 };

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "thresholds": {
+    "highPrecision": 0.95,
+    "highMediumRecall": 0.9
+  },
+  "summary": {
+    "samples": 64,
+    "highPrecision": 1,
+    "highMediumRecall": 1,
+    "relationAccuracy": 0.84375,
+    "questionExtractability": 1,
+    "answerExtractability": 1,
+    "thresholdsMet": true
+  },
+  "confusion": {
+    "high": {
+      "high": 25,
+      "medium": 6,
+      "low": 0
+    },
+    "medium": {
+      "high": 0,
+      "medium": 11,
+      "low": 0
+    },
+    "low": {
+      "high": 0,
+      "medium": 0,
+      "low": 22
+    }
+  },
+  "providers": {},
+  "slices": {
+    "locale": {
+      "en": {
+        "samples": 31,
+        "highPrecision": 1,
+        "highMediumRecall": 1,
+        "relationAccuracy": 0.83871,
+        "questionExtractability": 1,
+        "answerExtractability": 1
+      },
+      "zh-CN": {
+        "samples": 33,
+        "highPrecision": 1,
+        "highMediumRecall": 1,
+        "relationAccuracy": 0.848485,
+        "questionExtractability": 1,
+        "answerExtractability": 1
+      }
+    },
+    "sourceClient": {
+      "claude-code": {
+        "samples": 32,
+        "highPrecision": 1,
+        "highMediumRecall": 1,
+        "relationAccuracy": 0.875,
+        "questionExtractability": 1,
+        "answerExtractability": 1
+      },
+      "codex": {
+        "samples": 32,
+        "highPrecision": 1,
+        "highMediumRecall": 1,
+        "relationAccuracy": 0.8125,
+        "questionExtractability": 1,
+        "answerExtractability": 1
+      }
+    }
+  }
+}

@@ -21,7 +21,15 @@ interface EmbeddingGateway {
 interface SearchDocument {
   entityId: string;
   contentHash: string;
+  /** The content hash of the note its text was made from (a decision's). */
+  sourceHash?: string;
   text: string;
+}
+
+/** Every decision known by what changes with its note, and read whole only where its text is needed. */
+interface DecisionSource {
+  stamps(): ReadonlyArray<Pick<IndexedDecision, "id" | "contentHash">>;
+  load(ids: string[]): IndexedDecision[];
 }
 
 export interface SemanticDecisionMatch {
@@ -68,6 +76,7 @@ const decisionDocument = (decision: IndexedDecision): SearchDocument => {
   return {
     entityId: decision.id,
     contentHash: documentHash(text),
+    sourceHash: decision.contentHash,
     text,
   };
 };
@@ -86,7 +95,7 @@ const methodologyDocument = (record: MethodologyRecord): SearchDocument => {
   };
 };
 
-const cosine = (left: number[], right: number[]): number => {
+const cosine = (left: ArrayLike<number>, right: ArrayLike<number>): number => {
   if (left.length === 0 || left.length !== right.length) return -1;
   let value = 0;
   for (let index = 0; index < left.length; index += 1) {
@@ -107,8 +116,13 @@ const boundedLimit = (limit: number): number =>
 export class SemanticSearchService {
   readonly #vectors: SemanticVectorIndex;
   readonly #gateway: EmbeddingGateway;
+  // By kind, the vectors stored for one model, decoded once: every query read and decoded all of them, ten
+  // million floats at ten thousand decisions. Dropped when new ones are written; a pruned one is never asked for.
+  readonly #decoded = new Map<SemanticVectorEntityType, { model: string; byId: Map<string, Float32Array> }>();
   #tail: Promise<void> = Promise.resolve();
   #closed = false;
+  // Aborted on close: a sync under way stops at the batch it is on, and the call for that batch is cut short.
+  readonly #closing = new AbortController();
 
   constructor(options: {
     vectors: SemanticVectorIndex;
@@ -119,55 +133,54 @@ export class SemanticSearchService {
   }
 
   async synchronize(
-    decisions: IndexedDecision[],
+    decisions: DecisionSource,
     methodologies: MethodologyRecord[],
   ): Promise<void> {
-    const documents = [
-      ...decisions.map(decisionDocument),
-      ...methodologies
-        .filter((record) => record.status === "accepted")
-        .map(methodologyDocument),
-    ];
-    if (documents.length === 0) {
-      return this.#exclusive(async () => {
+    const methodologyDocuments = methodologies
+      .filter((record) => record.status === "accepted")
+      .map(methodologyDocument);
+    await this.#exclusive(async () => {
+      // Taken in turn, not when asked: waiting behind another sync or a search, a list made before them pruned the
+      // vector of a decision come since, and compared notes as they were.
+      const stamps = decisions.stamps();
+      if (stamps.length === 0 && methodologyDocuments.length === 0) {
         this.#vectors.prune("decision", []);
         this.#vectors.prune("methodology", []);
+        return;
+      }
+      // Asked before any decision is read: with no model installed, every one was read at every start, for nothing.
+      const probe = await this.#gateway.embed([retrievalQuery("decision")]);
+      this.#vectors.prune("decision", stamps.map((stamp) => stamp.id));
+      // Read whole only a decision whose note changed since its vector was made from it, or that has none.
+      const stored = new Map(this.#vectors.metadata("decision").map((item) => [item.entityId, item]));
+      const changed = stamps.filter((stamp) => {
+        const vector = stored.get(stamp.id);
+        return vector === undefined || vector.sourceHash !== stamp.contentHash || vector.model !== probe.model;
       });
-    }
-    await this.#exclusive(async () => {
-      const probe = await this.#gateway.embed([documents[0]!.text]);
-      await this.#synchronizeType(
-        "decision",
-        decisions.map(decisionDocument),
-        probe.model,
-        true,
-      );
-      await this.#synchronizeType(
-        "methodology",
-        methodologies
-          .filter((record) => record.status === "accepted")
-          .map(methodologyDocument),
-        probe.model,
-        true,
-      );
+      await this.#synchronizeType("decision", decisions.load(changed.map((stamp) => stamp.id)).map(decisionDocument), probe.model, false);
+      await this.#synchronizeType("methodology", methodologyDocuments, probe.model, true);
     });
   }
 
   async searchDecisions(options: {
     query: string;
-    candidates: IndexedDecision[];
+    /** Every decision the filters let through, newest first, known by what changes with its note. */
+    candidates: ReadonlyArray<Pick<IndexedDecision, "id" | "contentHash" | "created">>;
+    /** These decisions whole: read for those whose text is needed, and those shown. */
+    load(ids: string[]): IndexedDecision[];
     lexical: IndexedDecision[];
     limit: number;
   }): Promise<SemanticDecisionMatch[]> {
+    const whole = (ids: string[]): Map<string, IndexedDecision> =>
+      new Map(options.load(ids).map((decision) => [decision.id, decision]));
     const query = options.query.trim();
     if (query.length === 0) {
-      return options.candidates.slice(0, boundedLimit(options.limit)).map(
-        (decision) => ({
-          decision,
-          matchKind: "keyword" as const,
-          relevance: 1,
-        }),
-      );
+      const first = options.candidates.slice(0, boundedLimit(options.limit));
+      const loaded = whole(first.map((candidate) => candidate.id));
+      return first.flatMap((candidate) => {
+        const decision = loaded.get(candidate.id);
+        return decision === undefined ? [] : [{ decision, matchKind: "keyword" as const, relevance: 1 }];
+      });
     }
     return this.#exclusive(async () => {
       const embeddedQuery = await this.#gateway.embed([
@@ -177,27 +190,36 @@ export class SemanticSearchService {
       if (queryVector === undefined) {
         throw new Error("Local embedding provider returned no query vector");
       }
-      const documents = options.candidates.map(decisionDocument);
-      await this.#synchronizeType(
-        "decision",
-        documents,
-        embeddedQuery.model,
-        false,
-      );
+      // Read whole and embedded again: a decision whose note changed since its vector was made from it, or whose
+      // vector is missing or from another model.
+      const vectors = new Map(this.#vectors.metadata("decision").map((item) => [item.entityId, item]));
+      const unsynced = options.candidates.filter((candidate) => {
+        const vector = vectors.get(candidate.id);
+        return vector === undefined || vector.sourceHash !== candidate.contentHash || vector.model !== embeddedQuery.model;
+      });
+      if (unsynced.length > 0) {
+        await this.#synchronizeType(
+          "decision",
+          options.load(unsynced.map((candidate) => candidate.id)).map(decisionDocument),
+          embeddedQuery.model,
+          false,
+        );
+      }
       const candidateById = new Map(
-        options.candidates.map((decision) => [decision.id, decision]),
+        options.candidates.map((candidate) => [candidate.id, candidate]),
+      );
+      const lexicalById = new Map(
+        options.lexical.map((decision) => [decision.id, decision]),
       );
       const lexicalRank = new Map(
         options.lexical.map((decision, index) => [decision.id, index]),
       );
+      const stored = this.#stored("decision", embeddedQuery.model);
       const semanticScores = new Map(
-        this.#vectors
-          .list("decision", embeddedQuery.model)
-          .filter((record) => candidateById.has(record.entityId))
-          .map((record) => [
-            record.entityId,
-            cosine(queryVector, record.vector),
-          ]),
+        [...candidateById.keys()].flatMap((id) => {
+          const vector = stored.get(id);
+          return vector === undefined ? [] : [[id, cosine(queryVector, vector)] as const];
+        }),
       );
       const bestSemanticScore = Math.max(
         -1,
@@ -214,9 +236,9 @@ export class SemanticSearchService {
           )
         : SEMANTIC_FLOOR;
       const ranked = [...candidateById.values()]
-        .flatMap((decision) => {
-          const keywordRank = lexicalRank.get(decision.id);
-          const similarity = semanticScores.get(decision.id) ?? -1;
+        .flatMap((candidate) => {
+          const keywordRank = lexicalRank.get(candidate.id);
+          const similarity = semanticScores.get(candidate.id) ?? -1;
           const semantic = similarity >= effectiveSemanticFloor;
           if (keywordRank === undefined && !semantic) return [];
           const keywordScore =
@@ -227,7 +249,7 @@ export class SemanticSearchService {
           );
           return [
             {
-              decision,
+              candidate,
               matchKind:
                 keywordRank !== undefined && semantic
                   ? ("hybrid" as const)
@@ -241,20 +263,25 @@ export class SemanticSearchService {
         .sort(
           (left, right) =>
             right.relevance - left.relevance ||
-            right.decision.created.localeCompare(left.decision.created) ||
-            left.decision.id.localeCompare(right.decision.id),
+            right.candidate.created.localeCompare(left.candidate.created) ||
+            left.candidate.id.localeCompare(right.candidate.id),
         );
       let semanticOnly = 0;
       const semanticOnlyLimit = adaptiveSemanticSearch
         ? MAX_ADAPTIVE_SEMANTIC_RESULTS
         : MAX_SEMANTIC_ONLY_RESULTS;
-      return ranked
+      const shown = ranked
         .filter((match) => {
           if (match.matchKind !== "semantic") return true;
           semanticOnly += 1;
           return semanticOnly <= semanticOnlyLimit;
         })
         .slice(0, boundedLimit(options.limit));
+      const loaded = whole(shown.flatMap(({ candidate }) => (lexicalById.has(candidate.id) ? [] : [candidate.id])));
+      return shown.flatMap(({ candidate, matchKind, relevance }) => {
+        const decision = lexicalById.get(candidate.id) ?? loaded.get(candidate.id);
+        return decision === undefined ? [] : [{ decision, matchKind, relevance }];
+      });
     });
   }
 
@@ -288,12 +315,10 @@ export class SemanticSearchService {
         lexical.map((match) => [match.principleId, match]),
       );
       const semanticById = new Map(
-        this.#vectors
-          .list("methodology", embeddedQuery.model)
-          .map((record) => [
-            record.entityId,
-            cosine(queryVector, record.vector),
-          ]),
+        [...this.#stored("methodology", embeddedQuery.model)].map(([id, vector]) => [
+          id,
+          cosine(queryVector, vector),
+        ]),
       );
       return accepted
         .flatMap((record) => {
@@ -341,6 +366,9 @@ export class SemanticSearchService {
   async close(): Promise<void> {
     if (this.#closed) return;
     this.#closed = true;
+    // Waited on whole, a sync under way at a quit embedded every batch left (a whole vault with a new local model),
+    // and the quit with it: now it ends at the batch it is on.
+    this.#closing.abort();
     await this.#tail.catch(() => undefined);
     await this.#gateway.close?.().catch(() => undefined);
     this.#vectors.close();
@@ -363,18 +391,26 @@ export class SemanticSearchService {
         .metadata(entityType)
         .map((item) => [item.entityId, item]),
     );
-    const stale = documents.filter((document) => {
+    const stale: SearchDocument[] = [];
+    const kept: Array<readonly [string, string]> = [];
+    for (const document of documents) {
       const metadata = current.get(document.entityId);
-      return (
-        metadata === undefined ||
-        metadata.contentHash !== document.contentHash ||
-        metadata.model !== model
-      );
-    });
+      if (metadata === undefined || metadata.contentHash !== document.contentHash || metadata.model !== model) {
+        stale.push(document);
+      } else if (document.sourceHash !== undefined && metadata.sourceHash !== document.sourceHash) {
+        // Its vector still of this text, now known as made from the note read: not read again at the next start.
+        kept.push([document.entityId, document.sourceHash]);
+      }
+    }
+    this.#vectors.keepSources(entityType, kept);
+    if (stale.length > 0) this.#decoded.delete(entityType);
     for (let start = 0; start < stale.length; start += EMBEDDING_BATCH_SIZE) {
+      // Closing: what is left is embedded at the next start, as a sync cut short by a crash is.
+      if (this.#closed) return;
       const batch = stale.slice(start, start + EMBEDDING_BATCH_SIZE);
       const embedded = await this.#gateway.embed(
         batch.map((document) => document.text),
+        this.#closing.signal,
       );
       if (
         embedded.model !== model ||
@@ -387,11 +423,22 @@ export class SemanticSearchService {
           entityType,
           entityId: document.entityId,
           contentHash: document.contentHash,
+          sourceHash: document.sourceHash ?? null,
           model,
           vector: embedded.vectors[index] ?? [],
         })),
       );
     }
+  }
+
+  #stored(entityType: SemanticVectorEntityType, model: string): Map<string, Float32Array> {
+    const kept = this.#decoded.get(entityType);
+    if (kept?.model === model) return kept.byId;
+    const byId = new Map(
+      this.#vectors.list(entityType, model).map((record) => [record.entityId, Float32Array.from(record.vector)]),
+    );
+    this.#decoded.set(entityType, { model, byId });
+    return byId;
   }
 
   #exclusive<T>(operation: () => Promise<T>): Promise<T> {

@@ -1,8 +1,11 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   access,
+  mkdir,
   mkdtemp,
   readFile,
+  realpath,
   readdir,
   rm,
   writeFile,
@@ -16,7 +19,11 @@ import { releaseTarget } from "./platform-artifacts.mjs";
 import {
   bridgeProcessInvocation,
   createMcpRequestManager,
+  isObsidianSearchShutdownMarker,
+  obsidianSearchDatabaseFiles,
+  resolveObsidianSearchDatabasePath,
   resolvePackagedSmokeTarget,
+  waitForShutdownMarkerBeforeExit,
 } from "./smoke-support.mjs";
 
 const repositoryRoot = process.cwd();
@@ -80,6 +87,8 @@ const stopPackagedApplication = async (
   runtime,
   applicationProcess,
   description,
+  markerPath,
+  validateMarker,
 ) => {
   const response = await fetch(
     `http://127.0.0.1:${runtime.port}/v1/smoke/shutdown`,
@@ -91,10 +100,16 @@ const stopPackagedApplication = async (
   if (response.status !== 204) {
     throw new Error(`${description} returned HTTP ${response.status}`);
   }
+  await waitForShutdownMarkerBeforeExit({
+    applicationProcess,
+    readMarker: async () => JSON.parse(await readFile(markerPath, "utf8")),
+    validateMarker,
+  });
   await waitFor(
     async () => (applicationProcess.exitCode === null ? undefined : true),
     description,
   );
+  return true;
 };
 
 const collectJsonProcess = (child, payload) =>
@@ -204,6 +219,32 @@ const runMcpConsultation = async (environment) => {
       (candidate) =>
         candidate.name === "record_decision_consultation_feedback",
     );
+    const contextTool = listed.result?.tools?.find((candidate) => candidate.name === "search_decision_context");
+    const scopeTool = listed.result?.tools?.find((candidate) => candidate.name === "record_decision_scope");
+    const relationTool = listed.result?.tools?.find((candidate) => candidate.name === "record_decision_relation");
+    const outcomeTool = listed.result?.tools?.find((candidate) => candidate.name === "record_decision_outcome");
+    const handoffTool = listed.result?.tools?.find((candidate) => candidate.name === "prepare_decision_handoff");
+    const sourceTool = listed.result?.tools?.find((candidate) => candidate.name === "open_decision_source");
+    const feedbackWrite = listed.result?.tools?.find((candidate) => candidate.name === "record_decision_context_feedback");
+    const feedbackRead = listed.result?.tools?.find((candidate) => candidate.name === "get_decision_context_feedback");
+    if (feedbackWrite?.annotations?.readOnlyHint !== false || feedbackRead?.annotations?.readOnlyHint !== true) {
+      throw new Error("packaged MCP did not advertise decision use feedback tools");
+    }
+    if (handoffTool?.annotations?.readOnlyHint !== true || sourceTool?.annotations?.readOnlyHint !== false || sourceTool?.annotations?.destructiveHint !== false) {
+      throw new Error("packaged MCP did not advertise handoff and source navigation tools");
+    }
+    if (outcomeTool?.annotations?.readOnlyHint !== false || outcomeTool?.annotations?.destructiveHint !== true) {
+      throw new Error("packaged MCP did not advertise versioned outcome updates");
+    }
+    if (contextTool?.annotations?.readOnlyHint !== true || contextTool?.annotations?.destructiveHint !== false) {
+      throw new Error("packaged MCP did not advertise read-only decision context search");
+    }
+    if (scopeTool?.annotations?.readOnlyHint !== false || scopeTool?.annotations?.destructiveHint !== false) {
+      throw new Error("packaged MCP did not advertise explicit scope recording");
+    }
+    if (relationTool?.annotations?.readOnlyHint !== false || relationTool?.annotations?.destructiveHint !== false) {
+      throw new Error("packaged MCP did not advertise explicit decision relationships");
+    }
     if (
       tool === undefined ||
       tool.annotations?.readOnlyHint !== true ||
@@ -253,6 +294,17 @@ const runMcpConsultation = async (environment) => {
         `packaged MCP consultation feedback failed: ${JSON.stringify(rated)}`,
       );
     }
+    const context = await client.request(5, "tools/call", {
+      name: "search_decision_context",
+      arguments: { query: "", limit: 2 },
+    });
+    const contextResult = context.result?.structuredContent;
+    if (contextResult?.availability !== "available" ||
+        !["matched", "empty", "no_match"].includes(contextResult.context?.status) ||
+        contextResult.context?.coverage !== "complete" ||
+        contextResult.context?.boundary?.noDecisionWritten !== true) {
+      throw new Error("packaged MCP decision context search failed");
+    }
   } finally {
     server.stdin.end();
     await Promise.race([
@@ -277,6 +329,21 @@ const vault = join(root, "vault");
 const userData = join(root, "user-data");
 const runtimeFile = join(root, "runtime.json");
 const databasePath = join(userData, "index.sqlite");
+const obsidianSearchRoot = join(userData, "obsidian-search");
+let obsidianSearchDatabasePath;
+const obsidianSearchShutdownMarkerPath = join(
+  userData,
+  "obsidian-search",
+  "shutdown-complete.json",
+);
+const ordinaryNotePath = join(vault, "Knowledge", "ordinary-note.md");
+const ordinaryNoteBytes = Buffer.from(
+  "# Ordinary knowledge\n\nPackaged Obsidian full vault search smoke note.\n",
+  "utf8",
+);
+const ordinaryNoteHash = createHash("sha256")
+  .update(ordinaryNoteBytes)
+  .digest("hex");
 const consultationMetricsPath = join(
   userData,
   "decision-consultation-metrics.json",
@@ -297,11 +364,51 @@ const decisionFraming =
 let child;
 let succeeded = false;
 let foundationHelperStatus = "unavailable";
+let obsidianShutdownMarkersObserved = 0;
+let obsidianDatabaseDeleted = false;
+
+const ordinaryNoteIsUnchanged = async () => {
+  const current = await readFile(ordinaryNotePath);
+  return (
+    current.equals(ordinaryNoteBytes) &&
+    createHash("sha256").update(current).digest("hex") === ordinaryNoteHash
+  );
+};
+
+const ordinaryNoteIsIndexed = () => {
+  const database = new DatabaseSync(obsidianSearchDatabasePath, {
+    readOnly: true,
+  });
+  try {
+    const application = database
+      .prepare("PRAGMA application_id")
+      .get();
+    const version = database.prepare("PRAGMA user_version").get();
+    const note = database
+      .prepare("SELECT relative_path, model FROM notes WHERE relative_path=?")
+      .get("Knowledge/ordinary-note.md");
+    return (
+      Number(application.application_id) === 0x4449534c &&
+      Number(version.user_version) === 1 &&
+      note?.relative_path === "Knowledge/ordinary-note.md" &&
+      note.model === null
+    );
+  } finally {
+    database.close();
+  }
+};
 
 try {
+  await mkdir(join(vault, "Knowledge"), { recursive: true });
+  await writeFile(ordinaryNotePath, ordinaryNoteBytes);
+  obsidianSearchDatabasePath = await resolveObsidianSearchDatabasePath({
+    indexRoot: obsidianSearchRoot,
+    vaultPath: vault,
+    platform,
+    realpath,
+  });
   await access(executable);
   await access(bridge);
-  await access(target.legacyBridgePath);
   await scanReleasePayload(appPath);
   if (platform === "darwin") {
     await access(foundationHelper);
@@ -386,6 +493,7 @@ try {
     DECISION_RUNTIME_FILE: runtimeFile,
     DECISION_CAPTURE_SPOOL: spoolPath,
   };
+  await rm(obsidianSearchShutdownMarkerPath, { force: true });
   child = spawn(executable, [], {
     env: appEnvironment,
     stdio: ["ignore", "ignore", "pipe"],
@@ -408,6 +516,10 @@ try {
     const response = await fetch(`http://127.0.0.1:${parsed.port}/health`);
     return response.ok ? parsed : undefined;
   }, "runtime health");
+  await waitFor(
+    () => ordinaryNoteIsIndexed(),
+    "ordinary full-vault note keyword index",
+  );
   const headers = {
     authorization: `Bearer ${runtime.token}`,
     "content-type": "application/json",
@@ -503,24 +615,7 @@ try {
       );
     }
   }
-  const legacyBridgeResult = await runHook(
-    ["hook", "stop", "codex"],
-    { private: "legacy bridge packaged smoke input" },
-    {
-      ...hookEnvironment,
-      DECISION_PROVIDER_CHILD: "1",
-    },
-    target.legacyBridgePath,
-  );
-  if (
-    legacyBridgeResult.code !== 0 ||
-    legacyBridgeResult.stdout.length !== 0 ||
-    legacyBridgeResult.stderr.length !== 0
-  ) {
-    throw new Error(
-      `legacy bridge was not executable and silent: ${JSON.stringify(legacyBridgeResult)}`,
-    );
-  }
+
   const afterProviderChild =
     await providerChildArtifactSnapshot();
   if (
@@ -766,7 +861,20 @@ try {
     );
   }
 
-  await stopPackagedApplication(runtime, child, "application shutdown");
+  if (
+    await stopPackagedApplication(
+      runtime,
+      child,
+      "application shutdown",
+      obsidianSearchShutdownMarkerPath,
+      (marker) => isObsidianSearchShutdownMarker(marker, child.pid),
+    )
+  ) {
+    obsidianShutdownMarkersObserved += 1;
+  }
+  if (!(await ordinaryNoteIsUnchanged())) {
+    throw new Error("Obsidian full-vault indexing changed the source note");
+  }
   await waitFor(async () => {
     try {
       await access(runtimeFile);
@@ -775,13 +883,26 @@ try {
       return true;
     }
   }, "runtime cleanup");
-  await Promise.all(
-    [
+  await Promise.all([
+    ...[
       databasePath,
       `${databasePath}-shm`,
       `${databasePath}-wal`,
-    ].map((path) => rm(path, { force: true })),
-  );
+    ],
+    ...obsidianSearchDatabaseFiles(obsidianSearchDatabasePath),
+  ].map((path) => rm(path, { force: true })));
+  for (const path of obsidianSearchDatabaseFiles(obsidianSearchDatabasePath)) {
+    await access(path).then(
+      () => {
+        throw new Error(
+          `Obsidian search database handle remained open: ${path}`,
+        );
+      },
+      () => undefined,
+    );
+  }
+  obsidianDatabaseDeleted = true;
+  await rm(obsidianSearchShutdownMarkerPath, { force: true });
   child = spawn(executable, [], {
     env: appEnvironment,
     stdio: ["ignore", "ignore", "pipe"],
@@ -796,6 +917,10 @@ try {
     );
     return response.ok ? parsed : undefined;
   }, "rebuild runtime health");
+  await waitFor(
+    () => ordinaryNoteIsIndexed(),
+    "rebuilt ordinary full-vault note keyword index",
+  );
   await waitFor(async () => {
     try {
       const rebuilt = new DatabaseSync(databasePath, {
@@ -810,11 +935,17 @@ try {
       return undefined;
     }
   }, "SQLite rebuild from Markdown");
-  await stopPackagedApplication(
-    rebuiltRuntime,
-    child,
-    "rebuilt application shutdown",
-  );
+  if (
+    await stopPackagedApplication(
+      rebuiltRuntime,
+      child,
+      "rebuilt application shutdown",
+      obsidianSearchShutdownMarkerPath,
+      (marker) => isObsidianSearchShutdownMarker(marker, child.pid),
+    )
+  ) {
+    obsidianShutdownMarkersObserved += 1;
+  }
   await waitFor(async () => {
     try {
       await access(runtimeFile);
@@ -823,6 +954,16 @@ try {
       return true;
     }
   }, "rebuilt runtime cleanup");
+  if (!(await ordinaryNoteIsUnchanged())) {
+    throw new Error("Obsidian source note changed after index rebuild");
+  }
+  // Reported values have to be enforced values. Printing a false field beside
+  // ok:true is worse than not printing it: it reads as a check that ran.
+  if (obsidianShutdownMarkersObserved !== 2 || !obsidianDatabaseDeleted) {
+    throw new Error(
+      `Obsidian search cleanup incomplete: markers=${obsidianShutdownMarkersObserved} databaseDeleted=${obsidianDatabaseDeleted}`,
+    );
+  }
   succeeded = true;
   process.stdout.write(
     `${JSON.stringify({
@@ -836,7 +977,6 @@ try {
       sqliteRebuiltFromMarkdown: true,
       spoolEmpty: true,
       hybridHooksSilent: true,
-      legacyBridgeExecutable: true,
       payloadSecurity: true,
       preDecisionConsultation: true,
       contentFreeConsultationMetrics: true,
@@ -849,10 +989,16 @@ try {
       markdownAfterRationale: true,
       foundationHelperStatus,
       liquidGlassAddon: platform === "darwin",
+      // Enforced upstream by scanReleasePayload: ".gguf" is a forbidden
+      // release-payload extension, so reaching this line proves the bundle
+      // carries no weights.
       modelWeightsBundled: false,
       transcriptPrivacy: true,
       contextualCapture: true,
       runtimeCleanup: true,
+      obsidianVaultPreserved: true,
+      obsidianSearchCleanup: true,
+      obsidianSearchRebuilt: true,
     })}\n`,
   );
 } finally {

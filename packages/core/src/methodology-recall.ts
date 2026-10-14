@@ -1,4 +1,5 @@
 import type { MethodologyRecord } from "./methodology.js";
+import { hashSimilarity, matchedTerms, tokenHashCache, tokenHashes, tokens } from "./recall-text.js";
 
 export type MethodologyRecallStrength = "strong" | "possible";
 
@@ -17,72 +18,10 @@ export interface MethodologyRecallMatch {
   matchedTerms: string[];
 }
 
-const genericTerms = new Set([
-  "一个",
-  "以及",
-  "已经",
-  "以后",
-  "仍然",
-  "可以",
-  "如果",
-  "应该",
-  "进行",
-  "结果",
-  "需要",
-  "选择",
-  "方案",
-  "问题",
-  "项目",
-  "方法",
-  "时候",
-  "决策",
-  "使用",
-  "the",
-  "and",
-  "for",
-  "with",
-]);
-
-const tokens = (value: string): Set<string> => {
-  const result = new Set<string>();
-  const chunks =
-    value
-      .normalize("NFKC")
-      .toLocaleLowerCase("zh-CN")
-      .match(/[\p{Script=Han}]+|[\p{Letter}\p{Number}]+/gu) ?? [];
-  for (const chunk of chunks.slice(0, 120)) {
-    if (/^\p{Script=Han}+$/u.test(chunk)) {
-      for (let index = 0; index < chunk.length - 1; index += 1) {
-        const token = chunk.slice(index, index + 2);
-        if (!genericTerms.has(token)) result.add(token);
-      }
-    } else if (chunk.length > 1 && !genericTerms.has(chunk)) {
-      result.add(chunk);
-    }
-  }
-  return result;
-};
-
-const similarity = (left: Set<string>, right: Set<string>): number => {
-  if (left.size === 0 || right.size === 0) return 0;
-  let shared = 0;
-  for (const token of left) {
-    if (right.has(token)) shared += 1;
-  }
-  return (2 * shared) / (left.size + right.size);
-};
-
-const matchedTerms = (left: Set<string>, right: Set<string>): string[] =>
-  [...left]
-    .filter((token) => right.has(token) && !genericTerms.has(token))
-    .sort(
-      (first, second) =>
-        second.length - first.length || first.localeCompare(second, "zh-CN"),
-    )
-    .slice(0, 3);
-
 const boundedLimit = (value: number): number =>
   Math.max(1, Math.min(5, Math.trunc(value)));
+
+const principleHashCache = tokenHashCache();
 
 export const buildMethodologyRecall = (
   records: MethodologyRecord[],
@@ -93,16 +32,20 @@ export const buildMethodologyRecall = (
   const conditionText = `${input.question}\n${input.context ?? ""}`;
   const decisionTokens = tokens(decisionText);
   const conditionTokens = tokens(conditionText);
+  const decisionHashes = tokenHashes(decisionTokens);
+  const conditionHashes = tokenHashes(conditionTokens);
 
-  return records
+  const scored = records
     .filter((record) => record.status === "accepted")
     .map((record) => {
-      const principleTokens = tokens(`${record.title}\n${record.principle}`);
-      const appliesTokens = tokens(record.appliesWhen);
-      const cautionTokens = tokens(record.caution);
-      const principleScore = similarity(principleTokens, decisionTokens);
-      const conditionScore = similarity(appliesTokens, conditionTokens);
-      const cautionScore = similarity(cautionTokens, conditionTokens);
+      const [principleHashes, appliesHashes, cautionHashes] = principleHashCache.hashes(
+        record.id,
+        [record.title, record.principle, record.appliesWhen, record.caution],
+        () => [`${record.title}\n${record.principle}`, record.appliesWhen, record.caution],
+      );
+      const principleScore = hashSimilarity(principleHashes!, decisionHashes);
+      const conditionScore = hashSimilarity(appliesHashes!, conditionHashes);
+      const cautionScore = hashSimilarity(cautionHashes!, conditionHashes);
       const strongest = Math.max(
         principleScore,
         conditionScore,
@@ -111,6 +54,21 @@ export const buildMethodologyRecall = (
       const weighted =
         principleScore * 0.58 + conditionScore * 0.32 + cautionScore * 0.1;
       const score = Math.round(Math.max(weighted, strongest * 0.74) * 100);
+      return { record, score, principleScore, conditionScore, cautionScore };
+    });
+  principleHashCache.settle();
+
+  return scored
+    .filter((match) => match.score >= 10)
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        right.record.updatedAt.localeCompare(left.record.updatedAt) ||
+        left.record.id.localeCompare(right.record.id),
+    )
+    .slice(0, boundedLimit(limit))
+    // The shared terms, from the tokens themselves, only for the few recalled.
+    .map(({ record, score, principleScore, conditionScore, cautionScore }) => {
       const signals = [
         principleScore >= 0.1 ? "原则内容" : null,
         conditionScore >= 0.1 ? "适用条件" : null,
@@ -118,9 +76,9 @@ export const buildMethodologyRecall = (
       ].filter((value): value is string => value !== null);
       const terms = [
         ...new Set([
-          ...matchedTerms(principleTokens, decisionTokens),
-          ...matchedTerms(appliesTokens, conditionTokens),
-          ...matchedTerms(cautionTokens, conditionTokens),
+          ...matchedTerms(tokens(`${record.title}\n${record.principle}`), decisionTokens),
+          ...matchedTerms(tokens(record.appliesWhen), conditionTokens),
+          ...matchedTerms(tokens(record.caution), conditionTokens),
         ]),
       ].slice(0, 3);
       return {
@@ -131,16 +89,6 @@ export const buildMethodologyRecall = (
           terms.length > 0 ? `，共同出现“${terms.join("、")}”` : ""
         }。`,
         matchedTerms: terms,
-        updatedAt: record.updatedAt,
       };
-    })
-    .filter((match) => match.score >= 10)
-    .sort(
-      (left, right) =>
-        right.score - left.score ||
-        right.updatedAt.localeCompare(left.updatedAt) ||
-        left.principleId.localeCompare(right.principleId),
-    )
-    .slice(0, boundedLimit(limit))
-    .map(({ updatedAt: _updatedAt, ...match }) => match);
+    });
 };

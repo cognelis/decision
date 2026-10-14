@@ -3,6 +3,7 @@ import type {
   CapturedDecisionEvent,
 } from "@cognelis/decision-protocol";
 import {
+  chmod,
   mkdtemp,
   readdir,
   stat,
@@ -131,6 +132,16 @@ describe("CandidateSpool", () => {
     );
   });
 
+  it("lets go a candidate written under a clock that ran ahead", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-candidate-ahead-"));
+    const spool = new CandidateSpool(root, { now: () => new Date("2026-07-28T00:00:00.000Z") });
+    await spool.append(candidateFixture("while-ahead", "2027-07-27T00:00:00.000Z", "2027-08-03T00:00:00.000Z"));
+    await spool.append(candidateFixture("ordinary"));
+
+    // Kept as dated, the exchange said to go after 7 days stayed until August 2027.
+    expect((await spool.list()).map((candidate) => candidate.candidateId)).toEqual(["ordinary"]);
+  });
+
   it("quarantines corrupt bodies without returning their contents", async () => {
     const root = await mkdtemp(
       join(tmpdir(), "decision-candidate-corrupt-"),
@@ -155,5 +166,20 @@ describe("CandidateSpool", () => {
         name.startsWith(file),
       ),
     ).toBe(true);
+  });
+
+  it.skipIf(process.platform === "win32" || process.getuid?.() === 0)("keeps a body it cannot read now, to read it again", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-candidate-unread-"));
+    const spool = new CandidateSpool(root, { now: () => new Date("2026-07-28T00:00:00.000Z") });
+    const candidate = candidateFixture("candidate-held");
+    await spool.append(candidate);
+    const [file] = await readdir(join(root, "items"));
+    await chmod(join(root, "items", file!), 0o000);
+
+    await expect(spool.list()).resolves.toEqual([]);
+    expect(await readdir(join(root, "quarantine"))).toEqual([]);
+
+    await chmod(join(root, "items", file!), 0o600);
+    await expect(spool.list()).resolves.toEqual([candidate]);
   });
 });

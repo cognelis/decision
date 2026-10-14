@@ -4,10 +4,12 @@ import {
   DECISION_ANALYTICS_METHOD_NAMES,
   METHODOLOGY_RECORD_METHOD_NAMES,
   PRACTICE_ASSET_METHOD_NAMES,
+  OBSIDIAN_SEARCH_METHOD_NAMES,
   type DecisionAnalyticsApi,
   type MethodologyRecordsApi,
   type MethodologyWorkspaceApi,
   type PracticeAssetsApi,
+  type ObsidianSearchApi,
 } from "../src/shared/renderer-api.js";
 
 const methodologyRecordMethods = [
@@ -73,6 +75,17 @@ const practiceAssetMethods = [
 ] as const;
 
 describe("renderer API capabilities", () => {
+  it("keeps the Obsidian search surface isolated", () => {
+    expect(OBSIDIAN_SEARCH_METHOD_NAMES).toEqual([
+      "getObsidianSearchStatus",
+      "searchObsidian",
+      "rebuildObsidianSearch",
+      "openObsidianNote",
+    ]);
+    expectTypeOf<keyof ObsidianSearchApi>().toEqualTypeOf<
+      (typeof OBSIDIAN_SEARCH_METHOD_NAMES)[number]
+    >();
+  });
   it("keeps methodology records on an explicit API surface", () => {
     expect(METHODOLOGY_RECORD_METHOD_NAMES).toEqual(methodologyRecordMethods);
     expectTypeOf<keyof MethodologyRecordsApi>().toEqualTypeOf<
@@ -113,5 +126,13 @@ const rejectUnrelatedPracticeApi = (api: PracticeAssetsApi): void => {
   void api.submitRationale;
 };
 
+const rejectUnrelatedObsidianSearchApi = (api: ObsidianSearchApi): void => {
+  // @ts-expect-error Obsidian search cannot read decision history.
+  void api.listDecisions;
+  // @ts-expect-error Obsidian search cannot change global appearance.
+  void api.setTheme;
+};
+
 void rejectUnrelatedAnalyticsApi;
 void rejectUnrelatedPracticeApi;
+void rejectUnrelatedObsidianSearchApi;

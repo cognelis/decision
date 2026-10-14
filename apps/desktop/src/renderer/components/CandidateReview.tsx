@@ -1,6 +1,13 @@
 import type { CapturedDecisionCandidate } from "@cognelis/decision-protocol";
 import { useEffect } from "react";
 
+import {
+  isClearShortcut,
+  isSubmitShortcut,
+  SUBMIT_SHORTCUT_KEYS,
+  submitShortcutLabel,
+} from "../keyboard.js";
+import { answerOptionIndex } from "./DecisionAnswerSummary.js";
 import { DecisionContext } from "./DecisionContext.js";
 import { SourceBadge } from "./SourceBadge.js";
 
@@ -30,6 +37,12 @@ export const CandidateReview = ({
   onRetry,
 }: CandidateReviewProps) => {
   const question = candidate.event.questions[0]!;
+  const indexOf = answerOptionIndex(question);
+  const chosenOptions = new Set(
+    question.answer.values
+      .map(indexOf)
+      .filter((index): index is number => index !== undefined),
+  );
   const saving = busy || persistenceStatus === "saving";
   const decisionActionUnavailable = saving || persistenceStatus === "failed";
   const context = candidate.event.context;
@@ -44,16 +57,28 @@ export const CandidateReview = ({
         };
 
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        onClose();
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      // Keys inside an open dialog (context, shortcut help) belong to it.
+      if (
+        event.target instanceof Element &&
+        event.target.closest('[role="dialog"]') !== null
+      ) {
+        return;
       }
+      // Not one that only ends an input method's composition, in the find bar say.
+      if (isClearShortcut(event)) {
+        onClose();
+        return;
+      }
+      if (decisionActionUnavailable || !isSubmitShortcut(event)) return;
+      event.preventDefault();
+      void onConfirm();
     };
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, [decisionActionUnavailable, onClose, onConfirm]);
 
   return (
     <section
@@ -110,9 +135,15 @@ export const CandidateReview = ({
 
         {question.options.length === 0 ? null : (
           <ul className="candidate-options" aria-label="相关选项">
-            {question.options.map((option) => (
-              <li key={option.id}>
-                <strong>{option.label}</strong>
+            {question.options.map((option, index) => (
+              <li
+                key={option.id}
+                className={chosenOptions.has(index) ? "chosen" : undefined}
+              >
+                <strong>
+                  {option.label}
+                  {chosenOptions.has(index) ? <em>已选</em> : null}
+                </strong>
                 {option.description === undefined ? null : (
                   <span>{option.description}</span>
                 )}
@@ -158,9 +189,14 @@ export const CandidateReview = ({
           type="button"
           className="primary-button"
           disabled={decisionActionUnavailable}
+          aria-keyshortcuts={SUBMIT_SHORTCUT_KEYS}
+          title={`${submitShortcutLabel()} 记录并补充理由`}
           onClick={() => void onConfirm()}
         >
           记录并补充理由
+          <kbd className="shortcut-hint" aria-hidden="true">
+            {submitShortcutLabel()}
+          </kbd>
         </button>
       </footer>
     </section>

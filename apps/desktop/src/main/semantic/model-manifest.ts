@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { z } from "zod";
 
 import manifestData from "../../../assets/models/qwen3.5-2b-q4-k-m.json";
+import manifest4bData from "../../../assets/models/qwen3.5-4b-q4-k-m.json";
 import embeddingManifestData from "../../../assets/models/qwen3-embedding-0.6b-q8-0.json";
 
 const qwenModelManifestSchema = z
@@ -49,6 +50,18 @@ export const QWEN_MODEL_MANIFEST =
   qwenModelManifestSchema.parse(
     manifestData,
   ) satisfies QwenModelManifest;
+
+export const QWEN_4B_MODEL_MANIFEST = qwenModelManifestSchema.extend({
+  id: z.literal("qwen3.5-4b-q4-k-m"),
+  fileName: z.literal("Qwen_Qwen3.5-4B-Q4_K_M.gguf"),
+}).parse(manifest4bData) satisfies QwenModelManifest;
+
+export const QWEN_MODEL_MANIFESTS = [QWEN_MODEL_MANIFEST, QWEN_4B_MODEL_MANIFEST];
+export const qwenModelManifest = (id: string): QwenModelManifest => {
+  const manifest = QWEN_MODEL_MANIFESTS.find((item) => item.id === id);
+  if (manifest === undefined) throw new Error("请选择受支持的 2B 或 4B 本地模型。");
+  return manifest;
+};
 
 export const QWEN_EMBEDDING_MODEL_MANIFEST =
   qwenEmbeddingModelManifestSchema.parse(

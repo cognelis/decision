@@ -2,7 +2,7 @@ import {
   capturedDecisionEventSchema,
   type CapturedDecisionEvent,
 } from "@cognelis/decision-protocol";
-import type { RationaleSubmission } from "@cognelis/decision-core";
+import { RESERVED_SECTION_TEXT, type RationaleSubmission } from "@cognelis/decision-core";
 import { createHash, randomUUID } from "node:crypto";
 import {
   chmod,
@@ -11,10 +11,24 @@ import {
   readFile,
   readdir,
   rename,
+  stat,
   unlink,
   writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { expireQuarantined, QUARANTINE_MAXIMUM_AGE_MS } from "./quarantine.js";
+import { renameReplacing } from "./replace-file.js";
+
+const DAY_MS = 24 * 60 * 60 * 1_000;
+// A text pair waits up to a week for its reading, a candidate a week for its promotion, and either then claims
+// its twin from the other mode as of when it was captured: a day more than that.
+const SEMANTIC_RETENTION_MS = 8 * DAY_MS;
+// ponytail: half a year; a turn read again after that (a session resumed so late) is asked about again.
+const ACKNOWLEDGEMENT_RETENTION_MS = 180 * DAY_MS;
+// Once an hour, as the model call records are tidied: every list stat()ed each acknowledgement of half a year
+// and read each semantic receipt again, with every capture that came in.
+const CLEANUP_INTERVAL_MS = 60 * 60 * 1_000;
+const CLEANUP_MARKER = ".last-cleanup";
 
 const sha256 = (value: string): string =>
   createHash("sha256").update(value, "utf8").digest("hex");
@@ -41,6 +55,17 @@ const parseAppliedPrincipleIds = (value: unknown): string[] | undefined => {
   return [...value];
 };
 
+/** An expectation written with the disposition, whichever it is: kept, so a restart or a later completion has it. */
+const parseExpectedOutcome = (value: unknown): string | undefined => {
+  if (value === undefined) return undefined;
+  // As strict as the note it will be written into: a file changed outside the app is quarantined here,
+  // not turned down only once its rationale is completed.
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > 4_000 || RESERVED_SECTION_TEXT.test(value)) {
+    throw new Error("Capture disposition expected outcome is invalid");
+  }
+  return value;
+};
+
 const parseDisposition = (
   value: unknown,
 ): RationaleSubmission => {
@@ -60,15 +85,19 @@ const parseDisposition = (
     const appliedPrincipleIds = parseAppliedPrincipleIds(
       "appliedPrincipleIds" in value ? value.appliedPrincipleIds : undefined,
     );
+    const expectedOutcome = parseExpectedOutcome(
+      "expectedOutcome" in value ? value.expectedOutcome : undefined,
+    );
     return {
       status: value.status,
       ...(appliedPrincipleIds === undefined ? {} : { appliedPrincipleIds }),
+      ...(expectedOutcome === undefined ? {} : { expectedOutcome }),
     };
   }
   if (value.status === "not_recorded") {
     return { status: value.status };
   }
-  if (value.status !== "captured") {
+  if (value.status !== "captured" && value.status !== "local_only") {
     throw new Error("Capture disposition status is invalid");
   }
   const rationale =
@@ -92,14 +121,18 @@ const parseDisposition = (
             factor.length > 0 &&
             factor.length <= 64,
         ))) ||
-    (rationale === undefined &&
+    (value.status === "captured" && rationale === undefined &&
       (!Array.isArray(reasonFactors) || reasonFactors.length === 0) &&
       (appliedPrincipleIds?.length ?? 0) === 0)
   ) {
     throw new Error("Captured rationale disposition is invalid");
   }
+  const expectedOutcome = parseExpectedOutcome(
+    "expectedOutcome" in value ? value.expectedOutcome : undefined,
+  );
   return {
-    status: "captured",
+    status: value.status,
+    ...(expectedOutcome === undefined ? {} : { expectedOutcome }),
     ...(rationale === undefined
       ? {}
       : { rationale: rationale as string }),
@@ -244,6 +277,9 @@ export class CaptureSpool {
   readonly #semanticAliasesPath: string;
   #semanticClaimTail: Promise<void> = Promise.resolve();
   #recoveryIssue: string | null = null;
+  // Parsed once each and kept by file name: a receipt never changes once written, and every claim (one for each
+  // question a capture brings) read and parsed all of them again.
+  readonly #semanticReceiptCache = new Map<string, SemanticOccurrenceReceipt>();
 
   constructor(path: string) {
     this.path = path;
@@ -265,17 +301,26 @@ export class CaptureSpool {
     if (pending.questions.length === 0) {
       return;
     }
+    // Held already, it is left as it is. Held damaged (cut short by a power loss, truncated by a sync tool), it is
+    // written anew: linked beside the damaged copy, the sound one was dropped as already there, and the next read
+    // quarantined the damaged one, the capture gone from a spool that had said it was kept. Unreadable just now, it
+    // is left as it is, as before.
+    let damaged = false;
+    try {
+      damaged = (await this.#stored(event)) === null;
+    } catch {
+      damaged = false;
+    }
     await this.#writeJsonAtomically(
       this.#eventPath(event),
       pending,
-      false,
+      damaged,
     );
   }
 
   async list(): Promise<CapturedDecisionEvent[]> {
     await this.#secureDirectories();
     this.#recoveryIssue = null;
-    await this.#sweepAcknowledgedDispositions();
     const events: CapturedDecisionEvent[] = [];
     for (const name of await readdir(this.#eventsPath)) {
       if (!name.endsWith(".json")) {
@@ -310,6 +355,7 @@ export class CaptureSpool {
         events.push(pending);
       }
     }
+    await this.#tidyIfDue(events);
     return events.sort(
       (left, right) =>
         left.capturedAt.localeCompare(right.capturedAt) ||
@@ -348,7 +394,9 @@ export class CaptureSpool {
       }
     });
 
-    const remaining = await this.#withoutAcknowledged(event);
+    // What is left is what the spool holds, not the caller's copy: handed part of the event (the questions
+    // still to answer, a deferred one set aside after a restart), it deleted the rest along with it.
+    const remaining = await this.#withoutAcknowledged((await this.#stored(event)) ?? event);
     if (remaining.questions.length === 0) {
       await unlink(this.#eventPath(event)).catch(() => undefined);
     } else {
@@ -357,6 +405,82 @@ export class CaptureSpool {
         remaining,
         true,
       );
+    }
+  }
+
+  /**
+   * Housekeeping, once an hour: what it could not tidy is tidied on a later read, never a reason the questions go
+   * unlisted. Set aside as unreadable, a question and its answer were kept for good: they go after a week, as what
+   * the app holds elsewhere does.
+   */
+  async #tidyIfDue(pending: readonly CapturedDecisionEvent[]): Promise<void> {
+    const marker = join(this.path, CLEANUP_MARKER);
+    const now = Date.now();
+    const last = Number(await readFile(marker, "utf8").catch(() => ""));
+    // A marker from the future (a clock set back) is not trusted to skip anything.
+    if (last > 0 && now >= last && now - last < CLEANUP_INTERVAL_MS) return;
+    await this.#sweepAcknowledgedDispositions();
+    for (const directory of [
+      this.#eventsPath,
+      this.#dispositionsPath,
+      this.#semanticReceiptsPath,
+      this.#semanticClaimsPath,
+      this.#semanticAliasesPath,
+    ]) {
+      await expireQuarantined(directory, QUARANTINE_MAXIMUM_AGE_MS, now);
+    }
+    await this.#pruneReceipts(pending, now).catch(() => undefined);
+    await writeFile(marker, String(now), { encoding: "utf8", mode: 0o600 }).catch(() => undefined);
+  }
+
+  /**
+   * What the spool remembers of handled questions, kept as long as it can still matter. A semantic receipt, and
+   * the claims and aliases made of it, pairs a capture with its twin from the other mode, for as long as either
+   * can still arrive: a week, or as long as an event still waits here. An acknowledgement keeps a question read
+   * again (a resumed session, the same turn) from being asked twice. Kept for good, they grew with every
+   * question, and every capture read all the semantic ones.
+   */
+  async #pruneReceipts(pending: readonly CapturedDecisionEvent[], now: number): Promise<void> {
+    const oldestPending = Math.min(now, ...pending.map((event) => Date.parse(event.capturedAt)));
+    const semanticCutoff = Math.min(now - SEMANTIC_RETENTION_MS, oldestPending - DAY_MS);
+    // A twin is claimed as of when each was captured: one captured before any capture still to come is no twin.
+    for (const [name, receipt] of await this.#listSemanticReceipts()) {
+      if (Date.parse(receipt.capturedAt) < semanticCutoff) {
+        await unlink(join(this.#semanticReceiptsPath, name)).catch(() => undefined);
+        this.#semanticReceiptCache.delete(name);
+      }
+    }
+    for (const [directory, cutoff] of [
+      [this.#semanticClaimsPath, semanticCutoff],
+      [this.#semanticAliasesPath, semanticCutoff],
+      [this.#receiptsPath, now - ACKNOWLEDGEMENT_RETENTION_MS],
+    ] as const) {
+      for (const name of await readdir(directory).catch(() => [] as string[])) {
+        const path = join(directory, name);
+        // Written when the question was handled, never before it was captured: aged by that, nothing goes early.
+        const written = await stat(path).then((status) => status.mtimeMs, () => Number.POSITIVE_INFINITY);
+        if (written < cutoff) await unlink(path).catch(() => undefined);
+      }
+    }
+  }
+
+  /**
+   * The event as the spool holds it, or null when it holds none it can read. One it could not read just now
+   * (EMFILE, EIO, EACCES) is refused, not taken for none: the caller's copy then said what was left, and the
+   * questions it did not carry, a deferred one among them, were deleted with the file.
+   */
+  async #stored(event: CapturedDecisionEvent): Promise<CapturedDecisionEvent | null> {
+    let text: string;
+    try {
+      text = await readFile(this.#eventPath(event), "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
+    try {
+      return capturedDecisionEventSchema.parse(JSON.parse(text));
+    } catch {
+      return null;
     }
   }
 
@@ -467,41 +591,12 @@ export class CaptureSpool {
       }
 
       const capturedTime = Date.parse(capturedAt);
-      const occurrences: SemanticOccurrenceReceipt[] = [];
-      for (const name of await readdir(
-        this.#semanticReceiptsPath,
-      )) {
-        if (!name.endsWith(".json")) {
-          continue;
-        }
-        const path = join(this.#semanticReceiptsPath, name);
-        let content: string;
-        try {
-          content = await readFile(path, "utf8");
-        } catch {
-          this.#recoveryIssue =
-            "部分语义去重状态暂时无法读取；其它有效状态仍会继续使用。";
-          continue;
-        }
-        let receipt: SemanticOccurrenceReceipt;
-        try {
-          receipt = parseSemanticOccurrence(
-            JSON.parse(content),
-          );
-        } catch {
-          await this.#quarantineSemanticFile(path);
-          continue;
-        }
-        if (
+      const occurrences = [...(await this.#listSemanticReceipts()).values()].filter(
+        (receipt) =>
           receipt.semanticKey === semanticKey &&
           receipt.captureMode !== aliasMode &&
-          Math.abs(
-            Date.parse(receipt.capturedAt) - capturedTime,
-          ) <= maximumAgeMs
-        ) {
-          occurrences.push(receipt);
-        }
-      }
+          Math.abs(Date.parse(receipt.capturedAt) - capturedTime) <= maximumAgeMs,
+      );
       occurrences.sort(
         (left, right) =>
           Math.abs(Date.parse(left.capturedAt) - capturedTime) -
@@ -621,7 +716,7 @@ export class CaptureSpool {
     try {
       return parseDisposition(JSON.parse(content));
     } catch (error) {
-      const quarantined = `${path}.corrupt-${randomUUID()}`;
+      const quarantined = `${path}.corrupt-${Date.now()}-${randomUUID()}`;
       try {
         await rename(path, quarantined);
         await chmod(quarantined, 0o600);
@@ -859,6 +954,40 @@ export class CaptureSpool {
     return null;
   }
 
+  /** The semantic receipts by file name: those not read before are read now, and one gone (pruned, set aside) is dropped. */
+  async #listSemanticReceipts(): Promise<Map<string, SemanticOccurrenceReceipt>> {
+    const present = new Set<string>();
+    const names = await readdir(this.#semanticReceiptsPath);
+    // Dropped below are only the receipts known before this listing: one read in by a claim running meanwhile
+    // (written after this readdir) is not gone, and dropped, the claim answered no twin with its receipt on disk.
+    const known = new Set(this.#semanticReceiptCache.keys());
+    for (const name of names) {
+      if (!name.endsWith(".json")) continue;
+      present.add(name);
+      if (this.#semanticReceiptCache.has(name)) continue;
+      const path = join(this.#semanticReceiptsPath, name);
+      let content: string;
+      try {
+        content = await readFile(path, "utf8");
+      } catch (error) {
+        // Gone since the listing (pruned) is nothing; one it cannot read just now is said, and read again next time.
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          this.#recoveryIssue = "部分语义去重状态暂时无法读取；其它有效状态仍会继续使用。";
+        }
+        continue;
+      }
+      try {
+        this.#semanticReceiptCache.set(name, parseSemanticOccurrence(JSON.parse(content)));
+      } catch {
+        await this.#quarantineSemanticFile(path);
+      }
+    }
+    for (const name of known) {
+      if (!present.has(name)) this.#semanticReceiptCache.delete(name);
+    }
+    return this.#semanticReceiptCache;
+  }
+
   async #quarantineSemanticFile(path: string): Promise<void> {
     await this.#quarantineFile(
       path,
@@ -872,7 +1001,7 @@ export class CaptureSpool {
     successMessage: string,
     failureMessage: string,
   ): Promise<void> {
-    const quarantined = `${path}.corrupt-${randomUUID()}`;
+    const quarantined = `${path}.corrupt-${Date.now()}-${randomUUID()}`;
     try {
       await rename(path, quarantined);
       await chmod(quarantined, 0o600);
@@ -911,7 +1040,7 @@ export class CaptureSpool {
         flag: "wx",
       });
       if (replace) {
-        await rename(temporaryPath, path);
+        await renameReplacing(temporaryPath, path);
       } else {
         await link(temporaryPath, path).catch(
           (error: NodeJS.ErrnoException) => {

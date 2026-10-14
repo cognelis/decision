@@ -57,6 +57,21 @@ describe("methodology recall", () => {
     expect(matches[0]?.reason).toContain("当前决策存在文本重合");
   });
 
+  it("scores a principle again once any of its texts has changed under the same id", () => {
+    const question = {
+      question: "上线前是否先验证兼容边界？",
+      selectedAnswer: null,
+      optionLabels: ["一次性全面上线", "先小范围验证"],
+      context: "真实运行兼容性仍不明确，需要控制返工风险。",
+    };
+    const unrelated = { title: "统一视觉层级", principle: "菜单图标应遵循系统视觉尺寸。", appliesWhen: "调整菜单栏图标时。", caution: "不要忽略高分辨率资源。" };
+    expect(buildMethodologyRecall([methodology("changing", unrelated)], question)).toEqual([]);
+
+    // Only its caution rewritten to the case at hand: scored as it was before, it stayed unrecalled.
+    const recalled = buildMethodologyRecall([methodology("changing", { ...unrelated, caution: "真实运行兼容性仍不明确、需要控制返工风险时先小范围验证。" })], question);
+    expect(recalled.map((match) => match.principleId)).toEqual(["changing"]);
+  });
+
   it("returns no suggestion when overlap is too weak", () => {
     expect(
       buildMethodologyRecall([methodology("principle-1")], {

@@ -1,12 +1,16 @@
+import { proxyPrivateValues } from "../provider-network.js";
 import {
+  execFile,
   spawn,
   type ChildProcessWithoutNullStreams,
   type SpawnOptionsWithoutStdio,
 } from "node:child_process";
 import { isAbsolute } from "node:path";
 
+import { commandInvocation } from "@cognelis/decision-integrations";
 import type {
   ModelInvocationErrorCode,
+  ModelInvocationInput,
 } from "@cognelis/decision-protocol";
 
 export interface ManagedProcessRequest {
@@ -20,6 +24,8 @@ export interface ManagedProcessRequest {
   environment: NodeJS.ProcessEnv;
   signal?: AbortSignal;
   cleanup?: () => Promise<void> | void;
+  /** Bounded control-protocol exchange; completing closes stdin without starting a model turn. */
+  conversation?: (stdout: string) => { input?: string; complete?: boolean };
 }
 
 export interface ManagedProcessResult {
@@ -32,6 +38,7 @@ export interface ManagedProcessResult {
 export class ManagedProcessError extends Error {
   readonly code: ModelInvocationErrorCode;
   readonly diagnosticExcerpt: string;
+  traceInput?: ModelInvocationInput;
   readonly processExitCode: number | undefined;
 
   constructor(
@@ -66,6 +73,7 @@ export interface ManagedChildProcessRunnerOptions {
     signal: NodeJS.Signals,
   ) => void;
   clock?: () => number;
+  platform?: NodeJS.Platform;
 }
 
 const validLimit = (value: number): boolean =>
@@ -101,6 +109,41 @@ const replaceAll = (
     ? value
     : value.split(search).join("[redacted]");
 
+/**
+ * Why a client says it failed, where it says so on stdout rather than stderr: Claude Code's result
+ * marked is_error ("Credit balance is too low"), or a Codex event of type error or turn.failed. Only
+ * these: anything else on stdout may be the model's answer, which a diagnostic must not hold.
+ */
+const reportedFailure = (stdout: string): string | null => {
+  const reasonOf = (value: unknown): string | null => {
+    if (value === null || typeof value !== "object") return null;
+    const event = value as Record<string, unknown>;
+    if (event.is_error === true && typeof event.result === "string") return event.result;
+    if (event.type === "error" && typeof event.message === "string") return event.message;
+    const error = event.error as Record<string, unknown> | undefined;
+    if ((event.type === "turn.failed" || event.type === "error") && typeof error?.message === "string") return JSON.stringify({
+      message: error.message,
+      ...(typeof error.code === "string" && /^[a-z_]{1,80}$/u.test(error.code) ? { code: error.code } : {}),
+      ...(typeof event.status === "number" && Number.isInteger(event.status) && event.status >= 100 && event.status <= 599 ? { status: event.status } : {}),
+    });
+    return null;
+  };
+  const parse = (text: string): unknown => {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  };
+  const whole = reasonOf(parse(stdout.trim()));
+  if (whole !== null) return whole;
+  for (const line of stdout.split("\n").reverse()) {
+    const reason = line.trim().startsWith("{") ? reasonOf(parse(line.trim())) : null;
+    if (reason !== null) return reason;
+  }
+  return null;
+};
+
 const sanitize = (
   value: string,
   request: ManagedProcessRequest,
@@ -115,6 +158,7 @@ const sanitize = (
       "[redacted]",
     );
   const privateValues = [
+    ...proxyPrivateValues(request.environment),
     request.stdin,
     request.cwd,
     request.environment.HOME,
@@ -133,6 +177,15 @@ const sanitize = (
   return sanitized.slice(0, 2_000);
 };
 
+// Every model process running, as each runner stops it when cancelled. Started in a group of their own (detached),
+// they outlived a quit: a billed CLI call ran to its end for nobody, unless stopped here.
+const running = new Set<() => void>();
+
+/** Cancels every model process still running, from any runner: for a quit. */
+export const stopManagedProcesses = (): void => {
+  for (const stop of [...running]) stop();
+};
+
 export class ManagedChildProcessRunner {
   readonly #spawnProcess: SpawnProcess;
   readonly #killProcessGroup: (
@@ -140,15 +193,22 @@ export class ManagedChildProcessRunner {
     signal: NodeJS.Signals,
   ) => void;
   readonly #clock: () => number;
+  readonly #platform: NodeJS.Platform;
 
   constructor(
     options: ManagedChildProcessRunnerOptions = {},
   ) {
+    this.#platform = options.platform ?? process.platform;
     this.#spawnProcess =
       options.spawnProcess ?? (spawn as SpawnProcess);
     this.#killProcessGroup =
       options.killProcessGroup ??
-      ((pid, signal) => process.kill(-pid, signal));
+      (this.#platform === "win32"
+        // No process groups: the tree goes from its root, the cmd a shim runs in and the client under it alike.
+        ? (pid) => {
+            execFile("taskkill", ["/pid", String(pid), "/T", "/F"], { windowsHide: true }, () => undefined);
+          }
+        : (pid, signal) => process.kill(-pid, signal));
     this.#clock = options.clock ?? (() => performance.now());
   }
 
@@ -176,16 +236,22 @@ export class ManagedChildProcessRunner {
     return new Promise((resolve, reject) => {
       let child: ChildProcessWithoutNullStreams;
       try {
+        // A .cmd or .bat (npm's shim for claude and codex) runs only through cmd: Node refuses to start one
+        // without a shell, since its fix for batch argument injection.
+        const invocation = this.#platform === "win32" && /\.(?:cmd|bat)$/iu.test(request.executable)
+          ? commandInvocation(request.executable, request.args, { platform: this.#platform })
+          : { command: request.executable, args: request.args, windowsVerbatimArguments: false };
         child = this.#spawnProcess(
-          request.executable,
-          request.args,
+          invocation.command,
+          invocation.args,
           {
             shell: false,
             cwd: request.cwd,
-            detached: process.platform !== "win32",
+            detached: this.#platform !== "win32",
             stdio: ["pipe", "pipe", "pipe"],
             env: request.environment,
             windowsHide: true,
+            windowsVerbatimArguments: invocation.windowsVerbatimArguments,
           },
         );
       } catch (error) {
@@ -209,10 +275,12 @@ export class ManagedChildProcessRunner {
       let stderrBytes = 0;
       let terminalError: ManagedProcessError | undefined;
       let finished = false;
+      let conversationComplete = false;
       let forceKillTimer: NodeJS.Timeout | undefined;
       let forceFinishTimer: NodeJS.Timeout | undefined;
 
       const clear = (): void => {
+        running.delete(onAbort);
         clearTimeout(timeoutTimer);
         if (forceKillTimer !== undefined) {
           clearTimeout(forceKillTimer);
@@ -246,11 +314,7 @@ export class ManagedChildProcessRunner {
         terminalError = error;
         const pid = child.pid;
         try {
-          if (
-            process.platform !== "win32" &&
-            typeof pid === "number" &&
-            pid > 0
-          ) {
+          if (typeof pid === "number" && pid > 0) {
             this.#killProcessGroup(pid, "SIGTERM");
           } else {
             child.kill("SIGTERM");
@@ -263,11 +327,7 @@ export class ManagedChildProcessRunner {
             return;
           }
           try {
-            if (
-              process.platform !== "win32" &&
-              typeof pid === "number" &&
-              pid > 0
-            ) {
+            if (typeof pid === "number" && pid > 0) {
               this.#killProcessGroup(pid, "SIGKILL");
             } else {
               child.kill("SIGKILL");
@@ -318,6 +378,15 @@ export class ManagedChildProcessRunner {
           }
         }
         target.push(buffer);
+        if (stream === "stdout" && request.conversation && !conversationComplete && !terminalError) {
+          try {
+            const response = request.conversation(Buffer.concat(stdout, stdoutBytes).toString("utf8"));
+            if (response.input) child.stdin.write(response.input);
+            if (response.complete) { conversationComplete = true; child.stdin.end(); }
+          } catch {
+            terminate(new ManagedProcessError("invalid_output", "Client control protocol returned an invalid response"));
+          }
+        }
       };
 
       child.stdout.on("data", (chunk: Buffer | string) =>
@@ -351,7 +420,8 @@ export class ManagedChildProcessRunner {
           return;
         }
         const code = exitCode ?? -1;
-        if (code !== 0) {
+        // A control-only client may exit nonzero on EOF because no user turn was supplied.
+        if (code !== 0 && !conversationComplete) {
           finishError(
             new ManagedProcessError(
               "process_failed",
@@ -359,10 +429,12 @@ export class ManagedChildProcessRunner {
               {
                 processExitCode: code,
                 diagnosticExcerpt: sanitize(
-                  Buffer.concat(
-                    stderr,
-                    stderrBytes,
-                  ).toString("utf8"),
+                  [
+                    reportedFailure(Buffer.concat(stdout, stdoutBytes).toString("utf8")),
+                    Buffer.concat(stderr, stderrBytes).toString("utf8").trim(),
+                  ]
+                    .filter((part): part is string => part !== null && part.length > 0)
+                    .join("\n"),
                   request,
                 ),
               },
@@ -399,6 +471,7 @@ export class ManagedChildProcessRunner {
       request.signal?.addEventListener("abort", onAbort, {
         once: true,
       });
+      running.add(onAbort);
       const timeoutTimer = setTimeout(
         () =>
           terminate(
@@ -411,7 +484,8 @@ export class ManagedChildProcessRunner {
       );
       timeoutTimer.unref();
       child.stdin.once("error", () => undefined);
-      child.stdin.end(request.stdin);
+      if (request.conversation) child.stdin.write(request.stdin);
+      else child.stdin.end(request.stdin);
     });
   }
 }

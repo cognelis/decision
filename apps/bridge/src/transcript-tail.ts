@@ -1,3 +1,4 @@
+import { clipText, clipTextEnd } from "@cognelis/decision-protocol";
 import {
   open,
   type FileHandle,
@@ -38,6 +39,11 @@ const asObject = (
     : null;
 
 const contentText = (value: unknown): string | null => {
+  // A prompt typed into Claude Code is written as a plain string; blocks are for everything else.
+  if (typeof value === "string") {
+    const text = value.trim();
+    return text.length > 0 ? text : null;
+  }
   if (!Array.isArray(value)) {
     return null;
   }
@@ -55,7 +61,7 @@ const contentText = (value: unknown): string | null => {
     return null;
   }
   const text = parts.join("\n").trim();
-  return text.length > 0 && text.length <= 8_000 ? text : null;
+  return text.length > 0 ? text : null;
 };
 
 interface VisibleMessage {
@@ -65,7 +71,8 @@ interface VisibleMessage {
 
 const visibleMessage = (value: unknown): VisibleMessage | null => {
   const object = asObject(value);
-  if (object === null) {
+  // Written as the user's but not typed by them: hook feedback, an image placeholder, a check-in.
+  if (object === null || object.isMeta === true) {
     return null;
   }
   for (const branch of [object.message, object.payload]) {
@@ -75,17 +82,21 @@ const visibleMessage = (value: unknown): VisibleMessage | null => {
       message?.role === "user"
     ) {
       const text = contentText(message.content);
-      if (text !== null) {
-        return { role: message.role, text };
+      // A plain string in a wrapper (a background task's notice, a slash command and its output) is the
+      // client's, not the reader's.
+      if (text !== null && !(typeof message.content === "string" && text.startsWith("<"))) {
+        return {
+          role: message.role,
+          // Match hook payload capture: retain the question at the end of an
+          // assistant reply and the task at the start of a user message.
+          text: message.role === "assistant"
+            ? clipTextEnd(text, 8_000)
+            : clipText(text, 8_000),
+        };
       }
     }
   }
   return null;
-};
-
-const assistantText = (value: unknown): string | null => {
-  const message = visibleMessage(value);
-  return message?.role === "assistant" ? message.text : null;
 };
 
 const nonEmptyString = (
@@ -167,31 +178,8 @@ const readTailLines = async (
 export const readLastAssistantText = async (
   path: string,
   options: TailReadOptions = {},
-): Promise<string | null> => {
-  try {
-    const lines = await readTailLines(path, options);
-    if (lines === null) {
-      return null;
-    }
-    for (let index = lines.length - 1; index >= 0; index -= 1) {
-      const line = lines[index]?.trim();
-      if (line === undefined || line.length === 0) {
-        continue;
-      }
-      try {
-        const text = assistantText(JSON.parse(line) as unknown);
-        if (text !== null) {
-          return text;
-        }
-      } catch {
-        // Invalid tail lines are ignored without exposing their contents.
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
+): Promise<string | null> =>
+  (await readLastDecisionTurn(path, options))?.assistantText ?? null;
 
 export const readLastDecisionTurn = async (
   path: string,
@@ -215,6 +203,7 @@ export const readLastDecisionTurn = async (
         );
         if (message?.role === "user") {
           userText = message.text;
+          latest = null;
         } else if (message?.role === "assistant") {
           latest = {
             userText,

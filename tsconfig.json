@@ -17,6 +17,9 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "paths": {
+      "@cognelis/decision-core/journal-entry": [
+        "./packages/core/src/journal-entry.ts"
+      ],
       "@cognelis/decision-core/rationale-factors": [
         "./packages/core/src/rationale-factors.ts"
       ],

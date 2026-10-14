@@ -45,6 +45,27 @@ const methodology = (
 });
 
 describe("buildMethodologySuggestions", () => {
+  it("lets suggestions set aside give their places to ones not yet offered", () => {
+    // Six reviews unlike one another: each its own suggestion, four of them offered.
+    const items = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"].map((word, index) =>
+      evidence(`d${index}`, {
+        project: `project-${word}`,
+        question: `${word}question${index}`,
+        selectedAnswer: `${word}answer${index}`,
+        outcomeLesson: `${word}lesson${index}`,
+        reviewedAt: new Date(Date.UTC(2026, 8, 30 - index)).toISOString(),
+      }));
+    const shown = buildMethodologySuggestions(items, [], 12).map((suggestion) => suggestion.id);
+    expect(shown).toHaveLength(4);
+
+    const deferred = new Set(shown);
+    const after = buildMethodologySuggestions(items, [], 12, (id) => deferred.has(id));
+
+    // The two never offered are offered now; the four set aside still come back, for the deferred list.
+    expect(after.filter((suggestion) => !deferred.has(suggestion.id))).toHaveLength(2);
+    expect(after.filter((suggestion) => deferred.has(suggestion.id))).toHaveLength(4);
+  });
+
   it("groups related, directionally consistent reviews and scores readiness", () => {
     const suggestions = buildMethodologySuggestions(
       [

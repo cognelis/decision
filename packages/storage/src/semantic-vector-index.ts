@@ -2,12 +2,16 @@ import { chmodSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+import { openRebuildable } from "./sqlite-index.js";
+
 export type SemanticVectorEntityType = "decision" | "methodology";
 
 export interface SemanticVectorRecord {
   entityType: SemanticVectorEntityType;
   entityId: string;
   contentHash: string;
+  /** The content hash of the note its text was made from, where there is one (a decision's). */
+  sourceHash?: string | null;
   model: string;
   vector: number[];
 }
@@ -15,6 +19,7 @@ export interface SemanticVectorRecord {
 export interface SemanticVectorMetadata {
   entityId: string;
   contentHash: string;
+  sourceHash: string | null;
   model: string;
   dimension: number;
 }
@@ -57,13 +62,10 @@ const decodeVector = (row: VectorRow): number[] => {
   );
 };
 
-export class SemanticVectorIndex {
-  readonly #database: DatabaseSync;
-
-  constructor(path: string) {
-    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-    this.#database = new DatabaseSync(path);
-    this.#database.exec(`
+const openVectors = (path: string): DatabaseSync => {
+  const database = new DatabaseSync(path);
+  try {
+    database.exec(`
       PRAGMA journal_mode = WAL;
       PRAGMA synchronous = NORMAL;
       CREATE TABLE IF NOT EXISTS semantic_vectors (
@@ -79,14 +81,33 @@ export class SemanticVectorIndex {
       CREATE INDEX IF NOT EXISTS semantic_vectors_model
         ON semantic_vectors(entity_type, model);
     `);
+    // The note a decision's vector was made from: a start reads again only a decision whose note changed since.
+    // Unknown for vectors from before it, whose decisions are read once more and kept as found, not embedded again.
+    const columns = (database.prepare("PRAGMA table_info(semantic_vectors)").all() as Array<{ name: string }>).map((column) => column.name);
+    if (!columns.includes("source_hash")) database.exec("ALTER TABLE semantic_vectors ADD COLUMN source_hash TEXT");
     chmodSync(path, 0o600);
+    return database;
+  } catch (error) {
+    database.close();
+    throw error;
+  }
+};
+
+export class SemanticVectorIndex {
+  readonly #database: DatabaseSync;
+
+  constructor(path: string) {
+    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+    // Only a cache of what the notes say: one SQLite cannot read is set aside and filled again, as the index is,
+    // rather than keeping the app from opening.
+    this.#database = openRebuildable(path, openVectors);
   }
 
   metadata(entityType: SemanticVectorEntityType): SemanticVectorMetadata[] {
     return (
       this.#database
         .prepare(`
-          SELECT entity_id, content_hash, model, dimension
+          SELECT entity_id, content_hash, source_hash, model, dimension
           FROM semantic_vectors
           WHERE entity_type = ?
           ORDER BY entity_id
@@ -94,15 +115,31 @@ export class SemanticVectorIndex {
         .all(entityType) as Array<{
         entity_id: string;
         content_hash: string;
+        source_hash: string | null;
         model: string;
         dimension: number;
       }>
     ).map((row) => ({
       entityId: row.entity_id,
       contentHash: row.content_hash,
+      sourceHash: row.source_hash,
       model: row.model,
       dimension: row.dimension,
     }));
+  }
+
+  /** Vectors found still to be of these notes' text: kept as made from them, so the next start reads them not. */
+  keepSources(entityType: SemanticVectorEntityType, sources: ReadonlyArray<readonly [entityId: string, sourceHash: string]>): void {
+    if (sources.length === 0) return;
+    const statement = this.#database.prepare("UPDATE semantic_vectors SET source_hash = ? WHERE entity_type = ? AND entity_id = ?");
+    this.#database.exec("BEGIN IMMEDIATE");
+    try {
+      for (const [entityId, sourceHash] of sources) statement.run(sourceHash, entityType, entityId);
+      this.#database.exec("COMMIT");
+    } catch (error) {
+      this.#database.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   upsert(records: SemanticVectorRecord[]): void {
@@ -112,10 +149,11 @@ export class SemanticVectorIndex {
       const statement = this.#database.prepare(`
         INSERT INTO semantic_vectors (
           entity_type, entity_id, content_hash, model,
-          dimension, vector, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          dimension, vector, updated_at, source_hash
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(entity_type, entity_id) DO UPDATE SET
           content_hash = excluded.content_hash,
+          source_hash = excluded.source_hash,
           model = excluded.model,
           dimension = excluded.dimension,
           vector = excluded.vector,
@@ -132,6 +170,7 @@ export class SemanticVectorIndex {
           record.vector.length,
           vector,
           updatedAt,
+          record.sourceHash ?? null,
         );
       }
       this.#database.exec("COMMIT");

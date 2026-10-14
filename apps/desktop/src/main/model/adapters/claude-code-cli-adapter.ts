@@ -24,6 +24,7 @@ import {
 } from "../cli/managed-child-process.js";
 import { ModelProviderError } from "../http-model-transport.js";
 import {
+  MIN_GENERATION_TIMEOUT_MS,
   parseStructuredJson,
   type StructuredProviderAttempt,
 } from "../structured-provider.js";
@@ -98,7 +99,6 @@ const resultSchema = z
 const normalizeUsage = (
   result: z.infer<typeof resultSchema>,
 ): NormalizedTokenUsage => {
-  const inputTokens = result.usage?.input_tokens;
   const outputTokens = result.usage?.output_tokens;
   const read = result.usage?.cache_read_input_tokens;
   const created =
@@ -107,6 +107,12 @@ const normalizeUsage = (
     read === undefined && created === undefined
       ? undefined
       : (read ?? 0) + (created ?? 0);
+  // Claude Code counts cache reads and writes apart from input_tokens; the rest of the app reads input as
+  // including what was cached, as OpenAI reports it. Left apart, a call that read 17k tokens showed 65.
+  const inputTokens =
+    result.usage?.input_tokens === undefined
+      ? undefined
+      : result.usage.input_tokens + (cachedInputTokens ?? 0);
   const hasValue =
     inputTokens !== undefined ||
     outputTokens !== undefined ||
@@ -217,7 +223,7 @@ export class ClaudeCodeCliAdapter {
         maximumStderrBytes: 65_536,
         environment: minimalClientEnvironment(
           this.#environment,
-          ["CLAUDE_CONFIG_DIR"],
+          ["CLAUDE_CONFIG_DIR"], this.#profile.proxy,
         ),
         ...(signal === undefined ? {} : { signal }),
       });
@@ -330,12 +336,12 @@ export class ClaudeCodeCliAdapter {
         ],
         stdin,
         cwd: workspace.directory,
-        timeoutMs: this.#profile.timeoutMs,
+        timeoutMs: Math.max(this.#profile.timeoutMs, MIN_GENERATION_TIMEOUT_MS),
         maximumStdoutBytes: 1_048_576,
         maximumStderrBytes: 65_536,
         environment: minimalClientEnvironment(
           this.#environment,
-          ["CLAUDE_CONFIG_DIR"],
+          ["CLAUDE_CONFIG_DIR"], this.#profile.proxy,
         ),
         ...(signal === undefined ? {} : { signal }),
       });
@@ -354,13 +360,18 @@ export class ClaudeCodeCliAdapter {
         parsed.data.is_error ||
         parsed.data.subtype !== "success"
       ) {
+        // A run that stopped short (error_max_turns, say) was still billed: what it cost goes with it.
         throw new ModelProviderError(
           "invalid_output",
-          "Claude Code returned an unsuccessful result",
+          `Claude Code returned an unsuccessful result${parsed.success ? ` · subtype=${parsed.data.subtype}` : ""}`,
+          parsed.success ? { usage: normalizeUsage(parsed.data) } : {},
         );
       }
       const visibleOutput = parseStructuredJson(
         parsed.data.result,
+        undefined,
+        undefined,
+        normalizeUsage(parsed.data),
       );
       let parsedOutput = visibleOutput;
       if (parsed.data.structured_output !== undefined) {
@@ -394,6 +405,7 @@ export class ClaudeCodeCliAdapter {
         error instanceof ManagedProcessError ||
         error instanceof ModelProviderError
       ) {
+        Object.defineProperty(error, "traceInput", { value: { systemPrompt: request.systemPrompt, userPrompt: request.userPrompt, outputSchema: request.outputSchema, clientSystemPromptVisibility: "opaque" }, enumerable: false, writable: true, configurable: true });
         throw error;
       }
       throw new ModelProviderError(

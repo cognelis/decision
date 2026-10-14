@@ -1,8 +1,13 @@
+import { SEMANTIC_PROMPT_VERSION } from "../src/main/model/semantic-prompt.js";
 import type {
   ModelProviderProfile,
   StructuredGenerationRequest,
 } from "@cognelis/decision-protocol";
 import { describe, expect, it, vi } from "vitest";
+
+import {
+  REASONING_HEADROOM_TOKENS,
+} from "../src/main/model/structured-provider.js";
 
 import {
   ModelProviderError,
@@ -121,6 +126,25 @@ const setup = (
 };
 
 describe("OpenAIResponsesAdapter", () => {
+  it("keeps what a call that ran out of output budget cost, and says why it stopped", async () => {
+    const { adapter } = setup(
+      response({
+        status: "incomplete",
+        incomplete_details: { reason: "max_output_tokens" },
+        // All of it spent on reasoning: nothing visible came back, and all of it was billed.
+        output: [{ type: "reasoning", content: [] }],
+        usage: { input_tokens: 900, output_tokens: 6_884, output_tokens_details: { reasoning_tokens: 6_884 }, total_tokens: 7_784 },
+      }),
+    );
+    const failure = await adapter.generate(methodologyRequest).catch((error: unknown) => error);
+
+    expect(failure).toMatchObject({
+      code: "invalid_output",
+      usage: { source: "provider_reported", inputTokens: 900, outputTokens: 6_884 },
+    });
+    expect((failure as { diagnosticExcerpt: string }).diagnosticExcerpt).toContain("incomplete_reason=max_output_tokens");
+  });
+
   it("submits request-specific prompts and schemas for methodology extraction", async () => {
     const structuredOutput = JSON.stringify({ title: "可逆优先" });
     const { adapter, requests } = setup(
@@ -147,10 +171,12 @@ describe("OpenAIResponsesAdapter", () => {
     expect(requests[0]?.body).toMatchObject({
       instructions: methodologyRequest.systemPrompt,
       input: methodologyRequest.userPrompt,
-      max_output_tokens: 768,
+      max_output_tokens: 768 + REASONING_HEADROOM_TOKENS,
       text: {
         format: {
           name: "decision_structured_output",
+          // Optional keys and an open object: strict, OpenAI refuses the request outright.
+          strict: false,
           schema: methodologyRequest.outputSchema,
         },
       },
@@ -175,7 +201,7 @@ describe("OpenAIResponsesAdapter", () => {
         tools: [],
         instructions: semanticSystemPrompt,
         input: buildSemanticUserPrompt(input),
-        max_output_tokens: 256,
+        max_output_tokens: 256 + REASONING_HEADROOM_TOKENS,
         text: {
           format: {
             type: "json_schema",
@@ -199,7 +225,7 @@ describe("OpenAIResponsesAdapter", () => {
         confidence: 0.96,
         provider: "openai",
         modelVersion: "gpt-5-mini-2026-07-15",
-        promptVersion: "semantic-v1",
+        promptVersion: SEMANTIC_PROMPT_VERSION,
       },
       visibleOutput,
       traceInput: {

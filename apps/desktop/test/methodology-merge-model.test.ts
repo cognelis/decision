@@ -119,7 +119,7 @@ describe("methodology merge model", () => {
     expect(sameIdSet(["a", "b"], ["a", "c"])).toBe(false);
   });
 
-  it("retains valid manual evidence first and fills up to five records", () => {
+  it("keeps what the reader checked first, leaves out what they left unchecked, and checks what new sources bring, up to five", () => {
     const originalSources = [
       source("old", [decision("one"), decision("two"), decision("removed")]),
     ];
@@ -135,15 +135,26 @@ describe("methodology merge model", () => {
 
     const updated = updateMergeSources(current, nextSources);
 
+    // "one" was on offer and left unchecked: it stays out.
     expect(updated.input.sourceDecisionIds).toEqual([
       "two",
-      "one",
       "three",
       "four",
       "five",
+      "six",
     ]);
     expect(current.input.sourceDecisionIds).toEqual(["two", "removed"]);
     expect(updated.availableEvidence).toHaveLength(6);
+  });
+
+  it("does not check again evidence the reader took out when the sources stay the same", () => {
+    const sources = [
+      source("a", [decision("a1"), decision("a2")]),
+      source("b", [decision("b1"), decision("b2")]),
+    ];
+    // All four were checked, then b2 taken out; confirming a relation updates with the same sources.
+    const current = draft(sources, ["a1", "a2", "b1"], mergeEvidenceSummary(sources));
+    expect(updateMergeSources(current, sources).input.sourceDecisionIds).toEqual(["a1", "a2", "b1"]);
   });
 
   it("updates an untouched automatic summary but preserves manual edits", () => {

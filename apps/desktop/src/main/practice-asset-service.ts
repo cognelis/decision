@@ -18,7 +18,10 @@ import {
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 
+import { practiceAssetBasis } from "../shared/renderer-api.js";
+
 import {
+  modelFailureMessage,
   ProfiledModelGatewayError,
   type ProfiledModelGateway,
 } from "./model/profiled-model-gateway.js";
@@ -113,7 +116,9 @@ const slugFor = (
     .toLowerCase()
     .replace(/[^a-z0-9]+/gu, "-")
     .replace(/^-+|-+$/gu, "")
-    .slice(0, 43)
+    // "decision-" (9), this, "-" and the 12-character digest: 64 at most, the longest a slug may be. At 43
+    // a long English title made 65, and the asset could not be saved, after its draft was generated.
+    .slice(0, 42)
     .replace(/-+$/u, "");
   if (readable.length > 0) return `decision-${readable}-${digest}`;
   return `decision-${kind}-${digest}`;
@@ -195,6 +200,13 @@ export class PracticeAssetService {
       (record) =>
         assessPracticeAssetFreshness(record, methodologies).state === "current",
     );
+    // An adopted one of the same sources is said, as 手动编写 says it: returned, it opened as if just drafted with
+    // nothing said of it, a draft of the same sources already waiting being the one returned without a word.
+    if (current?.status === "accepted") {
+      throw new Error(
+        `已经存在使用相同来源的${kind === "skill" ? "技能" : "工作流"}，请直接打开并编辑现有资产。`,
+      );
+    }
     if (current !== undefined) return current;
     const accepted = matching.find((record) => record.status === "accepted");
     const staleCandidate = matching.find(
@@ -263,11 +275,11 @@ export class PracticeAssetService {
         model: "不调用模型",
       },
     };
-    await this.#assets.save(record);
+    const saved = await this.#saved(record);
     if (accepted === undefined && staleCandidate !== undefined) {
       await this.#dismissReplacedCandidate(staleCandidate);
     }
-    return record;
+    return saved;
   }
 
   async regenerate(id: string): Promise<PracticeAssetRecord> {
@@ -299,7 +311,10 @@ export class PracticeAssetService {
       current.kind,
       current.sourcePrincipleIds,
       sources,
-      current.status === "accepted" ? current.id : null,
+      // A replacement draft regenerated still replaces the asset it was drafted for: dropped, adopting
+      // it made a second adopted asset beside the first instead of updating it.
+      current.status === "accepted" ? current.id : current.supersedesId ?? null,
+      current.status === "accepted" ? null : current.migrationSourcePrincipleIds ?? null,
     );
     if (current.status === "candidate") {
       await this.#dismissReplacedCandidate(current);
@@ -317,7 +332,7 @@ export class PracticeAssetService {
     }
     const ids = normalizedIds(sourcePrincipleIds);
     if (sameSources(current.sourcePrincipleIds, ids)) {
-      throw new Error("实践资产已经使用目标来源，无需迁移。");
+      throw new Error("这项技能与流程已经使用目标来源，无需迁移。");
     }
     const methodologies = await this.#methodologies.list();
     const sources = this.#acceptedSources(ids, methodologies);
@@ -344,11 +359,21 @@ export class PracticeAssetService {
         current.sourcePrincipleIds,
       );
     }
+    // A replacement draft moved to other sources still replaces its asset, moving from that asset's sources.
+    const target = current.supersedesId === undefined
+      ? undefined
+      : records.find((record) => record.id === current.supersedesId);
+    // Its asset already moved there: nothing is left for this draft to move, and asking the model first paid for
+    // a call that ended in an internal English refusal.
+    if (target !== undefined && sameSources(target.sourcePrincipleIds, ids)) {
+      throw new Error("它要替换的技能或流程已经迁移到这些来源，这份旧草案已经过时，请在“技能与流程”中忽略它。");
+    }
     const generated = await this.#generateDraft(
       current.kind,
       ids,
       sources,
-      null,
+      target?.id ?? null,
+      target === undefined ? null : current.migrationSourcePrincipleIds ?? target.sourcePrincipleIds,
     );
     await this.#dismissReplacedCandidate(current);
     return generated;
@@ -382,9 +407,12 @@ export class PracticeAssetService {
         (value) => practiceAssetDraftSchema.parse(value),
       )
       .catch((error: unknown) => {
+        // Rate limited, out of credit, or answering out of shape, a model that is there was said not to be.
         if (error instanceof ProfiledModelGatewayError) {
           throw new Error(
-            "当前没有可用于生成草案的模型，请先在“模型”中启用并确认 Qwen、API 或终端模型可用。",
+            error.failureCode === "provider_unavailable"
+              ? "当前没有可用于生成草案的模型，请先在“模型”中启用并确认 Qwen、API 或终端模型可用。"
+              : `草案没有生成：${modelFailureMessage(error.failureCode)}`,
             { cause: error },
           );
         }
@@ -414,17 +442,23 @@ export class PracticeAssetService {
         model: result.model,
       },
     };
-    await this.#assets.save(record);
-    return record;
+    return this.#saved(record);
   }
 
   async revise(
     id: string,
     revision: PracticeAssetRevision,
+    /** practiceAssetBasis of the asset as the page opened it for this edit. */
+    basis?: string,
   ): Promise<PracticeAssetRecord> {
     const current = await this.#require(id);
     if (current.status === "dismissed") {
       throw new Error("已忽略的草案不能再编辑。");
+    }
+    // Every field is written back as the page has it: a step saved in Obsidian since the page opened the asset went
+    // without a word (an adopted one's kept only in its history), the title being the one change meant.
+    if (basis !== undefined && basis !== practiceAssetBasis(current)) {
+      throw new Error("这篇笔记刚在 Obsidian 里被改过，这次没有保存；请重新打开它，在新内容上修改。");
     }
     const draft = practiceAssetDraftSchema.parse(revision);
     const methodologies = await this.#methodologies.list();
@@ -437,6 +471,16 @@ export class PracticeAssetService {
       resolvedSources.every(
         (source) => source.status === "accepted" && source.confirmedAt !== null,
       );
+    const sourceSnapshots = canRefreshSourceBaseline
+      ? snapshotPracticeAssetSources(resolvedSources)
+      : current.sourceSnapshots;
+    // Saved as it was: no restore point and no new date. Twenty such saves pushed every real earlier
+    // version out of the twenty kept.
+    const unchanged =
+      (Object.keys(draft) as Array<keyof typeof draft>).every(
+        (key) => JSON.stringify(current[key as keyof PracticeAssetRecord]) === JSON.stringify(draft[key]),
+      ) && JSON.stringify(sourceSnapshots) === JSON.stringify(current.sourceSnapshots);
+    if (unchanged) return current;
     const now = this.#now().toISOString();
     if (current.status === "accepted") {
       await this.#history.capture(current, "manual_edit", now);
@@ -445,12 +489,9 @@ export class PracticeAssetService {
       ...current,
       ...draft,
       updatedAt: now,
-      ...(canRefreshSourceBaseline
-        ? { sourceSnapshots: snapshotPracticeAssetSources(resolvedSources) }
-        : {}),
+      ...(canRefreshSourceBaseline ? { sourceSnapshots } : {}),
     };
-    await this.#assets.save(updated);
-    return updated;
+    return this.#saved(updated);
   }
 
   async setStatus(
@@ -458,6 +499,19 @@ export class PracticeAssetService {
     status: Extract<PracticeAssetStatus, "accepted" | "dismissed">,
   ): Promise<PracticeAssetRecord> {
     const current = await this.#require(id);
+    // Offered on drafts only (忽略/采纳), as principles' are. Reached otherwise, an adopted asset was dismissed with its
+    // published skill still loaded by the clients and no way left to withdraw it, a dismissed draft adopted past its
+    // review, and an adopted one adopted again with its date moved, every client copy then reading as out of date.
+    if (current.status === "accepted") {
+      throw new Error(
+        status === "accepted"
+          ? "这项技能或工作流已经采纳。"
+          : "已采纳的技能或工作流不能忽略：客户端里可能已发布了它；要更新它，请编辑内容或重新生成替换草案。",
+      );
+    }
+    if (current.status === "dismissed") {
+      throw new Error(status === "dismissed" ? "这份草案已经忽略。" : "已忽略的草案不能直接采纳。");
+    }
     const now = this.#now().toISOString();
     if (status === "accepted") {
       const freshness = assessPracticeAssetFreshness(
@@ -518,6 +572,14 @@ export class PracticeAssetService {
         acceptedAt: null,
         updatedAt: now,
       });
+      // Moved to other sources, the asset leaves behind any other draft replacing it from the ones it had: left
+      // waiting, such a draft held the merge's sources back from being archived, and could only fail to move.
+      if (!keepsSources) {
+        for (const stale of (await this.#assets.list()).filter((record) =>
+          record.status === "candidate" && record.supersedesId === target.id && record.id !== current.id)) {
+          await this.#dismissReplacedCandidate(stale);
+        }
+      }
       return updatedTarget;
     }
     const updated: PracticeAssetRecord = {
@@ -536,10 +598,10 @@ export class PracticeAssetService {
       throw new Error("只有已采纳资产可以恢复历史版本。");
     }
     if (!Number.isSafeInteger(version) || version < 1) {
-      throw new Error("实践资产历史版本无效。");
+      throw new Error("技能与流程的历史版本无效。");
     }
     const entry = await this.#history.find(id, version);
-    if (entry === null) throw new Error("指定的实践资产历史版本不存在。");
+    if (entry === null) throw new Error("指定的技能与流程历史版本不存在。");
     if (
       entry.snapshot.id !== current.id ||
       entry.snapshot.slug !== current.slug ||
@@ -547,6 +609,12 @@ export class PracticeAssetService {
     ) {
       throw new Error("历史版本与当前资产标识不一致，已停止恢复。");
     }
+    // The wording comes back; its sources only while every one still stands. Retired by a merge since, they
+    // put the asset back on principles no longer adopted: unpublishable, and listed to migrate all over again.
+    const methodologies = await this.#methodologies.list();
+    const sourcesStand = entry.snapshot.sourcePrincipleIds.every((sourceId) =>
+      methodologies.some((record) => record.id === sourceId && record.status === "accepted"));
+    const sources = sourcesStand ? entry.snapshot : current;
     const now = this.#now().toISOString();
     await this.#history.capture(current, "restore_checkpoint", now);
     const restored: PracticeAssetRecord = {
@@ -557,10 +625,8 @@ export class PracticeAssetService {
       steps: entry.snapshot.steps,
       checks: entry.snapshot.checks,
       fallback: entry.snapshot.fallback,
-      sourcePrincipleIds: entry.snapshot.sourcePrincipleIds,
-      ...(entry.snapshot.sourceSnapshots === undefined
-        ? { sourceSnapshots: [] }
-        : { sourceSnapshots: entry.snapshot.sourceSnapshots }),
+      sourcePrincipleIds: sources.sourcePrincipleIds,
+      sourceSnapshots: sources.sourceSnapshots ?? [],
       generation: entry.snapshot.generation,
       updatedAt: now,
     };
@@ -590,14 +656,26 @@ export class PracticeAssetService {
   }
 
   async #dismissReplacedCandidate(
-    current: PracticeAssetRecord,
+    replaced: PracticeAssetRecord,
   ): Promise<void> {
+    // Read again: held from before the model drafted its replacement, the draft was written back as it was then,
+    // over a step the reader saved in Obsidian meanwhile. Only its status moves; one taken up since is left.
+    const current = await this.#assets.find(replaced.id);
+    if (current === null || current.status !== "candidate") return;
     await this.#assets.save({
       ...current,
       status: "dismissed",
       acceptedAt: null,
       updatedAt: this.#now().toISOString(),
     });
+  }
+
+  // Saved and handed back as it now reads: the note collapses runs of whitespace in a step, and the page's edit basis
+  // taken from the record as built (a double space, a tab) never matched the note again, each next save refused as
+  // changed in Obsidian.
+  async #saved(record: PracticeAssetRecord): Promise<PracticeAssetRecord> {
+    await this.#assets.save(record);
+    return (await this.#assets.find(record.id)) ?? record;
   }
 
   async #require(id: string): Promise<PracticeAssetRecord> {

@@ -63,7 +63,7 @@ describe("Codex integration", () => {
     ).toHaveLength(3);
   });
 
-  it("renders Windows hooks without POSIX environment syntax", () => {
+  it("renders Windows hooks as one line PowerShell and cmd both read", () => {
     const windowsBridge =
       "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd";
     const merged = mergeCodexHooks(
@@ -73,14 +73,15 @@ describe("Codex integration", () => {
     );
     const command = merged.hooks.Stop!.at(-1)?.hooks[0]?.command;
 
+    // Codex runs it in PowerShell (where `&&` and `set "…"` are not its syntax), or in cmd when it has no shell.
     expect(command).toBe(
-      'set "DECISION_HOOK=1" && call "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" hook stop codex',
+      'cmd /d /v:off /c call "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" hook stop codex DECISION_HOOK=2',
     );
   });
 
   it("replaces an installed legacy bridge path with the current one", () => {
     const legacyPath =
-      "/Applications/Decision Island Legacy.app/Contents/Resources/bridge/decision-bridge";
+      "/Applications/Decision Previous.app/Contents/Resources/bridge/decision-bridge";
     const legacy = mergeCodexHooks(existingCodexHooks, legacyPath);
 
     const merged = mergeCodexHooks(legacy, bridgePath);
@@ -92,12 +93,7 @@ describe("Codex integration", () => {
 
   it("replaces the Codex MCP with the read-only bridge server", () => {
     expect(codexMcpCommands(bridgePath)).toEqual([
-      {
-        command: "codex",
-        args: ["mcp", "remove", "decision-island"],
-        tolerateFailure: true,
-        absentMcpName: "decision-island",
-      },
+      { command: "codex", args: ["mcp", "get", "decision"], tolerateFailure: true, expectsBridgeFor: "codex" },
       {
         command: "codex",
         args: ["mcp", "remove", "decision"],

@@ -46,7 +46,7 @@ jobs:
       - name: Install vetted native build runtime
         run: npm run setup:build-runtime
       - name: Verify Windows historical and pending-state migration
-        run: npx vitest run apps/desktop/test/brand-migration.test.ts
+        run: npx vitest run apps/desktop/test/data-preservation.test.ts
       - name: Build Windows x64 installer
         run: npm run make -- --platform=win32 --arch=x64
       - name: Install and smoke test the final Windows Setup
@@ -78,6 +78,10 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Install vetted native build runtime
         run: npm run setup:build-runtime
+      - name: Install Electron runtime
+        run: npm run setup:electron
+      - name: Verify Obsidian workspace layout on macOS
+        run: npx vitest run apps/desktop/test/knowledge-layout.test.ts
       - name: Build Apple Silicon application
         run: npm run make -- --platform=darwin --arch=arm64
       - name: Smoke test packaged macOS application

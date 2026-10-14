@@ -58,6 +58,12 @@ const methodology = (id: string, principle: string): MethodologyRecord => ({
   },
 });
 
+// Candidates whole already, read back as asked.
+const atHand = (candidates: IndexedDecision[]) => ({
+  candidates,
+  load: (ids: string[]) => candidates.filter((candidate) => ids.includes(candidate.id)),
+});
+
 const defaultVector = (text: string): number[] =>
   /午餐/u.test(text)
     ? [0, 1]
@@ -65,16 +71,28 @@ const defaultVector = (text: string): number[] =>
       ? [1, 0]
       : [0, 1];
 
+// Indexed decisions: known by their notes' hashes, read whole as asked, and which were asked for.
+const indexed = (decisions: IndexedDecision[], loads: string[][] = []) => ({
+  stamps: () => decisions,
+  load: (ids: string[]) => {
+    loads.push(ids);
+    return decisions.filter((decision) => ids.includes(decision.id));
+  },
+});
+
 const makeService = async (
   vectorFor: (text: string) => number[] = defaultVector,
 ) => {
   const root = await mkdtemp(join(tmpdir(), "semantic-search-"));
-  const vectors = new SemanticVectorIndex(join(root, "vectors.sqlite"));
+  const path = join(root, "vectors.sqlite");
+  const vectors = new SemanticVectorIndex(path);
+  const embedded: string[] = [];
   const gateway = {
     embed: async (texts: string[]) => {
       if (texts.some((text) => text.length > 700)) {
         throw new Error("embedding context exceeded");
       }
+      embedded.push(...texts);
       return {
         model: "test-embedding",
         vectors: texts.map(vectorFor),
@@ -84,10 +102,79 @@ const makeService = async (
   return {
     service: new SemanticSearchService({ vectors, gateway }),
     vectors,
+    path,
+    embedded,
+    /** The service as the next start makes it, on the same vectors. */
+    restart: () => new SemanticSearchService({ vectors, gateway }),
   };
 };
 
 describe("SemanticSearchService", () => {
+  it("stops a sync under way at the batch it is on when closed, and cuts that batch's call short", async () => {
+    const root = await mkdtemp(join(tmpdir(), "semantic-search-close-"));
+    const vectors = new SemanticVectorIndex(join(root, "vectors.sqlite"));
+    const signals: Array<AbortSignal | undefined> = [];
+    let batchUnderWay!: () => void;
+    const underWay = new Promise<void>((resolve) => {
+      batchUnderWay = resolve;
+    });
+    let finishBatch!: () => void;
+    const gateway = {
+      embed: async (texts: string[], signal?: AbortSignal) => {
+        signals.push(signal);
+        // The probe answers at once; the first batch of decisions is the one under way at the quit.
+        if (signals.length === 2) {
+          batchUnderWay();
+          await new Promise<void>((resolve) => {
+            finishBatch = resolve;
+          });
+        }
+        return { model: "test-embedding", vectors: texts.map(defaultVector) };
+      },
+    };
+    const service = new SemanticSearchService({ vectors, gateway });
+    // Five batches of sixteen: a whole vault for a newly installed local model.
+    const decisions = Array.from({ length: 80 }, (_, index) => decision(`d${index}`, `第 ${index} 条决策`));
+    const sync = service.synchronize({ stamps: () => decisions, load: (ids) => decisions.filter((item) => ids.includes(item.id)) }, []);
+    await underWay;
+
+    const closed = service.close();
+    // The batch under way is told to stop; waited on whole, the quit sat behind every batch left.
+    expect(signals[1]?.aborted).toBe(true);
+    finishBatch();
+    await closed;
+    await sync.catch(() => undefined);
+    expect(signals).toHaveLength(2);
+  });
+
+  it("takes the decisions as they are when a sync's turn comes, not as they were when it was asked for", async () => {
+    const root = await mkdtemp(join(tmpdir(), "semantic-search-turn-"));
+    const vectors = new SemanticVectorIndex(join(root, "vectors.sqlite"));
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const gateway = {
+      embed: async (texts: string[]) => {
+        await gate;
+        return { model: "test-embedding", vectors: texts.map(defaultVector) };
+      },
+    };
+    const service = new SemanticSearchService({ vectors, gateway });
+    const decisions = [decision("first", "先准备可回退路径")];
+    const source = { stamps: () => [...decisions], load: (ids: string[]) => decisions.filter((item) => ids.includes(item.id)) };
+
+    const running = service.synchronize(source, []);
+    const queued = service.synchronize(source, []);
+    // Come while the first still waits on the model: listed when asked, it was left without a vector.
+    decisions.push(decision("later", "先验证再扩大"));
+    release();
+    await Promise.all([running, queued]);
+
+    expect(vectors.metadata("decision").map((item) => item.entityId).sort()).toEqual(["first", "later"]);
+    await service.close();
+  });
+
   it("adds semantic-only decisions without displacing exact keyword matches", async () => {
     const { service } = await makeService();
     const exact = decision("exact", "如何部署服务？");
@@ -96,7 +183,7 @@ describe("SemanticSearchService", () => {
 
     const matches = await service.searchDecisions({
       query: "如何降低上线风险？",
-      candidates: [exact, semantic, unrelated],
+      ...atHand([exact, semantic, unrelated]),
       lexical: [exact],
       limit: 10,
     });
@@ -143,10 +230,59 @@ describe("SemanticSearchService", () => {
           : "保留回退路径。",
     }));
 
-    await service.synchronize(decisions, []);
+    await service.synchronize(indexed(decisions), []);
 
     expect(vectors.metadata("decision")).toHaveLength(17);
     await service.close();
+  });
+
+  it("reads no decision whole without a model, and at a later start only those whose notes changed", async () => {
+    const root = await mkdtemp(join(tmpdir(), "semantic-missing-"));
+    const missing = new SemanticSearchService({
+      vectors: new SemanticVectorIndex(join(root, "vectors.sqlite")),
+      gateway: { embed: async () => { throw new Error("model_missing"); } },
+    });
+    const decisions = [decision("a", "先准备可回退路径"), decision("b", "分批上线"), decision("c", "午餐选择什么？")];
+    const loads: string[][] = [];
+    // Every decision read whole at every start, to be dropped: the longest hold of the window after it opened.
+    await expect(missing.synchronize(indexed(decisions, loads), [])).rejects.toThrow("model_missing");
+    expect(loads).toEqual([]);
+    await missing.close();
+
+    const { service, embedded, restart } = await makeService();
+    await service.synchronize(indexed(decisions, loads), []);
+    expect(loads).toEqual([["a", "b", "c"]]);
+    // The next start, one note edited in Obsidian since.
+    loads.length = 0;
+    embedded.length = 0;
+    const next = restart();
+    await next.synchronize(indexed([decisions[0]!, { ...decisions[1]!, contentHash: "source-b-2", question: "分批上线，先灰度" }, decisions[2]!], loads), []);
+    expect(loads).toEqual([["b"]]);
+    // The model asked once to know it is there, and the edited one embedded again.
+    expect(embedded).toHaveLength(2);
+    await next.close();
+  });
+
+  it("keeps vectors made before their notes were recorded, read once and not embedded again", async () => {
+    const { service, path, embedded, restart } = await makeService();
+    const decisions = [decision("a", "先准备可回退路径"), decision("b", "分批上线")];
+    await service.synchronize(indexed(decisions), []);
+    // Vectors from before: which note each was made from not kept.
+    const { DatabaseSync } = await import("node:sqlite");
+    const database = new DatabaseSync(path);
+    database.exec("UPDATE semantic_vectors SET source_hash = NULL");
+    database.close();
+
+    const loads: string[][] = [];
+    embedded.length = 0;
+    await restart().synchronize(indexed(decisions, loads), []);
+    expect(loads).toEqual([["a", "b"]]);
+    expect(embedded).toHaveLength(1);
+    loads.length = 0;
+    const last = restart();
+    await last.synchronize(indexed(decisions, loads), []);
+    expect(loads).toEqual([[]]);
+    await last.close();
   });
 
   it("accepts calibrated related results while excluding lower-similarity noise", async () => {
@@ -160,10 +296,10 @@ describe("SemanticSearchService", () => {
 
     const matches = await service.searchDecisions({
       query: "改写后的问题",
-      candidates: [
+      ...atHand([
         decision("related", "目标方案"),
         decision("noise", "其它主题"),
-      ],
+      ]),
       lexical: [],
       limit: 10,
     });
@@ -189,11 +325,11 @@ describe("SemanticSearchService", () => {
 
     const matches = await service.searchDecisions({
       query: "命名规范",
-      candidates: [
+      ...atHand([
         decision("config-name", "限流配置改成什么名字？"),
         decision("field-name", "字段改叫什么名？"),
         decision("food", "午餐选择什么？"),
-      ],
+      ]),
       lexical: [],
       limit: 10,
     });
@@ -214,12 +350,44 @@ describe("SemanticSearchService", () => {
 
     const matches = await service.searchDecisions({
       query: "天气",
-      candidates: [decision("unrelated", "部署方式怎么选？")],
+      ...atHand([decision("unrelated", "部署方式怎么选？")]),
       lexical: [],
       limit: 10,
     });
 
     expect(matches).toEqual([]);
+    await service.close();
+  });
+
+  it("reads whole only the decisions whose notes changed, and those it shows", async () => {
+    const { service } = await makeService();
+    const candidates = [
+      decision("exact", "如何部署服务？"),
+      decision("semantic", "先准备可回退路径再扩大改动"),
+      decision("unrelated", "午餐选择什么？"),
+    ];
+    const loaded: string[][] = [];
+    const search = (rows: IndexedDecision[]) =>
+      service.searchDecisions({
+        query: "如何降低上线风险？",
+        candidates: rows,
+        load: (ids) => {
+          loaded.push(ids);
+          return rows.filter((row) => ids.includes(row.id));
+        },
+        lexical: [],
+        limit: 10,
+      });
+
+    await search(candidates);
+    expect(loaded).toEqual([["exact", "semantic", "unrelated"], ["exact", "semantic"]]);
+    // Every search read every decision whole, text and all: ten thousand of them for one query.
+    loaded.length = 0;
+    expect((await search(candidates)).map((match) => match.decision.id)).toEqual(["exact", "semantic"]);
+    expect(loaded).toEqual([["exact", "semantic"]]);
+    loaded.length = 0;
+    await search([candidates[0]!, candidates[1]!, { ...candidates[2]!, contentHash: "source-unrelated-edited" }]);
+    expect(loaded).toEqual([["unrelated"], ["exact", "semantic"]]);
     await service.close();
   });
 });

@@ -1,3 +1,4 @@
+import { SEMANTIC_PROMPT_VERSION } from "../src/main/model/semantic-prompt.js";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 
@@ -118,7 +119,7 @@ describe("AppleFoundationModelProvider", () => {
         confidence: 0.94,
         provider: "apple",
         modelVersion: "system-language-model",
-        promptVersion: "semantic-v1",
+        promptVersion: SEMANTIC_PROMPT_VERSION,
       },
       visibleOutput: expect.stringContaining(
         "\"decisionIntent\"",
@@ -310,11 +311,14 @@ describe("AppleFoundationModelProvider", () => {
     expect(child.kill).not.toHaveBeenCalled();
   });
 
-  it("opens a process-lifetime circuit after three consecutive crashes", async () => {
-    const children = Array.from(
-      { length: 3 },
-      () => new FakeHelperProcess((_request, process) => process.crash()),
-    );
+  it("rests the helper for half a minute after three consecutive crashes, then tries it again", async () => {
+    const children = [
+      ...Array.from(
+        { length: 3 },
+        () => new FakeHelperProcess((_request, process) => process.crash()),
+      ),
+      new FakeHelperProcess((request, process) => process.respond(statusResponse(request.id, "available"))),
+    ];
     const spawnHelper = vi.fn(() => {
       const child = children.shift();
       if (child === undefined) {
@@ -337,6 +341,18 @@ describe("AppleFoundationModelProvider", () => {
       availability: "runtime_unavailable",
     });
     expect(spawnHelper).toHaveBeenCalledTimes(3);
+
+    // Not for the rest of the run: the docs promise another look after thirty seconds, though the Mac's clock was
+    // set back an hour meanwhile.
+    const wall = vi.spyOn(Date, "now").mockReturnValue(Date.now() - 3_600_000);
+    const clock = vi.spyOn(performance, "now").mockReturnValue(performance.now() + 30_001);
+    try {
+      await expect(provider.status()).resolves.toMatchObject({ availability: "available" });
+      expect(spawnHelper).toHaveBeenCalledTimes(4);
+    } finally {
+      clock.mockRestore();
+      wall.mockRestore();
+    }
   });
 
   it("kills the helper and rejects pending work when closed", async () => {

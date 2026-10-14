@@ -3,23 +3,29 @@ import type {
   MethodologyRelationRecord,
 } from "@cognelis/decision-core";
 import { canonicalMethodologyPair } from "@cognelis/decision-core";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import {
-  mkdir,
+  access,
   readFile,
   readdir,
   rename,
   unlink,
-  writeFile,
 } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { join } from "node:path";
+import { parse as parseYaml } from "yaml";
+import { assertVaultPresent, normalizedNote } from "./markdown.js";
+import { escapeNoteText, notePropertiesYaml, unescapeNoteText } from "./markdown-markers.js";
+import { existingNote, replaceNote, rewrittenNote } from "./note-rewrite.js";
 
-import { normalizeLegacyDecisionMarkers } from "./legacy-markers.js";
 
 const DEFAULT_FOLDER = "Decision Journal";
 const NOTE_START = "<!-- decision:methodology-relation-note-start -->";
 const NOTE_END = "<!-- decision:methodology-relation-note-end -->";
+// Where the app's part starts: its title line, whole. A heading of the reader's that only begins the same way
+// ("# 方法论关系核对的补充") was taken for it, and everything of theirs from there on was written over.
+const APP_PART_START = "# 方法论关系核对\n";
+/** Every property serializeMethodologyRelation writes. */
+const RELATION_KEYS = ["type", "version", "id", "created", "updated", "principles", "principle_titles", "disposition"] as const;
 const DISPOSITIONS: readonly MethodologyRelationDisposition[] = [
   "duplicate",
   "conflict",
@@ -29,6 +35,10 @@ const DISPOSITIONS: readonly MethodologyRelationDisposition[] = [
 interface MethodologyRelationRepositoryOptions {
   folder?: string;
   rename?: typeof rename;
+  /** The vault folder must already exist: a write never makes it up (see assertVaultPresent). */
+  existingVault?: boolean;
+  /** Told, on every read of the list, which notes it could not read (none: an empty list). */
+  onUnreadable?(notes: Array<{ path: string; message: string }>): void;
 }
 
 const requireText = (
@@ -97,6 +107,12 @@ const fileNameFor = (id: string): string => {
   return `relation-${digest}.md`;
 };
 
+const duplicateId = (id: string): string =>
+  `有不止一篇原则关系笔记使用同一个编号（${id}），常见于同步冲突留下的副本；请在 Obsidian 里删掉多余的那篇后再试。`;
+
+const isMissing = (error: unknown): boolean =>
+  error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT";
+
 const parseFrontmatter = (
   markdown: string,
 ): { properties: Record<string, unknown>; body: string } => {
@@ -123,7 +139,7 @@ const noteFromBody = (body: string): string | null => {
   if (start < 0 || end <= start) {
     throw new Error("Methodology relation is missing its review note");
   }
-  return optionalNote(body.slice(start + NOTE_START.length, end).trim());
+  return optionalNote(unescapeNoteText(body.slice(start + NOTE_START.length, end).trim()));
 };
 
 const dispositionLabels: Record<MethodologyRelationDisposition, string> = {
@@ -136,7 +152,7 @@ export const serializeMethodologyRelation = (
   input: MethodologyRelationRecord,
 ): string => {
   const record = validatedRecord(input);
-  const frontmatter = stringifyYaml(
+  const frontmatter = notePropertiesYaml(
     {
       type: "decision-methodology-relation",
       version: 1,
@@ -155,8 +171,8 @@ ${frontmatter}
 
 # 方法论关系核对
 
-- ${record.principleTitles[0]}（${record.principleIds[0]}）
-- ${record.principleTitles[1]}（${record.principleIds[1]}）
+- ${escapeNoteText(record.principleTitles[0])}（${record.principleIds[0]}）
+- ${escapeNoteText(record.principleTitles[1])}（${record.principleIds[1]}）
 
 ## 人工结论
 
@@ -165,15 +181,16 @@ ${dispositionLabels[record.disposition]}
 ## 核对说明
 
 ${NOTE_START}
-${record.note ?? ""}
+${escapeNoteText(record.note ?? "")}
 ${NOTE_END}
 `;
 };
 
 export const parseMethodologyRelation = (
-  markdown: string,
+  note: string,
 ): MethodologyRelationRecord => {
-  markdown = normalizeLegacyDecisionMarkers(markdown);
+  // Saved with Windows line endings (git's autocrlf) or a BOM, the same note: read as it was, it left every list.
+  const markdown = normalizedNote(note);
   const { properties, body } = parseFrontmatter(markdown);
   if (
     properties.type !== "decision-methodology-relation" ||
@@ -207,11 +224,15 @@ export const parseMethodologyRelation = (
 export class MethodologyRelationRepository {
   readonly #directory: string;
   readonly #rename: typeof rename;
+  readonly #requiredVault: string | null;
+  readonly #onUnreadable: (notes: Array<{ path: string; message: string }>) => void;
 
   constructor(
     vaultPath: string,
     options: MethodologyRelationRepositoryOptions = {},
   ) {
+    this.#requiredVault = options.existingVault === true ? vaultPath : null;
+    this.#onUnreadable = options.onUnreadable ?? (() => undefined);
     this.#directory = join(
       vaultPath,
       options.folder ?? DEFAULT_FOLDER,
@@ -221,72 +242,105 @@ export class MethodologyRelationRepository {
   }
 
   async save(record: MethodologyRelationRecord): Promise<void> {
-    const content = serializeMethodologyRelation(record);
-    const path = this.#pathFor(record.id);
-    await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-    const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
-    try {
-      await writeFile(temporary, content, {
-        encoding: "utf8",
-        mode: 0o600,
-        flag: "wx",
-      });
-      await this.#rename(temporary, path);
-    } catch (error) {
-      await unlink(temporary).catch(() => undefined);
-      throw error;
-    }
+    // Renamed in Obsidian, the note is written where it now is, not forked under the id's own file name: two
+    // verdicts for one pair, the merge gate reading the stale 重复 while the page showed 无关.
+    const path = (await this.#locate(record.id)) ?? this.#pathFor(record.id);
+    if (this.#requiredVault !== null) await assertVaultPresent(this.#requiredVault);
+    // The app's part, from its title to the end of the review note, is written as the app writes it; a tag or a
+    // section the reader added in Obsidian around it is kept, where the whole note was written over. Retitled in
+    // Obsidian, its properties and review note are; one the app cannot read is refused (rewrittenNote), never
+    // written over with all the reader had written in it.
+    // ponytail: a retitled note is given the app's title back, and its 人工结论 line only at the next 核对; the
+    // disposition property is the one read.
+    const raw = await existingNote(path);
+    const content = rewrittenNote(raw, serializeMethodologyRelation(record), {
+      ownKeys: RELATION_KEYS,
+      markers: [[APP_PART_START, NOTE_END], [NOTE_START, NOTE_END]],
+      parse: parseMethodologyRelation,
+    });
+    await replaceNote(path, raw, content, this.#rename);
   }
 
   async remove(id: string): Promise<void> {
+    // Renamed in Obsidian, the note is the one cleared: unlinked under the id's own name, it stayed, and 撤销 said done.
+    const path = await this.#locate(requireText(id, "methodology relation id", 200));
+    if (path === null) return;
     try {
-      await unlink(this.#pathFor(requireText(id, "methodology relation id", 200)));
+      await unlink(path);
     } catch (error) {
-      if (
-        error !== null &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === "ENOENT"
-      ) {
-        return;
-      }
+      if (isMissing(error)) return;
       throw error;
     }
   }
 
   async list(): Promise<MethodologyRelationRecord[]> {
-    let entries;
-    try {
-      entries = await readdir(this.#directory, { withFileTypes: true });
-    } catch (error) {
-      if (
-        error !== null &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === "ENOENT"
-      ) {
-        return [];
-      }
-      throw error;
-    }
+    // A vault that is not there is not one with no relations (see MethodologyRepository.list).
+    if (this.#requiredVault !== null) await assertVaultPresent(this.#requiredVault);
+    const { notes, unreadable } = await this.#notes();
+    // A sync conflict's copy holds the same id: neither note is listed, and each is said (as MethodologyRepository
+    // does). Both listed, the pair had two verdicts, and a write to the id would have reached one of them.
+    const holders = new Map<string, number>();
+    for (const { record } of notes) holders.set(record.id, (holders.get(record.id) ?? 0) + 1);
     const records: MethodologyRelationRecord[] = [];
-    for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-      try {
-        records.push(
-          parseMethodologyRelation(
-            await readFile(join(this.#directory, entry.name), "utf8"),
-          ),
-        );
-      } catch {
-        // Invalid external notes remain untouched and are omitted from the UI.
-      }
+    for (const { path, record } of notes) {
+      if (holders.get(record.id) === 1) records.push(record);
+      else unreadable.push({ path, message: duplicateId(record.id) });
     }
+    this.#onUnreadable(unreadable);
     return records.sort(
       (left, right) =>
         right.updatedAt.localeCompare(left.updatedAt) ||
         left.id.localeCompare(right.id),
     );
+  }
+
+  /** Every note of the folder as read, and those it could not read; a folder not there holds none. */
+  async #notes(): Promise<{
+    notes: Array<{ path: string; record: MethodologyRelationRecord }>;
+    unreadable: Array<{ path: string; message: string }>;
+  }> {
+    let entries;
+    try {
+      entries = await readdir(this.#directory, { withFileTypes: true });
+    } catch (error) {
+      if (isMissing(error)) return { notes: [], unreadable: [] };
+      throw error;
+    }
+    const notes: Array<{ path: string; record: MethodologyRelationRecord }> = [];
+    const unreadable: Array<{ path: string; message: string }> = [];
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+      const path = join(this.#directory, entry.name);
+      try {
+        notes.push({ path, record: parseMethodologyRelation(await readFile(path, "utf8")) });
+      } catch (error) {
+        // Left untouched, and said: edited in Obsidian past reading, a relation left the principle page without a
+        // word, its pair shown again as one to check.
+        unreadable.push({ path, message: error instanceof Error ? error.message : String(error) });
+      }
+    }
+    return { notes, unreadable };
+  }
+
+  /**
+   * The note holding this id: under the id's own file name, or under the name it was given in Obsidian. Held by
+   * two (a sync conflict's copy beside it), it is refused, as the list leaves both out (see MethodologyRepository).
+   */
+  async #locate(id: string): Promise<string | null> {
+    const own = this.#pathFor(id);
+    let found: string | null = null;
+    try {
+      await access(own);
+      found = own;
+    } catch (error) {
+      if (!isMissing(error)) throw error;
+    }
+    for (const { path, record } of (await this.#notes()).notes) {
+      if (path === own || record.id !== id) continue;
+      if (found !== null) throw new Error(duplicateId(id));
+      found = path;
+    }
+    return found;
   }
 
   #pathFor(id: string): string {

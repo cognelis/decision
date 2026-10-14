@@ -8,14 +8,20 @@ const surface = process.argv[3] ?? "settings";
 const fourthArgument = process.argv[4];
 const compact =
   fourthArgument === "compact" ||
+  fourthArgument === "review-chat-compact" ||
+  fourthArgument === "pr-diff-compact" ||
+  fourthArgument === "assistant-chat-compact" ||
   fourthArgument === "practice-assets-compact" ||
   fourthArgument === "methodology-analysis-compact";
 const interaction =
+  fourthArgument === "pr-diff-compact" ? "pr-diff" :
+  fourthArgument === "assistant-chat-compact" ? "assistant-chat" :
+  fourthArgument === "review-chat-compact" ? "review-chat" :
   fourthArgument === "practice-assets-compact"
     ? "practice-assets"
     : fourthArgument === "methodology-analysis-compact"
       ? "methodology-analysis"
-      : fourthArgument === "add-backend" ||
+      : fourthArgument === "pr-diff" || fourthArgument === "assistant-chat" || fourthArgument === "review-chat" || fourthArgument === "add-backend" || fourthArgument === "add-connection" ||
           fourthArgument === "trace-detail" ||
           fourthArgument === "decision-outcome" ||
           fourthArgument === "decision-review" ||
@@ -67,9 +73,13 @@ const screenshotPath =
     : process.argv[5];
 const supportedSurfaces = new Set([
   "decisions",
+  "assistant",
+  "dashboard",
   "methodology",
   "settings",
   "clients",
+  "connections",
+  "pr-review",
   "models",
   "activity",
 ]);
@@ -83,11 +93,9 @@ if (!supportedSurfaces.has(surface)) {
 let server;
 let window;
 
-const close = async (exitCode) => {
-  if (window !== undefined && !window.isDestroyed()) window.destroy();
-  if (server !== undefined) await server.close();
-  app.exit(exitCode);
-};
+const close = require("./electron-check-lifecycle.cjs").createElectronCheckLifecycle({
+  app, getWindow: () => window, getServer: () => server,
+});
 
 const measureDesktopLayout = async () => {
   const { createServer } = await import("vite");
@@ -116,15 +124,136 @@ const measureDesktopLayout = async () => {
     frame: false,
     transparent: true,
     backgroundColor: "#00000000",
-    webPreferences: { offscreen: true },
+    webPreferences: { partition: `preview-${process.pid}`, offscreen: true },
   });
   await window.loadURL(
     `http://127.0.0.1:${port}/?preview=${surface}&theme=${theme}&interaction=${interaction}`,
   );
+  await require("./preview-sidebar.cjs").expandSidebar(window);
 
   let interactionMetrics = {};
   let interactionScreenshotCaptured = false;
-  if (interaction === "decision-search") {
+  if (interaction === "pr-diff") {
+    interactionMetrics = await window.webContents.executeJavaScript(`(async () => {
+      const waitFor = async find => {
+        const deadline = Date.now() + 12000;
+        while (Date.now() < deadline) { const found = find(); if (found) return found; await new Promise(resolve => setTimeout(resolve, 20)); }
+        throw new Error('PR diff workflow did not render');
+      };
+      (await waitFor(() => document.querySelector('.review-pr-item'))).click();
+      (await waitFor(() => document.querySelector('[aria-label="查看 PR 详情"]'))).click();
+      await waitFor(() => document.querySelector('.diff-unified'));
+      const dialog = document.querySelector('[role="dialog"]');
+      const rect = dialog.getBoundingClientRect();
+      const file = document.querySelector('.pr-diff-files button');
+      const code = document.querySelector('.pr-diff-code');
+      const unified = code.textContent.includes('return fetch(url);') && code.textContent.includes('AbortController');
+      [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Side-by-Side').click();
+      await waitFor(() => dialog.querySelector('.diff-split'));
+      const split = !!dialog.querySelector('.diff-split');
+      [...dialog.querySelectorAll('button')].find(button => button.textContent === '文件内容').click();
+      await waitFor(() => dialog.querySelector('.pr-file-lines'));
+      const full = dialog.querySelector('.pr-file-lines').textContent.includes('AbortController');
+      const select = dialog.querySelector('[aria-label="文件提交版本"]');
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, 'old');
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      await waitFor(() => dialog.querySelector('.pr-file-lines')?.textContent.includes('Requests have no timeout'));
+      const result = {
+        prDiffUnified: unified, prDiffSplit: split, prDiffFullFile: full, prDiffOldFile: true,
+        prDiffFits: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight && dialog.scrollWidth <= dialog.clientWidth,
+        prDiffDirectory: file.getAttribute('aria-label') === 'src/request.ts' && file.getBoundingClientRect().width > 0,
+      };
+      document.querySelector('[aria-label="关闭PR 详情"]').click();
+      await waitFor(() => !document.querySelector('[role="dialog"]'));
+      return result;
+    })()`);
+  } else if (interaction === "assistant-chat") {
+    interactionMetrics = await window.webContents.executeJavaScript(`(async () => {
+      const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await nextFrame();
+      const composer = document.querySelector('.assistant-composer');
+      const rect = composer.getBoundingClientRect();
+      const list = document.querySelector('.assistant-library-list');
+      const log = document.querySelector('.assistant-stream');
+      const summary = document.querySelector('.assistant-more > summary');
+      summary.click();
+      await nextFrame();
+      const menu = document.querySelector('.assistant-more-menu').getBoundingClientRect();
+      const menuVisible = menu.right <= innerWidth && menu.bottom <= innerHeight;
+      summary.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      const escaped = !summary.parentElement.open;
+      document.querySelector('[aria-label="材料范围"]').click();
+      await nextFrame();
+      const dialog = document.querySelector('[role="dialog"]');
+      const bounds = dialog.getBoundingClientRect();
+      const materialVisible = bounds.top >= 0 && bounds.bottom <= innerHeight;
+      document.querySelector('[aria-label="关闭材料范围"]').click();
+      await nextFrame();
+      return {
+        assistantComposerVisible: rect.top >= 0 && rect.bottom <= innerHeight,
+        assistantIndependentScroll: getComputedStyle(list).overflowY === 'auto' && getComputedStyle(log).overflowY === 'auto',
+        assistantCompactControls: !!composer.querySelector('[aria-label="回答模型"]') && !!composer.querySelector('[aria-label="材料范围"]'),
+        assistantMenuVisible: menuVisible, assistantMenuEscape: escaped, assistantMaterialVisible: materialVisible,
+        assistantComposerStable: Math.abs(composer.getBoundingClientRect().top - rect.top) < 1,
+      };
+    })()`);
+  } else if (interaction === "review-chat") {
+    interactionMetrics = await window.webContents.executeJavaScript(`
+      (async () => {
+        const waitFor = async (find) => {
+          const deadline = Date.now() + 12000;
+          while (Date.now() < deadline) {
+            const value = find();
+            if (value) return value;
+            await new Promise(resolve => setTimeout(resolve, 16));
+          }
+          throw new Error("Review chat did not render: " + find.toString());
+        };
+        (await waitFor(() => document.querySelector('.review-pr-item:not(:disabled)'))).click();
+        const start = await waitFor(() => [...document.querySelectorAll('button')].find(button => (button.textContent === '开始评审' || button.getAttribute('aria-label') === '重新评审最新提交') && !button.disabled));
+        start.click();
+        if (start.getAttribute('aria-label') === '重新评审最新提交') {
+          (await waitFor(() => [...document.querySelectorAll('button')].find(button => button.textContent === '开始评审' && !button.disabled))).click();
+        }
+        await waitFor(() => document.querySelector('.review-chat-result'));
+        const question = await waitFor(() => document.querySelector('#review-question:not(:disabled)'));
+        // The narrow layout stacks the PR list above the conversation.
+        question.scrollIntoView({ block: 'nearest' });
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(question, '该如何修复？');
+        question.dispatchEvent(new Event('input', { bubbles: true }));
+        (await waitFor(() => document.querySelector('.review-follow-up button[type="submit"]:not(:disabled)'))).click();
+        await waitFor(() => [...document.querySelectorAll('.review-chat-messages .assistant-answer')].some(item => item.textContent.includes('abort()')));
+        const report = document.querySelector('.review-chat-messages .review-chat-result');
+        const log = document.querySelector('.review-chat-messages');
+        const conversation = document.querySelector('.review-conversation');
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const jump = conversation.querySelector('.review-jump-latest');
+        const heightBefore = log.getBoundingClientRect().height;
+        log.scrollTop = 0;
+        log.dispatchEvent(new Event('scroll', { bubbles: true }));
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const heightAfter = log.getBoundingClientRect().height;
+        jump.click();
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const jumpStable = jump.hidden;
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const composerRect = question.getBoundingClientRect();
+        return {
+          reviewJumpStable: jumpStable && jump.hidden && heightBefore === heightAfter,
+          reviewComposerInViewport: composerRect.top >= 0 && composerRect.bottom <= innerHeight,
+          reviewChatMessages: log.children.length,
+          reviewChatRequest: !!conversation.querySelector('.assistant-turn.user'),
+          reviewChatHistory: [...document.querySelectorAll('.review-list-tabs button')].some(button => button.textContent.includes('历史评审')),
+          reviewChatDetailsCollapsed: [...log.querySelectorAll('details')].every(item => !item.open),
+          reviewChatNoOverflow: log.scrollWidth <= log.clientWidth && conversation.scrollWidth <= conversation.clientWidth,
+          reviewChatResultInLog: log.contains(report),
+          reviewChatComposer: !!conversation.querySelector("#review-question"),
+          reviewChatReply: log.textContent.includes("abort()"),
+          reviewChatReport: report.textContent.includes('超时后请求仍在运行'),
+        };
+      })()
+    `);
+  } else if (interaction === "decision-search") {
     interactionMetrics = await window.webContents.executeJavaScript(`
       new Promise((resolve, reject) => {
         const deadline = Date.now() + 12000;
@@ -264,15 +393,15 @@ const measureDesktopLayout = async () => {
         measureFilters();
       })
     `);
-  } else if (interaction === "add-backend") {
+  } else if (interaction === "add-backend" || interaction === "add-connection") {
     interactionMetrics = await window.webContents.executeJavaScript(`
       new Promise((resolve, reject) => {
         const deadline = Date.now() + 12000;
         const openEditor = () => {
           const button = [...document.querySelectorAll("button")].find(
-            (candidate) => candidate.textContent?.trim() === "添加模型后端",
+            (candidate) => candidate.textContent?.trim() === ${JSON.stringify(interaction === "add-connection" ? "新增链接" : "添加模型后端")},
           );
-          if (button === undefined) {
+          if (button === undefined || button.disabled) {
             if (Date.now() >= deadline) {
               reject(new Error("Add model backend button did not render"));
               return;
@@ -281,13 +410,13 @@ const measureDesktopLayout = async () => {
             return;
           }
           const page = document.querySelector(".desktop-page-scroll");
-          const listBefore = document.querySelector(".model-provider-list");
+          const listBefore = document.querySelector(".model-provider-list, .connections-list");
           const pageScrollHeightBefore = page?.scrollHeight ?? null;
           const listTopBefore = listBefore?.getBoundingClientRect().top ?? null;
           button.click();
           const measureEditor = () => {
-            const editor = document.querySelector("#model-provider-editor");
-            const list = document.querySelector(".model-provider-list");
+            const editor = document.querySelector("#model-provider-editor, #connection-editor");
+            const list = document.querySelector(".model-provider-list, .connections-list");
             const dialog = document.querySelector('[role="dialog"]');
             if (editor === null || list === null || dialog === null || page === null) {
               if (Date.now() >= deadline) {
@@ -335,7 +464,7 @@ const measureDesktopLayout = async () => {
           const list = document.querySelector(".model-trace-list");
           const firstRow = document.querySelector(".model-trace-row");
           const button = [...document.querySelectorAll("button")].find(
-            (candidate) => candidate.textContent?.trim() === "查看调用详情"
+            (candidate) => candidate.textContent?.trim() === "详情"
           );
           if (list === null || firstRow === null || button === undefined) {
             if (Date.now() >= deadline) {
@@ -601,7 +730,7 @@ const measureDesktopLayout = async () => {
             list === null ||
             editor === null ||
             dateInput === null ||
-            presets.length !== 3 ||
+            presets.length !== 4 ||
             noWakeCopy === undefined
           ) {
             if (Date.now() >= deadline) {
@@ -3469,6 +3598,28 @@ const measureDesktopLayout = async () => {
     `);
   }
 
+  if (interaction === "assistant-chat" || interaction === "review-chat") {
+    const start = await window.webContents.executeJavaScript(`(() => {
+      const handle = document.querySelector('.list-width-handle');
+      const rect = handle.getBoundingClientRect();
+      return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + 120), width: Number(handle.getAttribute('aria-valuenow')) };
+    })()`);
+    window.webContents.sendInputEvent({ type: "mouseMove", x: start.x, y: start.y });
+    window.webContents.sendInputEvent({ type: "mouseDown", button: "left", clickCount: 1, x: start.x, y: start.y });
+    window.webContents.sendInputEvent({ type: "mouseMove", x: start.x + 70, y: start.y });
+    window.webContents.sendInputEvent({ type: "mouseUp", button: "left", clickCount: 1, x: start.x + 70, y: start.y });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const resizeMetrics = await window.webContents.executeJavaScript(`(() => {
+      const handle = document.querySelector('.list-width-handle');
+      const list = document.getElementById(handle.getAttribute('aria-controls'));
+      const width = Number(handle.getAttribute('aria-valuenow'));
+      const result = { listDragResized: width > ${start.width} && Math.abs(list.getBoundingClientRect().width - width) < 1 };
+      handle.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      return result;
+    })()`);
+    interactionMetrics = { ...interactionMetrics, ...resizeMetrics };
+  }
+
   const metrics = await window.webContents.executeJavaScript(`
     new Promise((resolve, reject) => {
       const deadline = Date.now() + 12000;
@@ -3476,7 +3627,18 @@ const measureDesktopLayout = async () => {
         const appShell = document.querySelector(".desktop-app");
         const sidebar = document.querySelector(".desktop-sidebar");
         const stage = document.querySelector(".desktop-stage");
-        const page = document.querySelector(".desktop-page-scroll");
+        // Two surfaces own their scroll instead of sharing the page's: the
+        // assistant scrolls its stream, the dashboard its own column, so
+        // neither has a desktop-page-scroll. Their containers stand in, which
+        // keeps the page-derived metrics computable. Those numbers are not
+        // comparable across the three shapes, so the assertions that use them
+        // stay per surface; what every surface shares is the shell around it.
+        // (No backticks in here: this whole block is a template literal.)
+        const page =
+          document.querySelector(".desktop-page-scroll") ??
+          document.querySelector(".assistant-content") ??
+          document.querySelector(".review-workspace") ??
+          document.querySelector(".dashboard-scroll");
         const header = document.querySelector(".desktop-view-header");
         const heading = header?.querySelector("h1");
         const surfaceRoot = document.querySelector(".${surface}-panel");
@@ -3638,15 +3800,80 @@ const measureDesktopLayout = async () => {
             cardCount: cards.length,
             cardHeaderHeights,
             cardHeadersSingleRow,
+            // A control with no name is a control a screen reader announces as
+            // nothing; a placeholder does not count, it is gone once the
+            // reader types.
+            everyControlIsNamed: [
+              ...document.querySelectorAll(
+                'button, a[href], input, select, textarea, [role="button"]',
+              ),
+            ]
+              .filter((control) => {
+                const styles = getComputedStyle(control);
+                return (
+                  styles.display !== "none" &&
+                  styles.visibility !== "hidden" &&
+                  control.getClientRects().length > 0
+                );
+              })
+              .every((control) => {
+                const described = control.getAttribute("aria-labelledby");
+                const name =
+                  control.getAttribute("aria-label") ??
+                  control.getAttribute("title") ??
+                  (described === null
+                    ? null
+                    : document.getElementById(described)?.textContent) ??
+                  (control.id === ""
+                    ? null
+                    : document.querySelector(
+                        'label[for="' + CSS.escape(control.id) + '"]',
+                      )?.textContent) ??
+                  control.closest("label")?.textContent ??
+                  control.textContent;
+                return (name ?? "").trim().length > 0;
+              }),
+            // Checkboxes and radios are painted by the platform: left alone
+            // they come out in the system tint, not the app's.
+            nativeControlsUseAppAccent: [
+              ...document.querySelectorAll("input[type=checkbox], input[type=radio]"),
+            ].every((control) => getComputedStyle(control).accentColor !== "auto"),
+            // A card that clips its own overflow reports no overflow to the
+            // page, so the scroll container never grows and whatever the card
+            // cut off cannot be reached at all.
+            cardsShowTheirContent: cards.every(
+              (card) => card.scrollHeight <= card.clientHeight + 1,
+            ),
             cardsFitWidth: cards.every((card) => {
               const rect = card.getBoundingClientRect();
+              if (rect.width === 0 && rect.height === 0) return true;
               return rect.left >= pageRect.left - 1 && rect.right <= pageRect.right + 1;
             }),
+            // Cards painting over one another produces no overflow, so every
+            // width and height measurement here stayed green while two headers
+            // sat on the same line. Vertical separation is the only thing that
+            // catches it.
+            cardsDoNotOverlap: cards.every((card, index) =>
+              cards.slice(index + 1).every((other) => {
+                const a = card.getBoundingClientRect();
+                const b = other.getBoundingClientRect();
+                const apart =
+                  a.bottom <= b.top + 1 ||
+                  b.bottom <= a.top + 1 ||
+                  a.right <= b.left + 1 ||
+                  b.right <= a.left + 1;
+                return apart;
+              }),
+            ),
             clientCardCount: document.querySelectorAll(".client-card").length,
             clientHeight: page.clientHeight,
             clientWidth: page.clientWidth,
             controlsFitWidth: buttons.every((button) => {
               const rect = button.getBoundingClientRect();
+              // A control in a hidden tab has no box at all, and everything
+              // without a box reports a rect at the origin — which reads as
+              // "far left of the page" and fails a check about what is painted.
+              if (rect.width === 0 && rect.height === 0) return true;
               return rect.left >= pageRect.left - 1 && rect.right <= pageRect.right + 1;
             }),
             decisionColumnCount: firstDecisionColumns.length,
@@ -3723,16 +3950,23 @@ const measureDesktopLayout = async () => {
                 : getComputedStyle(methodologyStatusFilter).borderTopWidth,
             methodologyToolbarHeight:
               methodologyToolbar?.getBoundingClientRect().height ?? null,
-            methodologyToolbarsSingleRow:
+            // 工具栏现在是两行：上面是「看哪一类」，下面是「筛哪些、做什么」。
+            // 要守的不再是两者同行，而是第二行自己不会再折成更多行。
+            methodologyRecordsToolbarSingleRow:
               methodologyToolbar === null || methodologyRecordsToolbar === null
                 ? null
-                : methodologyRecordsToolbar.parentElement === methodologyToolbar &&
-                  Math.abs(
-                    methodologyRecordsToolbar.getBoundingClientRect().top +
-                      methodologyRecordsToolbar.getBoundingClientRect().height / 2 -
-                      (methodologyToolbar.getBoundingClientRect().top +
-                        methodologyToolbar.getBoundingClientRect().height / 2)
-                  ) < 1,
+                : methodologyRecordsToolbar.parentElement ===
+                    methodologyToolbar &&
+                  [...methodologyRecordsToolbar.children]
+                    .filter((child) => child.getBoundingClientRect().height > 0)
+                    .every((child) => {
+                      const row =
+                        methodologyRecordsToolbar.getBoundingClientRect();
+                      const box = child.getBoundingClientRect();
+                      return (
+                        box.top >= row.top - 1 && box.bottom <= row.bottom + 1
+                      );
+                    }),
             methodologyViewTabsBackground:
               methodologyViewTabs === null
                 ? null

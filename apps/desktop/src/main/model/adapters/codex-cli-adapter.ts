@@ -22,8 +22,10 @@ import {
   type ManagedProcessRequest,
   type ManagedProcessResult,
 } from "../cli/managed-child-process.js";
+import { codexOutputSchema, restoreCodexOptionalFields } from "../cli/codex-output-schema.js";
 import { ModelProviderError } from "../http-model-transport.js";
 import {
+  MIN_GENERATION_TIMEOUT_MS,
   parseStructuredJson,
   type StructuredProviderAttempt,
 } from "../structured-provider.js";
@@ -107,8 +109,9 @@ const normalizeUsage = (
   if (
     inputTokens === undefined ||
     outputTokens === undefined ||
-    totalTokens === undefined ||
-    totalTokens !== inputTokens + outputTokens ||
+    // The CLI's own event has no total (0.154.0 writes input, cached, cache-write, output and reasoning): it is
+    // the sum, and a total given that says otherwise leaves the counts untrusted.
+    (totalTokens !== undefined && totalTokens !== inputTokens + outputTokens) ||
     (cachedInputTokens ?? 0) > inputTokens ||
     (reasoningOutputTokens ?? 0) > outputTokens
   ) {
@@ -124,7 +127,7 @@ const normalizeUsage = (
     ...(reasoningOutputTokens === undefined
       ? {}
       : { reasoningOutputTokens }),
-    totalTokens,
+    totalTokens: inputTokens + outputTokens,
   };
 };
 
@@ -254,7 +257,7 @@ export class CodexCliAdapter {
       id: this.id,
       availability: "available" as const,
       modelVersion:
-        this.#profile.model ?? "gpt-5.6-terra",
+        this.#profile.model ?? "codex-default",
       promptVersion: SEMANTIC_PROMPT_VERSION,
     };
   }
@@ -274,7 +277,7 @@ export class CodexCliAdapter {
       semanticOutputJsonSchema,
     );
     const model =
-      this.#profile.model ?? "gpt-5.6-terra";
+      this.#profile.model ?? "codex-default";
     const userPrompt = buildSemanticUserPrompt(input);
     const stdin = `${semanticSystemPrompt}\n\n${userPrompt}`;
     try {
@@ -304,8 +307,7 @@ export class CodexCliAdapter {
           "agents.enabled=false",
           "-c",
           "memories.generate_memories=false",
-          "--model",
-          model,
+          ...(this.#profile.model === undefined ? [] : ["--model", model]),
           "-",
         ],
         stdin,
@@ -314,7 +316,7 @@ export class CodexCliAdapter {
         maximumStdoutBytes: 1_048_576,
         maximumStderrBytes: 65_536,
         environment: minimalClientEnvironment(
-          this.#environment,
+          this.#environment, [], this.#profile.proxy,
         ),
         ...(signal === undefined ? {} : { signal }),
       });
@@ -354,11 +356,10 @@ export class CodexCliAdapter {
     request: StructuredGenerationRequest,
     signal?: AbortSignal,
   ): Promise<StructuredProviderAttempt> {
-    const workspace = await createCliWorkspace(
-      request.outputSchema,
-    );
+    const outputSchema = codexOutputSchema(request.outputSchema);
+    const workspace = await createCliWorkspace(outputSchema);
     const model =
-      this.#profile.model ?? "gpt-5.6-terra";
+      this.#profile.model ?? "codex-default";
     const stdin = `${request.systemPrompt}\n\n${request.userPrompt}`;
     try {
       const processResult = await this.#runner.run({
@@ -387,29 +388,29 @@ export class CodexCliAdapter {
           "agents.enabled=false",
           "-c",
           "memories.generate_memories=false",
-          "--model",
-          model,
+          ...(this.#profile.model === undefined ? [] : ["--model", model]),
           "-",
         ],
         stdin,
         cwd: workspace.directory,
-        timeoutMs: this.#profile.timeoutMs,
+        timeoutMs: Math.max(this.#profile.timeoutMs, MIN_GENERATION_TIMEOUT_MS),
         maximumStdoutBytes: 1_048_576,
         maximumStderrBytes: 65_536,
         environment: minimalClientEnvironment(
-          this.#environment,
+          this.#environment, [], this.#profile.proxy,
         ),
         ...(signal === undefined ? {} : { signal }),
       });
       const parsed = parseProcessOutput(processResult.stdout);
       return {
-        parsedOutput: parseStructuredJson(parsed.visibleOutput),
+        // Unreadable, the call was still billed: what it cost goes with the failure.
+        parsedOutput: restoreCodexOptionalFields(parseStructuredJson(parsed.visibleOutput, undefined, undefined, parsed.usage), request.outputSchema),
         visibleOutput: parsed.visibleOutput,
         modelVersion: model,
         traceInput: {
           systemPrompt: request.systemPrompt,
           userPrompt: request.userPrompt,
-          outputSchema: request.outputSchema,
+          outputSchema,
           clientSystemPromptVisibility: "opaque",
         },
         usage: parsed.usage,
@@ -420,6 +421,7 @@ export class CodexCliAdapter {
         error instanceof ManagedProcessError ||
         error instanceof ModelProviderError
       ) {
+        Object.defineProperty(error, "traceInput", { value: { systemPrompt: request.systemPrompt, userPrompt: request.userPrompt, outputSchema: outputSchema, clientSystemPromptVisibility: "opaque" }, enumerable: false, writable: true, configurable: true });
         throw error;
       }
       throw new ModelProviderError(

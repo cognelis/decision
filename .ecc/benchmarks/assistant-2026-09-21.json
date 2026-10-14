@@ -1,0 +1,36 @@
+{
+  "environment": "Node 22.22.2, React 19, jsdom; local macOS; deterministic fixtures",
+  "command": "DECISION_BENCHMARK=1 npx vitest run apps/desktop/test/assistant-panel.test.tsx apps/desktop/test/retrieval-evaluation.test.ts -t 'benchmarks long|measures initial'",
+  "scope": "Input change includes React rendering and synchronous localStorage persistence. Startup is long-conversation component mount, not OS cold launch. Retrieval uses 24 local Markdown documents and synthetic embeddings; it does not measure model inference.",
+  "optimization": "Memoize unchanged AnswerEvidence and keep source-opening callback stable; persistence remains synchronous.",
+  "before": {
+    "RETRIEVAL_BENCHMARK": {
+      "indexReadyMs": 25.44620900000001,
+      "firstSearchMs": 8.413584000000014,
+      "documents": 24
+    },
+    "ASSISTANT_BENCHMARK": {
+      "startupMs": 259.13750000000005,
+      "inputP50Ms": 26.499624999999924,
+      "inputP95Ms": 33.18433399999981,
+      "samples": 60,
+      "rounds": 20,
+      "paragraphsPerAnswer": 80
+    }
+  },
+  "after": {
+    "RETRIEVAL_BENCHMARK": {
+      "indexReadyMs": 23.714875000000006,
+      "firstSearchMs": 7.767542000000049,
+      "documents": 24
+    },
+    "ASSISTANT_BENCHMARK": {
+      "startupMs": 212.878042,
+      "inputP50Ms": 0.6753750000000309,
+      "inputP95Ms": 1.3977499999999736,
+      "samples": 60,
+      "rounds": 20,
+      "paragraphsPerAnswer": 80
+    }
+  }
+}

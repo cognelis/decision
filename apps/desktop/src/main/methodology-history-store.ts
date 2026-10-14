@@ -5,6 +5,7 @@ import type {
 } from "@cognelis/decision-core";
 import {
   parseMethodology,
+  renameReplacing,
   serializeMethodology,
 } from "@cognelis/decision-storage";
 import { createHash, randomUUID } from "node:crypto";
@@ -12,7 +13,6 @@ import {
   lstat,
   mkdir,
   readFile,
-  rename,
   stat,
   unlink,
   writeFile,
@@ -24,14 +24,26 @@ const MAX_HISTORY_BYTES = 8 * 1024 * 1024;
 const reasons: MethodologyHistoryReason[] = [
   "revision_applied",
   "restore_checkpoint",
+  "evidence_changed",
 ];
 
 interface StoredEntry {
   version: number;
   capturedAt: string;
-  reason: MethodologyHistoryReason;
+  reason: Exclude<MethodologyHistoryReason, "evidence_changed">;
+  detail?: "evidence_changed";
   markdown: string;
 }
+
+/**
+ * As a reason is kept. 1.1.0 knows the first two only and calls a history holding another corrupt, its versions,
+ * revisions and restores of that principle refused for good: an evidence change is kept as a revision with a detail
+ * of its own, which 1.1.0 passes over and this build reads back as what it was.
+ */
+const kept = (reason: MethodologyHistoryReason): Pick<StoredEntry, "reason" | "detail"> =>
+  reason === "evidence_changed" ? { reason: "revision_applied", detail: "evidence_changed" } : { reason };
+
+const told = (entry: StoredEntry): MethodologyHistoryReason => entry.detail ?? entry.reason;
 
 interface StoredHistory {
   version: 1;
@@ -87,7 +99,8 @@ const parseHistory = (
     return {
       version: raw.version as number,
       capturedAt: requireDate(raw.capturedAt),
-      reason: raw.reason as MethodologyHistoryReason,
+      // Kept as 1.1.0 reads it from the next write on, one written as "evidence_changed" before included.
+      ...kept(raw.detail === "evidence_changed" ? "evidence_changed" : raw.reason as MethodologyHistoryReason),
       markdown: raw.markdown,
     };
   });
@@ -120,7 +133,7 @@ const atomicWrite = async (path: string, content: string): Promise<void> => {
   const temporary = `${path}.${randomUUID()}.tmp`;
   try {
     await writeFile(temporary, content, { encoding: "utf8", mode: 0o600 });
-    await rename(temporary, path);
+    await renameReplacing(temporary, path);
   } catch (error) {
     await unlink(temporary).catch(() => undefined);
     throw error;
@@ -141,7 +154,7 @@ export class MethodologyHistoryStore {
       .map((entry) => ({
         version: entry.version,
         capturedAt: entry.capturedAt,
-        reason: entry.reason,
+        reason: told(entry),
         snapshot: parseMethodology(entry.markdown),
       }))
       .reverse();
@@ -172,14 +185,14 @@ export class MethodologyHistoryStore {
         return {
           version: latest.version,
           capturedAt: latest.capturedAt,
-          reason: latest.reason,
+          reason: told(latest),
           snapshot: methodology,
         };
       }
       const stored: StoredEntry = {
         version: history.nextVersion,
         capturedAt: requireDate(capturedAt),
-        reason,
+        ...kept(reason),
         markdown,
       };
       history.nextVersion += 1;
@@ -189,7 +202,7 @@ export class MethodologyHistoryStore {
         this.#path(methodology.id),
         `${JSON.stringify(history, null, 2)}\n`,
       );
-      return { ...stored, snapshot: methodology };
+      return { version: stored.version, capturedAt: stored.capturedAt, reason, snapshot: methodology };
     });
   }
 

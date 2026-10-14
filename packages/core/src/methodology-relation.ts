@@ -32,12 +32,18 @@ export const assessMethodologyDuplicateGroup = (
   const ids = [...new Set(sourcePrincipleIds.map((id) => id.trim()))].filter(
     Boolean,
   );
+  // A pair's newest verdict is its verdict, as the quality view reads it: any 重复 fact counted, a pair since judged
+  // 无关 (a second note for it) still opened a merge.
+  const newest = new Map<string, MethodologyRelationRecord>();
+  for (const relation of relations) {
+    const pair = canonicalMethodologyPair(...relation.principleIds).join("\0");
+    const held = newest.get(pair);
+    if (held === undefined || relation.updatedAt.localeCompare(held.updatedAt) > 0) newest.set(pair, relation);
+  }
   const duplicatePairs = new Set(
-    relations
-      .filter((relation) => relation.disposition === "duplicate")
-      .map((relation) =>
-        canonicalMethodologyPair(...relation.principleIds).join("\0"),
-      ),
+    [...newest]
+      .filter(([, relation]) => relation.disposition === "duplicate")
+      .map(([pair]) => pair),
   );
   const missingPairs: Array<[string, string]> = [];
   let requiredPairCount = 0;

@@ -1,9 +1,11 @@
 import type { SemanticDecisionPair } from "@cognelis/decision-protocol";
 import {
+  chmod,
   mkdtemp,
   readFile,
   readdir,
   stat,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -74,6 +76,26 @@ describe("SemanticPairSpool", () => {
     expect((await stat(join(root, "receipts", receipt))).size).toBe(
       0,
     );
+  });
+
+  it("takes out receipts older than a pair could form again when the app lists, not when the bridge appends", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-semantic-pair-"));
+    const now = new Date("2026-07-28T00:00:00.000Z");
+    const spool = new SemanticPairSpool(root, { now: () => now });
+    await spool.acknowledge("pair-old");
+    const [oldReceipt] = await readdir(join(root, "receipts"));
+    await spool.acknowledge("pair-recent");
+    const aged = new Date(now.getTime() - 200 * 24 * 60 * 60 * 1_000);
+    await utimes(join(root, "receipts", oldReceipt!), aged, aged);
+
+    // Once per hook, the bridge only appends: it leaves them.
+    await spool.append(pairFixture("pair-new"));
+    await expect(spool.isAcknowledged("pair-old")).resolves.toBe(true);
+
+    // Kept for good, one a turn grew past a hundred thousand files a year.
+    await spool.list();
+    await expect(spool.isAcknowledged("pair-old")).resolves.toBe(false);
+    await expect(spool.isAcknowledged("pair-recent")).resolves.toBe(true);
   });
 
   it("accepts a concurrent pair only once", async () => {
@@ -158,5 +180,20 @@ describe("SemanticPairSpool", () => {
     await expect(readdir(join(root, "quarantine"))).resolves.toHaveLength(
       1,
     );
+  });
+
+  it.skipIf(process.platform === "win32" || process.getuid?.() === 0)("keeps a body it cannot read now, to read it again", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-semantic-unread-"));
+    const spool = new SemanticPairSpool(root, { now: () => new Date("2026-07-28T00:00:00.000Z") });
+    const pair = pairFixture("pair-held");
+    await spool.append(pair);
+    const [file] = await readdir(join(root, "items"));
+    await chmod(join(root, "items", file!), 0o000);
+
+    await expect(spool.list()).resolves.toEqual([]);
+    expect(await readdir(join(root, "quarantine"))).toEqual([]);
+
+    await chmod(join(root, "items", file!), 0o600);
+    await expect(spool.list()).resolves.toEqual([pair]);
   });
 });

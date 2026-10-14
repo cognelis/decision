@@ -1,14 +1,22 @@
-import { execFile } from "node:child_process";
+import { runElectronCheck } from "./support/run-electron-check.js";
 import { createRequire } from "node:module";
-import { promisify } from "node:util";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   DESKTOP_WINDOW_MIN_SIZE,
   DESKTOP_WINDOW_SIZE,
 } from "../src/shared/decision-layout.js";
 
-const execFileAsync = promisify(execFile);
+/*
+ * Each measurement drives a real Electron process with a 30s budget of its own.
+ * The suite-wide 20s test timeout is shorter than that, so vitest always won
+ * the race: under load these died with "Test timed out in 20000ms" — a message
+ * about the harness, never about the layout — instead of letting the
+ * subprocess report what actually went wrong. A test timeout has to outlast
+ * the budget it is waiting on.
+ */
+vi.setConfig({ testTimeout: 90_000 });
+
 const require = createRequire(import.meta.url);
 const electronPath = require("electron") as string;
 const scriptPath = new URL(
@@ -19,10 +27,26 @@ const repositoryRoot = new URL("../../../", import.meta.url).pathname;
 
 type Theme = "light" | "dark";
 type Surface =
-  "decisions" | "methodology" | "settings" | "clients" | "models" | "activity";
+  | "decisions"
+  | "assistant"
+  | "dashboard"
+  | "methodology"
+  | "settings"
+  | "clients"
+  | "connections"
+  | "pr-review"
+  | "models"
+  | "activity";
 type Interaction =
   | "default"
   | "add-backend"
+  | "add-connection"
+  | "assistant-chat"
+  | "assistant-chat-compact"
+  | "pr-diff"
+  | "pr-diff-compact"
+  | "review-chat"
+  | "review-chat-compact"
   | "trace-detail"
   | "decision-outcome"
   | "decision-review"
@@ -77,6 +101,10 @@ interface DesktopPageMetrics {
   cardHeaderHeights: number[];
   cardHeadersSingleRow: boolean;
   cardsFitWidth: boolean;
+  cardsShowTheirContent: boolean;
+  nativeControlsUseAppAccent: boolean;
+  everyControlIsNamed: boolean;
+  cardsDoNotOverlap: boolean;
   clientCardCount: number;
   clientHeight: number;
   clientWidth: number;
@@ -114,7 +142,7 @@ interface DesktopPageMetrics {
   methodologyStatusFilterBackground: string | null;
   methodologyStatusFilterBorderWidth: string | null;
   methodologyToolbarHeight: number | null;
-  methodologyToolbarsSingleRow: boolean | null;
+  methodologyRecordsToolbarSingleRow: boolean | null;
   methodologyViewTabsBackground: string | null;
   methodologyViewTabsBorderWidth: string | null;
   navigationLabels: string[];
@@ -475,7 +503,7 @@ const measurePage = (
   const key = `${theme}:${surface}:${interaction}`;
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
-  const result = execFileAsync(
+  const result = runElectronCheck(
     electronPath,
     [
       scriptPath,
@@ -506,10 +534,11 @@ describe.skipIf(process.platform !== "darwin")(
   "desktop management page layouts",
   () => {
     it.each([
-      ["decisions", "决策库"],
+      ["decisions", "知识"],
       ["methodology", "方法论"],
       ["settings", "通用设置"],
       ["clients", "接入"],
+      ["connections", "链接"],
       ["models", "模型"],
       ["activity", "日志"],
     ] as const)(
@@ -520,40 +549,47 @@ describe.skipIf(process.platform !== "darwin")(
         expect(metrics).toMatchObject({
           surface,
           heading,
+          // Overlap produces no overflow, so every other measurement here
+          // stayed green while two cards painted over each other.
+          cardsDoNotOverlap: true,
           navigationLabels: [
             "首页",
-            "决策库",
+            "问答",
+            "知识",
+            "评审",
             "方法论",
-            "接入",
-            "模型",
-            "日志",
             "设置",
           ],
           overflowY:
             surface === "decisions" || surface === "methodology"
               ? "hidden"
               : "auto",
-          sidebarWidth: 188,
+          sidebarWidth: 152,
           viewportHeight: DESKTOP_WINDOW_SIZE.height,
           viewportWidth: DESKTOP_WINDOW_SIZE.width,
           cardsFitWidth: true,
+          cardsShowTheirContent: true,
+          nativeControlsUseAppAccent: true,
+          everyControlIsNamed: true,
           controlsFitWidth: true,
         });
         expect(metrics.stageWidth).toBe(
           DESKTOP_WINDOW_SIZE.width - metrics.sidebarWidth - 2,
         );
-        expect(metrics.headerHeight).toBe(48);
-        expect(metrics.headingVisible).toBe(false);
-        expect(metrics.pagePaddingTop).toBe(18);
-        expect(metrics.pagePaddingBottom).toBe(18);
-        expect(metrics.pagePaddingLeft).toBe(20);
-        expect(metrics.pagePaddingRight).toBe(20);
+        expect(metrics.headerHeight).toBe(44);
+        // 标题条现在真的写着你在哪一页：类目、标题、一句说明排成一行，
+        // 而不是把标题整块藏掉、只在右上角留一个飘着的计数气泡。
+        expect(metrics.headingVisible).toBe(true);
+        expect(metrics.pagePaddingTop).toBe(16);
+        expect(metrics.pagePaddingBottom).toBe(16);
+        expect(metrics.pagePaddingLeft).toBe(22);
+        expect(metrics.pagePaddingRight).toBe(22);
         expect(metrics.pageContentLeftInset).toBe(
           metrics.pageContentRightInset,
         );
         expect(metrics.cardCount).toBeGreaterThan(0);
         if (metrics.cardHeaderHeights.length > 0) {
-          expect(new Set(metrics.cardHeaderHeights)).toEqual(new Set([48]));
+          expect(new Set(metrics.cardHeaderHeights)).toEqual(new Set([40]));
           expect(metrics.cardHeadersSingleRow).toBe(true);
         }
         expect(metrics.appScrollHeight).toBe(metrics.appClientHeight);
@@ -660,7 +696,7 @@ describe.skipIf(process.platform !== "darwin")(
         scheduleEditorVisible: true,
         scheduleListHeightStable: true,
         scheduleNoWakeCopyVisible: true,
-        schedulePresetCount: 3,
+        schedulePresetCount: 4,
         schedulePresetsSingleRow: true,
       });
     });
@@ -691,12 +727,15 @@ describe.skipIf(process.platform !== "darwin")(
         methodologyActiveIndicatorHeight: "2px",
         methodologyStatusFilterBackground: "rgba(0, 0, 0, 0)",
         methodologyStatusFilterBorderWidth: "0px",
-        methodologyViewTabsBackground: "rgba(0, 0, 0, 0)",
+        // 标签页搬到页头下面之后，它和设置区的分栏导航站在同一条横栏上，
+        // 底色也该是同一个。
+        methodologyViewTabsBackground: "rgb(18, 19, 21)",
         methodologyViewTabsBorderWidth: "0px",
       });
-      expect(metrics.methodologyToolbarHeight).toBeLessThanOrEqual(46);
+      // 卡片工具栏只剩筛选动作一行。
+      expect(metrics.methodologyToolbarHeight).toBeLessThanOrEqual(44);
       expect(metrics.methodologyRecordsToolbarHeight).toBeLessThanOrEqual(42);
-      expect(metrics.methodologyToolbarsSingleRow).toBe(true);
+      expect(metrics.methodologyRecordsToolbarSingleRow).toBe(true);
       expect(metrics.methodologyBuildGuideVisible).toBe(true);
       expect(metrics.methodologyBuildMetricCount).toBe(5);
       expect(metrics.methodologyBuildMetricsSingleRow).toBe(true);
@@ -716,7 +755,7 @@ describe.skipIf(process.platform !== "darwin")(
         methodologyBuildActionsFit: true,
         methodologyBuildMetricsSingleRow: true,
         methodologyBuildPathSingleRow: true,
-        methodologyToolbarsSingleRow: true,
+        methodologyRecordsToolbarSingleRow: true,
       });
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
     });
@@ -1430,8 +1469,10 @@ describe.skipIf(process.platform !== "darwin")(
 
       expect(clients.clientCardCount).toBe(2);
       expect(models.modelProfileVisible).toBe(true);
-      expect(models.providerSwitchCount).toBe(4);
-      expect(models.providerDragHandleCount).toBe(4);
+      // Four built-ins plus the saved remote backend; the remote one is what
+      // makes this page draw a row that leaves the machine.
+      expect(models.providerSwitchCount).toBe(5);
+      expect(models.providerDragHandleCount).toBe(5);
       expect(models.providerLegacyMoveActionsVisible).toBe(false);
       expect(Math.max(...models.providerRowHeights)).toBeLessThanOrEqual(66);
       for (const positions of [
@@ -1472,6 +1513,46 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics.traceListWebkitScrollbarDisplay).toBe("none");
     });
 
+    it.each([
+      ["assistant", "问答"],
+      ["dashboard", "首页"],
+    ] as const)(
+      "holds %s to the same shell rules as the rest",
+      async (surface, heading) => {
+        const metrics = await measurePage("dark", surface);
+
+        // Neither page shares the others' `.desktop-page-scroll`: 问答 scrolls
+        // its stream, 首页 its own column. So the page-derived numbers are not
+        // comparable here — what is, is the shell around them and the controls
+        // they draw, which is what these two guards check. Without this the
+        // naming and accent guards covered six surfaces out of eight.
+        expect(metrics.surface).toBe(surface);
+        expect(metrics.heading).toBe(heading);
+        expect(metrics.everyControlIsNamed).toBe(true);
+        expect(metrics.nativeControlsUseAppAccent).toBe(true);
+        expect(metrics.cardsDoNotOverlap).toBe(true);
+        expect(metrics.controlsFitWidth).toBe(true);
+        expect(metrics.headerHeight).toBe(44);
+        expect(metrics.sidebarWidth).toBe(152);
+        expect(metrics.stageWidth).toBe(
+          DESKTOP_WINDOW_SIZE.width - metrics.sidebarWidth - 2,
+        );
+      },
+    );
+
+    it("keeps every settings card reachable in a compact window", async () => {
+      const metrics = await measurePage("light", "settings", "compact");
+
+      expect(metrics.viewportHeight).toBe(DESKTOP_WINDOW_MIN_SIZE.height);
+      expect(metrics.viewportWidth).toBe(DESKTOP_WINDOW_MIN_SIZE.width);
+      // The smallest window the app allows is where the rows were sharing out
+      // the page height instead of following their cards: the last card was
+      // squeezed, clipped its own bottom, and the page never grew a scrollbar
+      // to reach it.
+      expect(metrics.cardsShowTheirContent).toBe(true);
+      expect(metrics.cardsDoNotOverlap).toBe(true);
+    });
+
     it("keeps the visible model trace columns aligned in a compact window", async () => {
       const metrics = await measurePage("dark", "activity", "compact");
 
@@ -1480,6 +1561,26 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics.traceColumnCount).toBe(4);
       expect(metrics.traceColumnsAligned).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
+    });
+
+    it.each(["assistant-chat", "assistant-chat-compact"] as const)("keeps assistant navigation and compact controls usable (%s)", async mode => {
+      const metrics = await measurePage("dark", "assistant", mode);
+      expect(metrics).toMatchObject({ listDragResized: true, assistantComposerVisible: true, assistantIndependentScroll: true, assistantCompactControls: true, assistantMenuVisible: true, assistantMenuEscape: true, assistantMaterialVisible: true, assistantComposerStable: true });
+    });
+
+    it.each(["pr-diff", "pr-diff-compact"] as const)("browses PR files with both diff layouts and pinned file contents (%s)", async mode => {
+      const metrics = await measurePage("dark", "pr-review", mode);
+      expect(metrics).toMatchObject({ prDiffUnified: true, prDiffSplit: true, prDiffFullFile: true, prDiffOldFile: true, prDiffFits: true, prDiffDirectory: true });
+    });
+
+    it.each(["review-chat", "review-chat-compact"] as const)("renders the PR review as a chat with browsable history (%s)", async (mode) => {
+      const metrics = await measurePage("dark", "pr-review", mode);
+      expect(metrics).toMatchObject({ listDragResized: true, reviewJumpStable: true, reviewComposerInViewport: true, reviewChatMessages: 5, reviewChatRequest: true, reviewChatHistory: true, reviewChatDetailsCollapsed: true, reviewChatNoOverflow: true, reviewChatReport: true, reviewChatResultInLog: true, reviewChatComposer: true, reviewChatReply: true });
+    });
+
+    it("opens the connections editor without moving the link list", async () => {
+      const metrics = await measurePage("light", "connections", "add-connection");
+      expect(metrics).toMatchObject({ dialogCentered: true, editorInsideDialog: true, editorVisible: true, listTopStable: true, pageScrollHeightStable: true });
     });
 
     it("opens the add-backend editor in a centered dialog without moving the page", async () => {
@@ -1509,46 +1610,40 @@ describe.skipIf(process.platform !== "darwin")(
         traceListScrollHeightStable: true,
         traceRowHeightStable: true,
       });
-      expect(metrics.traceDetailBackgroundImage).toContain("radial-gradient");
-      expect(metrics.traceDetailBackgroundImage).toContain("linear-gradient");
+      // 对话框是一张实心的纸：不叠渐变光泽，背后的页面交给遮罩压暗。
+      expect(metrics.traceDetailBackgroundImage).toBe("none");
       expect(metrics.traceDetailSurfaceFilter).toContain("blur(24px)");
       expect(metrics.traceDetailBackdropFilter).toContain("blur(24px)");
-      expect(alphaOf(metrics.tokens.modalSurface)).toBeGreaterThanOrEqual(0.92);
+      expect(metrics.tokens.modalSurface).not.toContain("/");
       expect(alphaOf(metrics.tokens.modalBackdrop)).toBeGreaterThanOrEqual(
-        0.52,
+        0.34,
       );
     });
 
+    /*
+     * 半透明只留在窗口这一层，好让 macOS 的原生玻璃有东西可透；工作面一律不
+     * 透明。旧版每一层都半透明，桌面壁纸透过四层叠加上来，正文的对比度实际上
+     * 取决于用户的桌面背景是什么。
+     */
     it.each([
-      {
-        theme: "light" as const,
-        maximumComposite: 0.42,
-        maximumHighlight: 0.4,
-        maximumToolbar: 0.14,
-      },
-      {
-        theme: "dark" as const,
-        maximumComposite: 0.58,
-        maximumHighlight: 0.16,
-        maximumToolbar: 0.2,
-      },
+      { theme: "light" as const, maximumWindow: 0.2 },
+      { theme: "dark" as const, maximumWindow: 0.5 },
     ])(
-      "keeps $theme desktop glass translucent",
-      async ({ theme, maximumComposite, maximumHighlight, maximumToolbar }) => {
+      "keeps $theme window glass translucent over opaque work surfaces",
+      async ({ theme, maximumWindow }) => {
         const metrics = await measurePage(theme, "settings");
+
         expect(metrics.backdropFilter).toContain("blur(24px)");
-        expect(alphaOf(metrics.tokens.windowHighlight)).toBeLessThanOrEqual(
-          maximumHighlight,
+        expect(alphaOf(metrics.tokens.window)).toBeGreaterThan(0);
+        expect(alphaOf(metrics.tokens.window)).toBeLessThanOrEqual(
+          maximumWindow,
         );
-        expect(alphaOf(metrics.tokens.toolbar)).toBeLessThanOrEqual(
-          maximumToolbar,
-        );
-        expect(
-          compositeAlpha(
-            alphaOf(metrics.tokens.window),
-            alphaOf(metrics.tokens.surface),
-          ),
-        ).toBeLessThanOrEqual(maximumComposite);
+        // 高光和工具条底色都归零：层级交给发丝线，不靠一层层的白膜。
+        expect(alphaOf(metrics.tokens.windowHighlight)).toBe(0);
+        expect(alphaOf(metrics.tokens.toolbar)).toBe(0);
+        // 工作面是实色，没有 alpha 通道可言。
+        expect(metrics.tokens.surface).not.toContain("/");
+        expect(metrics.tokens.surface).toMatch(/^(rgb|#)/u);
       },
     );
   },

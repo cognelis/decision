@@ -2,7 +2,10 @@ import type {
   MethodologyEvidenceMatchInput,
   MethodologyRecord,
 } from "@cognelis/decision-core";
-import { buildMethodologyEvidenceMatches } from "@cognelis/decision-core";
+import {
+  buildMethodologyEvidenceMatches,
+  withSemanticEvidenceMatches,
+} from "@cognelis/decision-core";
 import { describe, expect, it } from "vitest";
 
 const methodology = (
@@ -105,5 +108,77 @@ describe("buildMethodologyEvidenceMatches", () => {
     );
 
     expect(matches.map((item) => item.sourceDecisionId)).toEqual(["newest"]);
+  });
+});
+
+describe("withSemanticEvidenceMatches", () => {
+  const overlap = () =>
+    buildMethodologyEvidenceMatches(methodology(), [evidence("decision-a")]);
+
+  it("adds only what the wording missed, and never above it", () => {
+    const matches = overlap();
+    expect(matches).toHaveLength(1);
+
+    const merged = withSemanticEvidenceMatches(
+      matches,
+      [
+        // Already found by wording: adding it again would show one decision
+        // twice under two different explanations.
+        { sourceDecisionId: "decision-a", rank: 0 },
+        { sourceDecisionId: "decision-b", rank: 1 },
+      ],
+      new Set(),
+    );
+
+    expect(merged.map((match) => match.sourceDecisionId)).toEqual([
+      "decision-a",
+      "decision-b",
+    ]);
+    expect(merged[0]?.matchKind).toBe("keyword");
+    expect(merged[1]?.matchKind).toBe("semantic");
+  });
+
+  it("never lets an unexplainable hit claim strength", () => {
+    const [supplement] = withSemanticEvidenceMatches(
+      [],
+      [{ sourceDecisionId: "decision-b", rank: 0 }],
+      new Set(),
+    );
+
+    // Nothing overlapped, so there is nothing to show and nothing to promise.
+    expect(supplement?.strength).toBe("possible");
+    expect(supplement?.matchedTerms).toEqual([]);
+    expect(supplement?.score).toBe(0);
+    expect(supplement?.reason).toContain("没有共同用词");
+  });
+
+  it("keeps the retrieval order and caps how many it adds", () => {
+    const merged = withSemanticEvidenceMatches(
+      [],
+      [
+        { sourceDecisionId: "decision-c", rank: 2 },
+        { sourceDecisionId: "decision-a", rank: 0 },
+        { sourceDecisionId: "decision-b", rank: 1 },
+        { sourceDecisionId: "decision-d", rank: 3 },
+      ],
+      new Set(),
+      3,
+    );
+
+    expect(merged.map((match) => match.sourceDecisionId)).toEqual([
+      "decision-a",
+      "decision-b",
+      "decision-c",
+    ]);
+  });
+
+  it("marks a supplement that is already linked", () => {
+    const [supplement] = withSemanticEvidenceMatches(
+      [],
+      [{ sourceDecisionId: "decision-b", rank: 0 }],
+      new Set(["decision-b"]),
+    );
+
+    expect(supplement?.alreadyLinked).toBe(true);
   });
 });

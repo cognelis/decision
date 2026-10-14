@@ -1,6 +1,9 @@
+import { IconButton, ActionIcon } from "../../IconButton.js";
 import type {
   DecisionAnalyticsGroup,
   DecisionAnalyticsSnapshot,
+  DecisionRetrospective,
+  DecisionRetrospectivePeriod,
   OutcomeVerdict,
 } from "@cognelis/decision-core";
 import type {
@@ -8,14 +11,20 @@ import type {
   DecisionConsultationMetricsSnapshot,
   DecisionConsultationResponse,
 } from "@cognelis/decision-protocol";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { DecisionAnalyticsApi } from "../../../../shared/renderer-api.js";
+import type { DecisionBrowseFilter } from "../decisions/DecisionLibraryPanel.js";
+import { questionSearchText } from "../decisions/SameQuestionDecisions.js";
 import { ModalDialog } from "../../ModalDialog.js";
 
 interface DecisionAnalyticsViewProps {
   api: DecisionAnalyticsApi;
   onOpenDecisions(): void;
+  onOpenDecision(id: string): void;
+  onBrowseDecisions(filter: DecisionBrowseFilter): void;
+  onOpenPrinciple(id: string): void;
+  onOpenReviews(): void;
 }
 
 const verdictLabels: Record<OutcomeVerdict, string> = {
@@ -29,6 +38,8 @@ const verdictLabels: Record<OutcomeVerdict, string> = {
 const sourceLabels: Record<string, string> = {
   codex: "Codex",
   "claude-code": "Claude Code",
+  manual: "手动记录",
+  "pr-comment": "PR 评论",
   test: "测试数据",
 };
 
@@ -41,6 +52,461 @@ const monthLabel = (period: string): string => {
 
 const percentage = (value: number, total: number): number =>
   total === 0 ? 0 : Math.round((value / total) * 100);
+
+const calendarLabel = (date: string, withYear: boolean): string => {
+  const [year = "", month = "", day = ""] = date.split("-");
+  const label = `${Number(month)}.${Number(day)}`;
+  return withYear ? `${year}.${label}` : label;
+};
+
+const periodRange = ({
+  startDate,
+  endDate,
+}: DecisionRetrospectivePeriod): string => {
+  const crossesYear = startDate.slice(0, 4) !== endDate.slice(0, 4);
+  return `${calendarLabel(startDate, crossesYear)} – ${calendarLabel(endDate, crossesYear)}`;
+};
+
+const dayLabel = (iso: string): string => {
+  const date = new Date(iso);
+  return `${date.getMonth() + 1}.${date.getDate()}`;
+};
+
+const oneLine = (text: string): string => text.replace(/\s+/gu, " ").trim();
+
+/** Repeats, principles and projects past this many are counted, not listed. */
+const LISTED = 5;
+
+/**
+ * The window as Markdown, to paste into a weekly note or a message: the same
+ * counts, lessons, repeats and projects the section shows, nothing inferred.
+ */
+export const retrospectiveMarkdown = (
+  period: DecisionRetrospectivePeriod,
+  reviewAttention: number,
+): string => {
+  const lines = [
+    `## 决策回顾 · ${period.startDate} – ${period.endDate}（近 ${period.days} 天）`,
+    "",
+    `- 新决策 ${period.decisions} 条（前 ${period.days} 天 ${period.previousDecisions} 条）${
+      period.decisions === 0
+        ? ""
+        : `，理由补全 ${period.rationaleCaptured} / ${period.decisions}`
+    }${
+      period.expectationMissing === 0
+        ? ""
+        : `，${period.expectationMissing} 条尚未写预期`
+    }`,
+    `- 完成复盘 ${period.reviews} 条（前 ${period.days} 天 ${period.previousReviews} 条），当前待复盘 ${reviewAttention} 条`,
+    "",
+    "### 写下的经验",
+    "",
+  ];
+  if (period.lessons.length === 0) lines.push("本期没有完成复盘。");
+  for (const lesson of period.lessons) {
+    lines.push(
+      `- **${verdictLabels[lesson.verdict]}** · ${oneLine(lesson.question)}（${lesson.project} · ${dayLabel(lesson.reviewedAt)} 复盘）`,
+      ...(lesson.expectedOutcome === null
+        ? []
+        : [`  当时预期：${oneLine(lesson.expectedOutcome)}`]),
+      `  ${(lesson.lesson ?? "没有写下经验。").trim().replace(/\n+/gu, "\n  ")}`,
+    );
+  }
+  if (period.reviews > period.lessons.length) {
+    lines.push(`- 另有 ${period.reviews - period.lessons.length} 条复盘未列出`);
+  }
+  lines.push("", "### 反复出现的问题", "");
+  if (period.repeats.length === 0) lines.push("没有重复决定的问题。");
+  for (const repeat of period.repeats.slice(0, LISTED)) {
+    lines.push(
+      `- ${oneLine(repeat.question)}：${repeat.decisionIds.length} 次，${repeat.projects} 个项目，${
+        repeat.consistentAnswers ? "答案一致" : "答案不一致"
+      }`,
+    );
+  }
+  if (period.repeats.length > LISTED) {
+    lines.push(`- 另有 ${period.repeats.length - LISTED} 个问题未列出`);
+  }
+  if (period.principles.length > 0) {
+    lines.push("", "### 用到的原则", "");
+    for (const principle of period.principles.slice(0, LISTED)) {
+      lines.push(`- ${oneLine(principle.title)}：${principle.count} 次`);
+    }
+    if (period.principles.length > LISTED) {
+      lines.push(`- 另有 ${period.principles.length - LISTED} 条原则未列出`);
+    }
+  }
+  if (period.projects.length > 0) {
+    lines.push("", "### 项目分布", "");
+    for (const project of period.projects.slice(0, LISTED)) {
+      lines.push(`- ${project.label}：${project.count}`);
+    }
+    if (period.projects.length > LISTED) {
+      lines.push(`- 另有 ${period.projects.length - LISTED} 个项目未列出`);
+    }
+  }
+  return `${lines.join("\n")}\n`;
+};
+
+const RetrospectiveSection = ({
+  retrospective,
+  onOpenDecision,
+  onBrowseDecisions,
+  onOpenPrinciple,
+  onOpenReviews,
+}: {
+  retrospective: DecisionRetrospective;
+  onOpenDecision(id: string): void;
+  onBrowseDecisions(filter: DecisionBrowseFilter): void;
+  onOpenPrinciple(id: string): void;
+  onOpenReviews(): void;
+}) => {
+  const [days, setDays] = useState(retrospective.periods[0]?.days ?? 7);
+  const [copyNotice, setCopyNotice] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
+  const period =
+    retrospective.periods.find((item) => item.days === days) ??
+    retrospective.periods[0];
+  if (period === undefined) return null;
+  const attention = retrospective.reviewAttention;
+  // The knowledge page filters the same calendar windows, so its list holds
+  // exactly the decisions counted here.
+  const browsePeriod =
+    period.days === 7 ? "7" : period.days === 30 ? "30" : null;
+  const maxProject = Math.max(1, ...period.projects.map(({ count }) => count));
+  const copy = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(retrospectiveMarkdown(period, attention));
+      setCopyNotice({ ok: true, text: "已复制为 Markdown" });
+    } catch {
+      setCopyNotice({ ok: false, text: "复制失败，请稍后重试" });
+    }
+  };
+
+  return (
+    <section
+      className="analytics-retrospective"
+      aria-labelledby="analytics-retrospective-title"
+    >
+      <header>
+        <div>
+          <span>周期回顾</span>
+          <div>
+            <h2 id="analytics-retrospective-title">
+              这 {period.days} 天做了什么决定、学到了什么
+            </h2>
+            <small>{periodRange(period)}</small>
+          </div>
+        </div>
+        <div className="analytics-retrospective-actions">
+          {copyNotice === null ? null : (
+            <span className={copyNotice.ok ? "ok" : "error"} role="status">
+              {copyNotice.text}
+            </span>
+          )}
+          <IconButton aria-label="复制为 Markdown" onClick={() => void copy()}>
+            <ActionIcon name="copy" />
+          </IconButton>
+          <div
+            className="decision-filter-segment"
+            role="group"
+            aria-label="回顾窗口"
+          >
+            {retrospective.periods.map((item) => (
+              <button
+                key={item.days}
+                type="button"
+                aria-pressed={item.days === period.days}
+                onClick={() => {
+                  setDays(item.days);
+                  setCopyNotice(null);
+                }}
+              >
+                近 {item.days} 天
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <dl className="analytics-retrospective-readouts">
+        <div>
+          <dt>新决策</dt>
+          <dd>
+            <strong>{period.decisions}</strong>
+            <span>
+              前 {period.days} 天 {period.previousDecisions}
+            </span>
+            {browsePeriod === null || period.decisions === 0 ? null : (
+              <button
+                type="button"
+                className="text-button"
+                aria-label={`在知识页查看这 ${period.decisions} 条决策`}
+                onClick={() => onBrowseDecisions({ period: browsePeriod })}
+              >
+                查看 ›
+              </button>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>理由补全</dt>
+          <dd>
+            {period.decisions === 0 ? (
+              <>
+                <strong>—</strong>
+                <span>没有新决策</span>
+              </>
+            ) : (
+              <>
+                <strong>
+                  {period.rationaleCaptured}
+                  <small> / {period.decisions}</small>
+                </strong>
+                <span>
+                  {percentage(period.rationaleCaptured, period.decisions)}%
+                </span>
+                {/* Skipped ones stay out: the user chose not to write one. */}
+                {browsePeriod === null || period.rationaleDeferred === 0 ? null : (
+                  <button
+                    type="button"
+                    className="text-button"
+                    aria-label={`在知识页查看这段时间理由待补的 ${period.rationaleDeferred} 条决策`}
+                    onClick={() =>
+                      onBrowseDecisions({
+                        period: browsePeriod,
+                        rationaleStatus: "deferred",
+                      })
+                    }
+                  >
+                    待补 {period.rationaleDeferred} ›
+                  </button>
+                )}
+              </>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>完成复盘</dt>
+          <dd>
+            <strong>{period.reviews}</strong>
+            <span>
+              前 {period.days} 天 {period.previousReviews}
+            </span>
+          </dd>
+        </div>
+        <div className={attention > 0 ? "attention" : undefined}>
+          <dt>待复盘 · 现在</dt>
+          <dd>
+            <strong>{attention}</strong>
+            {attention > 0 ? (
+              <button type="button" className="text-button" onClick={onOpenReviews}>
+                去首页复盘 ›
+              </button>
+            ) : (
+              <span className="clear">没有积压</span>
+            )}
+          </dd>
+        </div>
+      </dl>
+
+      {/* Looking back is also the last chance to look ahead for what is unresolved. */}
+      {browsePeriod === null || period.expectationMissing === 0 ? null : (
+        <p className="analytics-retrospective-expect">
+          <span>
+            本期有 {period.expectationMissing} 条决策还没写预期，结果也还没出来；现在写下，复盘时才有对照。
+          </span>
+          <button
+            type="button"
+            className="text-button"
+            aria-label={`在知识页逐条补写这 ${period.expectationMissing} 条决策的预期`}
+            onClick={() =>
+              onBrowseDecisions({
+                period: browsePeriod,
+                reviewState: "expectation_missing",
+              })
+            }
+          >
+            补写 ›
+          </button>
+        </p>
+      )}
+
+      <div className="analytics-retrospective-body">
+        <section aria-labelledby="analytics-retrospective-lessons">
+          <div className="analytics-retrospective-heading">
+            <h3 id="analytics-retrospective-lessons">本期写下的经验</h3>
+            {period.reviews === 0 ? null : (
+              <span>{period.reviews} 条复盘 · 不及预期的排在前面</span>
+            )}
+          </div>
+          {period.lessons.length === 0 ? (
+            <p className="analytics-retrospective-empty">
+              这 {period.days} 天没有完成复盘。安排了复盘日期的决策到期后会出现在首页的复盘收件箱。
+            </p>
+          ) : (
+            <ol className="analytics-retrospective-lessons">
+              {period.lessons.map((lesson) => (
+                <li key={lesson.decisionId}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenDecision(lesson.decisionId)}
+                  >
+                    <span>
+                      <em className={`decision-review-verdict ${lesson.verdict}`}>
+                        {verdictLabels[lesson.verdict]}
+                      </em>
+                      <strong>{lesson.question}</strong>
+                      <time dateTime={lesson.reviewedAt}>
+                        {dayLabel(lesson.reviewedAt)} 复盘
+                      </time>
+                    </span>
+                    {/* What was expected, next to what was learned when it fell short. */}
+                    {lesson.expectedOutcome === null ? null : (
+                      <small className="analytics-retrospective-expected">
+                        当时预期：{lesson.expectedOutcome}
+                      </small>
+                    )}
+                    <p className={lesson.lesson === null ? "missing" : undefined}>
+                      {lesson.lesson ?? "没有写下经验。"}
+                    </p>
+                    <small>
+                      {lesson.project} ·{" "}
+                      {sourceLabels[lesson.sourceClient] ?? lesson.sourceClient}
+                    </small>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+          {period.reviews > period.lessons.length ? (
+            <p className="analytics-retrospective-more">
+              另有 {period.reviews - period.lessons.length} 条复盘未列出，可在知识页按复盘筛选查看。
+            </p>
+          ) : null}
+        </section>
+
+        <div className="analytics-retrospective-side">
+          <section aria-labelledby="analytics-retrospective-repeats">
+            <div className="analytics-retrospective-heading">
+              <h3 id="analytics-retrospective-repeats">反复出现的问题</h3>
+              {period.repeats.length === 0 ? null : (
+                <span>{period.repeats.length} 个</span>
+              )}
+            </div>
+            {period.repeats.length === 0 ? (
+              <p className="analytics-retrospective-empty">
+                没有在这段时间里重复决定的问题。
+              </p>
+            ) : (
+              <>
+                <ol className="analytics-retrospective-repeats">
+                  {period.repeats.slice(0, LISTED).map((repeat) => {
+                    const [latest = ""] = repeat.decisionIds;
+                    // Every occurrence side by side, answers included: one
+                    // record alone cannot show that the answers disagree.
+                    return (
+                      <li key={latest}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onBrowseDecisions({ query: questionSearchText(repeat.question) })
+                          }
+                        >
+                          <strong>{repeat.question}</strong>
+                          <span>
+                            本期 {repeat.decisionIds.length} 次 · {repeat.projects} 个项目 ·{" "}
+                            {repeat.consistentAnswers ? (
+                              "答案一致"
+                            ) : (
+                              // Answered differently each time: where a principle is missing.
+                              <em className="analytics-retrospective-inconsistent">答案不一致</em>
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+                {period.repeats.length > LISTED ? (
+                  <p className="analytics-retrospective-more">
+                    另有 {period.repeats.length - LISTED} 个问题未列出。
+                  </p>
+                ) : null}
+                <p className="analytics-retrospective-hint">
+                  同一个问题反复在做决定，说明还缺一条可以直接套用的原则。
+                </p>
+              </>
+            )}
+          </section>
+
+          {period.principles.length === 0 ? null : (
+            <section aria-labelledby="analytics-retrospective-principles">
+              <div className="analytics-retrospective-heading">
+                <h3 id="analytics-retrospective-principles">本期用到的原则</h3>
+                <span>{period.principles.length} 条</span>
+              </div>
+              <ol className="analytics-retrospective-repeats">
+                {period.principles.slice(0, LISTED).map((principle) => (
+                  <li key={principle.id}>
+                    <button type="button" onClick={() => onOpenPrinciple(principle.id)}>
+                      <strong>{principle.title}</strong>
+                      <span>{principle.count} 条决策采用</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              {period.principles.length > LISTED ? (
+                <p className="analytics-retrospective-more">
+                  另有 {period.principles.length - LISTED} 条原则未列出。
+                </p>
+              ) : null}
+            </section>
+          )}
+
+          {period.projects.length === 0 ? null : (
+            <section aria-labelledby="analytics-retrospective-projects">
+              <div className="analytics-retrospective-heading">
+                <h3 id="analytics-retrospective-projects">决策落在哪些项目</h3>
+                <span>{period.projects.length} 个项目</span>
+              </div>
+              <ol className="analytics-retrospective-projects">
+                {period.projects.slice(0, LISTED).map((project) => (
+                  <li key={project.label}>
+                    <button
+                      type="button"
+                      aria-label={`${project.label}：${project.count} 条，在知识页查看`}
+                      onClick={() =>
+                        onBrowseDecisions({
+                          ...(browsePeriod === null ? {} : { period: browsePeriod }),
+                          project: project.label,
+                        })
+                      }
+                    >
+                      <span>{project.label}</span>
+                      <div aria-hidden="true">
+                        <i style={{ width: `${(project.count / maxProject) * 100}%` }} />
+                      </div>
+                      <strong>{project.count}</strong>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              {period.projects.length > LISTED ? (
+                <p className="analytics-retrospective-more">
+                  另有 {period.projects.length - LISTED} 个项目未列出。
+                </p>
+              ) : null}
+            </section>
+          )}
+        </div>
+      </div>
+
+      <footer>按决策创建时间与复盘时间归入窗口；只统计本机记录，不调用模型。</footer>
+    </section>
+  );
+};
 
 const ConsultationCalibration = ({
   api,
@@ -268,7 +734,7 @@ const ConsultationCalibration = ({
                         }
                       />
                       {options.length > 2 ? (
-                        <button
+                        <IconButton
                           type="button"
                           aria-label={`删除候选选项 ${index + 1}`}
                           onClick={() =>
@@ -277,8 +743,8 @@ const ConsultationCalibration = ({
                             )
                           }
                         >
-                          ×
-                        </button>
+                          <ActionIcon name="close" />
+                        </IconButton>
                       ) : null}
                     </div>
                   ))}
@@ -305,6 +771,10 @@ const ConsultationCalibration = ({
               </label>
             </div>
 
+            {/* Said as it comes: the matches appeared without a word, where "no match" was announced. */}
+            <p className="sr-only" role="status">
+              {result !== null && result.status !== "no_match" ? `试算找到 ${result.matches.length} 条可核对的原则` : ""}
+            </p>
             {previewError === null ? null : (
               <p className="consultation-preview-error" role="alert">
                 试算未完成：{previewError}
@@ -444,6 +914,10 @@ const GroupTable = ({
 export const DecisionAnalyticsView = ({
   api,
   onOpenDecisions,
+  onOpenDecision,
+  onBrowseDecisions,
+  onOpenPrinciple,
+  onOpenReviews,
 }: DecisionAnalyticsViewProps) => {
   const [snapshot, setSnapshot] = useState<DecisionAnalyticsSnapshot | null>(
     null,
@@ -467,16 +941,22 @@ export const DecisionAnalyticsView = ({
     }
   }, [api]);
 
+  // What is on screen stays while it is read again, the error included until
+  // the answer is in: the button pressed keeps focus, a chosen window its choice.
+  // Only the latest read is shown: 重试 pressed twice, the older answer landing
+  // last put its failure back over the newer one's analysis.
+  const loads = useRef(0);
   const load = useCallback(async (): Promise<void> => {
+    const turn = ++loads.current;
     setLoading(true);
-    setError(null);
-    setConsultationError(null);
     const [analyticsResult, consultationResult] = await Promise.allSettled([
       api.getDecisionAnalytics(),
       api.getDecisionConsultationMetrics(),
     ]);
+    if (turn !== loads.current) return;
     if (analyticsResult.status === "fulfilled") {
       setSnapshot(analyticsResult.value);
+      setError(null);
     } else {
       setSnapshot(null);
       setError(
@@ -487,6 +967,7 @@ export const DecisionAnalyticsView = ({
     }
     if (consultationResult.status === "fulfilled") {
       setConsultationMetrics(consultationResult.value);
+      setConsultationError(null);
     } else {
       setConsultationMetrics(null);
       setConsultationError(
@@ -502,7 +983,7 @@ export const DecisionAnalyticsView = ({
     void load();
   }, [load]);
 
-  if (loading) {
+  if (loading && snapshot === null && error === null) {
     return <p className="methodology-message">正在分析本地快照…</p>;
   }
   if (error !== null) {
@@ -551,6 +1032,21 @@ export const DecisionAnalyticsView = ({
 
   return (
     <div className="decision-analytics">
+      {/* Refreshing re-reads the whole snapshot, the retrospective included,
+          so the control sits above everything it refreshes. */}
+      <div className="analytics-meta">
+        <span>本地聚合 v{snapshot.engine.version} · SQLite 快照</span>
+        <button type="button" className="text-button" aria-busy={loading} onClick={() => void load()}>
+          {loading ? "刷新中…" : "刷新分析"}
+        </button>
+      </div>
+      <RetrospectiveSection
+        retrospective={snapshot.retrospective}
+        onOpenDecision={onOpenDecision}
+        onBrowseDecisions={onBrowseDecisions}
+        onOpenPrinciple={onOpenPrinciple}
+        onOpenReviews={onOpenReviews}
+      />
       <ConsultationCalibration
         api={api}
         metrics={consultationMetrics}
@@ -570,12 +1066,6 @@ export const DecisionAnalyticsView = ({
           </button>
         </section>
       ) : null}
-      <div className="analytics-meta">
-        <span>本地聚合 v{snapshot.engine.version} · SQLite 快照</span>
-        <button type="button" className="text-button" onClick={() => void load()}>
-          刷新分析
-        </button>
-      </div>
 
       <dl className="analytics-summary">
         <div>
@@ -608,13 +1098,20 @@ export const DecisionAnalyticsView = ({
           </div>
           <ol>
             {snapshot.verdicts.map((item) => (
-              <li key={item.verdict}>
-                <span>{verdictLabels[item.verdict]}</span>
-                <div aria-hidden="true">
-                  <i style={{ width: `${item.percentage}%` }} />
-                </div>
-                <strong>{item.count}</strong>
-                <small>{item.percentage}%</small>
+              <li key={item.verdict} className={item.verdict}>
+                <button
+                  type="button"
+                  aria-label={`${verdictLabels[item.verdict]}：${item.count} 条，在知识页查看`}
+                  disabled={item.count === 0}
+                  onClick={() => onBrowseDecisions({ outcomeVerdict: item.verdict })}
+                >
+                  <span>{verdictLabels[item.verdict]}</span>
+                  <div aria-hidden="true">
+                    <i style={{ width: `${item.percentage}%` }} />
+                  </div>
+                  <strong>{item.count}</strong>
+                  <small>{item.percentage}%</small>
+                </button>
               </li>
             ))}
           </ol>

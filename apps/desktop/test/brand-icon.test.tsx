@@ -30,8 +30,8 @@ describe("BrandIcon", () => {
       '<rect data-app-background="true" width="1024" height="1024"',
     );
     expect(source).not.toMatch(/data-app-background="true"[^>]+stroke=/u);
-    expect(source).toContain('<stop stop-color="#6F4DFF"/>');
-    expect(source).toContain('<stop offset="1" stop-color="#C3B4FF"/>');
+    expect(source).toContain('<stop stop-color="#8E3614"/>');
+    expect(source).toContain('<stop offset="1" stop-color="#C45326"/>');
     expect(source).toContain(
       'transform="translate(512 440) scale(1.22) translate(-512 -512)"',
     );

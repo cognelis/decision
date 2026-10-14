@@ -4,19 +4,19 @@ import type {
   MethodologyRecord,
   MethodologyStatus,
 } from "@cognelis/decision-core";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import {
-  mkdir,
+  access,
   readFile,
-  readdir,
   rename,
-  unlink,
-  writeFile,
 } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { basename, join } from "node:path";
+import { parse as parseYaml } from "yaml";
+import { assertVaultPresent, collectMarkdown, normalizedNote, noteProblem } from "./markdown.js";
+import { escapeNoteText, notePropertiesYaml, ownTitleHeading, unescapeNoteText } from "./markdown-markers.js";
+import { NoteCache } from "./note-cache.js";
+import { existingNote, replaceNote, rewrittenNote } from "./note-rewrite.js";
 
-import { normalizeLegacyDecisionMarkers } from "./legacy-markers.js";
 
 const DEFAULT_FOLDER = "Decision Journal";
 const PRINCIPLE_START = "<!-- decision:methodology-principle-start -->";
@@ -46,7 +46,42 @@ const ORIGINS: readonly MethodologyOrigin[] = [
 interface MethodologyRepositoryOptions {
   folder?: string;
   rename?: typeof rename;
+  /** The vault folder must already exist: a write never makes it up (see assertVaultPresent). */
+  existingVault?: boolean;
+  /** Told, on every read of the list, which notes it could not read (none: an empty list). */
+  onUnreadable?(notes: Array<{ path: string; message: string }>): void;
 }
+
+// Each property and section by the name the note shows: named by its field in code ("createdAt is required",
+// "Methodology note is missing appliesWhen"), the import and the principle's own page told the reader of nothing they
+// could find in the note.
+const NOTE_NAMES: Record<string, string> = {
+  "methodology id": "id",
+  createdAt: "created",
+  updatedAt: "updated",
+  confirmedAt: "confirmed_at",
+  appliedAt: "applied_at",
+  "applied methodology id": "applied_to",
+  retiredAt: "retired_at",
+  "superseding methodology id": "superseded_by",
+  "usage validation reviewedAt": "usage_validation_reviewed_at",
+  "usage validation decision id": "usage_validation_decision",
+  "usage validation validatedAt": "usage_validated_at",
+  "import source file name": "import_source_file",
+  "import source content sha256": "import_source_sha256",
+  "generation request id": "generation_request",
+  "generation profile id": "generation_profile",
+  "generation provider": "generation_provider",
+  "generation model": "generation_model",
+  "source decision id": "source_decisions",
+  "source principle id": "source_principles",
+  title: "标题",
+  principle: "原则",
+  appliesWhen: "适用条件",
+  caution: "注意事项",
+  evidenceSummary: "证据摘要",
+};
+const shown = (label: string): string => NOTE_NAMES[label] ?? label;
 
 const requireText = (
   value: unknown,
@@ -54,11 +89,11 @@ const requireText = (
   maximum: number,
 ): string => {
   if (typeof value !== "string") {
-    throw new Error(`${label} must be text`);
+    throw new Error(`「${shown(label)}」需要是文字`);
   }
   const normalized = value.trim();
   if (normalized.length === 0 || normalized.length > maximum) {
-    throw new Error(`${label} must contain 1-${maximum} characters`);
+    throw new Error(`「${shown(label)}」需要 1–${maximum} 个字`);
   }
   return normalized;
 };
@@ -69,7 +104,7 @@ const optionalDate = (value: unknown, label: string): string | null => {
   }
   const date = requireText(value, label, 100);
   if (!Number.isFinite(Date.parse(date))) {
-    throw new Error(`${label} must be an ISO date`);
+    throw new Error(`「${shown(label)}」需要是日期（如 2026-10-05T08:00:00.000Z）`);
   }
   return date;
 };
@@ -77,7 +112,7 @@ const optionalDate = (value: unknown, label: string): string | null => {
 const requireDate = (value: unknown, label: string): string => {
   const date = optionalDate(value, label);
   if (date === null) {
-    throw new Error(`${label} is required`);
+    throw new Error(`缺少「${shown(label)}」属性`);
   }
   return date;
 };
@@ -89,16 +124,17 @@ const section = (
   label: string,
   maximum: number,
 ): string => {
+  const heading = shown(label);
   const startIndex = markdown.indexOf(start);
   const endIndex = markdown.indexOf(end);
   if (startIndex < 0 || endIndex <= startIndex) {
-    throw new Error(`Methodology note is missing ${label}`);
+    throw new Error(`缺少「${heading}」一节，或它前后的标记被删改了`);
   }
-  return requireText(
-    markdown.slice(startIndex + start.length, endIndex),
-    label,
-    maximum,
-  );
+  const text = unescapeNoteText(markdown.slice(startIndex + start.length, endIndex)).trim();
+  if (text.length === 0 || text.length > maximum) {
+    throw new Error(`「${heading}」需要 1–${maximum} 个字`);
+  }
+  return text;
 };
 
 const safeIdentifier = (value: string): string =>
@@ -115,6 +151,9 @@ const fileNameFor = (id: string): string => {
     .slice(0, 12);
   return `${safeIdentifier(id)}-${digest}.md`;
 };
+
+const duplicateId = (id: string): string =>
+  `有不止一篇原则笔记使用同一个编号（${id}），常见于同步冲突留下的副本；请在 Obsidian 里删掉多余的那篇后再试。`;
 
 const parseFrontmatter = (
   markdown: string,
@@ -289,7 +328,8 @@ const validatedRecord = (input: MethodologyRecord): MethodologyRecord => {
     origin: input.origin,
     status: input.status,
     confirmedAt,
-    title: requireText(input.title, "title", 120),
+    // One line, as it is read back from its "# " heading: a model's title broken over two lost the second.
+    title: requireText(input.title.replace(/\s*[\r\n]+\s*/gu, " "), "title", 120),
     principle: requireText(input.principle, "principle", 2_000),
     appliesWhen: requireText(input.appliesWhen, "appliesWhen", 2_000),
     caution: requireText(input.caution, "caution", 2_000),
@@ -330,11 +370,13 @@ const validatedRecord = (input: MethodologyRecord): MethodologyRecord => {
 
 export const serializeMethodology = (input: MethodologyRecord): string => {
   const record = validatedRecord(input);
-  const frontmatter = stringifyYaml(
+  const frontmatter = notePropertiesYaml(
     {
       type: "decision-methodology",
       version: 1,
       id: record.id,
+      // Which heading is the app's title, wherever headings of the reader's stand beside it (namedTitleHeading).
+      title: escapeNoteText(record.title),
       origin: record.origin,
       created: record.createdAt,
       updated: record.updatedAt,
@@ -374,40 +416,56 @@ export const serializeMethodology = (input: MethodologyRecord): string => {
     },
     { lineWidth: 0 },
   ).trimEnd();
+  // Drawn by a model from decisions an agent captured: text, not structure or Dataview code (markdown-markers).
   return `---
 ${frontmatter}
 ---
 
-# ${record.title}
+# ${escapeNoteText(record.title)}
 
 ## 原则
 
 ${PRINCIPLE_START}
-${record.principle}
+${escapeNoteText(record.principle)}
 ${PRINCIPLE_END}
 
 ## 适用条件
 
 ${APPLIES_START}
-${record.appliesWhen}
+${escapeNoteText(record.appliesWhen)}
 ${APPLIES_END}
 
 ## 注意事项
 
 ${CAUTION_START}
-${record.caution}
+${escapeNoteText(record.caution)}
 ${CAUTION_END}
 
 ## 证据摘要
 
 ${EVIDENCE_START}
-${record.evidenceSummary}
+${escapeNoteText(record.evidenceSummary)}
 ${EVIDENCE_END}
 `;
 };
 
-export const parseMethodology = (markdown: string): MethodologyRecord => {
-  markdown = normalizeLegacyDecisionMarkers(markdown);
+/** Every property serializeMethodology may write: a save sets the ones it has and takes out the rest. */
+const METHODOLOGY_KEYS = [
+  "type", "version", "id", "title", "origin", "created", "updated", "status", "confirmed_at", "confidence",
+  "source_decisions", "source_principles", "import_source_file", "import_source_sha256", "applied_at",
+  "applied_to", "retired_at", "superseded_by", "usage_validation_reviewed_at", "usage_validation_decision",
+  "usage_validated_at", "generation_request", "generation_profile", "generation_provider", "generation_model",
+] as const;
+const METHODOLOGY_MARKERS = [
+  [PRINCIPLE_START, PRINCIPLE_END],
+  [APPLIES_START, APPLIES_END],
+  [CAUTION_START, CAUTION_END],
+  [EVIDENCE_START, EVIDENCE_END],
+] as const;
+
+export const parseMethodology = (note: string): MethodologyRecord => {
+  // Saved with Windows line endings (git's autocrlf) or a BOM, the same note: read as it was, it left every list.
+  const markdown = normalizedNote(note);
   const { properties, body } = parseFrontmatter(markdown);
   if (properties.type !== "decision-methodology" || properties.version !== 1) {
     throw new Error("Methodology note type or version is invalid");
@@ -433,17 +491,18 @@ export const parseMethodology = (markdown: string): MethodologyRecord => {
   ) {
     throw new Error("Methodology note origin is invalid");
   }
-  if (!Array.isArray(properties.source_decisions)) {
+  // One source given as one value, as Obsidian lets a list be, or emptied there: that one, or none.
+  const listed = (value: unknown): unknown => (typeof value === "string" ? [value] : value === null ? [] : value);
+  const sourceDecisions = listed(properties.source_decisions);
+  const sourcePrinciples = listed(properties.source_principles);
+  if (!Array.isArray(sourceDecisions)) {
     throw new Error("Methodology note source decisions are invalid");
   }
-  if (
-    properties.source_principles !== undefined &&
-    !Array.isArray(properties.source_principles)
-  ) {
+  if (sourcePrinciples !== undefined && !Array.isArray(sourcePrinciples)) {
     throw new Error("Methodology note source principles are invalid");
   }
-  const titleMatch = body.match(/^#\s+([^\n]+)$/mu);
-  if (titleMatch?.[1] === undefined) {
+  const titleMatch = ownTitleHeading(body, METHODOLOGY_MARKERS.map(([start]) => start), properties.title);
+  if (titleMatch === null) {
     throw new Error("Methodology note is missing its title");
   }
   return validatedRecord({
@@ -453,7 +512,7 @@ export const parseMethodology = (markdown: string): MethodologyRecord => {
     origin: origin as MethodologyOrigin,
     status: status as MethodologyStatus,
     confirmedAt: optionalDate(properties.confirmed_at, "confirmedAt"),
-    title: titleMatch[1],
+    title: unescapeNoteText(titleMatch.text),
     principle: section(
       body,
       PRINCIPLE_START,
@@ -476,10 +535,10 @@ export const parseMethodology = (markdown: string): MethodologyRecord => {
       "evidenceSummary",
       3_000,
     ),
-    sourceDecisionIds: properties.source_decisions as string[],
-    ...(properties.source_principles === undefined
+    sourceDecisionIds: sourceDecisions as string[],
+    ...(sourcePrinciples === undefined
       ? {}
-      : { sourcePrincipleIds: properties.source_principles as string[] }),
+      : { sourcePrincipleIds: sourcePrinciples as string[] }),
     ...(properties.import_source_file === undefined &&
     properties.import_source_sha256 === undefined
       ? {}
@@ -566,8 +625,14 @@ export const parseMethodology = (markdown: string): MethodologyRecord => {
 export class MethodologyRepository {
   readonly #directory: string;
   readonly #rename: typeof rename;
+  readonly #requiredVault: string | null;
+  readonly #onUnreadable: (notes: Array<{ path: string; message: string }>) => void;
+  // Every list read every principle again: each keystroke in the knowledge search, to name the ones applied.
+  readonly #notes = new NoteCache<{ record: MethodologyRecord } | { message: string }>(undefined, (read) => "record" in read);
 
   constructor(vaultPath: string, options: MethodologyRepositoryOptions = {}) {
+    this.#requiredVault = options.existingVault === true ? vaultPath : null;
+    this.#onUnreadable = options.onUnreadable ?? (() => undefined);
     this.#directory = join(
       vaultPath,
       options.folder ?? DEFAULT_FOLDER,
@@ -577,71 +642,57 @@ export class MethodologyRepository {
   }
 
   async save(record: MethodologyRecord): Promise<void> {
-    const content = serializeMethodology(record);
-    const path = this.#pathFor(record.id);
-    await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-    const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
-    try {
-      await writeFile(temporary, content, {
-        encoding: "utf8",
-        mode: 0o600,
-        flag: "wx",
-      });
-      await this.#rename(temporary, path);
-    } catch (error) {
-      await unlink(temporary).catch(() => undefined);
-      throw error;
-    }
+    // Renamed in Obsidian, the note is written where it now is, not forked under the id's own file name.
+    const path = (await this.#locate(record.id)) ?? this.#pathFor(record.id);
+    if (this.#requiredVault !== null) await assertVaultPresent(this.#requiredVault);
+    const raw = await existingNote(path);
+    const content = rewrittenNote(raw, serializeMethodology(record), {
+      ownKeys: METHODOLOGY_KEYS,
+      markers: METHODOLOGY_MARKERS,
+      parse: parseMethodology,
+    });
+    await replaceNote(path, raw, content, this.#rename);
   }
 
   async find(id: string): Promise<MethodologyRecord | null> {
+    const path = await this.#locate(id);
+    if (path === null) return null;
     try {
-      return parseMethodology(await readFile(this.#pathFor(id), "utf8"));
+      return parseMethodology(await readFile(path, "utf8"));
     } catch (error) {
-      if (
-        error !== null &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === "ENOENT"
-      ) {
-        return null;
-      }
-      throw error;
+      throw new Error(
+        `原则笔记 ${basename(path)} 无法读取（${noteProblem(error instanceof Error ? error.message : String(error))}），请在 Obsidian 中修正后再试。`,
+        { cause: error },
+      );
     }
   }
 
   async list(): Promise<MethodologyRecord[]> {
-    let entries;
-    try {
-      entries = await readdir(this.#directory, {
-        withFileTypes: true,
-      });
-    } catch (error) {
-      if (
-        error !== null &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === "ENOENT"
-      ) {
-        return [];
-      }
-      throw error;
+    // A vault that is not there (its disk ejected) is not one with no principles: read as empty, an agent asking
+    // before a choice was told the reader had adopted none.
+    if (this.#requiredVault !== null) await assertVaultPresent(this.#requiredVault);
+    const notes: Array<{ path: string; record: MethodologyRecord }> = [];
+    // A note iCloud moved off this Mac, or a folder it cannot list, is said rather than passed over: an
+    // adopted principle left every list without a word.
+    const unreadable: Array<{ path: string; message: string }> = [];
+    for (const path of await collectMarkdown(this.#directory, unreadable)) {
+      const read = await this.#read(path);
+      // Left untouched, and said: edited in Obsidian past reading, an adopted principle left every list without
+      // a word, its evidence offered again as new and its skills short of a source.
+      if ("record" in read) notes.push({ path, record: read.record });
+      else unreadable.push({ path, message: read.message });
     }
+    this.#notes.sweep();
+    // A sync conflict's copy holds the same id: neither note is listed, and each is said. Both listed, an agent was
+    // given whichever sorted last, a principle retired on this Mac served as adopted in the other Mac's words.
+    const holders = new Map<string, number>();
+    for (const { record } of notes) holders.set(record.id, (holders.get(record.id) ?? 0) + 1);
     const records: MethodologyRecord[] = [];
-    for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".md")) {
-        continue;
-      }
-      try {
-        records.push(
-          parseMethodology(
-            await readFile(join(this.#directory, entry.name), "utf8"),
-          ),
-        );
-      } catch {
-        // External invalid notes remain untouched and are omitted from the UI.
-      }
+    for (const { path, record } of notes) {
+      if (holders.get(record.id) === 1) records.push(record);
+      else unreadable.push({ path, message: duplicateId(record.id) });
     }
+    this.#onUnreadable(unreadable);
     return records.sort(
       (left, right) =>
         right.updatedAt.localeCompare(left.updatedAt) ||
@@ -651,5 +702,41 @@ export class MethodologyRepository {
 
   #pathFor(id: string): string {
     return join(this.#directory, fileNameFor(id));
+  }
+
+  /** A principle note as read, or why it could not be: kept while its file is unchanged. */
+  #read(path: string): Promise<{ record: MethodologyRecord } | { message: string }> {
+    return this.#notes.read(path, async () => {
+      try {
+        return { record: parseMethodology(await readFile(path, "utf8")) };
+      } catch (error) {
+        return { message: error instanceof Error ? error.message : String(error) };
+      }
+    });
+  }
+
+  /**
+   * The note holding this id: under the id's own file name, or under the name it was given in Obsidian. Held by
+   * two (a sync conflict's copy beside it), it is refused, as the list leaves both out: an edit reached one.
+   */
+  async #locate(id: string): Promise<string | null> {
+    const own = this.#pathFor(id);
+    let found: string | null = null;
+    try {
+      await access(own);
+      found = own;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    // Reads every note, each one unchanged since from what was kept.
+    for (const path of await collectMarkdown(this.#directory, [])) {
+      if (path === own) continue;
+      const read = await this.#read(path);
+      // One it cannot read is not a principle note of this repository's: it is someone else's.
+      if (!("record" in read) || read.record.id !== id) continue;
+      if (found !== null) throw new Error(duplicateId(id));
+      found = path;
+    }
+    return found;
   }
 }

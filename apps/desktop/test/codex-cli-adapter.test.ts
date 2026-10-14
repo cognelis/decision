@@ -1,5 +1,6 @@
 import type {
   ModelProviderProfile,
+  ModelProxy,
   StructuredGenerationRequest,
 } from "@cognelis/decision-protocol";
 import {
@@ -10,6 +11,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
+import { isStrictJsonSchema } from "../src/main/model/structured-provider.js";
 import {
   CodexCliAdapter,
 } from "../src/main/model/adapters/codex-cli-adapter.js";
@@ -81,6 +83,7 @@ const setup = (
     | ManagedProcessResult
     | Error
     | (() => Promise<ManagedProcessResult>) = success,
+  proxy?: ModelProxy,
 ) => {
   const requests: ManagedProcessRequest[] = [];
   const run = vi.fn(async (request: ManagedProcessRequest) => {
@@ -94,7 +97,7 @@ const setup = (
   });
   return {
     adapter: new CodexCliAdapter({
-      profile,
+      profile: { ...profile, ...(proxy === undefined ? {} : { proxy }) },
       runner: { run },
       environment: {
         HOME: "/Users/demo",
@@ -109,6 +112,52 @@ const setup = (
 };
 
 describe("CodexCliAdapter", () => {
+  it("classifies within the profile's timeout and generates within the thirty-second floor", async () => {
+    const requests: ManagedProcessRequest[] = [];
+    const adapter = new CodexCliAdapter({
+      profile: { ...profile, timeoutMs: 5_000 },
+      runner: { run: vi.fn(async (request: ManagedProcessRequest) => { requests.push(request); return success(); }) },
+      environment: { PATH: "/usr/bin:/bin" },
+    });
+
+    await adapter.invoke(input);
+    await adapter.generate(methodologyRequest).catch(() => undefined);
+
+    expect(requests.map((request) => request.timeoutMs)).toEqual([5_000, 30_000]);
+  });
+
+  it("passes the configured proxy to semantic and structured CLI child requests", async () => {
+    const { adapter, requests } = setup(success, { mode: "custom", url: "http://127.0.0.1:7890", noProxy: "localhost" });
+    await adapter.invoke(input); await adapter.generate(methodologyRequest);
+    expect(requests).toHaveLength(2);
+    for (const request of requests) expect(request.environment).toMatchObject({ HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", NO_PROXY: "localhost", no_proxy: "localhost", DECISION_PROVIDER_CHILD: "1" });
+  });
+
+  it.runIf(
+    process.env.DECISION_CODEX_EXECUTABLE !== undefined,
+  )(
+    "invokes the installed Codex with the production semantic contract",
+    async () => {
+      const adapter = new CodexCliAdapter({
+        profile: {
+          ...profile,
+          executablePath:
+            process.env.DECISION_CODEX_EXECUTABLE!,
+        },
+        environment: process.env,
+      });
+
+      await expect(adapter.invoke(input)).resolves.toMatchObject({
+        classification: {
+          provider: "codex-cli",
+          decisionIntent: "decision",
+          answerRelation: "answers",
+        },
+      });
+    },
+    60_000,
+  );
+
   it("uses the isolated no-tool command for generic structured generation", async () => {
     const structuredOutput = JSON.stringify({ title: "可逆优先" });
     const { adapter, requests } = setup({
@@ -142,6 +191,39 @@ describe("CodexCliAdapter", () => {
     );
     expect(requests[0]?.args).toContain("--output-schema");
     expect(requests[0]?.args).toContain("read-only");
+  });
+
+  it("retains the actual strict request on failures without exposing its body in generic error serialization", async () => {
+    const failure = new ManagedProcessError("process_failed", "schema rejected", { diagnosticExcerpt: "invalid_json_schema", processExitCode: 1 });
+    const { adapter } = setup(failure);
+    await expect(adapter.generate({ ...methodologyRequest, systemPrompt: "PRIVATE_SYSTEM_PROMPT" })).rejects.toBe(failure);
+    expect(failure.traceInput).toMatchObject({ systemPrompt: "PRIVATE_SYSTEM_PROMPT", clientSystemPromptVisibility: "opaque" });
+    expect(isStrictJsonSchema(failure.traceInput!.outputSchema)).toBe(true);
+    expect(JSON.stringify(failure)).not.toContain("PRIVATE_SYSTEM_PROMPT");
+  });
+
+  it("leaves the model choice to Codex when no model was configured", async () => {
+    const { model: _model, ...defaultProfile } = profile;
+    const requests: ManagedProcessRequest[] = [];
+    const adapter = new CodexCliAdapter({ profile: defaultProfile, runner: { run: async request => { requests.push(request); return success(); } } });
+    await adapter.invoke(input);
+    expect(requests[0]!.args).not.toContain("--model");
+    expect(await adapter.status()).toMatchObject({ modelVersion: "codex-default" });
+  });
+
+  it("sends optional review action fields as strict nullable fields and restores them before caller validation", async () => {
+    const schema = { type: "object", properties: { actions: { type: "array", items: {
+      type: "object", properties: { action: { type: "string" }, path: { type: "string" }, summary: { type: "string" }, findings: { type: "array", items: { type: "string" } } }, required: ["action"], additionalProperties: false,
+    } } }, required: ["actions"], additionalProperties: false };
+    const adapter = new CodexCliAdapter({ profile, runner: { run: async request => {
+      const wire = JSON.parse(await readFile(request.args[request.args.indexOf("--output-schema") + 1]!, "utf8"));
+      expect(isStrictJsonSchema(wire)).toBe(true);
+      expect(wire.properties.actions.items.required).toEqual(["action", "path", "summary", "findings"]);
+      return { exitCode: 0, stdout: JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: JSON.stringify({ actions: [{ action: "finish_review", path: null, summary: "已核对", findings: [] }] }) } }), stderr: "", durationMs: 1 };
+    } } });
+    const result = await adapter.generate({ ...methodologyRequest, purpose: "pr-review", outputSchema: schema });
+    expect(result.parsedOutput).toEqual({ actions: [{ action: "finish_review", summary: "已核对", findings: [] }] });
+    expect(result.traceInput?.outputSchema).not.toEqual(schema);
   });
 
   it("runs a fixed ephemeral no-tool command with the prompt only on stdin", async () => {
@@ -295,6 +377,25 @@ describe("CodexCliAdapter", () => {
     await expect(adapter.invoke(input)).resolves.toMatchObject({
       usage: { source: "unavailable" },
     });
+  });
+
+  it("counts the usage Codex reports, which has no total, and refuses a total that disagrees", async () => {
+    const visible = JSON.stringify({ decisionIntent: "decision", answerRelation: "answers", question: "A or B?", optionLabels: ["A", "B"], answerExcerpt: "A", confidence: 0.94 });
+    const usageOf = async (usage: Record<string, number>) => (await setup({
+      exitCode: 0,
+      stdout: [
+        JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: visible } }),
+        JSON.stringify({ type: "turn.completed", usage }),
+      ].join("\n"),
+      stderr: "",
+      durationMs: 4,
+    }).adapter.invoke(input)).usage;
+
+    // The sample in Codex's own documentation.
+    expect(await usageOf({ input_tokens: 24_763, cached_input_tokens: 24_448, output_tokens: 122 })).toEqual({
+      source: "provider_reported", inputTokens: 24_763, cachedInputTokens: 24_448, outputTokens: 122, totalTokens: 24_885,
+    });
+    expect(await usageOf({ input_tokens: 20, output_tokens: 5, total_tokens: 99 })).toEqual({ source: "unavailable" });
   });
 
   it.each([

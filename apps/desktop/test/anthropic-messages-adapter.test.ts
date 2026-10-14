@@ -1,3 +1,4 @@
+import { SEMANTIC_PROMPT_VERSION } from "../src/main/model/semantic-prompt.js";
 import type {
   ModelProviderProfile,
   StructuredGenerationRequest,
@@ -115,6 +116,24 @@ const setup = (
 };
 
 describe("AnthropicMessagesAdapter", () => {
+  it("keeps what a call cut off at max_tokens cost, and says why it stopped", async () => {
+    const { adapter } = setup(
+      response({
+        stop_reason: "max_tokens",
+        // Thinking spent the whole budget: nothing visible came back, and all of it was billed.
+        content: [{ type: "thinking", thinking: "…" }],
+        usage: { input_tokens: 900, output_tokens: 4_096, output_tokens_details: { thinking_tokens: 4_096 } },
+      }),
+    );
+    const failure = await adapter.generate(methodologyRequest).catch((error: unknown) => error);
+
+    expect(failure).toMatchObject({
+      code: "invalid_output",
+      usage: { source: "provider_reported", inputTokens: 900, outputTokens: 4_096 },
+    });
+    expect((failure as { diagnosticExcerpt: string }).diagnosticExcerpt).toContain("stop_reason=max_tokens");
+  });
+
   it("uses request-specific structured output for methodology extraction", async () => {
     const structuredOutput = JSON.stringify({ title: "可逆优先" });
     const { adapter, requests } = setup(
@@ -184,7 +203,7 @@ describe("AnthropicMessagesAdapter", () => {
         confidence: 0.91,
         provider: "anthropic",
         modelVersion: "claude-haiku-4-5-20260720",
-        promptVersion: "semantic-v1",
+        promptVersion: SEMANTIC_PROMPT_VERSION,
       },
       visibleOutput,
       traceInput: {

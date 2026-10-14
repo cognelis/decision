@@ -22,9 +22,7 @@ describe("bridge Vite config", () => {
   it("packages current and 1.x-compatible wrappers for both shell families", () => {
     expect(bridgeWrapperNames).toEqual([
       "decision-bridge",
-      "decision-island-bridge",
       "decision-bridge.cmd",
-      "decision-island-bridge.cmd",
     ]);
   });
 });

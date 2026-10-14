@@ -1,5 +1,6 @@
 import type { MethodologyRecord } from "@cognelis/decision-core";
-import { parseMethodology } from "@cognelis/decision-storage";
+import { clipText } from "@cognelis/decision-protocol";
+import { noteProblem, parseMethodology } from "@cognelis/decision-storage";
 import { lstat, readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 
@@ -31,8 +32,40 @@ export interface MethodologyMarkdownReadResult {
   failures: MethodologyMarkdownReadFailure[];
 }
 
-const bounded = (value: string, maximum: number): string =>
-  value.trim().slice(0, maximum);
+const TRUNCATED = "…（原文更长，导入时截断）";
+/** Within the field's limit, and saying so when the text was cut: the preview is where it is caught. */
+const bounded = (value: string, maximum: number): string => {
+  const trimmed = value.trim();
+  return trimmed.length <= maximum ? trimmed : `${clipText(trimmed, maximum - TRUNCATED.length)}${TRUNCATED}`;
+};
+
+/**
+ * Where fenced code sits. A `# comment` in a ```bash block is code, not a heading: read as one, it
+ * split a principle in two and cut the command out of it. A fence never closed is no fence: taken to
+ * the end of the file, it hid every heading after it, and merged the principles under them into one.
+ */
+const fencedRanges = (body: string): Array<[number, number]> => {
+  const ranges: Array<[number, number]> = [];
+  let open: { start: number; marker: string } | null = null;
+  for (const match of body.matchAll(/^ {0,3}(`{3,}|~{3,})(.*)$/gmu)) {
+    const marker = match[1]!;
+    const at = match.index ?? 0;
+    if (open === null) open = { start: at, marker };
+    else if (marker[0] === open.marker[0] && marker.length >= open.marker.length && match[2]!.trim() === "") {
+      ranges.push([open.start, at + match[0].length]);
+      open = null;
+    }
+  }
+  return ranges;
+};
+
+const insideRanges = (ranges: Array<[number, number]>, offset: number): boolean =>
+  ranges.some(([start, end]) => offset >= start && offset < end);
+
+const headingsOf = (body: string): RegExpMatchArray[] => {
+  const fenced = fencedRanges(body);
+  return [...body.matchAll(/^(#{1,6})\s+(.+?)\s*$/gmu)].filter((match) => !insideRanges(fenced, match.index ?? 0));
+};
 
 const stripFrontmatter = (markdown: string): string => {
   if (!markdown.startsWith("---\n")) return markdown;
@@ -40,14 +73,23 @@ const stripFrontmatter = (markdown: string): string => {
   return boundary < 0 ? markdown : markdown.slice(boundary + 5);
 };
 
-const cleanMarkdownText = (value: string): string =>
-  value
-    .replace(/<!--[^]*?-->/gu, "")
-    .replace(/^\s*#{1,6}\s+/gmu, "")
-    .replace(/^\s*[-*+]\s+/gmu, "")
-    .replace(/^\s*\d+[.)]\s+/gmu, "")
+const cleanMarkdownText = (value: string): string => {
+  const text = value.replace(/<!--[^]*?-->/gu, "");
+  const fenced = fencedRanges(text);
+  let offset = 0;
+  return text
+    .split("\n")
+    .map((line) => {
+      const start = offset;
+      offset += line.length + 1;
+      // Code stays as written: a `#`, `-` or `1.` at the start of a line is part of it.
+      if (insideRanges(fenced, start)) return line;
+      return line.replace(/^\s*#{1,6}\s+/u, "").replace(/^\s*[-*+]\s+/u, "").replace(/^\s*\d+[.)]\s+/u, "");
+    })
+    .join("\n")
     .replace(/\n{3,}/gu, "\n\n")
     .trim();
+};
 
 interface MarkdownSection {
   heading: string;
@@ -64,11 +106,26 @@ interface MarkdownHeadingBlock {
 const fieldHeadingPattern =
   /^(?:(?:核心)?原则|方法|做法|规则|适用条件|适用场景|使用条件|何时使用|适用范围|注意事项|边界|限制|例外|不适用场景|风险|证据摘要|证据|来源|依据|验证记录)$/u;
 
+/**
+ * A heading as the field it names: "1. 原则", "一、适用条件", "**注意事项**" and "适用条件：" are those fields.
+ * Taken as written, a numbered note split into one bogus principle per section, and a colon or bold
+ * heading lost the text under it to a 待补充 placeholder.
+ */
+const fieldName = (heading: string): string =>
+  heading
+    .replace(/^(?:\d+|[一二三四五六七八九十]+)[.、)）]\s*/u, "")
+    .replace(/^(\*\*|__)(.+)\1$/u, "$2")
+    .replace(/\s*[:：]$/u, "")
+    .trim();
+
+// 原则, 规则 or 方法 followed by its number or a separator: "方法论的定义" and "规则引擎" are not principles.
+const NAMED_CANDIDATE = /^(?:原则|规则|方法)(?:\s*[一二三四五六七八九十\d]+\s*[:：、.)）-]?|\s*[:：、.)）-])\s*/u;
+
 const candidateHeadingPattern =
-  /^(?:(?:原则|规则|方法)(?:\s*[一二三四五六七八九十\d]+)?\s*[:：、.)）-]?\s*\S.+|(?:\d+|[一二三四五六七八九十]+)[.、)）]\s*\S.+)$/u;
+  /^(?:(?:原则|规则|方法)(?:\s*[一二三四五六七八九十\d]+\s*[:：、.)）-]?|\s*[:：、.)）-])\s*\S.+|(?:\d+|[一二三四五六七八九十]+)[.、)）]\s*\S.+)$/u;
 
 const sectionsFrom = (body: string): MarkdownSection[] => {
-  const headings = [...body.matchAll(/^(#{1,6})\s+(.+?)\s*$/gmu)];
+  const headings = headingsOf(body);
   return headings.map((match, index) => {
     const start = (match.index ?? 0) + match[0].length;
     const end = headings[index + 1]?.index ?? body.length;
@@ -81,7 +138,7 @@ const sectionsFrom = (body: string): MarkdownSection[] => {
 };
 
 const headingBlocksFrom = (body: string): MarkdownHeadingBlock[] => {
-  const headings = [...body.matchAll(/^(#{1,6})\s+(.+?)\s*$/gmu)];
+  const headings = headingsOf(body);
   return headings.map((match, index) => {
     const level = match[1]?.length ?? 1;
     const start = (match.index ?? 0) + match[0].length;
@@ -100,15 +157,18 @@ const matchingSection = (
   sections: MarkdownSection[],
   pattern: RegExp,
 ): string | null => {
-  const section = sections.find((item) => pattern.test(item.heading));
+  const section = sections.find((item) => pattern.test(fieldName(item.heading)));
   if (section === undefined) return null;
   const content = cleanMarkdownText(section.content);
   return content.length === 0 ? null : content;
 };
 
 const fallbackPrinciple = (body: string): string => {
+  const fenced = fencedRanges(body);
   const withoutHeadings = body
-    .replace(/^\s*#{1,6}\s+.*$/gmu, "")
+    .replace(/^\s*#{1,6}\s+.*$/gmu, (line, offset: number) => (insideRanges(fenced, offset) ? line : ""))
+    // A line of Obsidian tags ("#原则 #工程") files the note; it is not what the principle says.
+    .replace(/^\s*(?:#[^\s#]+\s*)+$/gmu, (line, offset: number) => (insideRanges(fenced, offset) ? line : ""))
     .split(/\n\s*\n/gu)
     .map(cleanMarkdownText)
     .find((value) => value.length > 0);
@@ -121,9 +181,9 @@ const structuredImport = (markdown: string): MethodologyRecord | null => {
   } catch (error) {
     if (/^type:\s*decision-methodology\s*$/mu.test(markdown)) {
       throw new Error(
-        `Decision 方法论文件结构不完整：${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Decision 方法论文件结构不完整：${noteProblem(
+          error instanceof Error ? error.message : String(error),
+        )}`,
       );
     }
     return null;
@@ -179,9 +239,9 @@ const genericDraft = (
 
 const splitCandidateBlocks = (body: string): MarkdownHeadingBlock[] => {
   const blocks = headingBlocksFrom(body).filter((block) => {
-    if (fieldHeadingPattern.test(block.heading)) return false;
+    if (fieldHeadingPattern.test(fieldName(block.heading))) return false;
     const hasNamedChild = sectionsFrom(block.content).some((section) =>
-      fieldHeadingPattern.test(section.heading),
+      fieldHeadingPattern.test(fieldName(section.heading)),
     );
     return (
       cleanMarkdownText(block.content).length > 0 &&
@@ -203,7 +263,7 @@ const splitCandidateBlocks = (body: string): MarkdownHeadingBlock[] => {
 const candidateTitle = (heading: string): string =>
   heading
     .replace(/^(?:\d+|[一二三四五六七八九十]+)[.、)）]\s*/u, "")
-    .replace(/^(?:原则|规则|方法)(?:\s*[一二三四五六七八九十\d]+)?\s*[:：、.)）-]?\s*/u, "")
+    .replace(NAMED_CANDIDATE, "")
     .trim() || heading.trim();
 
 export const parseMethodologyMarkdownDrafts = (
@@ -274,7 +334,12 @@ export const readMethodologyMarkdownSources = async (
         throw new Error("文件超过 512 KiB 限制。");
       }
       const buffer = await readFile(path);
-      const markdown = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+      let markdown: string;
+      try {
+        markdown = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+      } catch {
+        throw new Error("文件不是 UTF-8 编码（可能是 GBK 等旧编码），请在编辑器里另存为 UTF-8 后再导入。");
+      }
       result.sources.push({ fileName, markdown });
     } catch (error) {
       result.failures.push({

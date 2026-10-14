@@ -5,10 +5,8 @@ repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_file="$repository_root/native/liquid-glass/addon.mm"
 output_directory="$repository_root/dist/native"
 output_file="$output_directory/decision-liquid-glass.node"
-legacy_output_file="$output_directory/decision-island-liquid-glass.node"
 
 mkdir -p "$output_directory"
-rm -f "$legacy_output_file"
 
 if [ "$(uname -s)" != "Darwin" ]; then
   exit 0

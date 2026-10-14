@@ -57,4 +57,13 @@ export interface SemanticClassifier
     signal?: AbortSignal,
   ): Promise<SemanticProviderAttempt>;
   close(): Promise<void>;
+  /** How a backend kept for the life of the app takes a timeout changed in settings. */
+  setTimeoutMs?(timeoutMs: number): void;
+  setModel?(model: string): void;
+  /**
+   * Takes one call at a time and times each itself once it runs (the bundled Qwen). The gateway, which sees a
+   * call only as it is made, leaves the timing to it: counted from the call, a capture queued behind the reader's
+   * own answer was filed as this backend's timeout and handed down the chain, to a remote backend among them.
+   */
+  readonly queuesCalls?: boolean;
 }

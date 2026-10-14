@@ -304,6 +304,16 @@ describe("MethodologyService", () => {
     );
   });
 
+  it("says why a model that is there did not answer, rather than that there is none", async () => {
+    const { generate, service } = await makeService([reviewedDecision()]);
+    generate.mockRejectedValueOnce(new ProfiledModelGatewayError("chain failed", "rate_limited"));
+    generate.mockRejectedValueOnce(new ProfiledModelGatewayError("chain failed", "invalid_output"));
+
+    // Rate limited, or answered with a title too long, it was told to go and enable a model.
+    await expect(service.generate(["decision-1"])).rejects.toThrow("方法论提炼没有完成：模型服务限流");
+    await expect(service.generate(["decision-1"])).rejects.toThrow("模型的回答不符合要求的格式");
+  });
+
   it("preserves evidence and generation metadata across revision and acceptance", async () => {
     const { service } = await makeService([reviewedDecision()]);
     const created = await service.generate(["decision-1"]);
@@ -324,6 +334,29 @@ describe("MethodologyService", () => {
       title: "小步验证后再扩大",
     });
     await expect(service.list("accepted")).resolves.toEqual([accepted]);
+  });
+
+  it("refuses a candidate's edit begun from a copy changed since, and saves one begun from it as it stands", async () => {
+    const { methodologyRevisionBasis } = await import("../src/shared/methodology-basis.js");
+    const { repository, service } = await makeService([reviewedDecision()]);
+    const created = await service.generate(["decision-1"]);
+    const opened = methodologyRevisionBasis(created);
+    // Edited in Obsidian while the editor was open.
+    await repository.save({ ...created, principle: "在 Obsidian 里改过的原则。" });
+    const edit = {
+      title: "小步验证后再扩大",
+      principle: "先完成一段可回退的验证，再扩大实施范围。",
+      appliesWhen: created.appliesWhen,
+      caution: created.caution,
+      evidenceSummary: created.evidenceSummary,
+    };
+
+    // Saved over it, the change made in Obsidian was gone without a word.
+    await expect(service.revise(created.id, edit, opened)).rejects.toThrow("又被改过");
+    expect((await repository.find(created.id))?.principle).toBe("在 Obsidian 里改过的原则。");
+
+    const current = (await repository.find(created.id))!;
+    await expect(service.revise(created.id, edit, methodologyRevisionBasis(current))).resolves.toMatchObject({ title: "小步验证后再扩大" });
   });
 
   it("applies a reviewed evolution draft to the stable accepted principle and preserves history", async () => {
@@ -397,6 +430,20 @@ describe("MethodologyService", () => {
       },
     });
     expect(generate).toHaveBeenCalledTimes(1);
+    // The same revision again (a retry) is the same record; a different one is not dropped without a word.
+    const input = {
+      title: "小步验证，并在不可逆步骤前停下",
+      principle: "先完成可回退验证；进入不可逆步骤前重新核对证据。",
+      appliesWhen: "方案仍有未知项，且后续步骤会扩大影响范围时。",
+      caution: "硬截止时间不应成为跳过停止条件的理由。",
+      evidenceSummary: "证据 1 支持小步验证；证据 2 补充了不可逆步骤前的停止条件。",
+      sourceDecisionIds: ["decision-2", "decision-1"],
+    };
+    await expect(service.createRevisionDraft(original.id, input)).resolves.toMatchObject({ id: revision.id });
+    await expect(
+      service.createRevisionDraft(original.id, { ...input, caution: "第二次写的注意事项。" }),
+    ).rejects.toThrow("已经有一个待处理的修订候选");
+    expect((await service.list("candidate")).find((item) => item.id === revision.id)?.caution).toBe(input.caution);
     await expect(
       service.revise(original.id, {
         title: original.title,
@@ -468,6 +515,65 @@ describe("MethodologyService", () => {
         sourceDecisionIds: ["decision-1", "decision-unrelated"],
       }),
     ).rejects.toThrow("必须明确记录采用了这条原则");
+  });
+
+  it("refuses the status changes the review does not offer, and a retired principle in its own words", async () => {
+    const { generate, repository, service } = await makeService([reviewedDecision()]);
+    const accepted = await service.setStatus((await service.generate(["decision-1"])).id, "accepted");
+    const manual = (input: Partial<Parameters<typeof service.createManual>[0]> = {}) => service.createManual({
+      title: "先写清边界，再决定自动化",
+      principle: "先明确人工流程和失败边界，再评估是否值得自动化。",
+      appliesWhen: "问题仍在变化，自动化接口尚不稳定时。",
+      caution: "人工执行成本已经不可接受时应重新评估。",
+      ...input,
+    });
+
+    // Offered on candidates only: adopted, it is neither dismissed under what applies it nor adopted again with its
+    // date moved; dismissed, it is not adopted past its review, and its evidence is left as it was.
+    await expect(service.setStatus(accepted.id, "dismissed")).rejects.toThrow("已采纳的原则不能忽略");
+    await expect(service.setStatus(accepted.id, "accepted")).rejects.toThrow("这条原则已经采纳");
+    expect(await repository.find(accepted.id)).toMatchObject({ status: "accepted", confirmedAt: accepted.confirmedAt });
+    const dismissed = await service.setStatus((await manual({ title: "先量化再优化", principle: "先量化再优化。" })).id, "dismissed");
+    await expect(service.setStatus(dismissed.id, "accepted")).rejects.toThrow("已忽略的候选不能直接采纳");
+    await expect(service.setStatus(dismissed.id, "dismissed")).rejects.toThrow("这条候选已经忽略");
+    await expect(service.setEvidence(dismissed.id, ["decision-1"])).rejects.toThrow("不能调整关联证据");
+
+    // Retired by a merge: refused pointing at 恢复来源原则, not with the storage invariant's English; its evidence is
+    // neither changed nor opened as a candidate asked for, nor made into a second one.
+    const retired = await service.setStatus((await manual()).id, "accepted", { acknowledgeQualityRisks: true });
+    await repository.save({ ...retired, status: "retired", retiredAt: "2026-08-04T10:00:00.000Z", supersededById: accepted.id });
+    await expect(service.setStatus(retired.id, "accepted")).rejects.toThrow("恢复来源原则");
+    await expect(service.setStatus(retired.id, "dismissed")).rejects.toThrow("恢复来源原则");
+    await expect(service.setEvidence(retired.id, ["decision-1"])).rejects.toThrow("不能调整关联证据");
+    await repository.save({ ...accepted, status: "retired", retiredAt: "2026-08-04T10:00:00.000Z", supersededById: retired.id });
+    await expect(service.generate(["decision-1"])).rejects.toThrow("已归档");
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the merged principle that keeps its sources' evidence, not the source retired by that merge", async () => {
+    const { generate, repository, service } = await makeService([reviewedDecision()]);
+    const source = await service.setStatus((await service.generate(["decision-1"])).id, "accepted");
+    // Merged into a principle keeping the same evidence; the source retired by 整理合并来源, which writes it last.
+    await repository.save({ ...source, id: "principle-merged-1", title: "合并后的原则", updatedAt: "2026-08-01T00:00:00.000Z" });
+    await repository.save({
+      ...source, status: "retired", retiredAt: "2026-08-05T10:00:00.000Z", supersededById: "principle-merged-1",
+      updatedAt: "2026-08-05T10:00:00.000Z",
+    });
+
+    // Listed newest first, the retired source was found before the live principle, and the evidence refused.
+    await expect(service.generate(["decision-1"])).resolves.toMatchObject({ id: "principle-merged-1" });
+    await expect(service.createManualFromEvidence({
+      title: "先验证再扩大", principle: "先用可回退的小范围改动验证效果。", appliesWhen: "方案仍有关键未知项时。",
+      caution: "长期双轨成本高于验证收益时不应机械套用。", evidenceSummary: "小范围验证减少了返工。", sourceDecisionIds: ["decision-1"],
+    })).rejects.toThrow("已经用于候选“合并后的原则”");
+    expect(generate).toHaveBeenCalledTimes(1);
+
+    // Only the retired one left holding it: 人工整理 says so too, rather than sending the reader to review an archived record.
+    await repository.save({ ...source, id: "principle-merged-1", status: "retired", retiredAt: "2026-08-06T10:00:00.000Z", supersededById: source.id });
+    await expect(service.createManualFromEvidence({
+      title: "先验证再扩大", principle: "先用可回退的小范围改动验证效果。", appliesWhen: "方案仍有关键未知项时。",
+      caution: "长期双轨成本高于验证收益时不应机械套用。", evidenceSummary: "小范围验证减少了返工。", sourceDecisionIds: ["decision-1"],
+    })).rejects.toThrow("已归档");
   });
 
   it("requires explicit acknowledgement before accepting a similar principle", async () => {
@@ -752,6 +858,35 @@ describe("MethodologyService", () => {
       status: "accepted",
       confidence: "high",
     });
+  });
+
+  it("keeps an adopted principle's change of evidence restorable, and a save of the same evidence a no-op", async () => {
+    const { service } = await makeService([
+      reviewedDecision({ id: "decision-1" }),
+      reviewedDecision({ id: "decision-2", project: "beta" }),
+    ]);
+    const imported = (
+      await service.importMarkdown([
+        {
+          fileName: "principle.md",
+          markdown: `# 先验证再扩大
+
+## 原则
+先验证关键假设，再扩大范围。
+## 适用条件
+结果仍未知时。
+## 注意事项
+验证样本不足时继续观察。`,
+        },
+      ])
+    ).imported[0]!;
+    const adopted = await service.setStatus((await service.setEvidence(imported.id, ["decision-1"])).id, "accepted");
+
+    // The same evidence again: nothing changes, not its date, which would mark skills built on it as stale.
+    await expect(service.setEvidence(adopted.id, ["decision-1"])).resolves.toEqual(adopted);
+    // Other evidence for a principle in use: what it was is kept to restore.
+    await service.setEvidence(adopted.id, ["decision-1", "decision-2"]);
+    await expect(service.listHistory(adopted.id)).resolves.toMatchObject([{ reason: "evidence_changed" }]);
   });
 
   it("does not rewrite the lineage of generated principles", async () => {

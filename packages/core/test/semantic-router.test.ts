@@ -38,6 +38,14 @@ const classification = (
 });
 
 describe("routeSemanticDecision", () => {
+  it("vetoes completed-status notifications even when the model calls them approval", () => {
+    expect(routeSemanticDecision({ ruleBand: "low", modelBand: "high", answerRelation: "answers", ruleSignals: ["answer_is_status_update"] }).finalBand).toBe("low");
+  });
+  it("rejects a different task without answer evidence but preserves a genuine approval the model missed", () => {
+    const input = { ruleBand: "high" as const, modelBand: "low" as const, answerRelation: "new_task" as const, modelIntent: "none" as const };
+    expect(routeSemanticDecision(input).finalBand).toBe("low");
+    expect(routeSemanticDecision({ ...input, ruleSignals: ["answer_is_explicit_approval"] }).finalBand).toBe("medium");
+  });
   it.each([
     ["high", "high", "high"],
     ["high", "medium", "medium"],
@@ -117,6 +125,43 @@ describe("validateSemanticClassification", () => {
       optionLabels: ["处理技术债", "先提交当前这批"],
       answerExcerpt: null,
     });
+  });
+
+  it("rejects a question that is a slab of the message rather than a sentence", () => {
+    // What a model that cannot find the question actually returns: the opening
+    // of the message, copied verbatim until the length cap cut it off. Every
+    // character of it is in the source, so a substring check cannot tell.
+    const dump: SemanticDecisionPair = {
+      ...pair,
+      assistantText:
+        "C 记下：统一用 `_title`。这是破坏性契约变更。\n\n后端要改物化输出、缺失兜底、`display",
+    };
+    expect(
+      validateSemanticClassification(
+        dump,
+        classification({
+          question: dump.assistantText,
+          optionLabels: [],
+        }),
+      ).question,
+    ).toBeNull();
+  });
+
+  it("drops a letter that only occurs inside a longer word", () => {
+    const letters: SemanticDecisionPair = {
+      ...pair,
+      assistantText:
+        "前端要改 `activityFormat.util.ts:191`。\n\n- **A**：一次性同步改。\n- **B**：后端过渡期双写。",
+    };
+    expect(
+      validateSemanticClassification(
+        letters,
+        classification({
+          question: null,
+          optionLabels: ["A", "B", "C", "D", "E", "F", "G", "H"],
+        }),
+      ).optionLabels,
+    ).toEqual(["A", "B"]);
   });
 
   it("rejects a fabricated question and structurally invalid model output", () => {

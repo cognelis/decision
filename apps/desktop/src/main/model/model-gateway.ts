@@ -248,7 +248,7 @@ export class StructuredModelGateway
     }
     if (
       this.#runtimeRetryAfter !== undefined &&
-      this.#now().getTime() >= this.#runtimeRetryAfter
+      performance.now() >= this.#runtimeRetryAfter
     ) {
       this.#selection = undefined;
       this.#runtimeRetryAfter = undefined;
@@ -640,8 +640,10 @@ export class StructuredModelGateway
   }
 
   #runtimeFailureSelection(): ProviderSelection {
+    // On the monotonic clock: on the wall clock, a Mac whose clock was set back
+    // an hour kept recognition on rules for that hour.
     this.#runtimeRetryAfter =
-      this.#now().getTime() + RUNTIME_RETRY_DELAY_MS;
+      performance.now() + RUNTIME_RETRY_DELAY_MS;
     return this.#rulesSelection("runtime_unavailable");
   }
 }

@@ -418,6 +418,7 @@ export const createRulePredictor = async () => {
           relation: "new_task",
           question: null,
           answerExcerpt: null,
+          signals: core.isCompletedDecisionStatus(sample.userText) ? ["answer_is_status_update"] : [],
         };
       }
       const completed = analyzer.complete(
@@ -430,6 +431,7 @@ export const createRulePredictor = async () => {
       );
       return {
         band: completed.band,
+        signals: completed.signals,
         relation,
         question: completed.question,
         answerExcerpt:
@@ -478,6 +480,8 @@ export const createProviderPredictor = ({
       ruleBand: rule.band,
       modelBand: classification.band,
       answerRelation: classification.answerRelation,
+      ruleSignals: rule.signals ?? [],
+      modelIntent: classification.decisionIntent,
     });
     return {
       band: route.finalBand,
@@ -520,6 +524,60 @@ const defaultUserData = () => {
   );
 };
 
+/**
+ * The profiles this evaluator can drive itself. The on-device ones are here
+ * because "is the local model good enough" is a question the corpus should
+ * answer with numbers, and it cannot when the only measurable providers are
+ * the CLIs. API profiles stay out: they need a credential store this script
+ * has no business opening.
+ */
+const LIVE_EVALUATOR_KINDS = new Map([
+  [
+    "codex-cli",
+    {
+      module: "apps/desktop/src/main/model/adapters/codex-cli-adapter.ts",
+      build: (module, { profile }) =>
+        new module.CodexCliAdapter({ profile }),
+    },
+  ],
+  [
+    "claude-code-cli",
+    {
+      module:
+        "apps/desktop/src/main/model/adapters/claude-code-cli-adapter.ts",
+      build: (module, { profile }) =>
+        new module.ClaudeCodeCliAdapter({ profile }),
+    },
+  ],
+  [
+    "qwen",
+    {
+      module: "apps/desktop/src/main/semantic/qwen-provider.ts",
+      build: (module, { profile, userData }) =>
+        new module.QwenModelProvider({
+          modelsDirectory: join(userData, "models"),
+          timeoutMs: profile.timeoutMs,
+          model: profile.model,
+        }),
+    },
+  ],
+  [
+    "apple",
+    {
+      module:
+        "apps/desktop/src/main/semantic/apple-foundation-provider.ts",
+      build: (module, { profile, repositoryRoot }) =>
+        new module.AppleFoundationModelProvider({
+          helperPath: resolve(
+            repositoryRoot,
+            "dist/semantic/decision-foundation-model-helper",
+          ),
+          timeoutMs: profile.timeoutMs,
+        }),
+    },
+  ],
+]);
+
 const createConfiguredCliPredictor = async ({
   provider,
   userData,
@@ -552,12 +610,9 @@ const createConfiguredCliPredictor = async ({
       `Configured model provider is disabled: ${profile.profileId}`,
     );
   }
-  if (
-    profile.kind !== "codex-cli" &&
-    profile.kind !== "claude-code-cli"
-  ) {
+  if (!LIVE_EVALUATOR_KINDS.has(profile.kind)) {
     throw new Error(
-      "Live evaluator supports Codex CLI and Claude Code CLI profiles; export predictions for API providers",
+      "Live evaluator supports on-device and CLI profiles; export predictions for API providers",
     );
   }
 
@@ -590,23 +645,11 @@ const createConfiguredCliPredictor = async ({
     const core = await server.ssrLoadModule(
       resolve(repositoryRoot, "packages/core/src/index.ts"),
     );
-    if (profile.kind === "codex-cli") {
-      const module = await server.ssrLoadModule(
-        resolve(
-          repositoryRoot,
-          "apps/desktop/src/main/model/adapters/codex-cli-adapter.ts",
-        ),
-      );
-      adapter = new module.CodexCliAdapter({ profile });
-    } else {
-      const module = await server.ssrLoadModule(
-        resolve(
-          repositoryRoot,
-          "apps/desktop/src/main/model/adapters/claude-code-cli-adapter.ts",
-        ),
-      );
-      adapter = new module.ClaudeCodeCliAdapter({ profile });
-    }
+    const source = LIVE_EVALUATOR_KINDS.get(profile.kind);
+    const module = await server.ssrLoadModule(
+      resolve(repositoryRoot, source.module),
+    );
+    adapter = source.build(module, { profile, userData, repositoryRoot });
     return {
       predict: createProviderPredictor({
         provider: profile.profileId,

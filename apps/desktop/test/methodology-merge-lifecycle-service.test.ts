@@ -3,6 +3,7 @@ import type {
   MethodologyRelationRecord,
   PracticeAssetRecord,
 } from "@cognelis/decision-core";
+import type { IndexedDecision } from "@cognelis/decision-storage";
 import { describe, expect, it, vi } from "vitest";
 
 import { MethodologyMergeLifecycleService } from "../src/main/methodology-merge-lifecycle-service.js";
@@ -79,6 +80,7 @@ const completeDuplicateRelations = (
 const makeService = (
   initialAssets: PracticeAssetRecord[],
   sourcePrincipleIds = ["source-a", "source-b"],
+  decisions: IndexedDecision[] = [],
 ) => {
   const methodologies = new Map<string, MethodologyRecord>([
     ["source-a", principle("source-a")],
@@ -120,6 +122,7 @@ const makeService = (
     },
     assets: { list: async () => structuredClone(assets) },
     practiceAssets: { createSourceMigrationDraft },
+    decisions: () => decisions,
     now: () => new Date("2026-08-06T12:00:00.000Z"),
   });
   return {
@@ -263,6 +266,33 @@ describe("MethodologyMergeLifecycleService", () => {
       });
       expect(fixture.methodologies.get(id)).not.toHaveProperty("retiredAt");
     }
+  });
+
+  it("holds the sources back while one has reviews since adoption unchecked, or a revision draft waiting", async () => {
+    // A decision that applied source-a after it was adopted, and went worse.
+    const used = {
+      id: "decision-used", project: "decision", question: "这次迁移也分步做吗？", selectedAnswer: "分步",
+      appliedPrincipleIds: ["source-a"], outcomeVerdict: "worse", outcomeLesson: "双轨期太长时分步反而更贵。",
+      outcomeReviewedAt: "2026-08-05T08:00:00.000Z",
+    } as unknown as IndexedDecision;
+    const fixture = makeService([], ["source-a", "source-b"], [used]);
+
+    // Archived, the review left 复验收件箱 for good, never checked.
+    const plan = await fixture.service.plan("merged");
+    expect(plan.canRetire).toBe(false);
+    expect(plan.blockers).toEqual(["「原则 source-a」有 1 条采用后的复盘还没复验，请先在方法论工作箱 › 原则复验里看过"]);
+    await expect(fixture.service.retireSources("merged")).rejects.toThrow("还没复验");
+    expect(fixture.methodologies.get("source-a")?.status).toBe("accepted");
+
+    // Checked; a revision draft of source-b waits in 待确认, which archiving would strand for good.
+    fixture.methodologies.set("source-a", principle("source-a", {
+      usageValidation: { reviewedAt: "2026-08-05T08:00:00.000Z", decisionId: "decision-used", validatedAt: "2026-08-06T08:00:00.000Z" },
+    }));
+    fixture.methodologies.set("revision-b", principle("revision-b", { status: "candidate", confirmedAt: null, origin: "principle_revision", sourcePrincipleIds: ["source-b"] }));
+    expect((await fixture.service.plan("merged")).blockers).toEqual(["「原则 source-b」有一份待确认的修订草稿，请先应用或放弃它"]);
+
+    fixture.methodologies.delete("revision-b");
+    await expect(fixture.service.retireSources("merged")).resolves.toMatchObject({ retired: true, blockers: [] });
   });
 
   it("restores every earlier source when a multi-source archive write fails", async () => {

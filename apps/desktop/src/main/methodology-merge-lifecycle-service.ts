@@ -6,6 +6,9 @@ import {
   type PracticeAssetRecord,
   type PracticeAssetStatus,
 } from "@cognelis/decision-core";
+import type { IndexedDecision } from "@cognelis/decision-storage";
+
+import { buildMethodologyValidationInbox } from "./methodology-usage-service.js";
 
 interface MethodologyStore {
   list(): Promise<MethodologyRecord[]>;
@@ -58,6 +61,8 @@ export interface MethodologyMergeLifecyclePlan {
   modelCallsRequired: number;
   pendingReviewCount: number;
   assets: MethodologyMergeLifecycleAsset[];
+  /** What holds the sources back from being archived, said as the reader is to act on it. */
+  blockers: string[];
 }
 
 const sameIds = (left: string[], right: string[]): boolean =>
@@ -79,6 +84,7 @@ export class MethodologyMergeLifecycleService {
   readonly #relations: RelationStore;
   readonly #assets: PracticeAssetStore;
   readonly #practiceAssets: PracticeAssetMigration;
+  readonly #decisions: () => IndexedDecision[];
   readonly #now: () => Date;
 
   constructor(options: {
@@ -86,12 +92,15 @@ export class MethodologyMergeLifecycleService {
     relations: RelationStore;
     assets: PracticeAssetStore;
     practiceAssets: PracticeAssetMigration;
+    /** The reviewed decisions as indexed: a source's reviews since adoption, not yet checked, hold it back. */
+    decisions?: () => IndexedDecision[];
     now?: () => Date;
   }) {
     this.#methodologies = options.methodologies;
     this.#relations = options.relations;
     this.#assets = options.assets;
     this.#practiceAssets = options.practiceAssets;
+    this.#decisions = options.decisions ?? (() => []);
     this.#now = options.now ?? (() => new Date());
   }
 
@@ -168,6 +177,19 @@ export class MethodologyMergeLifecycleService {
     const sourcesAccepted = resolvedSources.every(
       (source) => source.status === "accepted" && source.confirmedAt !== null,
     );
+    // What archiving would leave unread: a source's reviews since adoption not yet checked in 复验收件箱, and a
+    // revision draft of it waiting in 待确认. Archived, the reviews left the inbox for good, and the draft
+    // could never be applied.
+    const unchecked = new Map(
+      buildMethodologyValidationInbox(methodologies, this.#decisions()).map((item) => [item.principleId, item.newReviewedCount]),
+    );
+    const blockers = retired ? [] : resolvedSources.flatMap((source) => [
+      ...(unchecked.has(source.id) ? [`「${source.title}」有 ${unchecked.get(source.id)} 条采用后的复盘还没复验，请先在方法论工作箱 › 原则复验里看过`] : []),
+      ...(methodologies.some((record) =>
+        record.status === "candidate" && record.origin === "principle_revision" && record.sourcePrincipleIds?.[0] === source.id)
+        ? [`「${source.title}」有一份待确认的修订草稿，请先应用或放弃它`]
+        : []),
+    ]);
     return {
       mergeId: merge.id,
       mergeTitle: merge.title,
@@ -185,7 +207,8 @@ export class MethodologyMergeLifecycleService {
         merge.status === "accepted" &&
         relationValid &&
         sourcesAccepted &&
-        impacted.length === 0,
+        impacted.length === 0 &&
+        blockers.length === 0,
       canRestore,
       modelCallsRequired: impacted.filter(
         (asset) => asset.replacementId === null,
@@ -194,6 +217,7 @@ export class MethodologyMergeLifecycleService {
         (asset) => asset.replacementId !== null,
       ).length,
       assets: impacted,
+      blockers,
     };
   }
 
@@ -226,7 +250,9 @@ export class MethodologyMergeLifecycleService {
       throw new Error(
         plan.assets.length > 0
           ? "仍有技能或流程引用来源原则，请先完成替换草案审核。"
-          : "合并来源或重复关系已变化，当前不能归档。",
+          : plan.blockers.length > 0
+            ? `${plan.blockers.join("；")}，再归档来源。`
+            : "合并来源或重复关系已变化，当前不能归档。",
       );
     }
     const records = await this.#methodologies.list();

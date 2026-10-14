@@ -12,6 +12,7 @@ import {
 } from "node:crypto";
 import {
   chmod,
+  link,
   mkdir,
   readFile,
   readdir,
@@ -20,11 +21,24 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { expireQuarantined } from "./quarantine.js";
+import { renameReplacing } from "./replace-file.js";
 
-const DEFAULT_MAXIMUM_ITEMS = 5_000;
+/**
+ * A safety valve, not the normal limit: the age below is what retention means.
+ * Measured on a real store, receipts arrive at roughly 900 a day, so 5,000 cut
+ * the window to six days and hid the tail of any week-long question.
+ */
+const DEFAULT_MAXIMUM_ITEMS = 10_000;
 const DEFAULT_MAXIMUM_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
+const SUMMARY_MAXIMUM_AGE_MS = 60_000;
+/**
+ * Codes the pipeline recovers from, so they stay out of the failure count.
+ * `pair_not_found` used to sit here because it fired on every session's first
+ * prompt; that case is now its own stage, and so is a turn nobody answered.
+ * What is left is a reader who did come back to an answer we could not use.
+ */
 const NON_TERMINAL_ERROR_CODES = new Set<CaptureAuditErrorCode>([
-  "pair_not_found",
   "classification_timeout",
   "provider_unavailable",
   "provider_invalid_output",
@@ -34,7 +48,17 @@ const NON_TERMINAL_ERROR_CODES = new Set<CaptureAuditErrorCode>([
   "helper_missing",
   "helper_crashed",
   "trace_write_failed",
+  // Spooled first, so taken in when the App next reads the spool.
+  "pair_delivery_failed",
 ]);
+/**
+ * A hook writes three receipts a turn and the client waits on each, so the
+ * scan that applies retention (every receipt read and parsed: about a third of
+ * a second at a week's worth) runs from `record` at most this often. `list`
+ * and `summary` still apply it on every read.
+ */
+const RECORD_CLEANUP_INTERVAL_MS = 60 * 60 * 1_000;
+const CLEANUP_MARKER = ".last-cleanup";
 
 export type CaptureAuditRecordInput = Omit<
   CaptureAuditReceipt,
@@ -86,6 +110,7 @@ export class CaptureAuditStore {
   readonly #providedSalt: Buffer | undefined;
   readonly #idFactory: () => string;
   #saltPromise: Promise<Buffer> | null = null;
+  #summary: { at: number; counts: Promise<CaptureAuditSummary> } | null = null;
 
   constructor(
     path: string,
@@ -178,13 +203,24 @@ export class CaptureAuditStore {
         mode: 0o600,
         flag: "wx",
       });
-      await rename(temporary, target);
+      await renameReplacing(temporary, target);
       await chmod(target, 0o600);
     } finally {
       await unlink(temporary).catch(() => undefined);
     }
-    await this.#listEntries();
+    this.#summary = null;
+    await this.#pruneIfDue().catch(() => undefined);
     return receipt;
+  }
+
+  async #pruneIfDue(): Promise<void> {
+    const marker = join(this.path, CLEANUP_MARKER);
+    const now = this.#now().getTime();
+    const last = Number(await readFile(marker, "utf8").catch(() => ""));
+    // A marker from the future (a clock set back) is not trusted to skip anything.
+    if (last > 0 && now >= last && now - last < RECORD_CLEANUP_INTERVAL_MS) return;
+    await this.#listEntries();
+    await writeFile(marker, String(now), { encoding: "utf8", mode: 0o600 });
   }
 
   async list(): Promise<CaptureAuditReceipt[]> {
@@ -193,7 +229,26 @@ export class CaptureAuditStore {
     );
   }
 
-  async summary(): Promise<CaptureAuditSummary> {
+  /**
+   * The week's counts, kept a minute: worked out from every receipt each time the semantic status was (after
+   * every agent turn), they read six thousand files a turn. A receipt this store writes drops them at once; one
+   * the bridge writes counts within the minute.
+   */
+  summary(): Promise<CaptureAuditSummary> {
+    const now = this.#now().getTime();
+    const kept = this.#summary;
+    // A clock set back is no reason to keep them longer.
+    if (kept !== null && now >= kept.at && now - kept.at < SUMMARY_MAXIMUM_AGE_MS) return kept.counts;
+    const counts = this.#counted();
+    this.#summary = { at: now, counts };
+    // One that failed is not kept.
+    counts.catch(() => {
+      if (this.#summary?.counts === counts) this.#summary = null;
+    });
+    return counts;
+  }
+
+  async #counted(): Promise<CaptureAuditSummary> {
     const receipts = await this.list();
     const summary: CaptureAuditSummary = {
       total: receipts.length,
@@ -236,33 +291,35 @@ export class CaptureAuditStore {
   async #listEntries(): Promise<ReceiptEntry[]> {
     await this.#secureDirectories();
     const entries: ReceiptEntry[] = [];
-    for (const filename of await readdir(this.#itemsPath())) {
-      if (!/^[a-f0-9]{64}\.json$/u.test(filename)) {
-        continue;
-      }
-      const path = join(this.#itemsPath(), filename);
-      try {
-        const receipt = captureAuditReceiptSchema.parse(
-          JSON.parse(await readFile(path, "utf8")),
-        );
-        if (
-          this.#now().getTime() -
-            Date.parse(receipt.createdAt) >
-          this.#maximumAgeMs
-        ) {
-          await unlink(path).catch(() => undefined);
-          continue;
+    const filenames = await readdir(this.#itemsPath());
+    // ponytail: retention still scans O(n), with 16 reads at once; index it if the 10k cap grows.
+    for (let start = 0; start < filenames.length; start += 16) {
+      await Promise.all(filenames.slice(start, start + 16).map(async (filename) => {
+        if (!/^[a-f0-9]{64}\.json$/u.test(filename)) {
+          return;
         }
-        entries.push({ receipt, path });
-      } catch {
-        const quarantined = join(
-          this.#quarantinePath(),
-          `${filename}.corrupt-${this.#now().getTime()}-${randomUUID()}`,
-        );
-        await rename(path, quarantined).catch(() => undefined);
-        await chmod(quarantined, 0o600).catch(() => undefined);
-      }
+        const path = join(this.#itemsPath(), filename);
+        try {
+          const receipt = captureAuditReceiptSchema.parse(
+            JSON.parse(await readFile(path, "utf8")),
+          );
+          // Either way past its keeping: written under a clock that ran ahead, it stayed until that date came round.
+          if (Math.abs(this.#now().getTime() - Date.parse(receipt.createdAt)) > this.#maximumAgeMs) {
+            await unlink(path).catch(() => undefined);
+            return;
+          }
+          entries.push({ receipt, path });
+        } catch {
+          const quarantined = join(
+            this.#quarantinePath(),
+            `${filename}.corrupt-${this.#now().getTime()}-${randomUUID()}`,
+          );
+          await rename(path, quarantined).catch(() => undefined);
+          await chmod(quarantined, 0o600).catch(() => undefined);
+        }
+      }));
     }
+    await expireQuarantined(this.#quarantinePath(), this.#maximumAgeMs, this.#now().getTime());
     entries.sort(
       (left, right) =>
         left.receipt.createdAt.localeCompare(
@@ -283,42 +340,48 @@ export class CaptureAuditStore {
   }
 
   async #salt(): Promise<Buffer> {
-    this.#saltPromise ??= this.#loadOrCreateSalt();
+    // Not kept when it failed (a read the disk refused once): kept, every receipt after it failed until a restart.
+    this.#saltPromise ??= this.#loadOrCreateSalt().catch((error: unknown) => {
+      this.#saltPromise = null;
+      throw error;
+    });
     return this.#saltPromise;
   }
 
   async #loadOrCreateSalt(): Promise<Buffer> {
     const path = join(this.path, "salt");
-    try {
-      const existing = await readFile(path);
-      if (existing.length !== 32) {
-        throw new Error("Capture audit salt is invalid");
-      }
+    const existing = await readFile(path).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    });
+    if (existing?.length === 32) {
       await chmod(path, 0o600);
       return existing;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
     }
-    const proposed = this.#providedSalt ?? randomBytes(32);
+    // Written whole under another name first: one cut short (the power went as it was written) refused every
+    // receipt after it, for good. One cut short already is replaced; one another hook wrote first is used.
+    const temporary = `${path}.${randomUUID()}.tmp`;
     try {
-      await writeFile(path, proposed, {
+      await writeFile(temporary, this.#providedSalt ?? randomBytes(32), {
         mode: 0o600,
         flag: "wx",
       });
-      await chmod(path, 0o600);
-      return Buffer.from(proposed);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
-        throw error;
+      if (existing === null) {
+        await link(temporary, path).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== "EEXIST") throw error;
+        });
+      } else {
+        await renameReplacing(temporary, path);
       }
-      const existing = await readFile(path);
-      if (existing.length !== 32) {
-        throw new Error("Capture audit salt is invalid");
-      }
-      return existing;
+    } finally {
+      await unlink(temporary).catch(() => undefined);
     }
+    const salt = await readFile(path);
+    if (salt.length !== 32) {
+      throw new Error("Capture audit salt is invalid");
+    }
+    await chmod(path, 0o600);
+    return salt;
   }
 
   #fingerprint(salt: Buffer, value: string): string {

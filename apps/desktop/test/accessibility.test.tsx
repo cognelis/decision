@@ -1,3 +1,4 @@
+import { createEvidencePreviewApi } from "../src/renderer/evidence-preview-api.js";
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
@@ -25,14 +26,32 @@ const semanticRecognition = {
   updatedAt: "2026-07-27T10:00:00.000Z",
 };
 
+// Something recorded, so the dashboard shows its cards rather than the first-run steps.
 const dashboard = {
-  totalDecisions: 0,
+  totalDecisions: 3,
   recorded7d: 0,
   reviewAttention: 0,
   recentDecisions: [],
 };
 
+const obsidianSearchStatus = {
+  state: "idle" as const,
+  discoveredNotes: 0,
+  indexedNotes: 0,
+  chunkCount: 0,
+  processedNotes: 0,
+  totalNotes: 0,
+  skippedNotes: 0,
+  failedNotes: 0,
+  synchronizedAt: null,
+  semanticAvailable: false,
+  message: null,
+};
+
 const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
+  ...createEvidencePreviewApi(),
+  listLocalDecisions: vi.fn(async () => ({ records: [], total: 0 })),
+  resolveLocalDecision: vi.fn(async () => undefined),
   getSnapshot: vi.fn(async () => snapshot),
   onSnapshot: vi.fn(() => () => undefined),
   submitRationale: vi.fn(),
@@ -45,6 +64,25 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   openSurface: vi.fn(),
   closePrimarySurface: vi.fn(),
   listDecisions: vi.fn(async () => []),
+  listDecisionProjects: vi.fn(async () => []),
+  createProactiveRecord: vi.fn(),
+  listJournalEntries: vi.fn(async () => []),
+  reviseJournalEntry: vi.fn(),
+  getObsidianSearchStatus: vi.fn(async () => obsidianSearchStatus),
+  searchObsidian: vi.fn(async (input) => ({
+    query: input.query,
+    results: [],
+    status: obsidianSearchStatus,
+  })),
+  rebuildObsidianSearch: vi.fn(async () => obsidianSearchStatus),
+  exportAssistantConversation: vi.fn(async () => ({ status: "cancelled" as const })),
+  getAssistantFeedbackSummary: vi.fn(async () => ({ helpful: 0, notHelpful: 0 })),
+  saveAssistantFeedback: vi.fn(async () => ({ status: "saved" as const, recorded: 1 })),
+  cancelAssistantTurn: vi.fn(async () => undefined),
+  onAssistantProgress: () => () => undefined,
+  openObsidianNote: vi.fn(async () => undefined),
+  openVaultDocument: vi.fn(async () => undefined),
+  updateDecisionExpectedOutcome: vi.fn(async () => undefined),
   updateDecisionOutcome: vi.fn(async () => undefined),
   updateDecisionReviewDueDate: vi.fn(async () => undefined),
   updateDecisionReview: vi.fn(async (_decisionId, input) => ({
@@ -135,6 +173,7 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
     projects: [],
     sources: [],
     trend: [],
+    retrospective: { reviewAttention: 0, periods: [] },
   })),
   getDecisionConsultationMetrics: vi.fn(async () => ({
     metricsVersion: 1 as const,
@@ -174,11 +213,13 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
     status: "no_match" as const,
     generatedBy: "deterministic_local_match" as const,
     matches: [],
+    signals: [],
     feedback: null,
     boundary: {
       advisoryOnly: true as const,
       noDecisionWritten: true as const,
       noPrincipleApplied: true as const,
+      noPreferencePromoted: true as const,
     },
   })),
   submitDecisionConsultationFeedback: vi.fn(async () => ({
@@ -206,14 +247,20 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   publishPracticeAsset: vi.fn(),
   rollbackPracticeAssetPublication: vi.fn(),
   chooseVault: vi.fn(),
+  revealVault: vi.fn(async () => false),
   installIntegrations: vi.fn(),
+  removeIntegrations: vi.fn(),
   rebuildIndex: vi.fn(),
   setTheme: vi.fn(),
   listModelTraces: vi.fn(async () => []),
   deleteModelTrace: vi.fn(async () => false),
   deleteModelTraceRequest: vi.fn(async () => 0),
+  forgetAssistantTurns: vi.fn(async () => undefined),
   clearModelTraces: vi.fn(async () => 0),
   setModelTraceContentEnabled: vi.fn(),
+  setLocalCredentialsEnabled: vi.fn(async () => undefined),
+  setReviewRemindersEnabled: vi.fn(async () => undefined),
+  setCaptureClassifier: vi.fn(async () => undefined),
   listModelProviderProfiles: vi.fn(async () => []),
   saveModelProviderProfile: vi.fn(async (input) => input.profile),
   deleteModelProviderProfile: vi.fn(async () => false),
@@ -225,6 +272,39 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
     requestId: "provider-test",
     tokenSource: "unavailable" as const,
   })),
+  checkAssistantSource: vi.fn(async () => ({ status: "matched" as const, content: "当前内容", truncated: false })),
+  searchAssistantSources: vi.fn(async () => ({ sources: [], issues: [] })),
+  runAssistantTurn: vi.fn(async () => ({
+    version: 1 as const,
+    status: "unavailable" as const,
+    message: "测试替身未配置模型",
+  })),
+  listPrConnections: vi.fn(async () => []),
+  savePrConnection: vi.fn(async () => []),
+  removePrConnection: vi.fn(async () => []),
+  checkPrConnection: vi.fn(async () => ({ account: "user" })),
+  listPullRequests: vi.fn(async () => ({ items: [], nextPage: null })),
+  loadPrReview: vi.fn(),
+  peekPrReview: vi.fn(),
+  prefetchPrReviews: vi.fn(),
+  loadPrReviewDiff: vi.fn(),
+  getPrActionContext: vi.fn(),
+  performPrAction: vi.fn(),
+  publishPrReviewComment: vi.fn(),
+  publishPrGeneralComment: vi.fn(),
+  reevaluatePrReviewFinding: vi.fn(),
+  openReviewRulesDirectory: vi.fn(),
+  listPrDiscussion: vi.fn(async () => ({ comments: [], more: false })),
+  openPrLink: vi.fn(),
+  openPr: vi.fn(),
+  loadPrReviewFile: vi.fn(),
+  runPrReview: vi.fn(),
+  followUpPrReview: vi.fn(),
+  cancelPrReview: vi.fn(async () => undefined),
+  onPrReviewProgress: () => () => undefined,
+  listAssistantModels: vi.fn(async () => []),
+  listManagedQwenModels: vi.fn(async () => []),
+  installManagedQwenModel: vi.fn(async () => undefined),
   listLocalModelClientStatuses: vi.fn(async () => []),
 });
 
@@ -285,8 +365,21 @@ describe("renderer accessibility", () => {
     ).toBeVisible();
     for (const name of ["稍后", "忽略", "记录并补充理由"]) {
       const button = screen.getByRole("button", { name });
-      expect(button).toHaveTextContent(name);
-      expect(button.textContent).toBe(name);
+      expect(button).toHaveAccessibleName(name);
+      // The label itself stays plain text; only an aria-hidden shortcut hint
+      // may sit next to it.
+      const visibleLabel = [...button.childNodes]
+        .filter(
+          (node) =>
+            !(
+              node instanceof HTMLElement &&
+              node.getAttribute("aria-hidden") === "true"
+            ),
+        )
+        .map((node) => node.textContent ?? "")
+        .join("")
+        .trim();
+      expect(visibleLabel).toBe(name);
     }
     expect(document.body).not.toHaveTextContent("待确认候选");
   });
@@ -329,13 +422,28 @@ describe("renderer accessibility", () => {
       }),
     ).toBeVisible();
     expect(
+      screen.getByRole("region", {
+        name: "已选答案",
+      }),
+    ).toBeVisible();
+    expect(
       screen.getByRole("heading", {
         name: "选择本地服务协议",
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("checkbox", {
-        name: "不记录此次决策",
+      screen.getByRole("list", {
+        name: "已选答案",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("list", {
+        name: "当时的其它候选",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", {
+        name: "不保留",
       }),
     ).toBeVisible();
     for (const button of screen.getAllByRole("button")) {
@@ -378,6 +486,131 @@ describe("renderer accessibility", () => {
     }
   });
 
+  it("names the knowledge workspace and every control", async () => {
+    const snapshot: AppSnapshot = {
+      current: null,
+      waitingCount: 0,
+      primarySurface: "decisions",
+      dashboard,
+      candidateReviewOpen: false,
+      candidateReviewProgress: null,
+      decisionCandidates: { current: null, count: 0 },
+      theme: "dark",
+      vaultPath: "/vault",
+      health: { index: "healthy", recovery: "healthy" },
+      integrationStatus: { claudeCode: "installed", codex: "installed" },
+      pendingRationales: [],
+      modelTraceContentEnabled: true,
+      semanticRecognition,
+    };
+
+    render(<App api={apiFor(snapshot)} />);
+
+    const page = await screen.findByRole("region", { name: "知识" });
+    expect(
+      within(page).getByRole("searchbox", { name: "搜索决策与笔记" }),
+    ).toBeVisible();
+    expect(
+      within(page).getByRole("region", { name: "Vault 笔记" }),
+    ).toBeVisible();
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveAccessibleName();
+    }
+    for (const textbox of screen.getAllByRole("searchbox")) {
+      expect(textbox).toHaveAccessibleName();
+    }
+  });
+
+  it("names every control on the dashboard, review inbox included", async () => {
+    const snapshot: AppSnapshot = {
+      current: null,
+      waitingCount: 0,
+      primarySurface: "dashboard",
+      dashboard,
+      candidateReviewOpen: false,
+      candidateReviewProgress: null,
+      decisionCandidates: { current: null, count: 0 },
+      theme: "dark",
+      vaultPath: "/vault",
+      health: { index: "healthy", recovery: "healthy" },
+      integrationStatus: { claudeCode: "installed", codex: "installed" },
+      pendingRationales: [],
+      modelTraceContentEnabled: true,
+      semanticRecognition,
+    };
+    const api = apiFor(snapshot);
+    vi.mocked(api.listDecisions).mockImplementation(async (query) =>
+      query.reviewState === "attention"
+        ? [
+            {
+              id: "decision-due",
+              created: "2026-07-30T03:04:00.000Z",
+              sourceClient: "codex",
+              project: "decision",
+              question: "索引重建应该自动还是手动？",
+              selectedAnswer: "保持手动重建",
+              rationaleStatus: "captured",
+              rationale: null,
+              context: null,
+              outcome: null,
+              outcomeReview: null,
+              reviewDueDate: "2026-08-30",
+              appliedPrincipleIds: [],
+              appliedPrinciples: [],
+            },
+          ]
+        : [],
+    );
+
+    render(<App api={api} />);
+
+    const page = await screen.findByRole("region", { name: "首页" });
+    // The row carries two controls: open the decision, and finish the step it
+    // is waiting on. Neither may be an unnamed icon.
+    expect(
+      await within(page).findByRole("button", { name: "回填结果" }),
+    ).toBeVisible();
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveAccessibleName();
+    }
+  });
+
+  it("names every control in quick jump", async () => {
+    const snapshot: AppSnapshot = {
+      current: null,
+      waitingCount: 0,
+      primarySurface: "dashboard",
+      dashboard,
+      candidateReviewOpen: false,
+      candidateReviewProgress: null,
+      decisionCandidates: { current: null, count: 0 },
+      theme: "dark",
+      vaultPath: "/vault",
+      health: { index: "healthy", recovery: "healthy" },
+      integrationStatus: { claudeCode: "installed", codex: "installed" },
+      pendingRationales: [],
+      modelTraceContentEnabled: true,
+      semanticRecognition,
+    };
+
+    render(<App api={apiFor(snapshot)} />);
+
+    await screen.findByRole("region", { name: "首页" });
+    fireEvent.click(screen.getByRole("button", { name: /快速跳转/u }));
+
+    const dialog = await screen.findByRole("dialog", { name: "快速跳转" });
+    // The options are not focusable: the field keeps focus and points at the
+    // active one, so the field is what a screen reader has to be able to name.
+    expect(
+      within(dialog).getByRole("combobox", {
+        name: "搜索决策、想法、笔记、原则、问答与评审",
+      }),
+    ).toHaveAccessibleName();
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveAccessibleName();
+    }
+  });
+
   it("names the activity controls and every action", async () => {
     const snapshot: AppSnapshot = {
       current: null,
@@ -410,7 +643,7 @@ describe("renderer accessibility", () => {
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("checkbox", {
+      screen.getByRole("switch", {
         name: /记录模型输入和输出/u,
       }),
     ).toBeVisible();

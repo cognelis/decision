@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const SUPPORTED_RUNTIME = ">=22.13.0 <26";
+const SUPPORTED_RUNTIME = ">=22.19.0 <26";
 
 export const assertSupportedBuildRuntime = (version) => {
   const match = /^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/u.exec(version);
@@ -14,7 +14,7 @@ export const assertSupportedBuildRuntime = (version) => {
 
   const major = Number(match[1]);
   const minor = Number(match[2]);
-  if (major < 22 || major >= 26 || (major === 22 && minor < 13)) {
+  if (major < 22 || major >= 26 || (major === 22 && minor < 19)) {
     throw new Error(
       `Native packaging requires Node.js ${SUPPORTED_RUNTIME}; current runtime is ${version}. ` +
         "Use Node.js 22 LTS, reinstall dependencies, and run the build again.",

@@ -1,4 +1,7 @@
+import { prReviewProgressSchema } from "@cognelis/decision-protocol";
 import { contextBridge, ipcRenderer } from "electron";
+
+import type { AssistantProgress } from "@cognelis/decision-protocol";
 
 import type {
   AppSnapshot,
@@ -7,8 +10,37 @@ import type {
 } from "../shared/renderer-api.js";
 import { IPC_CHANNELS } from "../shared/renderer-api.js";
 
+/**
+ * A failure in the main process reaches the page as "Error invoking remote method '<channel>':
+ * Error: <what went wrong>". Pages show the reader what went wrong, so they get it in the main
+ * process's own words.
+ */
+const invoke = (
+  channel: string,
+  ...args: unknown[]
+): ReturnType<typeof ipcRenderer.invoke> =>
+  ipcRenderer.invoke(channel, ...args).catch((error: unknown) => {
+    throw error instanceof Error
+      ? new Error(
+          error.message.replace(
+            /^Error invoking remote method '[^']*': (?:\w*Error: )?/u,
+            "",
+          ),
+        )
+      : error;
+  });
+
 const api: DecisionApi = {
-  getSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.snapshot),
+  saveDecisionContextFeedback: (input) => invoke(IPC_CHANNELS.saveDecisionContextFeedback, input),
+  getDecisionContextFeedback: (input) => invoke(IPC_CHANNELS.getDecisionContextFeedback, input),
+
+  searchDecisionContext: (input) => invoke(IPC_CHANNELS.searchDecisionContext, input),
+  updateDecisionScope: (input) => invoke(IPC_CHANNELS.updateDecisionScope, input),
+  updateDecisionRelation: (input) => invoke(IPC_CHANNELS.updateDecisionRelation, input),
+  openDecisionSource: (input) => invoke(IPC_CHANNELS.openDecisionSource, input),
+  prepareDecisionHandoff: (input) => invoke(IPC_CHANNELS.prepareDecisionHandoff, input),
+
+  getSnapshot: () => invoke(IPC_CHANNELS.snapshot),
   onSnapshot: (listener) => {
     const handler = (
       _event: Electron.IpcRendererEvent,
@@ -22,79 +54,126 @@ const api: DecisionApi = {
     };
   },
   submitRationale: (input: RationaleInput) =>
-    ipcRenderer.invoke(IPC_CHANNELS.rationale, input),
-  retryPersistence: () => ipcRenderer.invoke(IPC_CHANNELS.retryPersistence),
+    invoke(IPC_CHANNELS.rationale, input),
+  retryPersistence: () => invoke(IPC_CHANNELS.retryPersistence),
   openCandidateReview: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.openCandidateReview),
+    invoke(IPC_CHANNELS.openCandidateReview),
   closeCandidateReview: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.closeCandidateReview),
+    invoke(IPC_CHANNELS.closeCandidateReview),
   confirmCandidate: (candidateId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.confirmCandidate, candidateId),
+    invoke(IPC_CHANNELS.confirmCandidate, candidateId),
   ignoreCandidate: (candidateId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.ignoreCandidate, candidateId),
+    invoke(IPC_CHANNELS.ignoreCandidate, candidateId),
   retryCandidate: (candidateId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.retryCandidate, candidateId),
+    invoke(IPC_CHANNELS.retryCandidate, candidateId),
   openSurface: (surface) =>
-    ipcRenderer.invoke(IPC_CHANNELS.openSurface, surface),
+    invoke(IPC_CHANNELS.openSurface, surface),
   closePrimarySurface: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.closePrimarySurface),
+    invoke(IPC_CHANNELS.closePrimarySurface),
   listDecisions: (query) =>
-    ipcRenderer.invoke(IPC_CHANNELS.listDecisions, query),
-  updateDecisionOutcome: (decisionId, outcome) =>
-    ipcRenderer.invoke(IPC_CHANNELS.updateDecisionOutcome, {
+    invoke(IPC_CHANNELS.listDecisions, query),
+  listDecisionProjects: () =>
+    invoke(IPC_CHANNELS.listDecisionProjects),
+  createProactiveRecord: (input) =>
+    invoke(IPC_CHANNELS.createProactiveRecord, input),
+  listJournalEntries: (query) =>
+    invoke(IPC_CHANNELS.listJournalEntries, query),
+  reviseJournalEntry: (id, input) =>
+    invoke(IPC_CHANNELS.reviseJournalEntry, { id, ...input }),
+  getObsidianSearchStatus: () =>
+    invoke(IPC_CHANNELS.getObsidianSearchStatus),
+  searchObsidian: (input) =>
+    invoke(IPC_CHANNELS.searchObsidian, input),
+  rebuildObsidianSearch: () =>
+    invoke(IPC_CHANNELS.rebuildObsidianSearch),
+  cancelAssistantTurn: (turnId) =>
+    invoke(IPC_CHANNELS.cancelAssistantTurn, turnId),
+  saveAssistantFeedback: (input) =>
+    invoke(IPC_CHANNELS.saveAssistantFeedback, input),
+  exportAssistantConversation: (input) =>
+    invoke(IPC_CHANNELS.exportAssistantConversation, input),
+  getAssistantFeedbackSummary: () =>
+    invoke(IPC_CHANNELS.getAssistantFeedbackSummary),
+  onAssistantProgress: (listener) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      progress: AssistantProgress,
+    ) => {
+      listener(progress);
+    };
+    ipcRenderer.on(IPC_CHANNELS.assistantProgress, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.assistantProgress, handler);
+    };
+  },
+  openObsidianNote: (relativePath) =>
+    invoke(IPC_CHANNELS.openObsidianNote, relativePath),
+  openVaultDocument: (relativePath) =>
+    invoke(IPC_CHANNELS.openVaultDocument, relativePath),
+  updateDecisionExpectedOutcome: (decisionId, expectedOutcome, basis) =>
+    invoke(IPC_CHANNELS.updateDecisionExpectedOutcome, {
+      decisionId,
+      expectedOutcome,
+      ...(basis ? { basis } : {}),
+    }),
+  updateDecisionOutcome: (decisionId, outcome, basis) =>
+    invoke(IPC_CHANNELS.updateDecisionOutcome, {
       decisionId,
       outcome,
+      ...(basis ? { basis } : {}),
     }),
   updateDecisionReviewDueDate: (decisionId, reviewDueDate) =>
-    ipcRenderer.invoke(IPC_CHANNELS.updateDecisionReviewDueDate, {
+    invoke(IPC_CHANNELS.updateDecisionReviewDueDate, {
       decisionId,
       reviewDueDate,
     }),
-  updateDecisionReview: (decisionId, input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.updateDecisionReview, {
+  updateDecisionReview: (decisionId, input, basis) =>
+    invoke(IPC_CHANNELS.updateDecisionReview, {
       decisionId,
       ...input,
+      ...(basis ? { basis } : {}),
     }),
   updateDecisionAppliedPrinciples: (decisionId, principleIds) =>
-    ipcRenderer.invoke(IPC_CHANNELS.updateDecisionAppliedPrinciples, {
+    invoke(IPC_CHANNELS.updateDecisionAppliedPrinciples, {
       decisionId,
       principleIds,
     }),
   getDecisionPrincipleSuggestions: (input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.getDecisionPrincipleSuggestions, input),
+    invoke(IPC_CHANNELS.getDecisionPrincipleSuggestions, input),
   getMethodologyBuildProgress: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.getMethodologyBuildProgress),
+    invoke(IPC_CHANNELS.getMethodologyBuildProgress),
   listMethodologies: (status) =>
-    ipcRenderer.invoke(IPC_CHANNELS.listMethodologies, status),
+    invoke(IPC_CHANNELS.listMethodologies, status),
   createManualMethodology: (input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.createManualMethodology, input),
+    invoke(IPC_CHANNELS.createManualMethodology, input),
   createManualMethodologyFromEvidence: (input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.createManualMethodologyFromEvidence, input),
+    invoke(IPC_CHANNELS.createManualMethodologyFromEvidence, input),
   listManualFormDrafts: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.listManualFormDrafts),
+    invoke(IPC_CHANNELS.listManualFormDrafts),
   saveManualFormDraft: (input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.saveManualFormDraft, input),
+    invoke(IPC_CHANNELS.saveManualFormDraft, input),
   deleteManualFormDraft: (key) =>
-    ipcRenderer.invoke(IPC_CHANNELS.deleteManualFormDraft, key),
+    invoke(IPC_CHANNELS.deleteManualFormDraft, key),
   generateMethodology: (sourceDecisionIds) =>
-    ipcRenderer.invoke(IPC_CHANNELS.generateMethodology, sourceDecisionIds),
+    invoke(IPC_CHANNELS.generateMethodology, sourceDecisionIds),
   createMethodologyMergeDraft: (sourcePrincipleIds, input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.createMethodologyMergeDraft, {
+    invoke(IPC_CHANNELS.createMethodologyMergeDraft, {
       sourcePrincipleIds,
       ...input,
     }),
   createMethodologyRevisionDraft: (id, input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.createMethodologyRevisionDraft, {
+    invoke(IPC_CHANNELS.createMethodologyRevisionDraft, {
       id,
       ...input,
     }),
-  reviseMethodology: (id, input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.reviseMethodology, {
+  reviseMethodology: (id, input, basis) =>
+    invoke(IPC_CHANNELS.reviseMethodology, {
       id,
       ...input,
+      ...(basis === undefined ? {} : { basis }),
     }),
   setMethodologyStatus: (id, status, acknowledgeQualityRisks) =>
-    ipcRenderer.invoke(IPC_CHANNELS.setMethodologyStatus, {
+    invoke(IPC_CHANNELS.setMethodologyStatus, {
       id,
       status,
       ...(acknowledgeQualityRisks === undefined
@@ -102,140 +181,190 @@ const api: DecisionApi = {
         : { acknowledgeQualityRisks }),
     }),
   listMethodologyVersions: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.listMethodologyVersions, id),
+    invoke(IPC_CHANNELS.listMethodologyVersions, id),
   restoreMethodologyVersion: (id, version) =>
-    ipcRenderer.invoke(IPC_CHANNELS.restoreMethodologyVersion, {
+    invoke(IPC_CHANNELS.restoreMethodologyVersion, {
       id,
       version,
     }),
   getMethodologySuggestions: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.getMethodologySuggestions),
+    invoke(IPC_CHANNELS.getMethodologySuggestions),
   getDeferredMethodologySuggestions: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.getDeferredMethodologySuggestions),
+    invoke(IPC_CHANNELS.getDeferredMethodologySuggestions),
   deferMethodologySuggestion: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.deferMethodologySuggestion, id),
+    invoke(IPC_CHANNELS.deferMethodologySuggestion, id),
   restoreMethodologySuggestion: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.restoreMethodologySuggestion, id),
+    invoke(IPC_CHANNELS.restoreMethodologySuggestion, id),
   getMethodologyEvidenceMatches: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.getMethodologyEvidenceMatches, id),
+    invoke(IPC_CHANNELS.getMethodologyEvidenceMatches, id),
   importMethodologyMarkdown: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.importMethodologyMarkdown),
+    invoke(IPC_CHANNELS.importMethodologyMarkdown),
   commitMethodologyMarkdownImport: (batchId, selectedCandidateIds) =>
-    ipcRenderer.invoke(IPC_CHANNELS.commitMethodologyMarkdownImport, {
+    invoke(IPC_CHANNELS.commitMethodologyMarkdownImport, {
       batchId,
       selectedCandidateIds,
     }),
   setMethodologyEvidence: (id, sourceDecisionIds) =>
-    ipcRenderer.invoke(IPC_CHANNELS.setMethodologyEvidence, {
+    invoke(IPC_CHANNELS.setMethodologyEvidence, {
       id,
       sourceDecisionIds,
     }),
   setMethodologyRelation: (id, relatedId, disposition, note) =>
-    ipcRenderer.invoke(IPC_CHANNELS.setMethodologyRelation, {
+    invoke(IPC_CHANNELS.setMethodologyRelation, {
       id,
       relatedId,
       disposition,
       note,
     }),
   clearMethodologyRelation: (id, relatedId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.clearMethodologyRelation, {
+    invoke(IPC_CHANNELS.clearMethodologyRelation, {
       id,
       relatedId,
     }),
   getMethodologyUsage: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.getMethodologyUsage, id),
+    invoke(IPC_CHANNELS.getMethodologyUsage, id),
   getMethodologyValidationInbox: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.getMethodologyValidationInbox),
-  acknowledgeMethodologyValidation: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.acknowledgeMethodologyValidation, id),
+    invoke(IPC_CHANNELS.getMethodologyValidationInbox),
+  acknowledgeMethodologyValidation: (id, seen) =>
+    invoke(IPC_CHANNELS.acknowledgeMethodologyValidation, { id, ...seen }),
   getMethodologyMergePlan: (mergeId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.getMethodologyMergePlan, { mergeId }),
+    invoke(IPC_CHANNELS.getMethodologyMergePlan, { mergeId }),
   prepareMethodologyMergeAsset: (mergeId, assetId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.prepareMethodologyMergeAsset, {
+    invoke(IPC_CHANNELS.prepareMethodologyMergeAsset, {
       mergeId,
       assetId,
     }),
   retireMethodologyMergeSources: (mergeId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.retireMethodologyMergeSources, {
+    invoke(IPC_CHANNELS.retireMethodologyMergeSources, {
       mergeId,
     }),
   restoreMethodologyMergeSources: (mergeId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.restoreMethodologyMergeSources, {
+    invoke(IPC_CHANNELS.restoreMethodologyMergeSources, {
       mergeId,
     }),
   getDecisionAnalytics: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.getDecisionAnalytics),
+    invoke(IPC_CHANNELS.getDecisionAnalytics),
   getDecisionConsultationMetrics: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.getDecisionConsultationMetrics),
+    invoke(IPC_CHANNELS.getDecisionConsultationMetrics),
   previewDecisionConsultation: (input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.previewDecisionConsultation, input),
+    invoke(IPC_CHANNELS.previewDecisionConsultation, input),
   submitDecisionConsultationFeedback: (input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.submitDecisionConsultationFeedback, input),
-  getKnowledgeGraph: () => ipcRenderer.invoke(IPC_CHANNELS.getKnowledgeGraph),
+    invoke(IPC_CHANNELS.submitDecisionConsultationFeedback, input),
+  getKnowledgeGraph: () => invoke(IPC_CHANNELS.getKnowledgeGraph),
   listPracticeAssets: (status) =>
-    ipcRenderer.invoke(IPC_CHANNELS.listPracticeAssets, status),
+    invoke(IPC_CHANNELS.listPracticeAssets, status),
   createManualPracticeAsset: (kind, sourcePrincipleIds, input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.createManualPracticeAsset, {
+    invoke(IPC_CHANNELS.createManualPracticeAsset, {
       kind,
       sourcePrincipleIds,
       ...input,
     }),
   generatePracticeAsset: (kind, sourcePrincipleIds) =>
-    ipcRenderer.invoke(IPC_CHANNELS.generatePracticeAsset, {
+    invoke(IPC_CHANNELS.generatePracticeAsset, {
       kind,
       sourcePrincipleIds,
     }),
-  revisePracticeAsset: (id, input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.revisePracticeAsset, { id, ...input }),
+  revisePracticeAsset: (id, input, basis) =>
+    invoke(IPC_CHANNELS.revisePracticeAsset, { id, ...input, ...(basis === undefined ? {} : { basis }) }),
   setPracticeAssetStatus: (id, status) =>
-    ipcRenderer.invoke(IPC_CHANNELS.setPracticeAssetStatus, { id, status }),
+    invoke(IPC_CHANNELS.setPracticeAssetStatus, { id, status }),
   regeneratePracticeAsset: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.regeneratePracticeAsset, id),
+    invoke(IPC_CHANNELS.regeneratePracticeAsset, id),
   listPracticeAssetVersions: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.listPracticeAssetVersions, id),
+    invoke(IPC_CHANNELS.listPracticeAssetVersions, id),
   restorePracticeAssetVersion: (id, version) =>
-    ipcRenderer.invoke(IPC_CHANNELS.restorePracticeAssetVersion, {
+    invoke(IPC_CHANNELS.restorePracticeAssetVersion, {
       id,
       version,
     }),
   listPracticePublicationStatuses: (id) =>
-    ipcRenderer.invoke(IPC_CHANNELS.listPracticePublicationStatuses, id),
+    invoke(IPC_CHANNELS.listPracticePublicationStatuses, id),
   publishPracticeAsset: (id, target, confirmOverwrite) =>
-    ipcRenderer.invoke(IPC_CHANNELS.publishPracticeAsset, {
+    invoke(IPC_CHANNELS.publishPracticeAsset, {
       id,
       target,
       ...(confirmOverwrite === undefined ? {} : { confirmOverwrite }),
     }),
   rollbackPracticeAssetPublication: (id, target) =>
-    ipcRenderer.invoke(IPC_CHANNELS.rollbackPracticeAssetPublication, {
+    invoke(IPC_CHANNELS.rollbackPracticeAssetPublication, {
       id,
       target,
     }),
-  chooseVault: () => ipcRenderer.invoke(IPC_CHANNELS.chooseVault),
+  chooseVault: () => invoke(IPC_CHANNELS.chooseVault),
+  revealVault: () => invoke(IPC_CHANNELS.revealVault),
   installIntegrations: (mode) =>
-    ipcRenderer.invoke(IPC_CHANNELS.installIntegrations, mode),
-  rebuildIndex: () => ipcRenderer.invoke(IPC_CHANNELS.rebuildIndex),
-  setTheme: (theme) => ipcRenderer.invoke(IPC_CHANNELS.setTheme, theme),
-  listModelTraces: () => ipcRenderer.invoke(IPC_CHANNELS.listModelTraces),
+    invoke(IPC_CHANNELS.installIntegrations, mode),
+  removeIntegrations: () => invoke(IPC_CHANNELS.removeIntegrations),
+  rebuildIndex: () => invoke(IPC_CHANNELS.rebuildIndex),
+  listLocalDecisions: (query, offset) => invoke(IPC_CHANNELS.listLocalDecisions, { query, offset }),
+  resolveLocalDecision: (id, action) => invoke(IPC_CHANNELS.resolveLocalDecision, { id, action }),
+  setTheme: (theme) => invoke(IPC_CHANNELS.setTheme, theme),
+  listModelTraces: () => invoke(IPC_CHANNELS.listModelTraces),
   deleteModelTrace: (traceId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.deleteModelTrace, traceId),
+    invoke(IPC_CHANNELS.deleteModelTrace, traceId),
   deleteModelTraceRequest: (requestId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.deleteModelTraceRequest, requestId),
-  clearModelTraces: () => ipcRenderer.invoke(IPC_CHANNELS.clearModelTraces),
+    invoke(IPC_CHANNELS.deleteModelTraceRequest, requestId),
+  forgetAssistantTurns: (turnIds) =>
+    invoke(IPC_CHANNELS.forgetAssistantTurns, turnIds),
+  clearModelTraces: () => invoke(IPC_CHANNELS.clearModelTraces),
   setModelTraceContentEnabled: (enabled) =>
-    ipcRenderer.invoke(IPC_CHANNELS.setModelTraceContentEnabled, enabled),
+    invoke(IPC_CHANNELS.setModelTraceContentEnabled, enabled),
+  setLocalCredentialsEnabled: (enabled) =>
+    invoke(IPC_CHANNELS.setLocalCredentialsEnabled, enabled),
+  setReviewRemindersEnabled: (enabled) =>
+    invoke(IPC_CHANNELS.setReviewRemindersEnabled, enabled),
+  setCaptureClassifier: (classifier) =>
+    invoke(IPC_CHANNELS.setCaptureClassifier, classifier),
+  checkAssistantSource: (source) => invoke(IPC_CHANNELS.checkAssistantSource, source),
+  searchAssistantSources: (input) => invoke(IPC_CHANNELS.searchAssistantSources, input),
+  listPrConnections: () => invoke(IPC_CHANNELS.listPrConnections),
+  savePrConnection: (input) => invoke(IPC_CHANNELS.savePrConnection, input),
+  removePrConnection: (id) => invoke(IPC_CHANNELS.removePrConnection, id),
+  checkPrConnection: (id) => invoke(IPC_CHANNELS.checkPrConnection, id),
+  listPullRequests: (input) => invoke(IPC_CHANNELS.listPullRequests, input),
+  loadPrReviewFile: (input) => invoke(IPC_CHANNELS.loadPrReviewFile, input),
+  getPrActionContext: (input) => invoke(IPC_CHANNELS.getPrActionContext, input),
+  performPrAction: (input) => invoke(IPC_CHANNELS.performPrAction, input),
+  publishPrReviewComment: (input) => invoke(IPC_CHANNELS.publishPrReviewComment, input),
+  publishPrGeneralComment: (input) => invoke(IPC_CHANNELS.publishPrGeneralComment, input),
+  reevaluatePrReviewFinding: (input) => invoke(IPC_CHANNELS.reevaluatePrReviewFinding, input),
+  openReviewRulesDirectory: () => invoke(IPC_CHANNELS.openReviewRulesDirectory),
+  listPrDiscussion: (input) => invoke(IPC_CHANNELS.listPrDiscussion, input),
+  openPrLink: (url) => invoke(IPC_CHANNELS.openPrLink, url),
+  openPr: (input) => invoke(IPC_CHANNELS.openPr, input),
+  loadPrReviewDiff: (input) => invoke(IPC_CHANNELS.loadPrReviewDiff, input),
+  loadPrReview: (input) => invoke(IPC_CHANNELS.loadPrReview, input),
+  peekPrReview: (input) => invoke(IPC_CHANNELS.peekPrReview, input),
+  prefetchPrReviews: (input) => invoke(IPC_CHANNELS.prefetchPrReviews, input),
+  runPrReview: (input) => invoke(IPC_CHANNELS.runPrReview, input),
+  followUpPrReview: (input) => invoke(IPC_CHANNELS.followUpPrReview, input),
+  cancelPrReview: (id) => invoke(IPC_CHANNELS.cancelPrReview, id),
+  onPrReviewProgress: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, input: unknown) => {
+      const parsed = prReviewProgressSchema.safeParse(input);
+      if (parsed.success) listener(parsed.data);
+    };
+    ipcRenderer.on(IPC_CHANNELS.prReviewProgress, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.prReviewProgress, handler);
+  },
+  runAssistantTurn: (input) =>
+    invoke(IPC_CHANNELS.runAssistantTurn, input),
+  listAssistantModels: () =>
+    invoke(IPC_CHANNELS.listAssistantModels),
+  listManagedQwenModels: () => invoke(IPC_CHANNELS.listManagedQwenModels),
+  installManagedQwenModel: (modelId) => invoke(IPC_CHANNELS.installManagedQwenModel, modelId),
   listModelProviderProfiles: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.listModelProviderProfiles),
+    invoke(IPC_CHANNELS.listModelProviderProfiles),
   saveModelProviderProfile: (input) =>
-    ipcRenderer.invoke(IPC_CHANNELS.saveModelProviderProfile, input),
+    invoke(IPC_CHANNELS.saveModelProviderProfile, input),
   deleteModelProviderProfile: (profileId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.deleteModelProviderProfile, profileId),
+    invoke(IPC_CHANNELS.deleteModelProviderProfile, profileId),
   reorderModelProviderProfiles: (profileIds) =>
-    ipcRenderer.invoke(IPC_CHANNELS.reorderModelProviderProfiles, profileIds),
+    invoke(IPC_CHANNELS.reorderModelProviderProfiles, profileIds),
   testModelProviderProfile: (profileId) =>
-    ipcRenderer.invoke(IPC_CHANNELS.testModelProviderProfile, profileId),
+    invoke(IPC_CHANNELS.testModelProviderProfile, profileId),
   listLocalModelClientStatuses: () =>
-    ipcRenderer.invoke(IPC_CHANNELS.listLocalModelClientStatuses),
+    invoke(IPC_CHANNELS.listLocalModelClientStatuses),
 };
 
 contextBridge.exposeInMainWorld("decision", Object.freeze(api));

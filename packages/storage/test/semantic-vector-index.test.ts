@@ -1,4 +1,4 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -38,6 +38,7 @@ describe("SemanticVectorIndex", () => {
         entityType: "decision",
         entityId: "decision-1",
         contentHash: "hash-2",
+        sourceHash: "note-2",
         model: "qwen-embedding-v2",
         vector: [1, 0, 0],
       },
@@ -46,6 +47,7 @@ describe("SemanticVectorIndex", () => {
       {
         entityId: "decision-1",
         contentHash: "hash-2",
+        sourceHash: "note-2",
         model: "qwen-embedding-v2",
         dimension: 3,
       },
@@ -86,6 +88,18 @@ describe("SemanticVectorIndex", () => {
       "keep",
     ]);
     expect(index.metadata("methodology")).toHaveLength(1);
+    index.close();
+  });
+
+  it("sets a cache SQLite cannot read aside and starts it again empty", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-vectors-"));
+    const path = join(root, "vectors.sqlite");
+    await writeFile(path, "this was half a sqlite file before the disk went".repeat(200));
+
+    const index = new SemanticVectorIndex(path);
+
+    expect(index.metadata("decision")).toEqual([]);
+    expect((await readdir(root)).some((name) => name.startsWith("vectors.sqlite.corrupt-"))).toBe(true);
     index.close();
   });
 });

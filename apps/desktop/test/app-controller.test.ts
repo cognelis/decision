@@ -7,13 +7,16 @@ import type {
   DashboardSnapshot,
   PendingRationaleSummary,
 } from "../src/shared/renderer-api.js";
+import type { CaptureClassifier } from "../src/shared/capture-classifier.js";
 import { serverCandidateFixture, serverCaptureFixture } from "./fixtures.js";
 
 interface ControllerFixtureOptions {
+  beforePromote?(): Promise<void>;
   onIgnore?(): Promise<void>;
   dashboard?(): DashboardSnapshot;
   health?(): AppHealth;
   pendingRationales?(): PendingRationaleSummary[];
+  captureClassifier?(): CaptureClassifier;
 }
 
 const createController = async (options: ControllerFixtureOptions = {}) => {
@@ -21,6 +24,7 @@ const createController = async (options: ControllerFixtureOptions = {}) => {
   const queue = new RationaleQueue(() => `rationale-${++sequence}`);
   const candidates = new DecisionCandidateQueue({
     onPromote: async (candidate) => {
+      await options.beforePromote?.();
       queue.ingestPrioritized(candidate.event);
     },
     onIgnore: options.onIgnore ?? (async () => undefined),
@@ -29,6 +33,9 @@ const createController = async (options: ControllerFixtureOptions = {}) => {
   const controller = new AppController({
     queue,
     candidates,
+    ...(options.captureClassifier === undefined
+      ? {}
+      : { captureClassifier: options.captureClassifier }),
     server: {
       start: vi.fn(async () => ({
         host: "127.0.0.1",
@@ -85,6 +92,11 @@ describe("AppController", () => {
       primarySurface: "settings",
     });
 
+    controller.openSurface("assistant");
+    expect(controller.snapshot()).toMatchObject({
+      primarySurface: "assistant",
+    });
+
     controller.closePrimarySurface();
     expect(controller.snapshot()).toMatchObject({
       primarySurface: "hidden",
@@ -93,6 +105,32 @@ describe("AppController", () => {
     controller.refresh();
     expect(controller.snapshot()).toMatchObject({
       primarySurface: "hidden",
+    });
+  });
+
+  it("brings a closed window back to its page, and leaves an open one where the reader is", async () => {
+    const { controller } = await createController();
+
+    // Clicked in the Dock while open: switching apps is not asking for the home page.
+    controller.openSurface("decisions");
+    controller.reopen();
+    expect(controller.snapshot().primarySurface).toBe("decisions");
+
+    controller.closePrimarySurface();
+    controller.reopen();
+    expect(controller.snapshot().primarySurface).toBe("decisions");
+  });
+
+  it("publishes the capture classifier the reader chose", async () => {
+    // The control on the model page reads its value from here: without the
+    // field in the snapshot it always renders the default, whatever is set.
+    const { controller, publish } = await createController({
+      captureClassifier: () => "models",
+    });
+    await controller.start();
+
+    expect(publish.mock.calls.at(-1)?.[0]).toMatchObject({
+      captureClassifier: "models",
     });
   });
 
@@ -126,6 +164,21 @@ describe("AppController", () => {
     controller.closeCandidateReview();
     expect(controller.snapshot()).toMatchObject({
       primarySurface: "dashboard",
+      candidateReviewOpen: false,
+    });
+  });
+
+  it("returns to Obsidian after candidate review is postponed", async () => {
+    const { candidates, controller } = await createController();
+    candidates.ingest(serverCandidateFixture());
+    controller.openSurface("assistant");
+
+    controller.openCandidateReview();
+    expect(controller.snapshot().primarySurface).toBe("hidden");
+
+    controller.closeCandidateReview();
+    expect(controller.snapshot()).toMatchObject({
+      primarySurface: "assistant",
       candidateReviewOpen: false,
     });
   });
@@ -283,15 +336,25 @@ describe("AppController", () => {
   });
 
   it("closes after the last ignored candidate", async () => {
-    const { candidates, controller } = await createController();
+    const { candidates, controller, publish } = await createController();
     const only = serverCandidateFixture();
     candidates.ingest(only);
     controller.openCandidateReview();
+    publish.mockClear();
 
     await controller.ignoreCandidate(only.candidateId);
 
     expect(controller.snapshot().candidateReviewOpen).toBe(false);
     expect(controller.snapshot().candidateReviewProgress).toBeNull();
+    // An empty hidden snapshot makes the native window hide before the dashboard returns.
+    for (const [snapshot] of publish.mock.calls) {
+      expect(
+        snapshot.primarySurface === "hidden" &&
+        snapshot.current === null &&
+        snapshot.decisionCandidates.current === null,
+      ).toBe(false);
+    }
+    expect(publish).toHaveBeenLastCalledWith(expect.objectContaining({ primarySurface: "dashboard" }));
   });
 
   it("keeps the session alive through the last promoted rationale so new arrivals can join", async () => {
@@ -352,6 +415,68 @@ describe("AppController", () => {
         current: { candidateId: candidate.candidateId },
         persistenceStatus: "failed",
       },
+    });
+  });
+
+  it("moves on from a record that succeeds on retry as from one that succeeded at once", async () => {
+    let failing = true;
+    const { candidates, controller, queue } = await createController({
+      beforePromote: async () => {
+        if (failing) throw new Error("disk full");
+      },
+    });
+    const first = serverCandidateFixture();
+    const second = {
+      ...serverCandidateFixture(),
+      candidateId: "candidate-server-2",
+      createdAt: "2026-07-27T00:01:00.000Z",
+    };
+    candidates.ingest(first);
+    candidates.ingest(second);
+    controller.openCandidateReview();
+    await expect(controller.confirmCandidate(first.candidateId)).rejects.toThrow(/Candidate persistence/u);
+
+    failing = false;
+    await controller.retryCandidate();
+
+    // Into the rationale first, then on to the next candidate, counted.
+    expect(controller.snapshot()).toMatchObject({
+      candidateReviewOpen: false,
+      current: { event: { sourceEventId: first.event.sourceEventId } },
+    });
+    await queue.submit({ status: "deferred" });
+    expect(controller.snapshot()).toMatchObject({
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 2, total: 2 },
+      decisionCandidates: { current: { candidateId: "candidate-server-2" } },
+    });
+  });
+
+  it("counts an ignore that succeeds on retry", async () => {
+    let failing = true;
+    const { candidates, controller } = await createController({
+      onIgnore: async () => {
+        if (failing) throw new Error("candidate receipt failed");
+      },
+    });
+    const first = serverCandidateFixture();
+    const second = {
+      ...serverCandidateFixture(),
+      candidateId: "candidate-server-2",
+      createdAt: "2026-07-27T00:01:00.000Z",
+    };
+    candidates.ingest(first);
+    candidates.ingest(second);
+    controller.openCandidateReview();
+    await expect(controller.ignoreCandidate(first.candidateId)).rejects.toThrow(/Candidate persistence/u);
+
+    failing = false;
+    await controller.retryCandidate();
+
+    expect(controller.snapshot()).toMatchObject({
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 2, total: 2 },
+      decisionCandidates: { current: { candidateId: "candidate-server-2" } },
     });
   });
 
@@ -496,6 +621,30 @@ describe("AppController", () => {
     expect(controller.isStarted()).toBe(true);
   });
 
+  it("starts when the runtime file cannot be written, and passes on why", async () => {
+    const full = Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" });
+    const onRuntimeUnwritable = vi.fn();
+    const controller = new AppController({
+      queue: new RationaleQueue(() => "candidate-1"),
+      server: { start: vi.fn(async () => ({ host: "127.0.0.1", port: 45_678 })), stop: vi.fn(async () => undefined) },
+      watcher: { start: vi.fn(async () => undefined), close: vi.fn(async () => undefined) },
+      index: { close: vi.fn() },
+      windows: { create: vi.fn(async () => undefined), publish: vi.fn(), prepareToQuit: vi.fn() },
+      runtimeFile: "/runtime.json",
+      token: "x".repeat(32),
+      writeRuntime: vi.fn(async () => {
+        throw full;
+      }),
+      onRuntimeUnwritable,
+      removeRuntime: vi.fn(async () => undefined),
+    });
+
+    await controller.start();
+
+    expect(controller.isStarted()).toBe(true);
+    expect(onRuntimeUnwritable).toHaveBeenCalledWith(full);
+  });
+
   it("shuts down in deterministic order and is idempotent", async () => {
     const events: string[] = [];
     const controller = new AppController({
@@ -536,8 +685,31 @@ describe("AppController", () => {
       "server",
       "index",
       "runtime",
+      // The second stop stops nothing again; it only tells the window, as a stop while starting does.
+      "windows",
     ]);
     expect(controller.isStarted()).toBe(false);
+  });
+
+  it("lets the window close for a quit that comes while it is still starting", async () => {
+    const prepareToQuit = vi.fn();
+    const controller = new AppController({
+      queue: new RationaleQueue(() => "candidate-1"),
+      // The service still binding.
+      server: { start: vi.fn(() => new Promise<never>(() => undefined)), stop: vi.fn(async () => undefined) },
+      watcher: { start: vi.fn(async () => undefined), close: vi.fn(async () => undefined) },
+      index: { close: vi.fn() },
+      windows: { create: vi.fn(async () => undefined), publish: vi.fn(), prepareToQuit },
+      runtimeFile: "/runtime.json",
+      token: "x".repeat(32),
+      writeRuntime: vi.fn(async () => undefined),
+      removeRuntime: vi.fn(async () => undefined),
+    });
+    void controller.start();
+
+    await controller.stop();
+
+    expect(prepareToQuit).toHaveBeenCalledOnce();
   });
 
   it("removes runtime state even when a shutdown step fails", async () => {

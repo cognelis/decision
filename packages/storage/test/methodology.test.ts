@@ -1,5 +1,5 @@
 import type { MethodologyRecord } from "@cognelis/decision-core";
-import { mkdtemp, readFile, readdir } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rename, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -36,16 +36,22 @@ const fixture = (
 });
 
 describe("MethodologyRepository", () => {
-  it("writes current markers and reads legacy methodology markers", () => {
-    const record = fixture();
-    const current = serializeMethodology(record);
-    const legacy = current.replaceAll(
-      "<!-- decision:",
-      "<!-- decision-island:",
-    );
+  it("saves a title broken over lines as the one line it is read back as", async () => {
+    const repository = new MethodologyRepository(await mkdtemp(join(tmpdir(), "methodology-title-")));
+    await repository.save(fixture({ title: "先保持可逆\n再扩大改动" }));
+    await expect(repository.find("principle-1")).resolves.toMatchObject({ title: "先保持可逆 再扩大改动" });
+  });
 
-    expect(current).not.toContain("<!-- decision-island:");
-    expect(parseMethodology(legacy)).toEqual(record);
+  it("refuses to save a principle into a vault folder that has gone", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-methodology-gone-"));
+    await expect(new MethodologyRepository(join(root, "unmounted-vault"), { existingVault: true }).save(fixture()))
+      .rejects.toThrow("找不到仓库目录");
+    expect(await readdir(root)).toEqual([]);
+  });
+
+  it("round-trips current format markers", () => {
+    const record = fixture();
+    expect(parseMethodology(serializeMethodology(record))).toEqual(record);
   });
 
   it("round-trips a traceable methodology note", () => {
@@ -86,6 +92,291 @@ describe("MethodologyRepository", () => {
     expect(await readFile(join(directory, files[0]!), "utf8")).toContain(
       "status: accepted",
     );
+  });
+
+  it("keeps what the reader added in Obsidian when a principle is saved again", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-kept-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture({
+      status: "accepted",
+      confirmedAt: "2026-08-03T10:00:00.000Z",
+      usageValidation: { reviewedAt: "2026-08-07T10:00:00.000Z", decisionId: "decision-validated-2", validatedAt: "2026-08-08T10:00:00.000Z" },
+    }));
+    const directory = join(vault, "Decision Journal", "principles");
+    const [name] = await readdir(directory);
+    const path = join(directory, name!);
+    // Tagged, aliased and linked in Obsidian, with a section of the reader's own, saved by an editor on Windows.
+    const edited = (await readFile(path, "utf8"))
+      .replace("type: decision-methodology\n", "type: decision-methodology\ntags:\n  - 架构\naliases:\n  - 可逆优先\nticket: 0042\ntweet: 1790012345678901234\n")
+      .concat("\n## 我的笔记\n\n见 [[迁移复盘]]。\n");
+    await writeFile(path, `﻿${edited.replaceAll("\n", "\r\n")}`, "utf8");
+
+    // Saved again with new wording and the usage cursor gone: one click took all of the reader's with it.
+    await repository.save(fixture({
+      status: "accepted",
+      confirmedAt: "2026-08-03T10:00:00.000Z",
+      updatedAt: "2026-08-09T10:00:00.000Z",
+      principle: "先验证可逆路径，再扩大不可逆改动。",
+    }));
+
+    const saved = await readFile(path, "utf8");
+    expect(saved.startsWith("﻿---\r\n")).toBe(true);
+    expect(saved).not.toMatch(/[^\r]\n/u);
+    // Re-rendered whole, 0042 came back as 42 and the id lost its last digits.
+    expect(saved).toContain("tags:\r\n  - 架构\r\naliases:\r\n  - 可逆优先\r\nticket: 0042\r\ntweet: 1790012345678901234\r\n");
+    expect(saved).toContain("## 我的笔记\r\n\r\n见 [[迁移复盘]]。");
+    expect(saved).not.toContain("usage_validation");
+    const read = await repository.find("principle-1");
+    expect(read).toMatchObject({ principle: "先验证可逆路径，再扩大不可逆改动。", updatedAt: "2026-08-09T10:00:00.000Z" });
+    expect(read?.usageValidation).toBeUndefined();
+  });
+
+  it("keeps the reader's own formatting in a section a save leaves unchanged, and escapes one it changes", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-formatting-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture({ status: "accepted", confirmedAt: "2026-08-03T10:00:00.000Z" }));
+    const directory = join(vault, "Decision Journal", "principles");
+    const [name] = await readdir(directory);
+    const path = join(directory, name!);
+    // Formatted in Obsidian: a highlight, a heading of the reader's and an embed in the principle, a title underlined.
+    const formatted = "在信息不足时，优先选择<mark>可快速回退</mark>的实现。\n\n### 例子\n\n![[rollback-diagram.png]]\n\n返回值写成 `Result<T>`。";
+    await writeFile(path, (await readFile(path, "utf8"))
+      .replace("在信息不足时，优先选择可快速回退的实现。", formatted)
+      .replace("# 先保持可逆，再扩大改动", "# 先保持可逆，<u>再扩大改动</u>"));
+    const current = (await repository.find("principle-1"))!;
+
+    // 确认仍适用: only the usage validation changes. Written again escaped, the highlight, heading and embed turned
+    // into literal text in Obsidian.
+    await repository.save({ ...current, usageValidation: { reviewedAt: "2026-09-01T00:00:00.000Z", decisionId: "decision-2", validatedAt: "2026-10-05T00:00:00.000Z" } });
+    const saved = await readFile(path, "utf8");
+    expect(saved).toContain(formatted);
+    expect(saved).toContain("# 先保持可逆，<u>再扩大改动</u>\n");
+    expect(saved).toContain("usage_validation_decision: decision-2");
+
+    // Changed text is written escaped, as the app writes every text.
+    await repository.save({ ...current, principle: "先回退 <img src=x>，再扩大。" });
+    expect(await readFile(path, "utf8")).toContain("先回退 \\<img src=x>，再扩大。");
+  });
+
+  it("keeps a heading the reader put above the app's title, and rewrites the app's own title line", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-heading-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const path = join(directory, (await readdir(directory))[0]!);
+    // In Obsidian the reader puts a heading and a paragraph of their own above the app's part.
+    await writeFile(path, (await readFile(path, "utf8")).replace("\n# 先保持可逆，再扩大改动\n", "\n# 迁移笔记\n\n这条原则来自 2026-08 的迁移。\n\n# 先保持可逆，再扩大改动\n"), "utf8");
+    // Read as the first heading, the reader's was listed as the principle's title.
+    expect(await repository.find("principle-1")).toMatchObject({ title: "先保持可逆，再扩大改动" });
+
+    // Retitled in the app: written over the first heading, the reader's was gone and the app's title stood twice.
+    await repository.save(fixture({ title: "先验证可逆路径", updatedAt: "2026-08-04T10:00:00.000Z" }));
+
+    const saved = await readFile(path, "utf8");
+    expect(saved).toContain("# 迁移笔记\n\n这条原则来自 2026-08 的迁移。\n\n# 先验证可逆路径\n");
+    expect(saved).not.toContain("# 先保持可逆，再扩大改动");
+    expect(await repository.find("principle-1")).toMatchObject({ title: "先验证可逆路径" });
+  });
+
+  it("knows its own title by the note's title property, with a heading of the reader's between it and its first section", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-heading-between-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const path = join(directory, (await readdir(directory))[0]!);
+    expect(await readFile(path, "utf8")).toMatch(/^title: 先保持可逆，再扩大改动$/mu);
+    // In Obsidian the reader puts a heading and a paragraph of their own under the app's title, above its first section.
+    const annotated = (await readFile(path, "utf8")).replace("\n# 先保持可逆，再扩大改动\n", "\n# 先保持可逆，再扩大改动\n\n# 我的批注\n\n这条我有保留意见。\n");
+    await writeFile(path, annotated, "utf8");
+
+    // Nearest above the first section, the reader's heading was read as the title, and a save refused as ambiguous.
+    expect(await repository.find("principle-1")).toMatchObject({ title: "先保持可逆，再扩大改动" });
+    await repository.save(fixture({ updatedAt: "2026-08-04T10:00:00.000Z" }));
+    expect(await readFile(path, "utf8")).toContain("# 先保持可逆，再扩大改动\n\n# 我的批注\n\n这条我有保留意见。\n");
+
+    // Retitled in the app: its own line and the property, the reader's heading left as it was.
+    await repository.save(fixture({ title: "先验证可逆路径", updatedAt: "2026-08-05T10:00:00.000Z" }));
+    const saved = await readFile(path, "utf8");
+    expect(saved).toContain("# 先验证可逆路径\n\n# 我的批注\n\n这条我有保留意见。\n");
+    expect(saved).toMatch(/^title: 先验证可逆路径$/mu);
+    expect(saved).not.toContain("先保持可逆，再扩大改动");
+    expect(await repository.find("principle-1")).toMatchObject({ title: "先验证可逆路径" });
+  });
+
+  it("retitles the app's own line, not the reader's copy of the title at the top of the page", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-heading-copy-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const path = join(directory, (await readdir(directory))[0]!);
+    // The reader copies the title to the top of the page, with a lead of their own under it.
+    await writeFile(path, (await readFile(path, "utf8")).replace("\n# 先保持可逆，再扩大改动\n", "\n# 先保持可逆，再扩大改动\n\n读者的导语。\n\n# 先保持可逆，再扩大改动\n"), "utf8");
+
+    // The property named both lines, and the first (the reader's) was taken: a retitle wrote over theirs and left the
+    // app's old title standing between the lead and the first section.
+    await repository.save(fixture({ title: "先验证可逆路径", updatedAt: "2026-08-05T10:00:00.000Z" }));
+    expect(await readFile(path, "utf8")).toContain("# 先保持可逆，再扩大改动\n\n读者的导语。\n\n# 先验证可逆路径\n");
+  });
+
+  it("refuses, as before, a heading between the title and the first section in a note from before the title property", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-heading-unnamed-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const path = join(directory, (await readdir(directory))[0]!);
+    const annotated = (await readFile(path, "utf8"))
+      .replace(/^title: .*\n/mu, "")
+      .replace("\n# 先保持可逆，再扩大改动\n", "\n# 先保持可逆，再扩大改动\n\n# 我的批注\n\n这条我有保留意见。\n");
+    await writeFile(path, annotated, "utf8");
+
+    // Which line is the app's cannot be told without it: refused, rather than the reader's written over.
+    await expect(repository.save(fixture({ updatedAt: "2026-08-04T10:00:00.000Z" }))).rejects.toThrow("App 分不清哪一行才是标题");
+    expect(await readFile(path, "utf8")).toBe(annotated);
+  });
+
+  it("reads the heading as the title when the reader renames it, or edits only the property, in Obsidian", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-heading-renamed-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const path = join(directory, (await readdir(directory))[0]!);
+    const note = await readFile(path, "utf8");
+
+    // Renamed heading: the visible heading is the title, and the next save writes the property to match.
+    await writeFile(path, note.replace("\n# 先保持可逆，再扩大改动\n", "\n# 先保持可逆\n"), "utf8");
+    expect(await repository.find("principle-1")).toMatchObject({ title: "先保持可逆" });
+    await repository.save(fixture({ title: "先保持可逆", updatedAt: "2026-08-04T10:00:00.000Z" }));
+    expect(await readFile(path, "utf8")).toMatch(/^title: 先保持可逆$/mu);
+
+    // The property edited alone, the heading unchanged: the heading still wins, and the save writes the property back.
+    await writeFile(path, (await readFile(path, "utf8")).replace(/^title: .*$/mu, "title: 另一个标题"), "utf8");
+    expect(await repository.find("principle-1")).toMatchObject({ title: "先保持可逆" });
+    await repository.save(fixture({ title: "先保持可逆", updatedAt: "2026-08-05T10:00:00.000Z" }));
+    expect(await readFile(path, "utf8")).toMatch(/^title: 先保持可逆$/mu);
+  });
+
+  it("refuses to write a note holding a byte that is not UTF-8, rather than put a replacement character in its place", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-bytes-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const path = join(directory, (await readdir(directory))[0]!);
+    // A section the reader appended with an editor that wrote Latin-1: "café", its é the one byte 0xE9.
+    const edited = Buffer.concat([await readFile(path), Buffer.from("\n## 我的备注\n\ncaf", "utf8"), Buffer.from([0xe9]), Buffer.from("\n", "utf8")]);
+    await writeFile(path, edited);
+
+    // Decoded with a replacement character, 采纳 wrote the character into the file in the byte's place.
+    await expect(repository.save(fixture({ status: "accepted", confirmedAt: "2026-08-03T10:00:00.000Z" }))).rejects.toThrow("不是 UTF-8 编码");
+    expect(await readFile(path)).toEqual(edited);
+  });
+
+  it("writes a model's principle as text: no section of the note's own and no Dataview code comes out of it", () => {
+    // Drawn from a decision an agent captured, carrying a fence and inline code that ran when Obsidian opened it.
+    const record = fixture({
+      title: "先保持可逆 `$= dv.current()`",
+      principle: "在信息不足时，优先选择可快速回退的实现。\n\n## 证据摘要\n\n```dataviewjs\nrequire(\"child_process\")\n```",
+      caution: "<code>$= app.vault</code> 和 `\t$= dv.pages()`",
+    });
+    const markdown = serializeMethodology(record);
+
+    expect(markdown).not.toMatch(/```dataviewjs|\$=/u);
+    expect(markdown.match(/^## 证据摘要$/gmu)).toHaveLength(1);
+    expect(parseMethodology(markdown)).toEqual(record);
+  });
+
+  it("says which principle iCloud moved off this Mac, rather than leaving it out without a word", async () => {
+    const said: string[] = [];
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-icloud-"));
+    const repository = new MethodologyRepository(vault, { onUnreadable: (notes) => said.push(...notes.map((note) => note.message)) });
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const [name] = await readdir(directory);
+    await rename(join(directory, name!), join(directory, `.${name}.icloud`));
+    // macOS's ._ copy beside a note on exFAT or a share: no principle, and none that "cannot be read".
+    await writeFile(join(directory, `._${name}`), Buffer.from([0, 5, 22, 7]));
+
+    expect(await repository.list()).toEqual([]);
+    expect(said).toEqual([expect.stringContaining("iCloud")]);
+  });
+
+  it("finds a principle renamed in Obsidian and saves it where it now is", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-renamed-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const [original] = await readdir(directory);
+    await rename(join(directory, original!), join(directory, "先保持可逆.md"));
+
+    // Looked for under the id's own file name, it "did not exist", and its next save forked a second copy.
+    await expect(repository.find("principle-1")).resolves.toMatchObject({ id: "principle-1" });
+    await repository.save(fixture({ status: "accepted", confirmedAt: "2026-08-03T10:00:00.000Z", updatedAt: "2026-08-03T10:00:00.000Z" }));
+    expect(await readdir(directory)).toEqual(["先保持可逆.md"]);
+    expect((await repository.list()).map((record) => record.status)).toEqual(["accepted"]);
+    await expect(repository.find("principle-2")).resolves.toBeNull();
+  });
+
+  it("lists neither of two notes holding one principle, says each, and acts on it again once one goes", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-conflict-"));
+    const said: string[][] = [];
+    const repository = new MethodologyRepository(vault, { onUnreadable: (notes) => said.push(notes.map((note) => note.message)) });
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const [name] = await readdir(directory);
+    // Edited on another Mac before this one's change reached it: iCloud kept that version beside this one.
+    const copy = join(directory, name!.replace(/\.md$/u, " 2.md"));
+    await writeFile(copy, serializeMethodology(fixture({ principle: "另一台 Mac 上改过的说法。" })));
+
+    // Both listed, an agent was given whichever sorted last, and the app's edits reached only one of them.
+    expect(await repository.list()).toEqual([]);
+    expect(said.at(-1)).toEqual([expect.stringContaining("同步冲突"), expect.stringContaining("同步冲突")]);
+    await expect(repository.find("principle-1")).rejects.toThrow("有不止一篇原则笔记使用同一个编号");
+    await expect(repository.save(fixture({ updatedAt: "2026-08-04T10:00:00.000Z" }))).rejects.toThrow("有不止一篇原则笔记使用同一个编号");
+
+    // The extra one deleted in Obsidian.
+    await unlink(copy);
+    expect((await repository.list()).map((record) => record.id)).toEqual(["principle-1"]);
+    expect(said.at(-1)).toEqual([]);
+    await expect(repository.find("principle-1")).resolves.toMatchObject({ principle: "在信息不足时，优先选择可快速回退的实现。" });
+  });
+
+  it("names a section deleted in Obsidian by the heading the note shows, in Chinese", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-section-"));
+    const repository = new MethodologyRepository(vault);
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const [name] = await readdir(directory);
+    const path = join(directory, name!);
+    const note = await readFile(path, "utf8");
+    // A property as well, by the name the note shows: "title must contain 1-120 characters" and "createdAt is
+    // required" were said as a note not in the format Decision reads, which told the reader nothing to change.
+    await writeFile(path, note.replace(/^# .*$/mu, `# ${"标".repeat(121)}`));
+    await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（「标题」需要 1–120 个字）`);
+    await writeFile(path, note.replace(/^created: .*\n/mu, ""));
+    await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（缺少「created」属性）`);
+    await writeFile(path, note.replace(/<!-- decision:methodology-applies-start -->[\s\S]*?<!-- decision:methodology-applies-end -->\n?/u, ""));
+
+    // Named by its field in code, "Methodology note is missing appliesWhen" told the reader of nothing in the note.
+    await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（缺少「适用条件」一节，或它前后的标记被删改了）`);
+    // A property it cannot read, too: "Methodology note status is invalid".
+    await writeFile(path, (await readFile(path, "utf8")).replace(/^status: .*$/mu, "status: 想想再说"));
+    await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（有属性的值不是 Decision 能读的格式）`);
+  });
+
+  it("says which principle notes it could not read, and names the one asked for by id", async () => {
+    const { writeFile } = await import("node:fs/promises");
+    const vault = await mkdtemp(join(tmpdir(), "decision-methodology-unreadable-"));
+    const said: string[][] = [];
+    const repository = new MethodologyRepository(vault, { onUnreadable: (notes) => said.push(notes.map((note) => note.path)) });
+    await repository.save(fixture());
+    const directory = join(vault, "Decision Journal", "principles");
+    const [name] = await readdir(directory);
+    // Expanded in Obsidian past what a principle may hold.
+    await writeFile(join(directory, name!), (await readFile(join(directory, name!), "utf8")).replace("在信息不足时，优先选择可快速回退的实现。", "补充".repeat(1_100)));
+
+    // Left out without a word, it was gone from every list, its evidence offered again as new.
+    expect(await repository.list()).toEqual([]);
+    expect(said.at(-1)).toEqual([join(directory, name!)]);
+    await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取`);
   });
 
   it("round-trips an explicit usage-validation cursor without changing content", () => {

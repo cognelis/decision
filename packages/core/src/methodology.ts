@@ -57,7 +57,8 @@ export interface MethodologyRecord {
 
 export type MethodologyHistoryReason =
   | "revision_applied"
-  | "restore_checkpoint";
+  | "restore_checkpoint"
+  | "evidence_changed";
 
 export interface MethodologyHistoryEntry {
   version: number;

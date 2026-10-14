@@ -13,7 +13,7 @@ Decision `v1.1.0` 起默认发布 Windows x64 与 Apple Silicon macOS 两个原�
 
 ## 源码构建
 
-两个平台都使用 Node.js `>=22.13.0 <26` 与 npm，推荐 Node.js 22 LTS。Node.js 26 当前会触发上游 Electron ZIP 解压库静默退出，因此构建前置检查会明确拒绝它，而不会产生“命令成功但没有文件”的假结果。
+两个平台都使用 Node.js `>=22.19.0 <26` 与 npm，推荐 Node.js 22 LTS。Node.js 26 当前会触发上游 Electron ZIP 解压库静默退出，因此构建前置检查会明确拒绝它，而不会产生“命令成功但没有文件”的假结果。
 
 通用步骤：
 
@@ -94,8 +94,8 @@ macOS 的既有 `DECISION_RELEASE=1` 路径仍要求完整 Developer ID Applicat
 ```bash
 npm run quality
 npm run audit:runtime
-npx vitest run apps/desktop/test/brand-migration.test.ts apps/desktop/test/recovery.integration.test.ts scripts/test/release-portability.test.ts scripts/test/release-workflow.test.ts scripts/test/release-artifact.test.ts scripts/test/verify-release-set.test.ts
+npx vitest run apps/desktop/test/data-preservation.test.ts apps/desktop/test/recovery.integration.test.ts scripts/test/release-portability.test.ts scripts/test/release-workflow.test.ts scripts/test/release-artifact.test.ts scripts/test/verify-release-set.test.ts
 git diff --check
 ```
 
-标签只在公开 `main` 的精确审阅提交上创建。先在 `main` 手工运行 workflow 验证两个原生平台；全部通过后再创建 `v1.1.0`，由同一 workflow 生成并发布附件，不上传开发机本地制品。
+标签只在公开 `main` 的精确审阅提交上创建。先在 `main` 手工运行 workflow 验证两个原生平台；全部通过后再创建与 `package.json` 版本一致的标签（如 `v1.2.0`），由同一 workflow 生成并发布附件，不上传开发机本地制品。

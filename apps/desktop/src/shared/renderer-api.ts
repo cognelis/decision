@@ -1,3 +1,22 @@
+import type { ManagedQwenModelId, ManagedQwenModelStatus } from "@cognelis/decision-protocol";
+import type { PrDiscussion, PrActionContext, PrActionRequest, PrActionResult, PrReviewCommentRequest, PrGeneralCommentRequest, PrReviewCommentResult, PrReviewReevaluate, PrReviewVerdict, PrReviewFileRequest, PrReviewFileResponse, PrReviewDiffRequest, PrReviewDiffResponse, PrReviewFollowUp, PrReviewFollowUpResult, PrReviewLoad, PrReviewPrefetch, PrReviewSnapshot, PrReviewRun, PrReviewReport, PrReviewProgress, PrConnection, PrConnectionInput, PrListQuery, PrListResponse } from "@cognelis/decision-protocol";
+import type { ProactiveRecordInput } from "./proactive-record.js";
+export type { ProactiveRecordInput } from "./proactive-record.js";
+import type { DecisionFeedbackUpdate, DecisionFeedbackUpdateResult, DecisionFeedbackQuery, DecisionFeedbackResponse } from "@cognelis/decision-protocol";
+import type {
+  AssistantSourceCheck,
+  AssistantExportResult,
+  AssistantFeedbackInput,
+  AssistantFeedbackSummary,
+  AssistantFeedbackResult,
+  AssistantProgress,
+  AssistantTurnRequest,
+  AssistantTurnResponse,
+  RetrievalAnswerProvider,
+  RetrievalAnswerCitation,
+  RetrievalAnswerScope,
+} from "@cognelis/decision-protocol";
+import type { DecisionContextQuery, DecisionContextResponse, DecisionScopeUpdate, DecisionScopeUpdateResult, DecisionRelationUpdate, DecisionRelationUpdateResult, DecisionSourceReference, DecisionSourceOpenResult, DecisionHandoffRequest, DecisionHandoffResponse } from "@cognelis/decision-protocol";
 import type {
   CandidateQueueSnapshot,
   DecisionAnalyticsSnapshot,
@@ -13,6 +32,9 @@ import type {
   MethodologySuggestion,
   OutcomeReview,
   OutcomeVerdict,
+  JournalEntry,
+  JournalEntryChange,
+  JournalEntryDraft,
   PracticeAssetKind,
   PracticeAssetFreshness,
   PracticeAssetHistoryReason,
@@ -25,8 +47,9 @@ import type {
   RationaleQueueSnapshot,
   RationaleSubmission,
 } from "@cognelis/decision-core";
-import type { InstallMode, InstallReport } from "@cognelis/decision-integrations";
+import type { InstallMode, InstallReport, IntegrationStatus } from "@cognelis/decision-integrations";
 import type {
+  CapturedQuestion,
   DecisionConsultationFeedbackRating,
   DecisionConsultationFeedbackResult,
   DecisionConsultationMetricsSnapshot,
@@ -37,10 +60,23 @@ import type {
   NormalizedTokenUsage,
   RedactedModelProviderProfile,
   SemanticRecognitionStatus,
+  ProactiveRecordResult,
 } from "@cognelis/decision-protocol";
 import type { RebuildReport } from "@cognelis/decision-storage";
 
 import type { ThemePreference } from "./appearance.js";
+import type { CaptureClassifier } from "./capture-classifier.js";
+import type {
+  ObsidianSearchResponse,
+  ObsidianSearchResult,
+  ObsidianSearchStatus,
+} from "./obsidian-search.js";
+
+export type {
+  ObsidianSearchResponse,
+  ObsidianSearchResult,
+  ObsidianSearchStatus,
+} from "./obsidian-search.js";
 
 export const RENDERER_METHOD_NAMES = [
   "getSnapshot",
@@ -55,6 +91,59 @@ export const RENDERER_METHOD_NAMES = [
   "openSurface",
   "closePrimarySurface",
   "listDecisions",
+  "listDecisionProjects",
+  "listLocalDecisions",
+  "resolveLocalDecision",
+  "createProactiveRecord",
+  "listJournalEntries",
+  "reviseJournalEntry",
+  "getObsidianSearchStatus",
+  "searchObsidian",
+  "rebuildObsidianSearch",
+  "checkAssistantSource",
+  "searchAssistantSources",
+  "listPrConnections",
+  "savePrConnection",
+  "removePrConnection",
+  "checkPrConnection",
+  "listPullRequests",
+  "loadPrReview",
+  "peekPrReview",
+  "prefetchPrReviews",
+  "loadPrReviewDiff",
+  "getPrActionContext",
+  "performPrAction",
+  "publishPrReviewComment",
+  "publishPrGeneralComment",
+  "reevaluatePrReviewFinding",
+  "openReviewRulesDirectory",
+  "listPrDiscussion",
+  "openPrLink",
+  "openPr",
+  "loadPrReviewFile",
+  "runPrReview",
+  "followUpPrReview",
+  "cancelPrReview",
+  "onPrReviewProgress",
+  "runAssistantTurn",
+  "listAssistantModels",
+  "cancelAssistantTurn",
+  "saveAssistantFeedback",
+  "exportAssistantConversation",
+  "getAssistantFeedbackSummary",
+  "onAssistantProgress",
+  "openObsidianNote",
+  "openVaultDocument",
+  "saveDecisionContextFeedback",
+  "getDecisionContextFeedback",
+
+  "searchDecisionContext",
+  "updateDecisionScope",
+  "updateDecisionRelation",
+  "openDecisionSource",
+  "prepareDecisionHandoff",
+
+  "updateDecisionExpectedOutcome",
   "updateDecisionOutcome",
   "updateDecisionReviewDueDate",
   "updateDecisionReview",
@@ -108,14 +197,22 @@ export const RENDERER_METHOD_NAMES = [
   "publishPracticeAsset",
   "rollbackPracticeAssetPublication",
   "chooseVault",
+  "revealVault",
   "installIntegrations",
+  "removeIntegrations",
   "rebuildIndex",
   "setTheme",
   "listModelTraces",
   "deleteModelTrace",
   "deleteModelTraceRequest",
+  "forgetAssistantTurns",
   "clearModelTraces",
   "setModelTraceContentEnabled",
+  "setReviewRemindersEnabled",
+  "setLocalCredentialsEnabled",
+  "setCaptureClassifier",
+  "listManagedQwenModels",
+  "installManagedQwenModel",
   "listModelProviderProfiles",
   "saveModelProviderProfile",
   "deleteModelProviderProfile",
@@ -168,6 +265,13 @@ export const DECISION_ANALYTICS_METHOD_NAMES = [
   "submitDecisionConsultationFeedback",
 ] as const satisfies readonly (keyof DecisionApi)[];
 
+export const OBSIDIAN_SEARCH_METHOD_NAMES = [
+  "getObsidianSearchStatus",
+  "searchObsidian",
+  "rebuildObsidianSearch",
+  "openObsidianNote",
+] as const;
+
 export const PRACTICE_ASSET_METHOD_NAMES = [
   "createManualPracticeAsset",
   "deleteManualFormDraft",
@@ -199,6 +303,57 @@ export const IPC_CHANNELS = {
   openSurface: "decision:open-surface",
   closePrimarySurface: "decision:close-primary-surface",
   listDecisions: "decision:list-decisions",
+  listDecisionProjects: "decision:list-decision-projects",
+  createProactiveRecord: "decision:create-proactive-record",
+  listJournalEntries: "decision:list-journal-entries",
+  reviseJournalEntry: "decision:revise-journal-entry",
+  getObsidianSearchStatus: "decision:obsidian-search-status",
+  searchObsidian: "decision:obsidian-search",
+  rebuildObsidianSearch: "decision:obsidian-rebuild-search",
+  checkAssistantSource: "decision:assistant-source-check",
+  searchAssistantSources: "decision:assistant-sources",
+  listPrConnections: "decision:pr-connections",
+  savePrConnection: "decision:pr-connection-save",
+  removePrConnection: "decision:pr-connection-remove",
+  checkPrConnection: "decision:pr-connection-check",
+  listPullRequests: "decision:pr-list",
+  loadPrReview: "decision:pr-review-load",
+  peekPrReview: "decision:pr-review-peek",
+  prefetchPrReviews: "decision:pr-review-prefetch",
+  loadPrReviewDiff: "decision:pr-review-diff",
+  getPrActionContext: "decision:pr-action-context",
+  performPrAction: "decision:pr-action",
+  publishPrReviewComment: "decision:pr-review-comment",
+  publishPrGeneralComment: "decision:pr-general-comment",
+  reevaluatePrReviewFinding: "decision:pr-review-reevaluate",
+  openReviewRulesDirectory: "decision:open-review-rules-directory",
+  listPrDiscussion: "decision:pr-discussion",
+  openPrLink: "decision:pr-link-open",
+  openPr: "decision:pr-open",
+  loadPrReviewFile: "decision:pr-review-file",
+  runPrReview: "decision:pr-review-run",
+  followUpPrReview: "decision:pr-review-follow-up",
+  cancelPrReview: "decision:pr-review-cancel",
+  prReviewProgress: "decision:pr-review-progress",
+  runAssistantTurn: "decision:assistant-turn",
+  listAssistantModels: "decision:assistant-models",
+  cancelAssistantTurn: "decision:assistant-cancel",
+  saveAssistantFeedback: "decision:assistant-feedback",
+  exportAssistantConversation: "decision:assistant-export",
+  getAssistantFeedbackSummary: "decision:assistant-feedback-summary",
+  assistantProgress: "decision:assistant-progress",
+  openObsidianNote: "decision:obsidian-open-note",
+  openVaultDocument: "decision:vault-open-document",
+  saveDecisionContextFeedback: "decision:evidence-saveDecisionContextFeedback",
+  getDecisionContextFeedback: "decision:evidence-getDecisionContextFeedback",
+
+  searchDecisionContext: "decision:evidence-searchDecisionContext",
+  updateDecisionScope: "decision:evidence-updateDecisionScope",
+  updateDecisionRelation: "decision:evidence-updateDecisionRelation",
+  openDecisionSource: "decision:evidence-openDecisionSource",
+  prepareDecisionHandoff: "decision:evidence-prepareDecisionHandoff",
+
+  updateDecisionExpectedOutcome: "decision:update-decision-expected-outcome",
   updateDecisionOutcome: "decision:update-decision-outcome",
   updateDecisionReviewDueDate:
     "decision:update-decision-review-due-date",
@@ -270,15 +425,25 @@ export const IPC_CHANNELS = {
   rollbackPracticeAssetPublication:
     "decision:rollback-practice-asset-publication",
   chooseVault: "decision:choose-vault",
+  revealVault: "decision:reveal-vault",
   installIntegrations: "decision:install-integrations",
+  removeIntegrations: "decision:remove-integrations",
   rebuildIndex: "decision:rebuild-index",
+  listLocalDecisions: "decision:list-local-decisions",
+  resolveLocalDecision: "decision:resolve-local-decision",
   setTheme: "decision:set-theme",
   listModelTraces: "decision:list-model-traces",
   deleteModelTrace: "decision:delete-model-trace",
   deleteModelTraceRequest: "decision:delete-model-trace-request",
+  forgetAssistantTurns: "decision:forget-assistant-turns",
   clearModelTraces: "decision:clear-model-traces",
+  setReviewRemindersEnabled: "decision:set-review-reminders-enabled",
+  setLocalCredentialsEnabled: "decision:set-local-credentials-enabled",
+  setCaptureClassifier: "decision:set-capture-classifier",
   setModelTraceContentEnabled:
     "decision:set-model-trace-content-enabled",
+  listManagedQwenModels: "decision:list-managed-qwen-models",
+  installManagedQwenModel: "decision:install-managed-qwen-model",
   listModelProviderProfiles: "decision:list-model-provider-profiles",
   saveModelProviderProfile: "decision:save-model-provider-profile",
   deleteModelProviderProfile: "decision:delete-model-provider-profile",
@@ -294,20 +459,13 @@ export interface AppHealth {
   indexMessage?: string;
   recovery: "healthy" | "degraded";
   recoveryMessage?: string;
+  /** Preference or idea notes that could not be read when the list was last read, and so are not in it. */
+  journalMessage?: string;
+  /** Principle notes that could not be read when they were last read, and so are in no list. */
+  methodologyMessage?: string;
 }
 
-export interface IntegrationStatus {
-  claudeCode:
-    | "installed"
-    | "upgrade-required"
-    | "not-installed"
-    | "unknown";
-  codex:
-    | "installed"
-    | "upgrade-required"
-    | "not-installed"
-    | "unknown";
-}
+export type { IntegrationStatus };
 
 export interface PendingRationaleSummary {
   id: string;
@@ -317,6 +475,12 @@ export interface PendingRationaleSummary {
   sourceClient: string;
   selectedAnswer: string;
   contextSummary: string | null;
+  capturedQuestion: CapturedQuestion | null;
+  /**
+   * False for one put off in a capture and held in the app's recovery queue alone: written to Obsidian only once its
+   * rationale is completed (or 保留但不补), and 不记录 never writes it. Absent for a note in the vault.
+   */
+  inVault?: false;
 }
 
 export interface CandidateReviewProgress {
@@ -324,17 +488,29 @@ export interface CandidateReviewProgress {
   total: number;
 }
 
-export type PrimarySurface =
-  | "hidden"
-  | "dashboard"
-  | "decisions"
-  | "methodology"
-  | "clients"
-  | "models"
-  | "activity"
-  | "settings";
+/**
+ * Single source of truth for the navigable surfaces. The IPC validator builds
+ * its enum from this list, so a surface added here cannot be silently rejected
+ * at the process boundary.
+ */
+export const DESKTOP_PRIMARY_SURFACES = [
+  "dashboard",
+  // "decisions" is the knowledge surface: decisions, principles and the vault's
+  // notes are the same Markdown in the same vault, so they search as one.
+  "decisions",
+  "assistant",
+  "pr-review",
+  "methodology",
+  "clients",
+  "connections",
+  "models",
+  "activity",
+  "settings",
+] as const;
 
-export type DesktopPrimarySurface = Exclude<PrimarySurface, "hidden">;
+export type DesktopPrimarySurface = (typeof DESKTOP_PRIMARY_SURFACES)[number];
+
+export type PrimarySurface = DesktopPrimarySurface | "hidden";
 
 export interface RecentDecisionSummary {
   id: string;
@@ -348,14 +524,43 @@ export interface RecentDecisionSummary {
 
 export type DecisionRationaleFilter = "captured" | "deferred" | "skipped";
 
-export type DecisionSourceFilter = "claude-code" | "codex" | "test";
+export type DecisionSourceFilter = "claude-code" | "codex" | "manual" | "pr-comment" | "test";
+
+export type UserJournalSourceKind =
+  | "app_manual"
+  | "offline_conversation"
+  | "meeting"
+  | "observation";
+export type UserJournalSourceForm = "user_original" | "user_paraphrase";
+
+export interface JournalEntryListQuery {
+  query?: string;
+  kind?: "preference" | "idea";
+  knowledgeStatus?: "inbox" | "active" | "archived";
+  limit?: number;
+}
+
+export interface JournalEntryRevisionInput {
+  draft: JournalEntryDraft;
+  change: JournalEntryChange;
+  /** The entry as the page showed it (journalEntryBasis): a change made since then refuses the revision. */
+  basis?: string;
+}
+
+export type { JournalEntry, ProactiveRecordResult };
 
 export interface DecisionLibraryQuery {
   query: string;
   searchMode?: "keyword" | "semantic";
   decisionId?: string;
+  /** An ISO timestamp; only decisions created at or after it. */
+  createdSince?: string;
   rationaleStatus?: DecisionRationaleFilter;
   sourceClient?: DecisionSourceFilter;
+  /** Trimmed, as the retrospective labels projects. */
+  project?: string;
+  /** Reviewed with this verdict. */
+  outcomeVerdict?: OutcomeVerdict;
   reviewState?:
     | "pending_outcome"
     | "pending_review"
@@ -363,19 +568,30 @@ export interface DecisionLibraryQuery {
     | "attention"
     | "due"
     | "scheduled"
-    | "unscheduled";
+    | "unscheduled"
+    | "expectation_missing";
   limit?: number;
+}
+
+export interface DecisionProjectCount {
+  project: string;
+  count: number;
 }
 
 export interface DecisionLibraryItem extends RecentDecisionSummary {
   rationale: string | null;
   context: string | null;
+  expectedOutcome?: string | null;
   outcome: string | null;
   outcomeReview: OutcomeReview | null;
   reviewDueDate: string | null;
   appliedPrincipleIds: string[];
   appliedPrinciples: DecisionAppliedPrinciple[];
   searchMatch?: "keyword" | "semantic" | "hybrid";
+  /** The PR comment a "pr-comment" decision was taken from. */
+  sourceUrl?: string;
+  /** The note as it was read: an edit saved with it is refused if the note changed since. Null: not known. */
+  contentHash?: string | null;
 }
 
 export interface DecisionAppliedPrinciple {
@@ -486,6 +702,8 @@ export interface MethodologyMergeLifecyclePlan {
   modelCallsRequired: number;
   pendingReviewCount: number;
   assets: MethodologyMergeLifecycleAsset[];
+  /** What holds the sources back from being archived, said as the reader is to act on it. */
+  blockers: string[];
 }
 
 export interface MethodologyUsageDecision {
@@ -605,7 +823,7 @@ export interface MethodologyEvolutionInput extends MethodologyRevisionInput {
 export interface MethodologyVersionItem {
   version: number;
   capturedAt: string;
-  reason: "revision_applied" | "restore_checkpoint";
+  reason: "revision_applied" | "restore_checkpoint" | "evidence_changed";
   snapshot: {
     updatedAt: string;
     title: string;
@@ -685,6 +903,13 @@ export interface PracticeAssetRevisionInput {
   fallback: string;
 }
 
+/**
+ * What an edit of a skill or workflow started from: its text as the page opened it. Sent with the edit and compared
+ * with the note as it now stands, so a step saved in Obsidian meanwhile is noticed rather than written over.
+ */
+export const practiceAssetBasis = (asset: PracticeAssetRevisionInput): string =>
+  JSON.stringify([asset.title, asset.summary, asset.trigger, asset.steps, asset.checks, asset.fallback]);
+
 export type ManualFormDraftKey =
   | "methodology_manual"
   | "methodology_evidence_manual"
@@ -725,10 +950,16 @@ export type ManualFormDraft = ManualFormDraftInput & {
 };
 
 export interface DashboardSnapshot {
+  /** Moves whenever what the index holds changes (SqliteIndex.revision): pages in view read their decisions again. */
+  revision?: number;
+  /** Moves whenever a preference or idea is written, by an agent or in the app: the list of them in view reads again. */
+  journalRevision?: number;
   totalDecisions: number;
   recorded7d: number;
   reviewAttention: number;
   recentDecisions: RecentDecisionSummary[];
+  /** The index could not be read: the zeros are not counts. */
+  unavailable?: true;
 }
 
 export interface AppSnapshot extends RationaleQueueSnapshot {
@@ -741,10 +972,37 @@ export interface AppSnapshot extends RationaleQueueSnapshot {
   vaultPath: string | null;
   health: AppHealth;
   integrationStatus: IntegrationStatus;
+  /** Every one put off in a capture, and the vault's newest; pendingRationaleCount says how many in all. */
   pendingRationales: PendingRationaleSummary[];
+  /** Left out, the list is all of them. */
+  pendingRationaleCount?: number;
   semanticRecognition: SemanticRecognitionStatus;
   modelTraceContentEnabled?: boolean;
+  reviewRemindersEnabled?: boolean;
+  localCredentialsEnabled?: boolean;
+  captureClassifier?: CaptureClassifier;
 }
+
+/** How many decisions wait for a rationale: a snapshot lists the most recent alone. */
+export const pendingRationaleTotal = (
+  snapshot: Pick<AppSnapshot, "pendingRationales" | "pendingRationaleCount">,
+): number => Math.max(snapshot.pendingRationaleCount ?? 0, snapshot.pendingRationales.length);
+
+/** Rationales still to give: those put off, and the one asked for now with those queued behind it. */
+export const rationalesToGive = (
+  snapshot: Pick<AppSnapshot, "pendingRationales" | "pendingRationaleCount" | "current" | "waitingCount">,
+): number => pendingRationaleTotal(snapshot) + (snapshot.current === null ? 0 : 1) + snapshot.waitingCount;
+
+/**
+ * The 待办 the home page, the sidebar and the tray each show. They counted apart, the tray leaving out the reviews
+ * and the home page the rationale being asked for, and said two numbers for one moment.
+ */
+export const pendingWorkTotal = (
+  snapshot: Pick<
+    AppSnapshot,
+    "decisionCandidates" | "dashboard" | "pendingRationales" | "pendingRationaleCount" | "current" | "waitingCount"
+  >,
+): number => snapshot.decisionCandidates.count + rationalesToGive(snapshot) + snapshot.dashboard.reviewAttention;
 
 export type RationaleInput = RationaleSubmission & {
   candidateId: string;
@@ -780,7 +1038,22 @@ export interface DecisionConsultationFeedbackInput {
   rating: DecisionConsultationFeedbackRating;
 }
 
-export interface DecisionApi {
+export interface DecisionEvidenceApi {
+  saveDecisionContextFeedback(input: DecisionFeedbackUpdate): Promise<DecisionFeedbackUpdateResult>;
+  getDecisionContextFeedback(input: DecisionFeedbackQuery): Promise<DecisionFeedbackResponse>;
+
+  searchDecisionContext(input: DecisionContextQuery): Promise<DecisionContextResponse>;
+  updateDecisionScope(input: DecisionScopeUpdate): Promise<DecisionScopeUpdateResult>;
+  updateDecisionRelation(input: DecisionRelationUpdate): Promise<DecisionRelationUpdateResult>;
+  openDecisionSource(input: DecisionSourceReference): Promise<DecisionSourceOpenResult>;
+  prepareDecisionHandoff(input: DecisionHandoffRequest): Promise<DecisionHandoffResponse>;
+}
+
+export interface LocalDecisionPage { records: import("@cognelis/decision-core").DecisionRecord[]; total: number }
+
+export interface DecisionApi extends DecisionEvidenceApi {
+  listLocalDecisions(query: string, offset: number): Promise<LocalDecisionPage>;
+  resolveLocalDecision(id: string, action: "publish" | "discard"): Promise<void>;
   getSnapshot(): Promise<AppSnapshot>;
   onSnapshot(listener: (snapshot: AppSnapshot) => void): () => void;
   submitRationale(input: RationaleInput): Promise<void>;
@@ -793,7 +1066,98 @@ export interface DecisionApi {
   openSurface(surface: DesktopPrimarySurface): Promise<void>;
   closePrimarySurface(): Promise<void>;
   listDecisions(query: DecisionLibraryQuery): Promise<DecisionLibraryItem[]>;
-  updateDecisionOutcome(decisionId: string, outcome: string): Promise<void>;
+  /** Named projects with decision counts, most used first, for the project filter. */
+  listDecisionProjects(): Promise<DecisionProjectCount[]>;
+  createProactiveRecord(
+    input: ProactiveRecordInput,
+  ): Promise<ProactiveRecordResult>;
+  listJournalEntries(query: JournalEntryListQuery): Promise<JournalEntry[]>;
+  reviseJournalEntry(
+    id: string,
+    input: JournalEntryRevisionInput,
+  ): Promise<JournalEntry>;
+  getObsidianSearchStatus(): Promise<ObsidianSearchStatus>;
+  searchObsidian(input: {
+    query: string;
+    limit?: number;
+  }): Promise<ObsidianSearchResponse>;
+  rebuildObsidianSearch(): Promise<ObsidianSearchStatus>;
+  /**
+   * Steps pushed while a turn runs. Returns an unsubscribe function; events
+   * carry the caller's own `turnId` so a late event from an abandoned turn
+   * cannot be mistaken for the current one.
+   */
+  onAssistantProgress(
+    listener: (progress: AssistantProgress) => void,
+  ): () => void;
+  openObsidianNote(relativePath: string): Promise<void>;
+  /**
+   * Opens any Markdown in the vault by its relative path. Unlike
+   * `openObsidianNote` this asks nothing of the note index, so it reaches the
+   * decisions and principles this app writes itself — the ones the note index
+   * deliberately leaves out.
+   */
+  openVaultDocument(relativePath: string): Promise<void>;
+  /** Runs one assistant turn: the agent searches, then answers with citations. */
+  checkAssistantSource(source: RetrievalAnswerCitation): Promise<AssistantSourceCheck>;
+  searchAssistantSources(input: { query: string; scope: RetrievalAnswerScope }): Promise<{ sources: RetrievalAnswerCitation[]; issues: string[] }>;
+  listPrConnections(): Promise<PrConnection[]>;
+  savePrConnection(input: PrConnectionInput): Promise<PrConnection[]>;
+  removePrConnection(id: string): Promise<PrConnection[]>;
+  /** Signs in with the link's own token and names the account it belongs to. */
+  checkPrConnection(id: string): Promise<{ account: string }>;
+  listPullRequests(input: PrListQuery): Promise<PrListResponse>;
+  loadPrReview(input: PrReviewLoad): Promise<PrReviewSnapshot>;
+  /** The last snapshot read for this PR, without asking the platform; null when never read. */
+  peekPrReview(input: PrReviewLoad): Promise<PrReviewSnapshot | null>;
+  /** Reads the listed PRs ahead in the background; resolves when the round ends. */
+  prefetchPrReviews(input: PrReviewPrefetch): Promise<void>;
+  getPrActionContext(input: PrReviewDiffRequest): Promise<PrActionContext>;
+  performPrAction(input: PrActionRequest): Promise<PrActionResult>;
+  publishPrReviewComment(input: PrReviewCommentRequest): Promise<PrReviewCommentResult>;
+  publishPrGeneralComment(input: PrGeneralCommentRequest): Promise<PrReviewCommentResult>;
+  reevaluatePrReviewFinding(input: PrReviewReevaluate): Promise<PrReviewVerdict>;
+  /** Opens Decision's own review rules folder, creating it with a disabled example when empty. */
+  openReviewRulesDirectory(): Promise<void>;
+  /** The comments already on a PR, each with its link and the decision recorded from it, if any. */
+  listPrDiscussion(input: PrReviewLoad): Promise<PrDiscussion>;
+  /** Opens a PR comment link in the browser, only when it belongs to a connected platform. */
+  openPrLink(url: string): Promise<void>;
+  /** Opens the PR's own page on its platform in the browser. */
+  openPr(input: PrReviewLoad): Promise<void>;
+  loadPrReviewDiff(input: PrReviewDiffRequest): Promise<PrReviewDiffResponse>;
+  loadPrReviewFile(input: PrReviewFileRequest): Promise<PrReviewFileResponse>;
+  runPrReview(input: PrReviewRun): Promise<PrReviewReport>;
+  followUpPrReview(input: PrReviewFollowUp): Promise<PrReviewFollowUpResult>;
+  cancelPrReview(runId: string): Promise<void>;
+  onPrReviewProgress(listener: (progress: PrReviewProgress) => void): () => void;
+  runAssistantTurn(input: AssistantTurnRequest): Promise<AssistantTurnResponse>;
+  /**
+   * Stops the turn with this id. Unknown or finished ids are a no-op: the
+   * reader clicking "停止" as the answer lands must not raise an error.
+   */
+  cancelAssistantTurn(turnId: string): Promise<void>;
+  /** Records what the reader thought of one answer. Never throws on the caller. */
+  saveAssistantFeedback(
+    input: AssistantFeedbackInput,
+  ): Promise<AssistantFeedbackResult>;
+  /** What the reader has thought of answers so far; zeroes when nothing rated. */
+  getAssistantFeedbackSummary(): Promise<AssistantFeedbackSummary>;
+  /** Writes one conversation as Markdown wherever the reader chooses. */
+  exportAssistantConversation(input: {
+    suggestedName: string;
+    markdown: string;
+  }): Promise<AssistantExportResult>;
+  /** Models that can drive the assistant, in priority order. */
+  listAssistantModels(): Promise<RetrievalAnswerProvider[]>;
+  /** Refused once an outcome is recorded: it would only restate it. */
+  updateDecisionExpectedOutcome(
+    decisionId: string,
+    expectedOutcome: string,
+    basis?: string | null,
+  ): Promise<void>;
+  /** `basis`: the note's hash when the editor was opened; changed since, the save is refused. */
+  updateDecisionOutcome(decisionId: string, outcome: string, basis?: string | null): Promise<void>;
   updateDecisionReviewDueDate(
     decisionId: string,
     reviewDueDate: string | null,
@@ -801,6 +1165,7 @@ export interface DecisionApi {
   updateDecisionReview(
     decisionId: string,
     input: DecisionOutcomeReviewInput,
+    basis?: string | null,
   ): Promise<OutcomeReview>;
   updateDecisionAppliedPrinciples(
     decisionId: string,
@@ -832,6 +1197,8 @@ export interface DecisionApi {
   reviseMethodology(
     id: string,
     input: MethodologyRevisionInput,
+    /** methodologyRevisionBasis of the principle the edit began from: refused once the note has changed since. */
+    basis?: string,
   ): Promise<MethodologyItem>;
   setMethodologyStatus(
     id: string,
@@ -871,7 +1238,8 @@ export interface DecisionApi {
   ): Promise<MethodologyItem>;
   getMethodologyUsage(id: string): Promise<MethodologyUsageSnapshot>;
   getMethodologyValidationInbox(): Promise<MethodologyValidationItem[]>;
-  acknowledgeMethodologyValidation(id: string): Promise<MethodologyItem>;
+  /** Acknowledged up to `seen`, the newest review the reader was shown: one recorded since stays to be checked. */
+  acknowledgeMethodologyValidation(id: string, seen: { reviewedAt: string; decisionId: string }): Promise<MethodologyItem>;
   getMethodologyMergePlan(
     mergeId: string,
   ): Promise<MethodologyMergeLifecyclePlan>;
@@ -909,6 +1277,8 @@ export interface DecisionApi {
   revisePracticeAsset(
     id: string,
     input: PracticeAssetRevisionInput,
+    /** practiceAssetBasis of the asset as the edit began. */
+    basis?: string,
   ): Promise<PracticeAssetItem>;
   setPracticeAssetStatus(
     id: string,
@@ -933,14 +1303,28 @@ export interface DecisionApi {
     target: PracticePublicationTarget,
   ): Promise<PracticePublicationReceipt>;
   chooseVault(): Promise<string | null>;
+  /**
+   * Shows the configured vault in the file manager. It takes no path: the
+   * renderer may ask for this one folder and cannot name another.
+   */
+  revealVault(): Promise<boolean>;
   installIntegrations(mode: InstallMode): Promise<InstallReport>;
+  /** Takes Decision's hooks and MCP server out of both clients; skills published to them stay. */
+  removeIntegrations(): Promise<InstallReport>;
   rebuildIndex(): Promise<RebuildReport>;
   setTheme(theme: ThemePreference): Promise<void>;
   listModelTraces(): Promise<ModelInvocationTrace[]>;
   deleteModelTrace(traceId: string): Promise<boolean>;
   deleteModelTraceRequest(requestId: string): Promise<number>;
+  /** A deleted conversation's turns: their model call records and the ratings given them go too. */
+  forgetAssistantTurns(turnIds: string[]): Promise<void>;
   clearModelTraces(): Promise<number>;
   setModelTraceContentEnabled(enabled: boolean): Promise<void>;
+  setReviewRemindersEnabled(enabled: boolean): Promise<void>;
+  setLocalCredentialsEnabled(enabled: boolean): Promise<void>;
+  setCaptureClassifier(classifier: CaptureClassifier): Promise<void>;
+  listManagedQwenModels(): Promise<ManagedQwenModelStatus[]>;
+  installManagedQwenModel(modelId: ManagedQwenModelId): Promise<void>;
   listModelProviderProfiles(): Promise<RedactedModelProviderProfile[]>;
   saveModelProviderProfile(
     input: ModelProviderMutationInput,
@@ -964,6 +1348,11 @@ export type DecisionAnalyticsApi = Pick<
 export type PracticeAssetsApi = Pick<
   DecisionApi,
   (typeof PRACTICE_ASSET_METHOD_NAMES)[number]
+>;
+
+export type ObsidianSearchApi = Pick<
+  DecisionApi,
+  (typeof OBSIDIAN_SEARCH_METHOD_NAMES)[number]
 >;
 
 export type MethodologyWorkspaceApi = MethodologyRecordsApi &

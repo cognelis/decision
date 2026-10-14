@@ -26,6 +26,8 @@ const DEFAULT_MODEL_VERSION = "system-language-model";
 const DEFAULT_TIMEOUT_MS = 5_000;
 const MAX_LINE_BYTES = 32 * 1024;
 const MAX_CONSECUTIVE_CRASHES = 3;
+/** How long the helper rests after crashing three times in a row before it is tried again. */
+const CIRCUIT_COOLDOWN_MS = 30_000;
 
 const helperAvailabilitySchema = z.enum([
   "available",
@@ -177,14 +179,14 @@ export class AppleFoundationModelProvider
   readonly #spawnHelper: (
     helperPath: string,
   ) => AppleFoundationHelperProcess;
-  readonly #timeoutMs: number;
+  #timeoutMs: number;
   readonly #pending = new Map<string, PendingRequest>();
 
   #child: AppleFoundationHelperProcess | undefined;
   #stdoutBuffer = Buffer.alloc(0);
   #requestSequence = 0;
   #consecutiveCrashes = 0;
-  #circuitOpen = false;
+  #circuitOpenedAt: number | undefined;
   #closed = false;
 
   constructor(
@@ -202,8 +204,26 @@ export class AppleFoundationModelProvider
     this.#timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
+  setTimeoutMs(timeoutMs: number): void {
+    this.#timeoutMs = timeoutMs;
+  }
+
+  /**
+   * Closed for good once closed. After three crashes in a row, out for half a minute and then tried
+   * again, as the docs promise, rather than for the rest of the run: one more crash puts it out again. Timed on
+   * the monotonic clock: on the wall clock, a Mac whose clock was set back an hour kept it out for that hour.
+   */
+  #unavailable(): boolean {
+    if (this.#closed) return true;
+    if (this.#circuitOpenedAt === undefined) return false;
+    if (performance.now() - this.#circuitOpenedAt < CIRCUIT_COOLDOWN_MS) return true;
+    this.#circuitOpenedAt = undefined;
+    this.#consecutiveCrashes = MAX_CONSECUTIVE_CRASHES - 1;
+    return false;
+  }
+
   async status(): Promise<SemanticProviderStatus> {
-    if (this.#closed || this.#circuitOpen) {
+    if (this.#unavailable()) {
       return {
         id: this.id,
         availability: "runtime_unavailable",
@@ -243,7 +263,7 @@ export class AppleFoundationModelProvider
     signal?: AbortSignal,
   ): Promise<SemanticProviderAttempt> {
     const userPrompt = buildSemanticUserPrompt(input);
-    const providerStartedAt = Date.now();
+    const providerStartedAt = performance.now();
     const response = classificationResponseSchema.parse(
       await this.#request(
         "classify",
@@ -295,7 +315,7 @@ export class AppleFoundationModelProvider
       usage: { source: "unavailable" },
       providerDurationMs: Math.max(
         0,
-        Date.now() - providerStartedAt,
+        performance.now() - providerStartedAt,
       ),
     };
   }
@@ -322,7 +342,7 @@ export class AppleFoundationModelProvider
     payload: Record<string, unknown>,
     signal?: AbortSignal,
   ): Promise<unknown> {
-    if (this.#closed || this.#circuitOpen) {
+    if (this.#unavailable()) {
       return Promise.reject(
         new AppleFoundationProviderError(
           "runtime_unavailable",
@@ -435,7 +455,7 @@ export class AppleFoundationModelProvider
       if (
         this.#consecutiveCrashes >= MAX_CONSECUTIVE_CRASHES
       ) {
-        this.#circuitOpen = true;
+        this.#circuitOpenedAt = performance.now();
       }
       this.#rejectAll(
         new AppleFoundationProviderError(

@@ -5,6 +5,7 @@ import type {
 } from "@cognelis/decision-core";
 import {
   parsePracticeAsset,
+  renameReplacing,
   serializePracticeAsset,
 } from "@cognelis/decision-storage";
 import { createHash, randomUUID } from "node:crypto";
@@ -12,7 +13,6 @@ import {
   lstat,
   mkdir,
   readFile,
-  rename,
   stat,
   unlink,
   writeFile,
@@ -49,7 +49,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 const requireDate = (value: unknown): string => {
   if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
-    throw new Error("实践资产版本历史损坏：时间无效");
+    throw new Error("技能与流程的版本历史损坏：时间无效");
   }
   return value;
 };
@@ -64,7 +64,7 @@ const parseHistory = (assetId: string, value: unknown): StoredHistory => {
     !Array.isArray(value.entries) ||
     value.entries.length > HISTORY_LIMIT
   ) {
-    throw new Error("实践资产版本历史损坏，已停止写入以保护现有版本");
+    throw new Error("技能与流程的版本历史损坏，已停止写入以保护现有版本");
   }
   const entries = value.entries.map((raw): StoredEntry => {
     if (
@@ -76,11 +76,11 @@ const parseHistory = (assetId: string, value: unknown): StoredHistory => {
       raw.markdown.length === 0 ||
       raw.markdown.length > 200_000
     ) {
-      throw new Error("实践资产版本历史损坏：版本字段无效");
+      throw new Error("技能与流程的版本历史损坏：版本字段无效");
     }
     const snapshot = parsePracticeAsset(raw.markdown);
     if (snapshot.id !== assetId) {
-      throw new Error("实践资产版本历史损坏：资产编号不一致");
+      throw new Error("技能与流程的版本历史损坏：资产编号不一致");
     }
     return {
       version: raw.version as number,
@@ -96,7 +96,7 @@ const parseHistory = (assetId: string, value: unknown): StoredHistory => {
     ) ||
     entries.some((entry) => entry.version >= (value.nextVersion as number))
   ) {
-    throw new Error("实践资产版本历史损坏：版本顺序无效");
+    throw new Error("技能与流程的版本历史损坏：版本顺序无效");
   }
   return {
     version: 1,
@@ -118,7 +118,7 @@ const atomicWrite = async (path: string, content: string): Promise<void> => {
   const temporary = `${path}.${randomUUID()}.tmp`;
   try {
     await writeFile(temporary, content, { encoding: "utf8", mode: 0o600 });
-    await rename(temporary, path);
+    await renameReplacing(temporary, path);
   } catch (error) {
     await unlink(temporary).catch(() => undefined);
     throw error;
@@ -195,10 +195,10 @@ export class PracticeAssetHistoryStore {
     try {
       const fileStats = await lstat(path);
       if (fileStats.isSymbolicLink() || !fileStats.isFile()) {
-        throw new Error("实践资产版本历史路径不安全");
+        throw new Error("技能与流程的版本历史路径不安全");
       }
       if ((await stat(path)).size > MAX_HISTORY_BYTES) {
-        throw new Error("实践资产版本历史超过安全大小限制");
+        throw new Error("技能与流程的版本历史超过安全大小限制");
       }
       return parseHistory(
         assetId,
@@ -207,7 +207,7 @@ export class PracticeAssetHistoryStore {
     } catch (error) {
       if (isMissing(error)) return emptyHistory(assetId);
       if (error instanceof SyntaxError) {
-        throw new Error("实践资产版本历史损坏，已停止写入以保护现有版本");
+        throw new Error("技能与流程的版本历史损坏，已停止写入以保护现有版本");
       }
       throw error;
     }
@@ -217,7 +217,7 @@ export class PracticeAssetHistoryStore {
     const digest = createHash("sha256").update(assetId, "utf8").digest("hex");
     const path = join(this.#root, "assets", `${digest}.json`);
     if (!path.startsWith(`${this.#root}${sep}`)) {
-      throw new Error("实践资产版本历史路径越界");
+      throw new Error("技能与流程的版本历史路径越界");
     }
     return path;
   }
@@ -227,7 +227,7 @@ export class PracticeAssetHistoryStore {
       try {
         const pathStats = await lstat(path);
         if (pathStats.isSymbolicLink() || !pathStats.isDirectory()) {
-          throw new Error("实践资产版本历史目录不安全");
+          throw new Error("技能与流程的版本历史目录不安全");
         }
       } catch (error) {
         if (!isMissing(error)) throw error;

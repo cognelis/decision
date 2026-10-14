@@ -17,15 +17,20 @@ import {
   ModelProviderError,
   type HttpModelRequest,
   type HttpModelResponse,
+  providerEndpoint,
 } from "../http-model-transport.js";
 import {
   buildSemanticUserPrompt,
   SEMANTIC_PROMPT_VERSION,
   semanticOutputJsonSchema,
   semanticSystemPrompt,
+  SEMANTIC_OUTPUT_TOKENS,
 } from "../semantic-prompt.js";
 import {
+  isStrictJsonSchema,
+  MIN_GENERATION_TIMEOUT_MS,
   parseStructuredJson,
+  REASONING_HEADROOM_TOKENS,
   type StructuredProviderAttempt,
 } from "../structured-provider.js";
 
@@ -61,6 +66,13 @@ const responseSchema = z
   .object({
     id: z.string().trim().min(1).max(500).optional(),
     model: z.string().trim().min(1).max(200).optional(),
+    status: z.string().max(100).optional(),
+    // Why a response stopped short ("max_output_tokens", "content_filter"): an API enum, never content.
+    incomplete_details: z
+      .object({ reason: z.string().max(100).optional() })
+      .passthrough()
+      .nullable()
+      .optional(),
     output: z
       .array(
         z
@@ -117,19 +129,17 @@ const responseSchema = z
   })
   .passthrough();
 
-const endpoint = (
-  baseUrl: string,
-  path: string,
-): string => `${baseUrl.replace(/\/+$/u, "")}${path}`;
-
 const invalidOutput = (
   message: string,
   providerRequestId?: string,
+  /** What the call cost before it failed: a call that ran out of budget was still billed. */
+  usage?: NormalizedTokenUsage,
 ): ModelProviderError =>
   new ModelProviderError("invalid_output", message, {
     ...(providerRequestId === undefined
       ? {}
       : { providerRequestId }),
+    ...(usage === undefined ? {} : { usage }),
   });
 
 export const parseSemanticOutput = (
@@ -244,22 +254,28 @@ export const decodeStructuredOpenAIResponses = (
     )
     .map((item) => item.text)
     .join("");
+  const usage = usageFrom(parsed.data.usage, options.requireConsistentTotals);
+  // A reasoning model can spend the whole output budget thinking: the call was billed, and "no output"
+  // alone does not say the budget ran out.
+  const stopReason =
+    parsed.data.incomplete_details?.reason ??
+    (parsed.data.status === "incomplete" ? "incomplete" : null);
   if (visibleOutput.trim().length === 0) {
     throw invalidOutput(
-      "Model provider returned no visible structured output",
+      `Model provider returned no visible structured output${stopReason === null ? "" : ` · incomplete_reason=${stopReason}`}`,
       responseRequestId,
+      usage,
     );
   }
   return {
     parsedOutput: parseStructuredJson(
       visibleOutput,
       responseRequestId,
+      stopReason,
+      usage,
     ),
     visibleOutput,
-    usage: usageFrom(
-      parsed.data.usage,
-      options.requireConsistentTotals,
-    ),
+    usage,
     modelVersion: parsed.data.model ?? options.fallbackModel,
     ...(responseRequestId === undefined
       ? {}
@@ -362,7 +378,7 @@ export class OpenAIResponsesAdapter {
     const userPrompt = buildSemanticUserPrompt(input);
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
-      url: endpoint(this.#profile.baseUrl!, "/v1/responses"),
+      url: providerEndpoint(this.#profile.baseUrl!, "/responses"),
       headers: {
         authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
@@ -373,7 +389,8 @@ export class OpenAIResponsesAdapter {
         tools: [],
         instructions: semanticSystemPrompt,
         input: userPrompt,
-        max_output_tokens: 256,
+        max_output_tokens:
+          SEMANTIC_OUTPUT_TOKENS + REASONING_HEADROOM_TOKENS,
         text: {
           format: {
             type: "json_schema",
@@ -384,6 +401,7 @@ export class OpenAIResponsesAdapter {
         },
       },
       timeoutMs: this.#profile.timeoutMs,
+      ...(this.#profile.proxy === undefined ? {} : { proxy: this.#profile.proxy }),
       maximumResponseBytes: MAXIMUM_RESPONSE_BYTES,
       secrets: [apiKey],
       ...(signal === undefined ? {} : { signal }),
@@ -434,7 +452,7 @@ export class OpenAIResponsesAdapter {
 
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
-      url: endpoint(this.#profile.baseUrl!, "/v1/responses"),
+      url: providerEndpoint(this.#profile.baseUrl!, "/responses"),
       headers: {
         authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
@@ -445,17 +463,19 @@ export class OpenAIResponsesAdapter {
         tools: [],
         instructions: request.systemPrompt,
         input: request.userPrompt,
-        max_output_tokens: request.maxOutputTokens,
+        max_output_tokens:
+          request.maxOutputTokens + REASONING_HEADROOM_TOKENS,
         text: {
           format: {
             type: "json_schema",
             name: "decision_structured_output",
-            strict: true,
+            strict: isStrictJsonSchema(request.outputSchema),
             schema: request.outputSchema,
           },
         },
       },
-      timeoutMs: this.#profile.timeoutMs,
+      timeoutMs: Math.max(this.#profile.timeoutMs, MIN_GENERATION_TIMEOUT_MS),
+      ...(this.#profile.proxy === undefined ? {} : { proxy: this.#profile.proxy }),
       maximumResponseBytes: MAXIMUM_RESPONSE_BYTES,
       secrets: [apiKey],
       ...(signal === undefined ? {} : { signal }),

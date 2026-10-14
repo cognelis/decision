@@ -1,13 +1,14 @@
 {
   "name": "@cognelis/decision-core",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./rationale-factors": "./src/rationale-factors.ts"
+    "./rationale-factors": "./src/rationale-factors.ts",
+    "./journal-entry": "./src/journal-entry.ts"
   },
   "dependencies": {
-    "@cognelis/decision-protocol": "1.1.0"
+    "@cognelis/decision-protocol": "1.2.0"
   }
 }

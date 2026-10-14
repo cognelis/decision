@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const mode = process.argv[2] ?? "island";
+const mode = process.argv[2] ?? "compact";
 const repositoryRoot = process.cwd();
 const appPath = join(
   repositoryRoot,
@@ -59,11 +59,11 @@ try {
     const request = {
       protocolVersion: 1,
       question:
-        mode === "island"
+        mode === "compact"
           ? "选择记录格式"
           : "这个功能应该采用哪种持久化方式？",
       contextSummary:
-        mode === "island"
+        mode === "compact"
           ? "兼顾直接阅读与后续检索。"
           : "需要让决策记录既能在 Obsidian 中直接阅读，又能支持未来的检索、聚合和方法论提炼。Markdown 是事实来源，数据库只承担可重建索引。",
       options: [

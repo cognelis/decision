@@ -7,6 +7,13 @@ Decision is free, open-source software. This release provides two native desktop
 
 Download only from the official `cognelis/decision` GitHub Release. Each application file has an adjacent `.sha256` file and a JSON manifest.
 
+## What's new in 1.2.0
+
+- **Pull request review**: browse GitHub, GitLab and Bitbucket Server pull requests and run a read-only AI review that checks the change against your past decisions, review rules and the repository's own CLAUDE.md/AGENTS.md, verifies each finding before listing it, and drafts line comments you confirm before posting.
+- **Decision context for coding agents**: new MCP tools let Claude Code and Codex search past decisions with their scope and replacements, record scopes, relationships, outcomes and usage feedback, and prepare handoffs.
+- **Vault note search**: the Knowledge page searches the ordinary notes in your Obsidian vault alongside decisions.
+- **Model backends**: OpenAI-compatible and Anthropic APIs, the Claude Code and Codex CLIs, and local Qwen 2B/4B models, with per-call traces and token and cost accounting.
+
 ## Windows first run
 
 The Windows installer is unsigned, so Microsoft Defender SmartScreen can show an “Unknown publisher” warning. First compare the installer SHA-256 with its adjacent checksum. If it matches this official Release, choose **More info**, review the displayed filename, and then choose **Run anyway**.

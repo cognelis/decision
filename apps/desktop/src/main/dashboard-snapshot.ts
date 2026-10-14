@@ -10,6 +10,7 @@ interface DashboardIndex {
   countSince(created: string): number;
   countReviewAttention(asOfDate: string): number;
   listRecent(limit: number): IndexedDecision[];
+  revision(): number;
 }
 
 const EMPTY_DASHBOARD: DashboardSnapshot = {
@@ -34,13 +35,18 @@ export const readDashboardSnapshot = (
   onFailure: (error: unknown) => void = () => undefined,
 ): DashboardSnapshot => {
   try {
+    // Today and the six calendar days before it: the same "近 7 天" as the
+    // retrospective and the knowledge page filter, so the numbers agree.
     const since = new Date(
-      now.getTime() - 7 * 24 * 60 * 60 * 1_000,
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 6,
     ).toISOString();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
     return {
+      revision: index.revision(),
       totalDecisions: index.count(),
       recorded7d: index.countSince(since),
       reviewAttention: index.countReviewAttention(`${year}-${month}-${day}`),
@@ -58,6 +64,6 @@ export const readDashboardSnapshot = (
     };
   } catch (error) {
     onFailure(error);
-    return EMPTY_DASHBOARD;
+    return { ...EMPTY_DASHBOARD, unavailable: true };
   }
 };

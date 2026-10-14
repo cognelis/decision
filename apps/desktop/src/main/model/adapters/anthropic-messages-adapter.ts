@@ -14,6 +14,7 @@ import type {
 import {
   HttpModelTransport,
   ModelProviderError,
+  providerEndpoint,
 } from "../http-model-transport.js";
 import {
   buildSemanticUserPrompt,
@@ -27,6 +28,7 @@ import {
   type ModelHttpTransport,
 } from "./openai-responses-adapter.js";
 import {
+  MIN_GENERATION_TIMEOUT_MS,
   parseStructuredJson,
   type StructuredProviderAttempt,
 } from "../structured-provider.js";
@@ -96,11 +98,14 @@ const responseSchema = z
 const invalidOutput = (
   message: string,
   providerRequestId?: string,
+  /** What the call cost before it failed: one that ran out of budget was still billed. */
+  usage?: NormalizedTokenUsage,
 ): ModelProviderError =>
   new ModelProviderError("invalid_output", message, {
     ...(providerRequestId === undefined
       ? {}
       : { providerRequestId }),
+    ...(usage === undefined ? {} : { usage }),
   });
 
 const normalizeUsage = (
@@ -204,10 +209,7 @@ export class AnthropicMessagesAdapter {
     const userPrompt = buildSemanticUserPrompt(input);
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
-      url: `${this.#profile.baseUrl!.replace(
-        /\/+$/u,
-        "",
-      )}/v1/messages`,
+      url: providerEndpoint(this.#profile.baseUrl!, "/messages"),
       headers: {
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
@@ -226,6 +228,7 @@ export class AnthropicMessagesAdapter {
         },
       },
       timeoutMs: this.#profile.timeoutMs,
+      ...(this.#profile.proxy === undefined ? {} : { proxy: this.#profile.proxy }),
       maximumResponseBytes: MAXIMUM_RESPONSE_BYTES,
       secrets: [apiKey],
       ...(signal === undefined ? {} : { signal }),
@@ -304,10 +307,7 @@ export class AnthropicMessagesAdapter {
     }
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
-      url: `${this.#profile.baseUrl!.replace(
-        /\/+$/u,
-        "",
-      )}/v1/messages`,
+      url: providerEndpoint(this.#profile.baseUrl!, "/messages"),
       headers: {
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
@@ -325,7 +325,8 @@ export class AnthropicMessagesAdapter {
           },
         },
       },
-      timeoutMs: this.#profile.timeoutMs,
+      timeoutMs: Math.max(this.#profile.timeoutMs, MIN_GENERATION_TIMEOUT_MS),
+      ...(this.#profile.proxy === undefined ? {} : { proxy: this.#profile.proxy }),
       maximumResponseBytes: MAXIMUM_RESPONSE_BYTES,
       secrets: [apiKey],
       ...(signal === undefined ? {} : { signal }),
@@ -360,16 +361,22 @@ export class AnthropicMessagesAdapter {
       )
       .map((item) => item.text)
       .join("");
+    // Cut off at max_tokens (thinking can spend it all), the call was still billed: kept with the failure.
+    const usage = normalizeUsage(parsed.data.usage);
+    const stopReason = parsed.data.stop_reason ?? null;
     if (visibleOutput.trim().length === 0) {
       throw invalidOutput(
-        "Anthropic returned no visible structured output",
+        `Anthropic returned no visible structured output${stopReason === null ? "" : ` · stop_reason=${stopReason}`}`,
         responseRequestId,
+        usage,
       );
     }
     return {
       parsedOutput: parseStructuredJson(
         visibleOutput,
         responseRequestId,
+        stopReason,
+        usage,
       ),
       visibleOutput,
       modelVersion: parsed.data.model ?? this.#profile.model!,

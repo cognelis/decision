@@ -1,5 +1,5 @@
 import type { MethodologyRecord } from "@cognelis/decision-core";
-import { mkdtemp, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -64,6 +64,28 @@ describe("MethodologyHistoryStore", () => {
     expect((await stat(join(root, "principles", file!))).mode & 0o777).toBe(
       0o600,
     );
+  });
+
+  it("keeps an evidence change as a reason 1.1.0 knows, read back here as what it was", async () => {
+    const root = await mkdtemp(join(tmpdir(), "methodology-history-"));
+    const store = new MethodologyHistoryStore(root);
+    // Written by an earlier build of this version: a reason 1.1.0 calls corrupt, the principle's history refused.
+    const earlier = await store.capture(methodology(), "revision_applied", "2026-08-03T08:00:00.000Z");
+    const [file] = await readdir(join(root, "principles"));
+    const path = join(root, "principles", file!);
+    const history = JSON.parse(await readFile(path, "utf8")) as { entries: Array<{ reason: string }> };
+    history.entries[0]!.reason = "evidence_changed";
+    await writeFile(path, JSON.stringify(history), "utf8");
+
+    await expect(store.capture(methodology({ evidenceSummary: "补充了第二条证据。" }), "evidence_changed", "2026-08-04T08:00:00.000Z"))
+      .resolves.toMatchObject({ version: earlier.version + 1, reason: "evidence_changed" });
+
+    const written = JSON.parse(await readFile(path, "utf8")) as { entries: Array<{ reason: string; detail?: string }> };
+    expect(written.entries.map(({ reason, detail }) => [reason, detail])).toEqual([
+      ["revision_applied", "evidence_changed"],
+      ["revision_applied", "evidence_changed"],
+    ]);
+    expect((await store.list("principle-stable")).map((entry) => entry.reason)).toEqual(["evidence_changed", "evidence_changed"]);
   });
 
   it("stops instead of overwriting a corrupted version history", async () => {

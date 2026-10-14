@@ -1,5 +1,6 @@
 import type {
   ModelProviderProfile,
+  ModelProxy,
   StructuredGenerationRequest,
 } from "@cognelis/decision-protocol";
 import { readFile, stat } from "node:fs/promises";
@@ -77,6 +78,7 @@ const setup = (
     | ManagedProcessResult
     | Error
     | (() => Promise<ManagedProcessResult>) = success,
+  proxy?: ModelProxy,
 ) => {
   const requests: ManagedProcessRequest[] = [];
   const run = vi.fn(async (request: ManagedProcessRequest) => {
@@ -90,7 +92,7 @@ const setup = (
   });
   return {
     adapter: new ClaudeCodeCliAdapter({
-      profile,
+      profile: { ...profile, ...(proxy === undefined ? {} : { proxy }) },
       runner: { run },
       environment: {
         HOME: "/Users/demo",
@@ -107,6 +109,13 @@ const setup = (
 };
 
 describe("ClaudeCodeCliAdapter", () => {
+  it("passes the configured proxy to semantic and structured CLI child requests", async () => {
+    const { adapter, requests } = setup(success, { mode: "custom", url: "http://127.0.0.1:7890", noProxy: "localhost" });
+    await adapter.invoke(input); await adapter.generate(methodologyRequest);
+    expect(requests).toHaveLength(2);
+    for (const request of requests) expect(request.environment).toMatchObject({ HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", NO_PROXY: "localhost", no_proxy: "localhost", DECISION_PROVIDER_CHILD: "1" });
+  });
+
   it("cross-checks visible and structured methodology output", async () => {
     const structuredOutput = { title: "可逆优先" };
     const { adapter, requests } = setup({
@@ -187,10 +196,11 @@ describe("ClaudeCodeCliAdapter", () => {
       },
       usage: {
         source: "provider_reported",
-        inputTokens: 100,
+        // Input counts what was cached as well, as OpenAI reports it: Claude Code counts it apart.
+        inputTokens: 130,
         cachedInputTokens: 30,
         outputTokens: 20,
-        totalTokens: 120,
+        totalTokens: 150,
         costUsd: 0.0012,
       },
       providerDurationMs: 720,

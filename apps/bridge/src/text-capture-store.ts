@@ -4,6 +4,7 @@ import {
   capturedOptionSchema,
   type CapturedDecisionContext,
 } from "@cognelis/decision-protocol";
+import { renameReplacing } from "@cognelis/decision-storage";
 import { createHash, randomUUID } from "node:crypto";
 import {
   chmod,
@@ -11,6 +12,7 @@ import {
   readFile,
   readdir,
   rename,
+  stat,
   unlink,
   writeFile,
 } from "node:fs/promises";
@@ -47,6 +49,8 @@ export interface PendingAssistantTurn {
   assistantText: string;
   context?: CapturedDecisionContext;
   capturedAt: string;
+  /** Kept through the reply to a prompt the client wrote itself (see hold), and gone when the question goes. */
+  held?: true;
 }
 
 export type PendingTextCapture =
@@ -54,9 +58,43 @@ export type PendingTextCapture =
   | LegacyPendingTextDecision
   | PendingAssistantTurn;
 
+/**
+ * Why a consume came back empty. `absent` is the ordinary case — the first
+ * prompt of a session has no assistant turn waiting for it — while the other
+ * two mean a captured turn was taken and lost.
+ */
+export type PendingMissReason =
+  | "absent"
+  | "expired"
+  | "unreadable";
+
+export type PendingConsumeResult =
+  | { readonly pending: PendingAssistantTurn }
+  | {
+      readonly pending: null;
+      readonly reason: PendingMissReason;
+    };
+
+/**
+ * An assistant turn nobody answered within the window. Carries no text: it
+ * exists to be counted in the audit, which never holds captured content.
+ */
+export interface ExpiredPendingTurn {
+  readonly sourceClient: TextCaptureClient;
+  readonly sessionId: string;
+  readonly turnId?: string;
+  readonly capturedAt: string;
+}
+
 interface TextCaptureStoreOptions {
   now?: () => Date;
   cleanupIntervalMs?: number;
+  /**
+   * Called once per pending turn the cleanup drops. Most of these are the last
+   * turn of a session nobody answered, which is how conversations end rather
+   * than a failure — the audit counts them so the pairing rate is visible.
+   */
+  onExpired?(turn: ExpiredPendingTurn): Promise<void> | void;
 }
 
 const MAXIMUM_PENDING_AGE_MS = 24 * 60 * 60 * 1_000;
@@ -188,6 +226,7 @@ const normalizePending = (value: unknown): PendingAssistantTurn => {
     assistantText,
     ...(context === undefined ? {} : { context }),
     capturedAt: input.capturedAt,
+    ...(input.held === true ? { held: true as const } : {}),
   };
 };
 
@@ -195,6 +234,7 @@ export class TextCaptureStore {
   readonly path: string;
   readonly #now: () => Date;
   readonly #cleanupIntervalMs: number;
+  readonly #onExpired: TextCaptureStoreOptions["onExpired"];
 
   constructor(
     path: string,
@@ -204,9 +244,14 @@ export class TextCaptureStore {
     this.#now = options.now ?? (() => new Date());
     this.#cleanupIntervalMs =
       options.cleanupIntervalMs ?? DEFAULT_CLEANUP_INTERVAL_MS;
+    this.#onExpired = options.onExpired;
   }
 
-  async save(input: PendingTextCapture): Promise<void> {
+  /**
+   * The turn's text, waiting for the reader's answer. A question held through a notice's reply (see hold) gives
+   * way only to a reply that `asks` something itself; otherwise it stays, and the hold is spent.
+   */
+  async save(input: PendingTextCapture, options: { asks?: boolean } = {}): Promise<void> {
     const pending = normalizePending(input);
     await this.#secureDirectory();
     await this.#pruneExpiredIfDue();
@@ -214,6 +259,38 @@ export class TextCaptureStore {
       pending.sourceClient,
       pending.sessionId,
     );
+    const held = await this.#read(path).then((current) => (current.held === true ? current : null), () => null);
+    if (held === null || options.asks !== false) {
+      await this.#write(path, pending);
+      return;
+    }
+    const { held: _spent, ...kept } = held;
+    await this.#write(path, kept);
+  }
+
+  /**
+   * Keeps the session's question through the turn that answers a prompt the client wrote itself (a background
+   * task's notice): that answer took the question's place, and the reader's real answer after it was paired
+   * with the notice's reply instead and set aside as no decision. Held in the question itself, the hold goes
+   * when the question does: a marker beside it outlived it, and ate a resumed session's first question.
+   */
+  async hold(client: TextCaptureClient, sessionId: string): Promise<void> {
+    await this.#secureDirectory();
+    const path = this.#pathFor(client, sessionId);
+    let pending: PendingAssistantTurn;
+    try {
+      pending = await this.#read(path);
+    } catch {
+      return;
+    }
+    await this.#write(path, { ...pending, held: true });
+  }
+
+  async #read(path: string): Promise<PendingAssistantTurn> {
+    return normalizePending(JSON.parse(await readFile(path, "utf8")));
+  }
+
+  async #write(path: string, pending: PendingAssistantTurn): Promise<void> {
     const temporary = `${path}.${randomUUID()}.tmp`;
     try {
       await writeFile(temporary, JSON.stringify(pending), {
@@ -221,7 +298,7 @@ export class TextCaptureStore {
         mode: 0o600,
         flag: "wx",
       });
-      await rename(temporary, path);
+      await renameReplacing(temporary, path);
       await chmod(path, 0o600);
     } finally {
       await unlink(temporary).catch(() => undefined);
@@ -231,7 +308,7 @@ export class TextCaptureStore {
   async consume(
     client: TextCaptureClient,
     sessionId: string,
-  ): Promise<PendingAssistantTurn | null> {
+  ): Promise<PendingConsumeResult> {
     await this.#secureDirectory();
     await this.#pruneExpiredIfDue();
     const path = this.#pathFor(client, sessionId);
@@ -240,7 +317,7 @@ export class TextCaptureStore {
       await rename(path, consuming);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return null;
+        return { pending: null, reason: "absent" };
       }
       throw error;
     }
@@ -248,13 +325,12 @@ export class TextCaptureStore {
       const pending = normalizePending(
         JSON.parse(await readFile(consuming, "utf8")),
       );
-      return this.#now().getTime() -
-        Date.parse(pending.capturedAt) >
-        MAXIMUM_PENDING_AGE_MS
-        ? null
-        : pending;
+      // Either way past a day: one captured under a clock that ran ahead is no fresher for it.
+      return Math.abs(this.#now().getTime() - Date.parse(pending.capturedAt)) > MAXIMUM_PENDING_AGE_MS
+        ? { pending: null, reason: "expired" }
+        : { pending };
     } catch {
-      return null;
+      return { pending: null, reason: "unreadable" };
     } finally {
       await unlink(consuming).catch(() => undefined);
     }
@@ -274,14 +350,40 @@ export class TextCaptureStore {
     const entries = await readdir(this.path, { withFileTypes: true });
     await Promise.all(
       entries.map(async (entry) => {
+        // A hold marker an earlier build left beside its question: the hold now travels in the question.
+        if (entry.isFile() && entry.name.endsWith(".json.held")) {
+          await unlink(join(this.path, entry.name)).catch(() => undefined);
+          return;
+        }
+        // Left by a hook cut short while it took a turn or wrote one (it has five seconds): the assistant's text in
+        // it goes once a pending turn would have, where it stayed for good. Dated by a clock run ahead past that,
+        // it goes now rather than on that day.
+        if (entry.isFile() && (entry.name.includes(".json.consuming-") || entry.name.endsWith(".tmp"))) {
+          const leftover = join(this.path, entry.name);
+          const written = await stat(leftover).then((status) => status.mtimeMs, () => now);
+          if (Math.abs(now - written) > MAXIMUM_PENDING_AGE_MS) await unlink(leftover).catch(() => undefined);
+          return;
+        }
         if (!entry.isFile() || !entry.name.endsWith(".json")) return;
         const path = join(this.path, entry.name);
         let expired = false;
+        let lost: ExpiredPendingTurn | null = null;
         try {
           const pending = normalizePending(
             JSON.parse(await readFile(path, "utf8")),
           );
-          expired = now - Date.parse(pending.capturedAt) > MAXIMUM_PENDING_AGE_MS;
+          // Either way past a day: captured under a clock that ran ahead, it stayed until the clock caught up.
+          expired = Math.abs(now - Date.parse(pending.capturedAt)) > MAXIMUM_PENDING_AGE_MS;
+          if (expired) {
+            lost = {
+              sourceClient: pending.sourceClient,
+              sessionId: pending.sessionId,
+              ...(pending.turnId === undefined
+                ? {}
+                : { turnId: pending.turnId }),
+              capturedAt: pending.capturedAt,
+            };
+          }
         } catch {
           expired = true;
         }
@@ -291,6 +393,16 @@ export class TextCaptureStore {
           removed += 1;
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+          return;
+        }
+        if (lost !== null && this.#onExpired !== undefined) {
+          // A hook is an observer. Reporting the loss must never be able to
+          // fail the cleanup, which would fail the capture that triggered it.
+          try {
+            await this.#onExpired(lost);
+          } catch {
+            // Nothing to report it to.
+          }
         }
       }),
     );
@@ -302,8 +414,11 @@ export class TextCaptureStore {
     const now = this.#now().getTime();
     try {
       const lastCleanup = Number(await readFile(marker, "utf8"));
+      // A marker from the future (written under a clock that ran ahead) skips nothing: trusted, no cleanup ran until
+      // the wall clock caught up, a year for a date typed wrong (as the trace and audit stores already guard).
       if (
         Number.isFinite(lastCleanup) &&
+        now >= lastCleanup &&
         now - lastCleanup < this.#cleanupIntervalMs
       ) {
         return;

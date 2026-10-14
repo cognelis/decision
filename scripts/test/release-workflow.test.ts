@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -26,8 +26,38 @@ describe("native GitHub release workflow", () => {
     expect(workflow).toContain("actions/download-artifact@v8");
     expect(workflow).not.toContain("@v4");
     expect(workflow).toContain(
-      "npx vitest run apps/desktop/test/brand-migration.test.ts",
+      "npx vitest run apps/desktop/test/data-preservation.test.ts",
     );
+    const macosJob = workflow.slice(
+      workflow.indexOf("  build-macos:"),
+      workflow.indexOf("  release:"),
+    );
+    const installDependencies = macosJob.indexOf("npm ci --ignore-scripts");
+    const setupRuntime = macosJob.indexOf("npm run setup:build-runtime");
+    const setupElectron = macosJob.indexOf("npm run setup:electron");
+    const verifyObsidianLayout = macosJob.indexOf(
+      "npx vitest run apps/desktop/test/knowledge-layout.test.ts",
+    );
+    const buildMacos = macosJob.indexOf(
+      "npm run make -- --platform=darwin --arch=arm64",
+    );
+    expect(installDependencies).toBeGreaterThanOrEqual(0);
+    expect(setupRuntime).toBeGreaterThan(installDependencies);
+    expect(setupElectron).toBeGreaterThan(setupRuntime);
+    expect(verifyObsidianLayout).toBeGreaterThan(setupElectron);
+    expect(buildMacos).toBeGreaterThan(verifyObsidianLayout);
+    expect(workflow.match(/npm run setup:electron/gu)).toHaveLength(1);
+    expect(
+      workflow.match(
+        /npx vitest run apps\/desktop\/test\/knowledge-layout\.test\.ts/gu,
+      ),
+    ).toHaveLength(1);
+    expect(macosJob).not.toMatch(/xvfb|fake display/iu);
+    // A test file renamed in the repository left its old path here, and vitest ends a run that finds none with a
+    // failure: both native builds failed on it before building anything. Every file a step runs has to be there.
+    const runTests = [...workflow.matchAll(/npx vitest run ([^\n]+)/gu)].flatMap((match) => match[1]!.trim().split(/\s+/u));
+    expect(runTests.length).toBeGreaterThan(0);
+    for (const path of runTests) expect(existsSync(path), path).toBe(true);
     expect(workflow).toContain("scripts/verify-release-set.mjs");
     expect(workflow).toContain("scripts/smoke-installed-windows.ps1");
     expect(windowsSmoke).toContain('ArgumentList "--silent"');
@@ -46,6 +76,11 @@ describe("native GitHub release workflow", () => {
     expect(removeRuntimeLog).toBeLessThan(beginPayloadSmoke);
     expect(windowsSmoke).toContain("DECISION_SMOKE_PACKAGE_ROOT");
     expect(windowsSmoke).toContain('ArgumentList "--uninstall", "-s"');
+    // The install root's launcher, run as the hooks run it, and giving out its own path: cmd's handling of it is
+    // seen on a real Windows install, not only its text in a unit test.
+    expect(windowsSmoke).toContain('& cmd.exe /d /v:off /c call "$launcher" install --dry-run');
+    expect(windowsSmoke).toContain("-contains $launcher");
+    expect(windowsSmoke.indexOf("install --dry-run")).toBeGreaterThan(windowsSmoke.indexOf("npm run smoke"));
   });
 
   it("keeps Release mutation in one tag-only aggregation job", () => {

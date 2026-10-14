@@ -28,10 +28,12 @@ const response = (
     reason: "测试匹配原因",
     matchedTerms: ["测试"],
   })),
+  signals: [],
   boundary: {
     advisoryOnly: true,
     noDecisionWritten: true,
     noPrincipleApplied: true,
+    noPreferencePromoted: true,
   },
 });
 

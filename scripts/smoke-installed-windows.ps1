@@ -42,6 +42,21 @@ try {
   if ($LASTEXITCODE -ne 0) {
     throw "Installed Windows smoke failed with code $LASTEXITCODE"
   }
+
+  # The launcher the app keeps at the install root, which updates leave in place, run through cmd as the hooks
+  # and MCP registrations run it: the bridge starts behind it, and gives out the launcher's path, not the version's.
+  $launcher = Join-Path $installRoot "decision-bridge.cmd"
+  if (-not (Test-Path -LiteralPath $launcher -PathType Leaf)) {
+    throw "Install-root bridge launcher was not written: $launcher"
+  }
+  $plan = (& cmd.exe /d /v:off /c call "$launcher" install --dry-run) -join "`n"
+  if ($LASTEXITCODE -ne 0) {
+    throw "Install-root bridge launcher failed with code $LASTEXITCODE"
+  }
+  $named = @(($plan | ConvertFrom-Json).commands | ForEach-Object { $_.args })
+  if (-not ($named -contains $launcher)) {
+    throw "Install-root bridge launcher did not give out its own path: $($named -join ' ')"
+  }
 } finally {
   Remove-Item Env:DECISION_SMOKE_PACKAGE_ROOT -ErrorAction SilentlyContinue
   if (Test-Path -LiteralPath $update -PathType Leaf) {

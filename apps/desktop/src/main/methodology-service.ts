@@ -1,6 +1,7 @@
 import type {
   MethodologyDraft,
   MethodologyHistoryEntry,
+  MethodologyHistoryReason,
   MethodologyRelationDisposition,
   MethodologyRelationRecord,
   MethodologyRecord,
@@ -20,6 +21,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import {
+  modelFailureMessage,
   ProfiledModelGatewayError,
   type ProfiledModelGateway,
 } from "./model/profiled-model-gateway.js";
@@ -28,6 +30,7 @@ import {
   type MethodologyMarkdownDraft,
   type MethodologyMarkdownSource,
 } from "./methodology-markdown-import.js";
+import { methodologyRevisionBasis } from "../shared/methodology-basis.js";
 
 const METHODOLOGY_PROMPT_VERSION = "methodology-extraction-v1";
 const METHODOLOGY_SCHEMA_VERSION = "methodology-candidate-v1";
@@ -141,7 +144,7 @@ interface MethodologyHistory {
   find(id: string, version: number): Promise<MethodologyHistoryEntry | null>;
   capture(
     methodology: MethodologyRecord,
-    reason: "revision_applied" | "restore_checkpoint",
+    reason: MethodologyHistoryReason,
     capturedAt: string,
   ): Promise<MethodologyHistoryEntry>;
 }
@@ -470,13 +473,7 @@ export class MethodologyService {
         record.origin === "principle_revision" &&
         record.sourcePrincipleIds?.[0] === current.id,
     );
-    if (existing !== undefined) return existing;
-
     const sourceDecisionIds = normalizedSourceIds(input.sourceDecisionIds);
-    const decisions = this.#validateRevisionEvidence(
-      current,
-      sourceDecisionIds,
-    );
     const validated = methodologyDraftSchema.parse({
       title: input.title,
       principle: input.principle,
@@ -485,6 +482,27 @@ export class MethodologyService {
       evidenceSummary: input.evidenceSummary,
       confidence: "low",
     });
+    if (existing !== undefined) {
+      // The same revision again (a retry) gets the one already made. A different one would be
+      // dropped without a word, and the reader's draft with it: they are pointed at the one waiting.
+      const same =
+        existing.title === validated.title &&
+        existing.principle === validated.principle &&
+        existing.appliesWhen === validated.appliesWhen &&
+        existing.caution === validated.caution &&
+        existing.evidenceSummary === validated.evidenceSummary &&
+        existing.sourceDecisionIds.length === sourceDecisionIds.length &&
+        existing.sourceDecisionIds.every((decisionId) => sourceDecisionIds.includes(decisionId));
+      if (same) return existing;
+      throw new Error(
+        `这条原则已经有一个待处理的修订候选「${existing.title}」：请先在待确认里采纳或忽略它，再建立新的修订。`,
+      );
+    }
+
+    const decisions = this.#validateRevisionEvidence(
+      current,
+      sourceDecisionIds,
+    );
     const now = this.#now().toISOString();
     const token = this.#idFactory();
     const record: MethodologyRecord = {
@@ -525,17 +543,28 @@ export class MethodologyService {
     return record;
   }
 
+  // The live record (a candidate or an adopted principle) holding exactly this evidence, if any. Retired by a merge,
+  // a source is neither opened as the candidate asked for nor given a second one for evidence provided for already
+  // (buildMethodologySuggestions): refused, pointing at 整理合并来源. Looked for after the live ones: the merged
+  // principle keeps its sources' evidence, and the source retired by that merge, written last, was found first.
+  #holderOf(records: MethodologyRecord[], ids: string[]): MethodologyRecord | undefined {
+    const holds = (record: MethodologyRecord): boolean => sameSources(record.sourceDecisionIds, ids);
+    const live = records.find((record) => (record.status === "candidate" || record.status === "accepted") && holds(record));
+    if (live !== undefined) return live;
+    const retired = records.find((record) => record.status === "retired" && holds(record));
+    if (retired !== undefined) {
+      throw new Error(
+        `这组复盘证据已提炼为原则“${retired.title}”，它已归档并由合并后的原则取代；请在「整理合并来源」里查看。`,
+      );
+    }
+    return undefined;
+  }
+
   async generate(sourceDecisionIds: string[]): Promise<MethodologyRecord> {
     const ids = normalizedSourceIds(sourceDecisionIds);
     const records = await this.#repository.list();
-    const existing = records.find(
-      (record) =>
-        record.status !== "dismissed" &&
-        sameSources(record.sourceDecisionIds, ids),
-    );
-    if (existing !== undefined) {
-      return existing;
-    }
+    const existing = this.#holderOf(records, ids);
+    if (existing !== undefined) return existing;
     const decisions = this.#index.findDecisions(ids);
     if (decisions.length !== ids.length) {
       throw new Error("部分来源决策已不存在，请刷新后重新选择。");
@@ -571,9 +600,12 @@ export class MethodologyService {
         (value) => methodologyDraftSchema.parse(value),
       )
       .catch((error: unknown) => {
+        // Rate limited, out of credit, or answering out of shape, a model that is there was said not to be.
         if (error instanceof ProfiledModelGatewayError) {
           throw new Error(
-            "当前没有可用于方法论提炼的模型，请先在“模型”中启用并确认 Qwen、API 或终端模型可用。",
+            error.failureCode === "provider_unavailable"
+              ? "当前没有可用于方法论提炼的模型，请先在“模型”中启用并确认 Qwen、API 或终端模型可用。"
+              : `方法论提炼没有完成：${modelFailureMessage(error.failureCode)}`,
             { cause: error },
           );
         }
@@ -690,11 +722,7 @@ export class MethodologyService {
       confidence: "low",
     });
     const records = await this.#repository.list();
-    const existingSources = records.find(
-      (record) =>
-        record.status !== "dismissed" &&
-        sameSources(record.sourceDecisionIds, ids),
-    );
+    const existingSources = this.#holderOf(records, ids);
     if (existingSources !== undefined) {
       throw new Error(
         `这组复盘证据已经用于候选“${existingSources.title}”，请直接打开审核。`,
@@ -985,6 +1013,10 @@ export class MethodologyService {
     sourceDecisionIds: string[],
   ): Promise<MethodologyRecord> {
     const current = await this.#require(id);
+    // Checked by origin alone, a retired or dismissed principle had its evidence and confidence rewritten.
+    if (current.status === "retired" || current.status === "dismissed") {
+      throw new Error("已归档或已忽略的原则不能调整关联证据。");
+    }
     if (
       current.origin !== "markdown_import" &&
       current.origin !== "manual_entry"
@@ -992,6 +1024,9 @@ export class MethodologyService {
       throw new Error("只有 Markdown 导入或人工录入的原则可以调整关联证据。");
     }
     const ids = normalizedSourceIds(sourceDecisionIds);
+    // Saved as it was: nothing changes, not its date either, which marked every skill built on it as
+    // having updated sources and held their publishing back.
+    if (sameSources(ids, current.sourceDecisionIds)) return current;
     const decisions = this.#index.findDecisions(ids);
     if (decisions.length !== ids.length) {
       throw new Error("部分复盘证据已不存在，请刷新后重新选择。");
@@ -1022,6 +1057,10 @@ export class MethodologyService {
         outcomeVerdict: reviewedVerdict(decision.outcomeVerdict),
       })),
     ).recommendedConfidence;
+    if (current.status !== "candidate") {
+      // A principle in use keeps what it was, as it does through any other change.
+      await this.#history.capture(current, "evidence_changed", updated.updatedAt);
+    }
     await this.#repository.save(updated);
     return updated;
   }
@@ -1029,10 +1068,15 @@ export class MethodologyService {
   async revise(
     id: string,
     revision: MethodologyRevision,
+    basis?: string,
   ): Promise<MethodologyRecord> {
     const current = await this.#require(id);
     if (current.status !== "candidate") {
       throw new Error("只有待确认候选可以直接编辑；已采纳原则请建立修订草案。");
+    }
+    // Begun from a copy changed since (in Obsidian), the edit wrote that change over without a word.
+    if (basis !== undefined && basis !== methodologyRevisionBasis(current)) {
+      throw new Error("这条原则在你开始编辑之后又被改过（比如在 Obsidian 里），已重新读取；你的修改还在编辑框里，确认后再保存会以它替换。");
     }
     const validated = methodologyDraftSchema.parse({
       ...revision,
@@ -1154,6 +1198,22 @@ export class MethodologyService {
     options: MethodologyStatusOptions = {},
   ): Promise<MethodologyRecord> {
     const current = await this.#require(id);
+    // Offered on candidates only (忽略/采纳). Reached otherwise, an adopted principle was dismissed under the decisions
+    // applying it and the revision draft waiting on it, a dismissed one adopted past its review, an adopted one
+    // adopted again with its date moved, and a retired one answered with the storage invariant's English.
+    if (current.status === "retired") {
+      throw new Error("已归档的原则不能采纳或忽略；要重新启用，请在「整理合并来源」里恢复来源原则。");
+    }
+    if (current.status === "accepted") {
+      throw new Error(
+        status === "accepted"
+          ? "这条原则已经采纳。"
+          : "已采纳的原则不能忽略：决策可能已引用它，修订草案也可能在等它；要停用它，请通过合并用新原则取代后归档。",
+      );
+    }
+    if (current.status === "dismissed") {
+      throw new Error(status === "dismissed" ? "这条候选已经忽略。" : "已忽略的候选不能直接采纳。");
+    }
     const now = this.#now().toISOString();
     const records = await this.#repository.list();
     const decisions = this.#index.findDecisions(current.sourceDecisionIds);

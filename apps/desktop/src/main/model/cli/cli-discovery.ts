@@ -1,6 +1,10 @@
+import { queryCliModels } from "./cli-model-catalog.js";
+import type { ModelProviderProfile, ModelProxy } from "@cognelis/decision-protocol";
+import { providerProxyEnvironment, proxyEnvironmentNames } from "../provider-network.js";
 import {
   localModelClientStatusSchema,
   type LocalModelClientStatus,
+  type ModelInvocationErrorCode,
 } from "@cognelis/decision-protocol";
 import {
   access,
@@ -16,6 +20,7 @@ import {
 
 import {
   ManagedChildProcessRunner,
+  ManagedProcessError,
   type ManagedProcessRequest,
   type ManagedProcessResult,
 } from "./managed-child-process.js";
@@ -32,6 +37,8 @@ export interface LocalModelClientDiscoveryOptions {
   runner?: ProcessRunnerLike;
   environment?: NodeJS.ProcessEnv;
   now?: () => Date;
+  platform?: NodeJS.Platform;
+  cacheDirectory?: string;
 }
 
 const executableName = (
@@ -43,10 +50,31 @@ const clientKind = (
 ): LocalModelClientStatus["kind"] =>
   client === "codex" ? "codex-cli" : "claude-code-cli";
 
+export const localModelClientErrorCode = (
+  availability:
+    | LocalModelClientStatus["availability"]
+    | undefined,
+): ModelInvocationErrorCode => {
+  switch (availability) {
+    case "not_found":
+    case "not_executable":
+      return "executable_missing";
+    case "logged_out":
+      return "credential_unavailable";
+    case "unsupported":
+      return "unsupported_client";
+    case "diagnostics_failed":
+    case "available":
+    case undefined:
+      return "process_failed";
+  }
+};
+
 const findExecutable = async (
   client: LocalModelClient,
   configuredPath: string | undefined,
   environment: NodeJS.ProcessEnv,
+  platform: NodeJS.Platform,
 ): Promise<{
   path?: string;
   availability?: "not_found" | "not_executable";
@@ -75,21 +103,28 @@ const findExecutable = async (
     }
   }
   const pathEntries = (environment.PATH ?? "")
-    .split(delimiter)
+    .split(platform === "win32" ? ";" : delimiter)
     .filter((entry) => entry.length > 0);
+  // On Windows a command is a file with one of PATHEXT's extensions, claude.exe from the installer before
+  // claude.cmd from npm: the bare name npm also leaves there is a shell script only Git Bash can run.
+  const names = platform === "win32"
+    ? (environment.PATHEXT ?? ".COM;.EXE;.BAT;.CMD")
+        .split(";")
+        .filter((extension) => extension.length > 0)
+        .map((extension) => `${executableName(client)}${extension.toLowerCase()}`)
+    : [executableName(client)];
   for (const directory of pathEntries) {
-    const candidate = join(
-      directory,
-      executableName(client),
-    );
-    try {
-      const metadata = await stat(candidate);
-      await access(candidate, constants.X_OK);
-      if (metadata.isFile()) {
-        return { path: candidate };
+    for (const name of names) {
+      const candidate = join(directory, name);
+      try {
+        const metadata = await stat(candidate);
+        await access(candidate, constants.X_OK);
+        if (metadata.isFile()) {
+          return { path: candidate };
+        }
+      } catch {
+        // Continue through the exact PATH entries.
       }
-    } catch {
-      // Continue through the exact PATH entries.
     }
   }
   return { availability: "not_found" };
@@ -98,10 +133,15 @@ const findExecutable = async (
 const versionFrom = (value: string): string | undefined =>
   value.match(/\b(\d+\.\d+\.\d+)\b/u)?.[1];
 
-const includesEvery = (
+const includesEveryOption = (
   value: string,
   flags: string[],
-): boolean => flags.every((flag) => value.includes(flag));
+): boolean => {
+  const options = new Set(
+    value.match(/--[^\s,=]+/gu) ?? [],
+  );
+  return flags.every((flag) => options.has(flag));
+};
 
 const codexGlobalFlags = ["--ask-for-approval"];
 
@@ -131,6 +171,8 @@ export class LocalModelClientDiscovery {
   readonly #runner: ProcessRunnerLike;
   readonly #environment: NodeJS.ProcessEnv;
   readonly #now: () => Date;
+  readonly #platform: NodeJS.Platform;
+  readonly #cacheDirectory: string | undefined;
 
   constructor(
     options: LocalModelClientDiscoveryOptions = {},
@@ -140,11 +182,34 @@ export class LocalModelClientDiscovery {
     this.#environment =
       options.environment ?? process.env;
     this.#now = options.now ?? (() => new Date());
+    this.#platform = options.platform ?? process.platform;
+    this.#cacheDirectory = options.cacheDirectory;
+  }
+
+  /**
+   * Both clients, as their profiles name them. `onlyEnabled`: a client whose profile is off keeps what it was
+   * last found to be (`known`) and is looked at when the models page asks. Found once, a disabled built-in kept
+   * its path, and every launch ran its seven diagnostics before the window opened.
+   */
+  async inspectProfiles(
+    profiles: readonly ModelProviderProfile[],
+    options: { onlyEnabled: boolean; known: readonly LocalModelClientStatus[] },
+  ): Promise<LocalModelClientStatus[]> {
+    const look = async (client: LocalModelClient): Promise<LocalModelClientStatus[]> => {
+      const profile = profiles.find((item) => item.kind === clientKind(client));
+      if (options.onlyEnabled && profile?.enabled !== true) {
+        return options.known.filter((status) => status.kind === clientKind(client));
+      }
+      return [await this.inspect(client, profile?.executablePath, profile?.proxy, !options.onlyEnabled)];
+    };
+    return (await Promise.all([look("codex"), look("claude-code")])).flat();
   }
 
   async inspect(
     client: LocalModelClient,
     configuredPath?: string,
+    proxy?: ModelProxy,
+    includeModels = true,
   ): Promise<LocalModelClientStatus> {
     const kind = clientKind(client);
     const checkedAt = this.#now().toISOString();
@@ -152,6 +217,7 @@ export class LocalModelClientDiscovery {
       client,
       configuredPath,
       this.#environment,
+      this.#platform,
     );
     if (resolved.availability !== undefined) {
       return localModelClientStatusSchema.parse({
@@ -171,6 +237,8 @@ export class LocalModelClientDiscovery {
         ...this.#environment,
         DECISION_PROVIDER_CHILD: "1",
       };
+      for (const name of proxyEnvironmentNames) delete environment[name];
+      Object.assign(environment, providerProxyEnvironment(this.#environment, proxy));
       const run = (args: string[]) =>
         this.#runner.run({
           executable: executablePath,
@@ -182,18 +250,24 @@ export class LocalModelClientDiscovery {
           maximumStderrBytes: 64 * 1_024,
           environment,
         });
+      // `codex login status` and `claude auth status` exit 1 to say "Not logged in": an answer about the
+      // account, not a client that failed its diagnostics.
+      const loginStatus = (args: string[]) =>
+        run(args).catch((error: unknown) => {
+          if (!(error instanceof ManagedProcessError) || error.code !== "process_failed") throw error;
+          return { exitCode: error.processExitCode ?? -1, stdout: "", stderr: error.diagnosticExcerpt, durationMs: 0 };
+        });
       const outputs =
         client === "codex"
           ? await Promise.all([
               run(["--version"]),
-              run(["login", "status"]),
-              run(["doctor", "--json"]),
+              loginStatus(["login", "status"]),
               run(["--help"]),
               run(["exec", "--help"]),
             ])
           : await Promise.all([
               run(["--version"]),
-              run(["auth", "status", "--json"]),
+              loginStatus(["auth", "status", "--json"]),
               run(["--help"]),
             ]);
       const version = versionFrom(
@@ -206,16 +280,11 @@ export class LocalModelClientDiscovery {
         authenticated = /^Logged in\b/imu.test(
           `${outputs[1]!.stdout}\n${outputs[1]!.stderr}`,
         );
-        try {
-          JSON.parse(outputs[2]!.stdout);
-        } catch {
-          diagnosticsValid = false;
-        }
-        supported = includesEvery(
-          `${outputs[3]!.stdout}\n${outputs[3]!.stderr}`,
+        supported = includesEveryOption(
+          `${outputs[2]!.stdout}\n${outputs[2]!.stderr}`,
           codexGlobalFlags,
-        ) && includesEvery(
-          `${outputs[4]!.stdout}\n${outputs[4]!.stderr}`,
+        ) && includesEveryOption(
+          `${outputs[3]!.stdout}\n${outputs[3]!.stderr}`,
           codexExecFlags,
         );
       } else {
@@ -227,9 +296,10 @@ export class LocalModelClientDiscovery {
             auth.loggedIn === true ||
             auth.authenticated === true;
         } catch {
-          diagnosticsValid = false;
+          // Logged out, it may say so by its exit code alone.
+          if (outputs[1]!.exitCode !== 1) diagnosticsValid = false;
         }
-        supported = includesEvery(
+        supported = includesEveryOption(
           `${outputs[2]!.stdout}\n${outputs[2]!.stderr}`,
           claudeFlags,
         );
@@ -242,9 +312,14 @@ export class LocalModelClientDiscovery {
             : !authenticated
               ? "logged_out"
               : "available";
+      const catalog = includeModels
+        ? await queryCliModels(client, { executable: executablePath, cwd: tmpdir(), environment, timeoutMs: 8_000, maximumStdoutBytes: 1024 * 1024, maximumStderrBytes: 64 * 1024 }, this.#runner, this.#cacheDirectory, authenticated && supported, version)
+        : { models: [] };
+      const { models } = catalog;
       return localModelClientStatusSchema.parse({
         kind,
         executablePath,
+        ...(models.length ? { models, modelsSource: catalog.modelsSource } : {}),
         ...(version === undefined ? {} : { version }),
         authenticated,
         supported,

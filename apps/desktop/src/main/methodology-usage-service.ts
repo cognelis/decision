@@ -118,30 +118,31 @@ export const buildMethodologyValidationInbox = (
       )
       .map((methodology) => [methodology.sourcePrincipleIds![0]!, methodology.id]),
   );
+  // The reviewed decisions by each principle they applied: once over the decisions, where every accepted
+  // principle went over all of them, ten million checks at a thousand principles.
+  const reviewedByPrinciple = new Map<string, Array<{ decision: IndexedDecision; verdict: OutcomeVerdict }>>();
+  for (const decision of decisions) {
+    const verdict = reviewedVerdict(decision);
+    if (verdict === null) continue;
+    for (const principleId of new Set(decision.appliedPrincipleIds)) {
+      const applied = reviewedByPrinciple.get(principleId) ?? [];
+      applied.push({ decision, verdict });
+      reviewedByPrinciple.set(principleId, applied);
+    }
+  }
   const items = methodologies.flatMap((methodology) => {
     if (methodology.status !== "accepted") return [];
     const sourceIds = new Set(methodology.sourceDecisionIds);
-    const reviewed = decisions
-      .flatMap((decision) => {
-        if (
-          sourceIds.has(decision.id) ||
-          !decision.appliedPrincipleIds.includes(methodology.id)
-        ) {
-          return [];
-        }
-        const verdict = reviewedVerdict(decision);
-        if (
-          verdict === null ||
-          !reviewPositionAfter(
+    const reviewed = (reviewedByPrinciple.get(methodology.id) ?? [])
+      .filter(
+        ({ decision }) =>
+          !sourceIds.has(decision.id) &&
+          reviewPositionAfter(
             decision.outcomeReviewedAt!,
             decision.id,
             methodology.usageValidation,
-          )
-        ) {
-          return [];
-        }
-        return [{ decision, verdict }];
-      })
+          ),
+      )
       .sort(
         (left, right) =>
           right.decision.outcomeReviewedAt!.localeCompare(

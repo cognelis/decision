@@ -27,15 +27,15 @@ const workspacePackages = [
 ];
 
 describe("root quality scripts", () => {
-  it("keeps every release workspace on the exact 1.1.0 contract", () => {
-    expect(packageDocument.version).toBe("1.1.0");
+  it("keeps every release workspace on the exact 1.2.0 contract", () => {
+    expect(packageDocument.version).toBe("1.2.0");
     expect(workspacePackages.map(({ version }) => version)).toEqual([
-      "1.1.0",
-      "1.1.0",
-      "1.1.0",
-      "1.1.0",
-      "1.1.0",
-      "1.1.0",
+      "1.2.0",
+      "1.2.0",
+      "1.2.0",
+      "1.2.0",
+      "1.2.0",
+      "1.2.0",
     ]);
 
     for (const workspace of workspacePackages) {
@@ -43,7 +43,7 @@ describe("root quality scripts", () => {
         workspace.dependencies ?? {},
       )) {
         if (name.startsWith("@cognelis/decision-")) {
-          expect(version, `${workspace.name} -> ${name}`).toBe("1.1.0");
+          expect(version, `${workspace.name} -> ${name}`).toBe("1.2.0");
         }
       }
     }
@@ -85,7 +85,7 @@ describe("root quality scripts", () => {
   );
 
   it("rejects unsupported runtimes before native packaging starts", () => {
-    expect(packageDocument.engines?.node).toBe(">=22.13.0 <26");
+    expect(packageDocument.engines?.node).toBe(">=22.19.0 <26");
     expect(packageDocument.scripts).toMatchObject({
       prebuild: "node scripts/check-build-runtime.mjs",
       premake: "node scripts/check-build-runtime.mjs",

@@ -60,10 +60,6 @@ export const releaseTarget = ({
         );
   const bridgeName =
     platform === "win32" ? "decision-bridge.cmd" : "decision-bridge";
-  const legacyBridgeName =
-    platform === "win32"
-      ? "decision-island-bridge.cmd"
-      : "decision-island-bridge";
   const resourcesRoot =
     platform === "win32"
       ? join(packageRoot, "resources")
@@ -83,6 +79,5 @@ export const releaseTarget = ({
         ? join(packageRoot, `${productName}.exe`)
         : join(packageRoot, "Contents", "MacOS", productName),
     bridgePath: join(resourcesRoot, "bridge", bridgeName),
-    legacyBridgePath: join(resourcesRoot, "bridge", legacyBridgeName),
   };
 };

@@ -1,3 +1,4 @@
+import { zonedFormatter } from "../../../calendar-date.js";
 import type {
   PracticeAssetKind,
   PracticeAssetStatus,
@@ -15,6 +16,7 @@ import type {
   PracticeAssetRevisionInput,
   PracticeAssetVersionItem,
 } from "../../../../shared/renderer-api.js";
+import { practiceAssetBasis } from "../../../../shared/renderer-api.js";
 import { ModalDialog } from "../../ModalDialog.js";
 
 interface PracticeAssetsViewProps {
@@ -36,7 +38,7 @@ const kindLabels: Record<PracticeAssetKind, string> = {
   workflow: "工作流",
 };
 
-const draftDateFormatter = new Intl.DateTimeFormat("zh-CN", {
+const draftDateFormatter = zonedFormatter({
   year: "numeric",
   month: "short",
   day: "numeric",
@@ -103,7 +105,7 @@ const publishButtonLabel = (status: PracticePublicationStatus): string => {
   }
 };
 
-const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+const dateFormatter = zonedFormatter({
   year: "numeric",
   month: "short",
   day: "numeric",
@@ -125,6 +127,37 @@ const nonEmptyLines = (value: string): string[] =>
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+
+/**
+ * One item per line. The text is kept as typed — a line just begun, a space before the next word —
+ * and only the lines it makes are handed on: tidied on every key, Enter and a trailing space would
+ * vanish as they were typed. Lines changed from outside (a draft opened) are shown as they are.
+ */
+const LinesField = ({
+  label,
+  lines,
+  onLines,
+}: {
+  label: string;
+  lines: string[];
+  onLines(lines: string[]): void;
+}) => {
+  const [text, setText] = useState(() => lines.join("\n"));
+  const shown =
+    nonEmptyLines(text).join("\n") === lines.join("\n") ? text : lines.join("\n");
+  return (
+    <label>
+      <span>{label}</span>
+      <textarea
+        value={shown}
+        onChange={(event) => {
+          setText(event.currentTarget.value);
+          onLines(nonEmptyLines(event.currentTarget.value));
+        }}
+      />
+    </label>
+  );
+};
 
 const practiceRevisionValid = (
   revision: PracticeAssetRevisionInput | null,
@@ -180,30 +213,16 @@ const PracticeAssetFormFields = ({
         }
       />
     </label>
-    <label>
-      <span>操作步骤（每行一项，2–12 项）</span>
-      <textarea
-        value={revision.steps.join("\n")}
-        onChange={(event) =>
-          onChange({
-            ...revision,
-            steps: nonEmptyLines(event.currentTarget.value),
-          })
-        }
-      />
-    </label>
-    <label>
-      <span>验收检查（每行一项，1–8 项）</span>
-      <textarea
-        value={revision.checks.join("\n")}
-        onChange={(event) =>
-          onChange({
-            ...revision,
-            checks: nonEmptyLines(event.currentTarget.value),
-          })
-        }
-      />
-    </label>
+    <LinesField
+      label="操作步骤（每行一项，2–12 项）"
+      lines={revision.steps}
+      onLines={(steps) => onChange({ ...revision, steps })}
+    />
+    <LinesField
+      label="验收检查（每行一项，1–8 项）"
+      lines={revision.checks}
+      onLines={(checks) => onChange({ ...revision, checks })}
+    />
     <label>
       <span>失败处理</span>
       <textarea
@@ -259,8 +278,19 @@ export const PracticeAssetsView = ({
   const [revision, setRevision] = useState<PracticeAssetRevisionInput | null>(
     null,
   );
+  // What the edit began from (practiceAssetBasis), sent with it: the note changed in Obsidian since is refused.
+  const [revisionBasis, setRevisionBasis] = useState<string | null>(null);
+  const beginRevision = (item: PracticeAssetItem): void => {
+    setRevision(revisionFrom(item));
+    setRevisionBasis(practiceAssetBasis(item));
+  };
   const [saving, setSaving] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
+  // Said of the asset it was about, and shown on that one alone: one opened from anywhere else, say once generated,
+  // showed it as its own. Cleared instead as the selection moved, the warning that a manual draft was saved but its
+  // form not cleared went the moment the draft it was about opened.
+  const [detailError, setDetailErrorFor] = useState<{ id: string | null; text: string } | null>(null);
+  const setDetailError = (text: string | null, id: string | null = selected?.id ?? null): void =>
+    setDetailErrorFor(text === null ? null : { id, text });
   const [choosing, setChoosing] = useState(false);
   const [kind, setKind] = useState<PracticeAssetKind>("skill");
   const [principles, setPrinciples] = useState<MethodologyItem[]>([]);
@@ -287,6 +317,8 @@ export const PracticeAssetsView = ({
     string | null
   >(null);
   const manualDraftSaveEpoch = useRef(0);
+  /** The draft a leave could not store: left again unchanged, it is let go, as the form said. */
+  const unsavedOnLeave = useRef<PracticeAssetRevisionInput | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [publicationStatuses, setPublicationStatuses] = useState<
@@ -386,8 +418,10 @@ export const PracticeAssetsView = ({
     };
   }, [api, revisionKey, status]);
 
+  // Read for any asset, adopted or not: one dismissed or so set in Obsidian may still have a copy in a client, to be
+  // withdrawn. Read for adopted ones alone, that copy went on being loaded with no way to take it back here.
   useEffect(() => {
-    if (selected?.status !== "accepted") {
+    if (selected === null) {
       setPublicationStatuses([]);
       setPublicationLoading(false);
       return;
@@ -404,7 +438,7 @@ export const PracticeAssetsView = ({
         if (active) {
           setPublicationStatuses([]);
           setPublicationError(
-            caught instanceof Error ? caught.message : String(caught),
+            `发布状态暂时无法读取：${caught instanceof Error ? caught.message : String(caught)}`,
           );
         }
       })
@@ -486,24 +520,40 @@ export const PracticeAssetsView = ({
       .finally(() => setSourceLoading(false));
   };
 
-  const closeChooser = (): void => {
-    if (generating || manualSaving) return;
-    if (manualDraft !== null && selectedPrinciples.length > 0) {
-      void api
-        .saveManualFormDraft({
+  /**
+   * Stored before the form lets it go: closed on an autosave that had failed (a full disk), the steps written in it
+   * were gone, never stored, with nothing said. Not stored, it stays and says so; left again as it is, it goes.
+   */
+  const draftKeptOnLeaving = async (): Promise<boolean> => {
+    const draft = manualDraft;
+    if (draft !== null && selectedPrinciples.length > 0 && unsavedOnLeave.current !== draft) {
+      try {
+        const saved = await api.saveManualFormDraft({
           key: "practice_asset_manual",
           practiceKind: kind,
           sourcePrincipleIds: selectedPrinciples,
-          input: manualDraft,
-        })
-        .then((saved) => {
-          setManualFormDrafts((current) => [
-            ...current.filter((draft) => draft.key !== saved.key),
-            saved,
-          ]);
-        })
-        .catch(() => undefined);
+          input: draft,
+        });
+        setManualFormDrafts((current) => [
+          ...current.filter((entry) => entry.key !== saved.key),
+          saved,
+        ]);
+      } catch (caught) {
+        unsavedOnLeave.current = draft;
+        setManualDraftSaveState("error");
+        setGenerationError(
+          `${caught instanceof Error ? caught.message : String(caught)}。这份草稿还没存下来，表单先留着；再关闭一次会放弃它。`,
+        );
+        return false;
+      }
     }
+    unsavedOnLeave.current = null;
+    return true;
+  };
+
+  const closeChooser = async (): Promise<void> => {
+    if (generating || manualSaving) return;
+    if (!(await draftKeptOnLeaving())) return;
     setChoosing(false);
     setManualDraft(null);
     setSelectedPrinciples([]);
@@ -529,7 +579,8 @@ export const PracticeAssetsView = ({
       setChoosing(false);
       setSelectedPrinciples([]);
       setSelected(item);
-      setStatus("candidate");
+      // Listed where it is: switched to 待确认, an asset found adopted already was behind a list saying none waits.
+      setStatus(item.status);
       setRevisionKey((value) => value + 1);
     } catch (caught) {
       setGenerationError(caught instanceof Error ? caught.message : String(caught));
@@ -678,7 +729,8 @@ export const PracticeAssetsView = ({
       setStatus("candidate");
       if (draftCleanupError !== null) {
         setDetailError(
-          `实践草案已保存，但未完成表单未能清除：${draftCleanupError}`,
+          `技能与流程草案已保存，但未完成表单未能清除：${draftCleanupError}`,
+          item.id,
         );
       }
       setRevisionKey((value) => value + 1);
@@ -694,7 +746,7 @@ export const PracticeAssetsView = ({
     setSaving(true);
     setDetailError(null);
     try {
-      const updated = await api.revisePracticeAsset(selected.id, revision);
+      const updated = await api.revisePracticeAsset(selected.id, revision, revisionBasis ?? undefined);
       setSelected(updated);
       setEditing(false);
       setRevisionKey((value) => value + 1);
@@ -724,8 +776,27 @@ export const PracticeAssetsView = ({
     }
   };
 
+  // Done, but the status could not be read after: said as that. As a failure of the operation, a
+  // publish already written to the client invited publishing it again.
   const refreshPublicationStatuses = async (assetId: string): Promise<void> => {
-    setPublicationStatuses(await api.listPracticePublicationStatuses(assetId));
+    try {
+      setPublicationStatuses(await api.listPracticePublicationStatuses(assetId));
+    } catch (caught) {
+      setPublicationError(
+        `已完成，但发布状态暂时无法刷新：${caught instanceof Error ? caught.message : String(caught)}`,
+      );
+    }
+  };
+
+  // After a failed publish or rollback, the card is read again as things now are (a client file changed
+  // under it, say): left as it was, it offered only the action that had just failed, and no way to
+  // confirm overwriting. The failure said stands; a refresh that fails says nothing more.
+  const refreshAfterFailure = async (assetId: string): Promise<void> => {
+    try {
+      setPublicationStatuses(await api.listPracticePublicationStatuses(assetId));
+    } catch {
+      // The failure already said is the one that matters.
+    }
   };
 
   const publish = async (
@@ -740,7 +811,8 @@ export const PracticeAssetsView = ({
       setPendingPublicationAction(null);
       await refreshPublicationStatuses(selected.id);
     } catch (caught) {
-      setPublicationError(caught instanceof Error ? caught.message : String(caught));
+      setPublicationError(`发布操作失败：${caught instanceof Error ? caught.message : String(caught)}`);
+      await refreshAfterFailure(selected.id);
     } finally {
       setPublicationBusyTarget(null);
     }
@@ -757,7 +829,8 @@ export const PracticeAssetsView = ({
       setPendingPublicationAction(null);
       await refreshPublicationStatuses(selected.id);
     } catch (caught) {
-      setPublicationError(caught instanceof Error ? caught.message : String(caught));
+      setPublicationError(`发布操作失败：${caught instanceof Error ? caught.message : String(caught)}`);
+      await refreshAfterFailure(selected.id);
     } finally {
       setPublicationBusyTarget(null);
     }
@@ -1103,29 +1176,8 @@ export const PracticeAssetsView = ({
                   type="button"
                   className="text-button"
                   disabled={manualSaving}
-                  onClick={() => {
-                    void api
-                      .saveManualFormDraft({
-                        key: "practice_asset_manual",
-                        practiceKind: kind,
-                        sourcePrincipleIds: selectedPrinciples,
-                        input: manualDraft,
-                      })
-                      .then((saved) => {
-                        setManualFormDrafts((current) => [
-                          ...current.filter(
-                            (draft) => draft.key !== saved.key,
-                          ),
-                          saved,
-                        ]);
-                      })
-                      .catch((caught: unknown) => {
-                        setManualDraftStorageError(
-                          caught instanceof Error
-                            ? caught.message
-                            : String(caught),
-                        );
-                      });
+                  onClick={async () => {
+                    if (!(await draftKeptOnLeaving())) return;
                     setManualDraft(null);
                     setManualDraftRestoredAt(null);
                     setManualDraftPendingSelection(null);
@@ -1150,11 +1202,13 @@ export const PracticeAssetsView = ({
 
       {selected === null ? null : (
         <ModalDialog
-          title={selected.status === "candidate" ? "审核实践草案" : "技能与流程详情"}
+          title={selected.status === "candidate" ? "审核技能与流程草案" : "技能与流程详情"}
           description={`${kindLabels[selected.kind]} · ${selected.sourcePrincipleIds.length} 条来源原则`}
           size="wide"
           dismissible={
             !saving &&
+            // An edit is let go of only by 取消: a stray Escape or click outside threw it away.
+            !editing &&
             !regenerating &&
             !restoringVersion &&
             publicationBusyTarget === null
@@ -1226,7 +1280,7 @@ export const PracticeAssetsView = ({
                     </strong>
                     <p>
                       {(selected.migrationSourcePrincipleIds?.length ?? 0) > 0
-                        ? "采纳后会把原资产切换到合并原则，并保留原标识与历史；当前内容和客户端发布均保持不变。"
+                        ? "采纳后会把原资产切换到合并原则，并用这份草案的内容替换原资产的内容（原内容先存为可恢复的版本），保留原标识；当前客户端内容仍保持不变，之后由你确认是否发布更新。"
                         : "采纳后会更新原资产并保留原标识；当前客户端内容仍保持不变，之后由你确认是否发布更新。"}
                     </p>
                   </section>
@@ -1332,7 +1386,7 @@ export const PracticeAssetsView = ({
                   <span>失败处理</span>
                   <p>{selected.fallback}</p>
                 </section>
-                {selected.status === "accepted" ? (
+                {selected.status === "accepted" || publicationStatuses.some((status) => status.version !== null) ? (
                   <section className="practice-publication-section">
                     <header>
                       <div>
@@ -1473,7 +1527,7 @@ export const PracticeAssetsView = ({
                     )}
                     {publicationError === null ? null : (
                       <p className="error-message" role="alert">
-                        发布操作失败：{publicationError}
+                        {publicationError}
                       </p>
                     )}
                   </section>
@@ -1654,7 +1708,7 @@ export const PracticeAssetsView = ({
                         className="text-button"
                         disabled={saving}
                         onClick={() => {
-                          setRevision(revisionFrom(selected));
+                          beginRevision(selected);
                           setDetailError(null);
                           setEditing(true);
                         }}
@@ -1687,7 +1741,7 @@ export const PracticeAssetsView = ({
                           saving || publicationBusyTarget !== null
                         }
                         onClick={() => {
-                          setRevision(revisionFrom(selected));
+                          beginRevision(selected);
                           setDetailError(null);
                           setPublicationError(null);
                           setPendingPublicationAction(null);
@@ -1701,9 +1755,9 @@ export const PracticeAssetsView = ({
                 </footer>
               </>
             )}
-            {detailError === null ? null : (
+            {detailError === null || detailError.id !== selected.id ? null : (
               <p className="error-message" role="alert">
-                操作失败：{detailError}
+                操作失败：{detailError.text}
               </p>
             )}
           </article>

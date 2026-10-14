@@ -88,9 +88,10 @@ describe("ManualFormDraftStore", () => {
         (draft) => draft.updatedAt === "2026-08-08T12:00:00.000Z",
       ),
     ).toBe(true);
-    expect((await stat(path)).mode & 0o777).toBe(0o600);
-    expect(await readFile(path, "utf8")).toContain("decision-private-1");
-    expect(await readFile(path, "utf8")).toContain("principle-private-2");
+    const written = join(root, "drafts.v2.json");
+    expect((await stat(written)).mode & 0o777).toBe(0o600);
+    expect(await readFile(written, "utf8")).toContain("decision-private-1");
+    expect(await readFile(written, "utf8")).toContain("principle-private-2");
     expect(drafts).toContainEqual(
       expect.objectContaining({
         key: "methodology_revision",
@@ -100,6 +101,43 @@ describe("ManualFormDraftStore", () => {
         }),
       }),
     );
+  });
+
+  it("keeps a practice draft with more lines than an asset takes, every draft at its fullest still readable", async () => {
+    const root = await mkdtemp(join(tmpdir(), "manual-form-drafts-"));
+    const store = new ManualFormDraftStore(join(root, "drafts.json"));
+    const text = (length: number) => "验".repeat(length);
+    const ids = Array.from({ length: 5 }, (_, index) => `${index}`.padEnd(200, "x"));
+    const principle = { title: text(120), principle: text(2_000), appliesWhen: text(2_000), caution: text(2_000) };
+    const withEvidence = { ...principle, evidenceSummary: text(3_000), sourceDecisionIds: ids };
+
+    await store.save({ key: "methodology_manual", input: principle });
+    await store.save({ key: "methodology_evidence_manual", input: withEvidence });
+    await store.save({ key: "methodology_merge", sourcePrincipleIds: ids, input: withEvidence });
+    await store.save({
+      key: "methodology_revision",
+      sourcePrincipleId: ids[0]!,
+      sourceUpdatedAt: "2026-08-07T12:00:00.000Z",
+      sourceSnapshot: withEvidence,
+      input: withEvidence,
+    });
+    // Thirteen steps pasted in, past the twelve an asset takes, and a long line: still being written.
+    await store.save({
+      key: "practice_asset_manual",
+      practiceKind: "skill",
+      sourcePrincipleIds: ids,
+      input: {
+        title: text(120),
+        summary: text(800),
+        trigger: text(1_500),
+        steps: Array.from({ length: 30 }, () => text(600)),
+        checks: Array.from({ length: 20 }, () => text(600)),
+        fallback: text(1_500),
+      },
+    });
+
+    // All of it under the size the file is read back at.
+    await expect(store.list()).resolves.toHaveLength(5);
   });
 
   it("replaces a draft by workflow and deletes it explicitly", async () => {
@@ -205,6 +243,58 @@ describe("ManualFormDraftStore", () => {
         input: revision,
       }),
     ).rejects.toThrow();
+  });
+
+  it("keeps drafts past 1.1.0's limits out of 1.1.0's file, starting from what that file holds", async () => {
+    const root = await mkdtemp(join(tmpdir(), "manual-form-drafts-"));
+    const path = join(root, "drafts.json");
+    // 1.1.0's drafts, as it wrote them.
+    const earlier = `${JSON.stringify({
+      version: 1,
+      drafts: [{ key: "methodology_manual", input: { title: "写到一半", principle: "", appliesWhen: "", caution: "" }, updatedAt: "2026-08-01T12:00:00.000Z" }],
+    }, null, 2)}\n`;
+    await writeFile(path, earlier, "utf8");
+    const store = new ManualFormDraftStore(path);
+    await expect(store.list()).resolves.toMatchObject([{ key: "methodology_manual", input: { title: "写到一半" } }]);
+
+    // Thirteen steps, one past what 1.1.0 takes: in its file, 1.1.0 called every form's draft corrupt.
+    await store.save({
+      key: "practice_asset_manual",
+      practiceKind: "skill",
+      sourcePrincipleIds: ["principle-1"],
+      input: { title: "发布前检查", summary: "", trigger: "", steps: Array.from({ length: 13 }, (_, index) => `第 ${index + 1} 步`), checks: [], fallback: "" },
+    });
+
+    expect(await readFile(path, "utf8")).toBe(earlier);
+    expect((await store.list()).map((draft) => draft.key)).toEqual(["methodology_manual", "practice_asset_manual"]);
+  });
+
+  it("takes a draft out of 1.1.0's file as well once this build ends or replaces it", async () => {
+    const root = await mkdtemp(join(tmpdir(), "manual-form-drafts-"));
+    const path = join(root, "drafts.json");
+    // 1.1.0's drafts, as it wrote them: two forms half filled.
+    await writeFile(path, `${JSON.stringify({
+      version: 1,
+      drafts: [
+        { key: "methodology_manual", input: { title: "裁员名单的取舍", principle: "私密内容", appliesWhen: "", caution: "" }, updatedAt: "2026-08-01T12:00:00.000Z" },
+        { key: "practice_asset_manual", practiceKind: "skill", sourcePrincipleIds: ["principle-1"], input: { title: "发布前检查", summary: "", trigger: "", steps: ["第 1 步"], checks: [], fallback: "" }, updatedAt: "2026-08-01T12:00:00.000Z" },
+      ],
+    }, null, 2)}\n`, "utf8");
+    const store = new ManualFormDraftStore(path);
+
+    // Submitted here: left in 1.1.0's file, its text stayed on disk, and 1.1.0 put it back in the form.
+    await store.delete("methodology_manual");
+    expect(await readFile(path, "utf8")).not.toContain("裁员名单的取舍");
+    expect(await readFile(path, "utf8")).toContain("发布前检查");
+    // Replaced here, past what 1.1.0 takes: 1.1.0's older one goes too.
+    await store.save({
+      key: "practice_asset_manual",
+      practiceKind: "skill",
+      sourcePrincipleIds: ["principle-1"],
+      input: { title: "发布前检查", summary: "", trigger: "", steps: Array.from({ length: 13 }, (_, index) => `第 ${index + 1} 步`), checks: [], fallback: "" },
+    });
+    expect(JSON.parse(await readFile(path, "utf8"))).toEqual({ version: 1, drafts: [] });
+    expect((await store.list()).map((draft) => draft.key)).toEqual(["practice_asset_manual"]);
   });
 
   it("does not overwrite a corrupted draft file", async () => {

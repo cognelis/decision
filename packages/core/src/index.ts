@@ -9,9 +9,12 @@ export type {
 
 export {
   DecisionPersistenceError,
+  fileSystemRefusal,
   RationaleQueue,
   rationaleCandidateKey,
   rationaleSemanticKey,
+  RecoveryQueueWriteError,
+  LocalDecisionWriteError,
 } from "./rationale-queue.js";
 export type {
   CrossModeDuplicate,
@@ -22,10 +25,17 @@ export type {
   RationaleSubmission,
 } from "./rationale-queue.js";
 
-export { createDecisionRecord } from "./record.js";
+export {
+  createDecisionRecord,
+  createManualDecisionRecord,
+  prCommentSemanticKey,
+  RESERVED_SECTION_TEXT,
+} from "./record.js";
 export type {
   DecisionRecord,
+  DecisionRecordSourceClient,
   DecisionType,
+  ManualDecisionInput,
   OutcomeReview,
   OutcomeVerdict,
   PersistedDecisionStatus,
@@ -35,6 +45,28 @@ export type {
   RationaleStatus,
   SelectedAnswer,
 } from "./record.js";
+
+export { createJournalEntry, languageLabel, normalizedLanguages, reviseJournalEntry } from "./journal-entry.js";
+export type {
+  EvidenceMaturity,
+  IdeaEntryDraft,
+  IdeaEntrySnapshot,
+  IdeaForm,
+  JournalEntry,
+  JournalEntryChange,
+  JournalEntryDraft,
+  JournalEntryKind,
+  JournalEntryRevisionEvent,
+  JournalEntrySnapshot,
+  JournalEntrySource,
+  KnowledgeStatus,
+  PreferenceEntryDraft,
+  PreferenceEntrySnapshot,
+  PreferenceStrength,
+  ProactiveSourceKind,
+  RecordSensitivity,
+  SourceForm,
+} from "./journal-entry.js";
 
 export type {
   MethodologyConfidence,
@@ -115,12 +147,21 @@ export type {
   MethodologySuggestionEvidence,
   MethodologySuggestionReadiness,
 } from "./methodology-suggestion.js";
-export { buildMethodologyEvidenceMatches } from "./methodology-evidence-match.js";
+export {
+  buildMethodologyEvidenceMatches,
+  withSemanticEvidenceMatches,
+} from "./methodology-evidence-match.js";
 export type {
   MethodologyEvidenceMatch,
   MethodologyEvidenceMatchInput,
   MethodologyEvidenceMatchStrength,
+  MethodologyEvidenceSemanticCandidate,
 } from "./methodology-evidence-match.js";
+export { buildJournalRecall, JOURNAL_STANDING } from "./journal-recall.js";
+export type {
+  JournalRecallMatch,
+  JournalRecallStrength,
+} from "./journal-recall.js";
 export { buildMethodologyRecall } from "./methodology-recall.js";
 export type {
   MethodologyRecallInput,
@@ -144,6 +185,12 @@ export type {
   DecisionAnalyticsTotals,
   DecisionAnalyticsTrend,
   DecisionAnalyticsVerdict,
+  DecisionRetrospective,
+  DecisionRetrospectiveLesson,
+  DecisionRetrospectivePeriod,
+  DecisionRetrospectivePrinciple,
+  DecisionRetrospectiveProject,
+  DecisionRetrospectiveRepeat,
 } from "./decision-analytics.js";
 
 export {
@@ -151,7 +198,7 @@ export {
   rationaleFactorLabel,
 } from "./rationale-factors.js";
 
-export { TextDecisionAnalyzer } from "./text-decision-analyzer.js";
+export { TextDecisionAnalyzer, isCompletedDecisionStatus } from "./text-decision-analyzer.js";
 export type {
   CompletedDecisionAnalysis,
   DecisionBand,
@@ -167,3 +214,6 @@ export type {
   SemanticRoutingInput,
   ValidatedSemanticClassification,
 } from "./semantic-router.js";
+export { assessDecisionApplicability } from "./decision-applicability.js";
+export { buildDecisionLifecycle, decisionReferenceKey, decisionRelationKey, canonicalDecisionRelation, decisionRelationState } from "./decision-lifecycle.js";
+export type { DecisionLifecycleDocument } from "./decision-lifecycle.js";

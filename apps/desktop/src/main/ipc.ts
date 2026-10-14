@@ -1,3 +1,31 @@
+import { managedQwenModelIdSchema, managedQwenModelStatusSchema } from "@cognelis/decision-protocol";
+import { prDiscussionSchema, prActionContextSchema, prActionRequestSchema, prActionResultSchema, prReviewCommentRequestSchema, prGeneralCommentRequestSchema, prReviewCommentResultSchema, prReviewReevaluateSchema, prReviewVerdictSchema, prReviewFileRequestSchema, prReviewFileResponseSchema, prReviewDiffRequestSchema, prReviewDiffResponseSchema, prReviewFollowUpSchema, prReviewFollowUpResultSchema, prConnectionSchema, prConnectionInputSchema, prListQuerySchema, prListResponseSchema, prReviewLoadSchema, prReviewPrefetchSchema, prReviewSnapshotSchema, prReviewRunSchema, prReviewReportSchema } from "@cognelis/decision-protocol";
+import { proactiveRecordInputSchema } from "../shared/proactive-record.js";
+import { decisionFeedbackUpdateSchema, decisionFeedbackUpdateResultSchema, decisionFeedbackQuerySchema, decisionFeedbackResponseSchema } from "@cognelis/decision-protocol";
+import { DESKTOP_PRIMARY_SURFACES } from "../shared/renderer-api.js";
+import type { DecisionApi, DecisionEvidenceApi } from "../shared/renderer-api.js";
+import {
+  assistantSourceCheckSchema,
+  assistantTurnRequestSchema,
+  assistantTurnResponseSchema,
+  assistantFeedbackInputSchema,
+  assistantFeedbackSummarySchema,
+  assistantExportResultSchema,
+  assistantFeedbackResultSchema,
+  retrievalAnswerProviderSchema,
+  retrievalAnswerCitationSchema,
+  retrievalAnswerScopeSchema,
+} from "@cognelis/decision-protocol";
+import type {
+  AssistantExportResult,
+  AssistantFeedbackInput,
+  AssistantFeedbackSummary,
+  AssistantFeedbackResult,
+  AssistantTurnRequest,
+  AssistantTurnResponse,
+  RetrievalAnswerProvider,
+} from "@cognelis/decision-protocol";
+import { decisionContextQuerySchema, decisionContextResponseSchema, decisionScopeUpdateSchema, decisionScopeUpdateResultSchema, decisionRelationUpdateSchema, decisionRelationUpdateResultSchema, decisionSourceReferenceSchema, decisionSourceOpenResultSchema, decisionHandoffRequestSchema, decisionHandoffResponseSchema } from "@cognelis/decision-protocol";
 import type {
   DecisionAnalyticsSnapshot,
   DecisionCandidateQueue,
@@ -14,6 +42,7 @@ import type {
   PracticePublicationTarget,
   RationaleQueue,
 } from "@cognelis/decision-core";
+import { fileSystemRefusal, RESERVED_SECTION_TEXT } from "@cognelis/decision-core";
 import type {
   DecisionConsultationFeedbackResult,
   DecisionConsultationMetricsSnapshot,
@@ -36,6 +65,10 @@ import {
   THEME_PREFERENCES,
   type ThemePreference,
 } from "../shared/appearance.js";
+import {
+  CAPTURE_CLASSIFIERS,
+  type CaptureClassifier,
+} from "../shared/capture-classifier.js";
 import type {
   AppSnapshot,
   DecisionLibraryItem,
@@ -69,8 +102,17 @@ import type {
   ModelProviderMutationInput,
   ModelProviderTestResult,
   RationaleInput,
+  ProactiveRecordInput,
+  ProactiveRecordResult,
+  JournalEntry,
+  JournalEntryListQuery,
+  JournalEntryRevisionInput,
 } from "../shared/renderer-api.js";
 import { IPC_CHANNELS } from "../shared/renderer-api.js";
+import type {
+  ObsidianSearchResponse,
+  ObsidianSearchStatus,
+} from "../shared/obsidian-search.js";
 import { manualFormDraftInputSchema } from "./manual-form-draft-store.js";
 
 export { IPC_CHANNELS };
@@ -88,8 +130,13 @@ const decisionLibraryQuerySchema = z
     query: z.string().max(200),
     searchMode: z.enum(["keyword", "semantic"]).optional(),
     decisionId: candidateIdSchema.optional(),
+    createdSince: z.string().datetime({ offset: true }).optional(),
     rationaleStatus: z.enum(["captured", "deferred", "skipped"]).optional(),
-    sourceClient: z.enum(["claude-code", "codex", "test"]).optional(),
+    sourceClient: z.enum(["claude-code", "codex", "manual", "pr-comment", "test"]).optional(),
+    project: z.string().trim().min(1).max(500).optional(),
+    outcomeVerdict: z
+      .enum(["better", "as_expected", "mixed", "worse", "unclear"])
+      .optional(),
     reviewState: z
       .enum([
         "pending_outcome",
@@ -99,6 +146,7 @@ const decisionLibraryQuerySchema = z
         "due",
         "scheduled",
         "unscheduled",
+        "expectation_missing",
       ])
       .optional(),
     limit: z.number().int().min(1).max(200).optional(),
@@ -114,17 +162,246 @@ const parseDecisionLibraryQuery = (input: unknown): DecisionLibraryQuery => {
     ...(parsed.decisionId === undefined
       ? {}
       : { decisionId: parsed.decisionId }),
+    ...(parsed.createdSince === undefined
+      ? {}
+      : { createdSince: parsed.createdSince }),
     ...(parsed.rationaleStatus === undefined
       ? {}
       : { rationaleStatus: parsed.rationaleStatus }),
     ...(parsed.sourceClient === undefined
       ? {}
       : { sourceClient: parsed.sourceClient }),
+    ...(parsed.project === undefined ? {} : { project: parsed.project }),
+    ...(parsed.outcomeVerdict === undefined
+      ? {}
+      : { outcomeVerdict: parsed.outcomeVerdict }),
     ...(parsed.reviewState === undefined
       ? {}
       : { reviewState: parsed.reviewState }),
     ...(parsed.limit === undefined ? {} : { limit: parsed.limit }),
   };
+};
+const journalEntryListQuerySchema = z.object({
+  query: z.string().trim().max(200).optional(),
+  kind: z.enum(["preference", "idea"]).optional(),
+  knowledgeStatus: z.enum(["inbox", "active", "archived"]).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+}).strict();
+const journalDraftCommonShape = {
+  title: z.string().trim().min(1).max(500),
+  content: z.string().trim().min(1).max(8_000),
+  knowledgeStatus: z.enum(["inbox", "active", "archived"]).optional(),
+  context: z.string().trim().min(1).max(8_000).nullable().optional(),
+  rationale: z.string().trim().min(1).max(8_000).nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(100)).max(12).optional(),
+  languages: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
+};
+const journalEntryRevisionSchema = z.object({
+  id: candidateIdSchema,
+  draft: z.discriminatedUnion("kind", [
+    z.object({
+      ...journalDraftCommonShape,
+      kind: z.literal("preference"),
+      appliesWhen: z.string().trim().min(1).max(4_000).nullable().optional(),
+      exceptions: z.string().trim().min(1).max(4_000).nullable().optional(),
+      strength: z.enum(["hard_constraint", "default", "weak_signal"]).optional(),
+      evidenceMaturity: z.enum(["self_declared", "repeated", "reviewed"]).optional(),
+    }).strict(),
+    z.object({
+      ...journalDraftCommonShape,
+      kind: z.literal("idea"),
+      ideaForm: z.enum(["observation", "question", "hypothesis", "possibility"]).optional(),
+      whyInteresting: z.string().trim().min(1).max(4_000).nullable().optional(),
+      openQuestions: z.array(z.string().trim().min(1).max(1_000)).max(8).optional(),
+      nextTest: z.string().trim().min(1).max(4_000).nullable().optional(),
+      incubateUntil: z.string().date().nullable().optional(),
+    }).strict(),
+  ]),
+  change: z.object({
+    changeNote: z.string().trim().min(1).max(1_000),
+    sourceKind: z.enum(["app_manual", "offline_conversation", "meeting", "observation"]),
+    sourceForm: z.enum(["user_original", "user_paraphrase"]),
+  }).strict(),
+  basis: z.string().max(200_000).optional(),
+}).strict();
+const isCodePointLengthWithin = (
+  value: string,
+  minimum: number,
+  maximum: number,
+): boolean => {
+  let count = 0;
+  for (const _codePoint of value) {
+    count += 1;
+    if (count > maximum) {
+      return false;
+    }
+  }
+  return count >= minimum;
+};
+const boundedTextSchema = (
+  rawCodeUnitMaximum: number,
+  minimumCodePoints: number,
+  maximumCodePoints: number,
+  description: string,
+) =>
+  z
+    .string()
+    .max(rawCodeUnitMaximum)
+    .refine(
+      (value) =>
+        isCodePointLengthWithin(value, minimumCodePoints, maximumCodePoints),
+      `${description} must be ${minimumCodePoints} to ${maximumCodePoints} Unicode code points`,
+    );
+const graphemeSegmenter = new Intl.Segmenter(undefined, {
+  granularity: "grapheme",
+});
+const isGraphemeLengthAtMost = (value: string, maximum: number): boolean => {
+  let count = 0;
+  for (const _grapheme of graphemeSegmenter.segment(value)) {
+    count += 1;
+    if (count > maximum) {
+      return false;
+    }
+  }
+  return true;
+};
+const boundedGraphemeTextSchema = (
+  rawCodeUnitMaximum: number,
+  maximumGraphemes: number,
+  description: string,
+) =>
+  z
+    .string()
+    .max(rawCodeUnitMaximum)
+    .refine(
+      (value) => isGraphemeLengthAtMost(value, maximumGraphemes),
+      `${description} must be at most ${maximumGraphemes} graphemes`,
+    );
+const obsidianSearchQuerySchema = z
+  .string()
+  .max(4_096)
+  .transform((value) => value.trim())
+  .refine(
+    (value) => isCodePointLengthWithin(value, 1, 500),
+    "Search query must be 1 to 500 Unicode code points",
+  );
+const obsidianSearchInputSchema = z
+  .object({
+    query: obsidianSearchQuerySchema,
+    limit: z.number().int().min(1).max(50).optional(),
+  })
+  .strict();
+const parseObsidianSearchInput = (
+  input: unknown,
+): { query: string; limit?: number } => {
+  const parsed = obsidianSearchInputSchema.parse(input);
+  return parsed.limit === undefined
+    ? { query: parsed.query }
+    : { query: parsed.query, limit: parsed.limit };
+};
+const obsidianNotePathSchema = z
+  .string()
+  .max(8_192)
+  .refine(
+    (value) => isCodePointLengthWithin(value, 1, 4_096),
+    "Note path must be 1 to 4096 Unicode code points",
+  )
+  .refine((value) => !value.includes("\0"), "Note path cannot contain NUL")
+  .refine(
+    (value) => !value.includes("\\"),
+    "Note path cannot contain backslashes",
+  )
+  .refine((value) => !value.startsWith("/"), "Note path must be relative")
+  .refine(
+    (value) => !/^[A-Za-z]:/u.test(value),
+    "Note path must be relative",
+  )
+  .refine(
+    (value) =>
+      value
+        .split("/")
+        .every(
+          (segment) =>
+            segment !== "" && segment !== "." && segment !== "..",
+        ),
+    "Note path cannot contain empty or traversal segments",
+  )
+  .refine(
+    (value) =>
+      value.toLowerCase().endsWith(".md") &&
+      value.split("/").at(-1)?.toLowerCase() !== ".md",
+    "Note path must name a Markdown file",
+  );
+const isCanonicalIsoTimestamp = (value: string): boolean => {
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString() === value;
+};
+const publicObsidianStatusMessageSchema = boundedTextSchema(
+  512,
+  1,
+  200,
+  "Status message",
+)
+  .refine(
+    (value) => !/[\0\r\n]/u.test(value),
+    "Status message cannot contain NUL or newlines",
+  )
+  .refine(
+    (value) => !/[\\/]/u.test(value),
+    "Status message cannot contain path separators",
+  );
+const obsidianSearchStatusSchema = z
+  .object({
+    state: z.enum(["idle", "indexing", "ready", "unavailable", "error"]),
+    discoveredNotes: z.number().int().min(0),
+    indexedNotes: z.number().int().min(0),
+    chunkCount: z.number().int().min(0),
+    processedNotes: z.number().int().min(0),
+    totalNotes: z.number().int().min(0),
+    skippedNotes: z.number().int().min(0),
+    failedNotes: z.number().int().min(0),
+    synchronizedAt: z
+      .string()
+      .max(64)
+      .refine(isCanonicalIsoTimestamp, "Synchronized time must be canonical")
+      .nullable(),
+    semanticAvailable: z.boolean(),
+    message: publicObsidianStatusMessageSchema.nullable(),
+  })
+  .strict();
+const obsidianSearchResultSchema = z
+  .object({
+    relativePath: obsidianNotePathSchema,
+    title: boundedTextSchema(2_000, 0, 1_000, "Result title"),
+    heading: boundedTextSchema(1_200, 0, 600, "Result heading").nullable(),
+    snippet: boundedGraphemeTextSchema(4_096, 260, "Result snippet"),
+    matchKind: z.enum(["keyword", "semantic", "hybrid"]),
+  })
+  .strict();
+const obsidianSearchResponseSchema = z
+  .object({
+    query: boundedTextSchema(4_096, 1, 500, "Response query"),
+    results: z.array(obsidianSearchResultSchema).max(50),
+    status: obsidianSearchStatusSchema,
+  })
+  .strict();
+const OBSIDIAN_IPC_FAILURE_MESSAGES = {
+  status: "无法获取 Obsidian 搜索状态",
+  search: "无法搜索 Obsidian 笔记",
+  rebuild: "无法重建 Obsidian 搜索索引",
+  open: "无法打开 Obsidian 笔记",
+  openDocument: "无法打开这份 Vault 文档",
+} as const;
+const parseObsidianOperationOutput = async <Output>(
+  operation: () => Promise<unknown> | unknown,
+  schema: { parse(input: unknown): Output },
+  failureMessage: string,
+): Promise<Output> => {
+  try {
+    return schema.parse(await operation());
+  } catch {
+    throw new Error(failureMessage);
+  }
 };
 const decisionOutcomeInputSchema = z
   .object({
@@ -132,7 +409,24 @@ const decisionOutcomeInputSchema = z
     outcome: z
       .string()
       .max(8_000)
-      .refine((value) => value.trim().length > 0),
+      .refine((value) => value.trim().length > 0)
+      // Read back, such a line would end the section where the reader did not mean it to.
+      .refine((value) => !RESERVED_SECTION_TEXT.test(value), "实际结果里不能有「## 后续结果」「## 复盘结论」这类笔记分节标题或 decision 标记，请改写后再保存"),
+    // The note's hash when the editor was opened: changed since (in Obsidian), the save is refused.
+    basis: z.string().min(1).max(200).optional(),
+  })
+  .strict();
+const decisionExpectedOutcomeInputSchema = z
+  .object({
+    decisionId: candidateIdSchema,
+    expectedOutcome: z
+      .string()
+      .trim()
+      .min(1)
+      .max(4_000)
+      .refine((value) => !RESERVED_SECTION_TEXT.test(value), "预期结果里不能有「## 后续结果」「## 复盘结论」这类笔记分节标题或 decision 标记，请改写后再保存"),
+    // The note's hash when the editor was opened: changed since (in Obsidian), the save is refused.
+    basis: z.string().min(1).max(200).optional(),
   })
   .strict();
 const isCalendarDate = (value: string): boolean => {
@@ -163,6 +457,8 @@ const decisionReviewInputSchema = z
         .refine((value) => value.trim().length > 0),
       z.null(),
     ]),
+    // The note's hash when the editor was opened: changed since (in Obsidian), the save is refused.
+    basis: z.string().min(1).max(200).optional(),
   })
   .strict();
 const decisionAppliedPrinciplesInputSchema = z
@@ -214,13 +510,14 @@ const methodologyRevisionSchema = z
     appliesWhen: z.string().trim().min(1).max(2_000),
     caution: z.string().trim().min(1).max(2_000),
     evidenceSummary: z.string().trim().min(1).max(3_000),
+    basis: z.string().max(40_000).optional(),
   })
   .strict();
 const methodologyManualSchema = methodologyRevisionSchema
-  .omit({ id: true, evidenceSummary: true })
+  .omit({ id: true, evidenceSummary: true, basis: true })
   .strict();
 const methodologyEvidenceManualSchema = methodologyRevisionSchema
-  .omit({ id: true })
+  .omit({ id: true, basis: true })
   .extend({ sourceDecisionIds: methodologySourceIdsSchema })
   .strict();
 const manualFormDraftKeySchema = z.enum([
@@ -333,10 +630,11 @@ const practiceAssetRevisionSchema = z
     steps: z.array(z.string().trim().min(1).max(500)).min(2).max(12),
     checks: z.array(z.string().trim().min(1).max(500)).min(1).max(8),
     fallback: z.string().trim().min(1).max(1_500),
+    basis: z.string().max(64_000).optional(),
   })
   .strict();
 const practiceAssetManualSchema = practiceAssetRevisionSchema
-  .omit({ id: true })
+  .omit({ id: true, basis: true })
   .extend({
     kind: practiceAssetKindSchema,
     sourcePrincipleIds: methodologySourceIdsSchema,
@@ -406,6 +704,7 @@ const modelProviderTestResultSchema = z
         "authentication_failed",
         "authorization_failed",
         "rate_limited",
+        "quota_exhausted",
         "provider_unavailable",
         "invalid_output",
         "output_limit",
@@ -428,7 +727,18 @@ const modelProviderTestResultSchema = z
     diagnosticExcerpt: z.string().trim().min(1).max(2_000).optional(),
   })
   .strict();
+// Said as the knowledge page says it: refused here with no reason, the rationale step could not be fixed.
+const expectedOutcomeInputSchema = z
+  .string()
+  .max(4_000)
+  .refine((value) => value.trim().length > 0, "预期结果不能只有空白")
+  .refine((value) => !RESERVED_SECTION_TEXT.test(value), "预期结果里不能有「## 后续结果」「## 复盘结论」这类笔记分节标题或 decision 标记，请改写后再保存");
 const rationaleInputSchema = z.discriminatedUnion("status", [
+  z.object({ candidateId: candidateIdSchema, status: z.literal("local_only"),
+    rationale: z.string().max(8_000).refine(value => value.trim().length > 0).optional(),
+    reasonFactors: z.array(z.string().min(1).max(64)).max(8).optional(),
+    appliedPrincipleIds: appliedPrincipleIdsSchema.optional(), expectedOutcome: expectedOutcomeInputSchema.optional(),
+  }).strict(),
   z
     .object({
       candidateId: candidateIdSchema,
@@ -440,6 +750,7 @@ const rationaleInputSchema = z.discriminatedUnion("status", [
         .optional(),
       reasonFactors: z.array(z.string().min(1).max(64)).max(8).optional(),
       appliedPrincipleIds: appliedPrincipleIdsSchema.optional(),
+      expectedOutcome: expectedOutcomeInputSchema.optional(),
     })
     .strict()
     .refine(
@@ -453,6 +764,7 @@ const rationaleInputSchema = z.discriminatedUnion("status", [
       candidateId: candidateIdSchema,
       status: z.enum(["deferred", "skipped"]),
       appliedPrincipleIds: appliedPrincipleIdsSchema.optional(),
+      expectedOutcome: expectedOutcomeInputSchema.optional(),
     })
     .strict(),
   z
@@ -463,6 +775,24 @@ const rationaleInputSchema = z.discriminatedUnion("status", [
     .strict(),
 ]);
 
+/**
+ * A refusal a page can show as it is. zod's own message is its issues as JSON, in English; a page
+ * showing it told the reader nothing they could act on.
+ */
+const refusedInput = (error: z.ZodError): string => {
+  const issue = error.issues[0];
+  const reason = issue === undefined
+    ? "格式不符合要求"
+    : issue.code === "too_big"
+      ? `超出上限（最多 ${String(issue.maximum)} ${issue.origin === "array" || issue.origin === "set" ? "项" : "字"}）`
+      : issue.code === "too_small"
+        ? "内容为空或太短"
+        : /\p{Script=Han}/u.test(issue.message)
+          ? issue.message
+          : "格式不符合要求";
+  return `内容不符合要求：${reason}。`;
+};
+
 interface IpcMainLike {
   handle(
     channel: string,
@@ -471,7 +801,7 @@ interface IpcMainLike {
   removeHandler(channel: string): void;
 }
 
-export interface DecisionIpcOperations {
+export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   getSnapshot?(): AppSnapshot;
   openCandidateReview(): Promise<void> | void;
   closeCandidateReview(): Promise<void> | void;
@@ -481,7 +811,24 @@ export interface DecisionIpcOperations {
   openSurface(surface: DesktopPrimarySurface): Promise<void> | void;
   closePrimarySurface(): Promise<void> | void;
   listDecisions(query: DecisionLibraryQuery): Promise<DecisionLibraryItem[]>;
-  updateDecisionOutcome(decisionId: string, outcome: string): Promise<void>;
+  listDecisionProjects: DecisionApi["listDecisionProjects"];
+  createProactiveRecord(input: ProactiveRecordInput): Promise<ProactiveRecordResult>;
+  listJournalEntries(query: JournalEntryListQuery): Promise<JournalEntry[]>;
+  reviseJournalEntry(id: string, input: JournalEntryRevisionInput): Promise<JournalEntry>;
+  getObsidianSearchStatus?(): Promise<ObsidianSearchStatus>;
+  searchObsidian?(input: {
+    query: string;
+    limit?: number;
+  }): Promise<ObsidianSearchResponse>;
+  rebuildObsidianSearch?(): Promise<ObsidianSearchStatus>;
+  openObsidianNote?(relativePath: string): Promise<void>;
+  openVaultDocument?(relativePath: string): Promise<void>;
+  updateDecisionExpectedOutcome(
+    decisionId: string,
+    expectedOutcome: string,
+    basis?: string,
+  ): Promise<void>;
+  updateDecisionOutcome(decisionId: string, outcome: string, basis?: string): Promise<void>;
   updateDecisionReviewDueDate(
     decisionId: string,
     reviewDueDate: string | null,
@@ -489,6 +836,7 @@ export interface DecisionIpcOperations {
   updateDecisionReview(
     decisionId: string,
     input: DecisionOutcomeReviewInput,
+    basis?: string,
   ): Promise<OutcomeReview>;
   updateDecisionAppliedPrinciples(
     decisionId: string,
@@ -521,6 +869,7 @@ export interface DecisionIpcOperations {
   reviseMethodology(
     id: string,
     input: MethodologyRevisionInput,
+    basis?: string,
   ): Promise<MethodologyItem>;
   setMethodologyStatus(
     id: string,
@@ -560,7 +909,7 @@ export interface DecisionIpcOperations {
   ): Promise<MethodologyItem>;
   getMethodologyUsage(id: string): Promise<MethodologyUsageSnapshot>;
   getMethodologyValidationInbox(): Promise<MethodologyValidationItem[]>;
-  acknowledgeMethodologyValidation(id: string): Promise<MethodologyItem>;
+  acknowledgeMethodologyValidation(id: string, seen: { reviewedAt: string; decisionId: string }): Promise<MethodologyItem>;
   getMethodologyMergePlan(
     mergeId: string,
   ): Promise<MethodologyMergeLifecyclePlan>;
@@ -598,6 +947,7 @@ export interface DecisionIpcOperations {
   revisePracticeAsset(
     id: string,
     input: PracticeAssetRevisionInput,
+    basis?: string,
   ): Promise<PracticeAssetItem>;
   setPracticeAssetStatus(
     id: string,
@@ -622,14 +972,59 @@ export interface DecisionIpcOperations {
     target: PracticePublicationTarget,
   ): Promise<PracticePublicationReceipt>;
   chooseVault(): Promise<string | null>;
+  revealVault(): Promise<boolean>;
   installIntegrations(mode: InstallMode): Promise<InstallReport | unknown>;
+  removeIntegrations(): Promise<InstallReport | unknown>;
   rebuildIndex(): Promise<RebuildReport>;
   setTheme(theme: ThemePreference): Promise<void>;
   listModelTraces(): Promise<ModelInvocationTrace[]>;
   deleteModelTrace(traceId: string): Promise<boolean>;
   deleteModelTraceRequest(requestId: string): Promise<number>;
+  forgetAssistantTurns(turnIds: string[]): Promise<void>;
   clearModelTraces(): Promise<number>;
   setModelTraceContentEnabled(enabled: boolean): Promise<void>;
+  setReviewRemindersEnabled(enabled: boolean): Promise<void>;
+  setLocalCredentialsEnabled(enabled: boolean): Promise<void>;
+  setCaptureClassifier(classifier: CaptureClassifier): Promise<void>;
+  checkAssistantSource: DecisionApi["checkAssistantSource"];
+  searchAssistantSources: DecisionApi["searchAssistantSources"];
+  listPrConnections: DecisionApi["listPrConnections"];
+  savePrConnection: DecisionApi["savePrConnection"];
+  removePrConnection: DecisionApi["removePrConnection"];
+  checkPrConnection: DecisionApi["checkPrConnection"];
+  listPullRequests: DecisionApi["listPullRequests"];
+  loadPrReview: DecisionApi["loadPrReview"];
+  peekPrReview: DecisionApi["peekPrReview"];
+  prefetchPrReviews: DecisionApi["prefetchPrReviews"];
+  loadPrReviewDiff: DecisionApi["loadPrReviewDiff"];
+  getPrActionContext: DecisionApi["getPrActionContext"];
+  performPrAction: DecisionApi["performPrAction"];
+  publishPrReviewComment: DecisionApi["publishPrReviewComment"];
+  publishPrGeneralComment: DecisionApi["publishPrGeneralComment"];
+  reevaluatePrReviewFinding: DecisionApi["reevaluatePrReviewFinding"];
+  openReviewRulesDirectory: DecisionApi["openReviewRulesDirectory"];
+  listPrDiscussion: DecisionApi["listPrDiscussion"];
+  openPrLink: DecisionApi["openPrLink"];
+  openPr: DecisionApi["openPr"];
+  loadPrReviewFile: DecisionApi["loadPrReviewFile"];
+  runPrReview: DecisionApi["runPrReview"];
+  followUpPrReview: DecisionApi["followUpPrReview"];
+  cancelPrReview: DecisionApi["cancelPrReview"];
+  runAssistantTurn(
+    input: AssistantTurnRequest,
+  ): Promise<AssistantTurnResponse>;
+  listAssistantModels(): Promise<RetrievalAnswerProvider[]>;
+  cancelAssistantTurn(turnId: string): Promise<void>;
+  saveAssistantFeedback(
+    input: AssistantFeedbackInput,
+  ): Promise<AssistantFeedbackResult>;
+  exportAssistantConversation(input: {
+    suggestedName: string;
+    markdown: string;
+  }): Promise<AssistantExportResult>;
+  getAssistantFeedbackSummary(): Promise<AssistantFeedbackSummary>;
+  listManagedQwenModels: DecisionApi["listManagedQwenModels"];
+  installManagedQwenModel: DecisionApi["installManagedQwenModel"];
   listModelProviderProfiles(): Promise<RedactedModelProviderProfile[]>;
   saveModelProviderProfile(
     input: ModelProviderMutationInput,
@@ -644,6 +1039,9 @@ export interface DecisionIpcOperations {
   ): Promise<void>;
   skipDeferredRationale?(id: string): Promise<void>;
   discardDeferredRationale?(id: string): Promise<void>;
+  keepLocalRationale?(id: string, input: { rationale?: string; reasonFactors?: string[] }): Promise<void>;
+  listLocalDecisions?(query: string, offset: number): Promise<import("../shared/renderer-api.js").LocalDecisionPage>;
+  resolveLocalDecision?(id: string, action: "publish" | "discard"): Promise<void>;
 }
 
 interface RegisterDecisionIpcOptions {
@@ -687,6 +1085,13 @@ export const registerDecisionIpc = (
         }
         const current = options.queue.snapshot().current;
         if (current?.candidateId !== parsed.candidateId) {
+          if (parsed.status === "local_only" && options.operations.keepLocalRationale) {
+            const { candidateId, status: _status, ...completion } = parsed;
+            return options.operations.keepLocalRationale(candidateId, {
+              ...(completion.rationale === undefined ? {} : { rationale: completion.rationale }),
+              ...(completion.reasonFactors === undefined ? {} : { reasonFactors: completion.reasonFactors }),
+            });
+          }
           if (
             parsed.status === "captured" &&
             options.operations.completeDeferredRationale !== undefined
@@ -758,17 +1163,7 @@ export const registerDecisionIpc = (
       IPC_CHANNELS.openSurface,
       (_event, input) =>
         options.operations.openSurface(
-          z
-            .enum([
-              "dashboard",
-              "decisions",
-              "methodology",
-              "clients",
-              "models",
-              "activity",
-              "settings",
-            ])
-            .parse(input),
+          z.enum(DESKTOP_PRIMARY_SURFACES).parse(input),
         ),
     ],
     [
@@ -781,12 +1176,248 @@ export const registerDecisionIpc = (
         options.operations.listDecisions(parseDecisionLibraryQuery(input)),
     ],
     [
+      IPC_CHANNELS.listDecisionProjects,
+      async () =>
+        z
+          .array(z.object({ project: z.string().min(1).max(500), count: z.number().int().positive() }).strict())
+          .max(200)
+          .parse(await options.operations.listDecisionProjects()),
+    ],
+    [
+      IPC_CHANNELS.createProactiveRecord,
+      (_event, input) =>
+        options.operations.createProactiveRecord(
+          proactiveRecordInputSchema
+            // Here, not in the shared schema: the renderer cannot load the record module this comes from.
+            // Refused only when the note was written, it came back as an English internal message.
+            .refine(
+              (record) =>
+                record.kind !== "decision" ||
+                record.expectedOutcome === undefined ||
+                !RESERVED_SECTION_TEXT.test(record.expectedOutcome),
+              {
+                path: ["expectedOutcome"],
+                message:
+                  "预期结果里不能有「## 后续结果」「## 复盘结论」这类笔记分节标题或 decision 标记，请改写后再保存",
+              },
+            )
+            .parse(input),
+        ),
+    ],
+    [
+      IPC_CHANNELS.listJournalEntries,
+      (_event, input) =>
+        options.operations.listJournalEntries(
+          journalEntryListQuerySchema.parse(input) as JournalEntryListQuery,
+        ),
+    ],
+    [
+      IPC_CHANNELS.reviseJournalEntry,
+      (_event, input) => {
+        const parsed = journalEntryRevisionSchema.parse(input);
+        return options.operations.reviseJournalEntry(parsed.id, {
+          draft: parsed.draft,
+          change: parsed.change,
+          ...(parsed.basis === undefined ? {} : { basis: parsed.basis }),
+        } as JournalEntryRevisionInput);
+      },
+    ],
+    [
+      IPC_CHANNELS.getObsidianSearchStatus,
+      async (_event, input) => {
+        z.undefined().parse(input);
+        return parseObsidianOperationOutput(
+          () => {
+            if (options.operations.getObsidianSearchStatus === undefined) {
+              throw new Error();
+            }
+            return options.operations.getObsidianSearchStatus();
+          },
+          obsidianSearchStatusSchema,
+          OBSIDIAN_IPC_FAILURE_MESSAGES.status,
+        );
+      },
+    ],
+    [
+      IPC_CHANNELS.searchObsidian,
+      async (_event, input) => {
+        const parsed = parseObsidianSearchInput(input);
+        return parseObsidianOperationOutput(
+          () => {
+            if (options.operations.searchObsidian === undefined) {
+              throw new Error();
+            }
+            return options.operations.searchObsidian(parsed);
+          },
+          obsidianSearchResponseSchema,
+          OBSIDIAN_IPC_FAILURE_MESSAGES.search,
+        );
+      },
+    ],
+    [
+      IPC_CHANNELS.rebuildObsidianSearch,
+      async (_event, input) => {
+        z.undefined().parse(input);
+        return parseObsidianOperationOutput(
+          () => {
+            if (options.operations.rebuildObsidianSearch === undefined) {
+              throw new Error();
+            }
+            return options.operations.rebuildObsidianSearch();
+          },
+          obsidianSearchStatusSchema,
+          OBSIDIAN_IPC_FAILURE_MESSAGES.rebuild,
+        );
+      },
+    ],
+    [
+      IPC_CHANNELS.searchDecisionContext,
+      async (_event, input) => {
+        const parsed = decisionContextQuerySchema.parse(input);
+        const operation = options.operations.searchDecisionContext;
+        if (operation === undefined) throw new Error("请更新 App 后重试此操作。");
+        return decisionContextResponseSchema.parse(await operation(parsed));
+      },
+    ],
+    [
+      IPC_CHANNELS.updateDecisionScope,
+      async (_event, input) => {
+        const parsed = decisionScopeUpdateSchema.parse(input);
+        const operation = options.operations.updateDecisionScope;
+        if (operation === undefined) throw new Error("请更新 App 后重试此操作。");
+        return decisionScopeUpdateResultSchema.parse(await operation(parsed));
+      },
+    ],
+    [
+      IPC_CHANNELS.updateDecisionRelation,
+      async (_event, input) => {
+        const parsed = decisionRelationUpdateSchema.parse(input);
+        const operation = options.operations.updateDecisionRelation;
+        if (operation === undefined) throw new Error("请更新 App 后重试此操作。");
+        return decisionRelationUpdateResultSchema.parse(await operation(parsed));
+      },
+    ],
+    [
+      IPC_CHANNELS.openDecisionSource,
+      async (_event, input) => {
+        const parsed = decisionSourceReferenceSchema.parse(input);
+        const operation = options.operations.openDecisionSource;
+        if (operation === undefined) throw new Error("请更新 App 后重试此操作。");
+        return decisionSourceOpenResultSchema.parse(await operation(parsed));
+      },
+    ],
+    [
+      IPC_CHANNELS.prepareDecisionHandoff,
+      async (_event, input) => {
+        const parsed = decisionHandoffRequestSchema.parse(input);
+        const operation = options.operations.prepareDecisionHandoff;
+        if (operation === undefined) throw new Error("请更新 App 后重试此操作。");
+        return decisionHandoffResponseSchema.parse(await operation(parsed));
+      },
+    ],
+    [IPC_CHANNELS.saveDecisionContextFeedback, async (_event, input) => {
+      const parsed = decisionFeedbackUpdateSchema.parse(input);
+      const operation = options.operations.saveDecisionContextFeedback;
+      if (operation === undefined) throw new Error("请更新 App 后重试此操作。");
+      return decisionFeedbackUpdateResultSchema.parse(await operation(parsed));
+    }],
+    [IPC_CHANNELS.getDecisionContextFeedback, async (_event, input) => {
+      const parsed = decisionFeedbackQuerySchema.parse(input);
+      const operation = options.operations.getDecisionContextFeedback;
+      if (operation === undefined) throw new Error("请更新 App 后重试此操作。");
+      return decisionFeedbackResponseSchema.parse(await operation(parsed));
+    }],
+    [
+      IPC_CHANNELS.openObsidianNote,
+      async (_event, input) => {
+        const relativePath = obsidianNotePathSchema.parse(input);
+        return parseObsidianOperationOutput(
+          () => {
+            if (options.operations.openObsidianNote === undefined) {
+              throw new Error();
+            }
+            return options.operations.openObsidianNote(relativePath);
+          },
+          z.undefined(),
+          OBSIDIAN_IPC_FAILURE_MESSAGES.open,
+        );
+      },
+    ],
+    [
+      IPC_CHANNELS.saveAssistantFeedback,
+      async (_event, input) =>
+        assistantFeedbackResultSchema.parse(
+          await options.operations.saveAssistantFeedback(
+            assistantFeedbackInputSchema.parse(input),
+          ),
+        ),
+    ],
+    [
+      IPC_CHANNELS.exportAssistantConversation,
+      async (_event, input) => {
+        const parsed = z
+          .object({
+            suggestedName: z.string().trim().min(1).max(200),
+            markdown: z.string().min(1).max(2_000_000),
+          })
+          .strict()
+          .parse(input);
+        return assistantExportResultSchema.parse(
+          await options.operations.exportAssistantConversation(parsed),
+        );
+      },
+    ],
+    [
+      IPC_CHANNELS.getAssistantFeedbackSummary,
+      async () =>
+        assistantFeedbackSummarySchema.parse(
+          await options.operations.getAssistantFeedbackSummary(),
+        ),
+    ],
+    [
+      IPC_CHANNELS.cancelAssistantTurn,
+      async (_event, input) => {
+        await options.operations.cancelAssistantTurn(
+          z.string().trim().min(1).max(200).parse(input),
+        );
+        return undefined;
+      },
+    ],
+    [
+      IPC_CHANNELS.openVaultDocument,
+      async (_event, input) => {
+        const relativePath = obsidianNotePathSchema.parse(input);
+        return parseObsidianOperationOutput(
+          () => {
+            if (options.operations.openVaultDocument === undefined) {
+              throw new Error();
+            }
+            return options.operations.openVaultDocument(relativePath);
+          },
+          z.undefined(),
+          OBSIDIAN_IPC_FAILURE_MESSAGES.openDocument,
+        );
+      },
+    ],
+    [
+      IPC_CHANNELS.updateDecisionExpectedOutcome,
+      (_event, input) => {
+        const parsed = decisionExpectedOutcomeInputSchema.parse(input);
+        return options.operations.updateDecisionExpectedOutcome(
+          parsed.decisionId,
+          parsed.expectedOutcome,
+          ...(parsed.basis === undefined ? [] as const : [parsed.basis] as const),
+        );
+      },
+    ],
+    [
       IPC_CHANNELS.updateDecisionOutcome,
       (_event, input) => {
         const parsed = decisionOutcomeInputSchema.parse(input);
         return options.operations.updateDecisionOutcome(
           parsed.decisionId,
           parsed.outcome,
+          ...(parsed.basis === undefined ? [] as const : [parsed.basis] as const),
         );
       },
     ],
@@ -797,7 +1428,7 @@ export const registerDecisionIpc = (
         return options.operations.updateDecisionReview(parsed.decisionId, {
           verdict: parsed.verdict,
           lesson: parsed.lesson,
-        });
+        }, ...(parsed.basis === undefined ? [] as const : [parsed.basis] as const));
       },
     ],
     [
@@ -918,13 +1549,16 @@ export const registerDecisionIpc = (
       IPC_CHANNELS.reviseMethodology,
       (_event, input) => {
         const parsed = methodologyRevisionSchema.parse(input);
-        return options.operations.reviseMethodology(parsed.id, {
+        const revision = {
           title: parsed.title,
           principle: parsed.principle,
           appliesWhen: parsed.appliesWhen,
           caution: parsed.caution,
           evidenceSummary: parsed.evidenceSummary,
-        });
+        };
+        return parsed.basis === undefined
+          ? options.operations.reviseMethodology(parsed.id, revision)
+          : options.operations.reviseMethodology(parsed.id, revision, parsed.basis);
       },
     ],
     [
@@ -1056,10 +1690,15 @@ export const registerDecisionIpc = (
     ],
     [
       IPC_CHANNELS.acknowledgeMethodologyValidation,
-      (_event, input) =>
-        options.operations.acknowledgeMethodologyValidation(
-          candidateIdSchema.parse(input),
-        ),
+      (_event, input) => {
+        // As the note holds it (an offset, no milliseconds, typed in Obsidian): main compares it as written.
+        const parsed = z.object({ id: candidateIdSchema, reviewedAt: z.string().min(1).max(100), decisionId: candidateIdSchema })
+          .strict().parse(input);
+        return options.operations.acknowledgeMethodologyValidation(parsed.id, {
+          reviewedAt: parsed.reviewedAt,
+          decisionId: parsed.decisionId,
+        });
+      },
     ],
     [
       IPC_CHANNELS.prepareMethodologyMergeAsset,
@@ -1160,7 +1799,7 @@ export const registerDecisionIpc = (
           steps: parsed.steps,
           checks: parsed.checks,
           fallback: parsed.fallback,
-        });
+        }, parsed.basis);
       },
     ],
     [
@@ -1226,6 +1865,7 @@ export const registerDecisionIpc = (
       },
     ],
     [IPC_CHANNELS.chooseVault, () => options.operations.chooseVault()],
+    [IPC_CHANNELS.revealVault, () => options.operations.revealVault()],
     [
       IPC_CHANNELS.installIntegrations,
       (_event, input) =>
@@ -1233,6 +1873,17 @@ export const registerDecisionIpc = (
           z.enum(["dry-run", "apply"]).parse(input),
         ),
     ],
+    [IPC_CHANNELS.removeIntegrations, () => options.operations.removeIntegrations()],
+    [IPC_CHANNELS.listLocalDecisions, (_event, input) => {
+      const value = z.object({ query: z.string().max(200), offset: z.number().int().min(0).max(1_000_000) }).strict().parse(input);
+      if (!options.operations.listLocalDecisions) throw new Error("本机记录不可用。");
+      return options.operations.listLocalDecisions(value.query, value.offset);
+    }],
+    [IPC_CHANNELS.resolveLocalDecision, (_event, input) => {
+      const value = z.object({ id: candidateIdSchema, action: z.enum(["publish", "discard"]) }).strict().parse(input);
+      if (!options.operations.resolveLocalDecision) throw new Error("本机记录不可用。");
+      return options.operations.resolveLocalDecision(value.id, value.action);
+    }],
     [IPC_CHANNELS.rebuildIndex, () => options.operations.rebuildIndex()],
     [
       IPC_CHANNELS.setTheme,
@@ -1253,6 +1904,13 @@ export const registerDecisionIpc = (
         ),
     ],
     [
+      IPC_CHANNELS.forgetAssistantTurns,
+      (_event, input) =>
+        options.operations.forgetAssistantTurns(
+          z.array(modelTraceIdSchema).max(1_000).parse(input),
+        ),
+    ],
+    [
       IPC_CHANNELS.clearModelTraces,
       () => options.operations.clearModelTraces(),
     ],
@@ -1262,6 +1920,81 @@ export const registerDecisionIpc = (
         options.operations.setModelTraceContentEnabled(
           z.boolean().parse(input),
         ),
+    ],
+    [
+      IPC_CHANNELS.setLocalCredentialsEnabled,
+      (_event, input) =>
+        options.operations.setLocalCredentialsEnabled(z.boolean().parse(input)),
+    ],
+    [
+      IPC_CHANNELS.setReviewRemindersEnabled,
+      (_event, input) =>
+        options.operations.setReviewRemindersEnabled(z.boolean().parse(input)),
+    ],
+    [
+      IPC_CHANNELS.setCaptureClassifier,
+      (_event, input) =>
+        options.operations.setCaptureClassifier(
+          z.enum(CAPTURE_CLASSIFIERS).parse(input),
+        ),
+    ],
+    [
+      IPC_CHANNELS.checkAssistantSource,
+      async (_event, input) => assistantSourceCheckSchema.parse(await options.operations.checkAssistantSource(retrievalAnswerCitationSchema.parse(input))),
+    ],
+    [
+      IPC_CHANNELS.searchAssistantSources,
+      async (_event, input: unknown) => {
+        const parsed = z.object({ query: z.string().trim().min(1).max(500), scope: retrievalAnswerScopeSchema }).strict().parse(input);
+        return z.object({ sources: z.array(retrievalAnswerCitationSchema).max(12), issues: z.array(z.string().max(1000)).max(20) }).strict().parse(await options.operations.searchAssistantSources(parsed));
+      },
+    ],
+    [IPC_CHANNELS.listPrConnections, async () => z.array(prConnectionSchema).max(20).parse(await options.operations.listPrConnections())],
+    [IPC_CHANNELS.savePrConnection, async (_event, input) => z.array(prConnectionSchema).max(20).parse(await options.operations.savePrConnection(prConnectionInputSchema.parse(input)))],
+    [IPC_CHANNELS.removePrConnection, async (_event, input) => z.array(prConnectionSchema).max(20).parse(await options.operations.removePrConnection(z.string().uuid().parse(input)))],
+    [IPC_CHANNELS.checkPrConnection, async (_event, input) => z.object({ account: z.string().min(1).max(300) }).strict().parse(await options.operations.checkPrConnection(z.string().uuid().parse(input)))],
+    [IPC_CHANNELS.listPullRequests, async (_event, input) => prListResponseSchema.parse(await options.operations.listPullRequests(prListQuerySchema.parse(input)))],
+    [IPC_CHANNELS.loadPrReviewFile, async (_event, input) => prReviewFileResponseSchema.parse(await options.operations.loadPrReviewFile(prReviewFileRequestSchema.parse(input)))],
+    [IPC_CHANNELS.getPrActionContext, async (_event, input) => prActionContextSchema.parse(await options.operations.getPrActionContext(prReviewDiffRequestSchema.parse(input)))],
+    [IPC_CHANNELS.performPrAction, async (_event, input) => prActionResultSchema.parse(await options.operations.performPrAction(prActionRequestSchema.parse(input)))],
+    [IPC_CHANNELS.publishPrReviewComment, async (_event, input) => prReviewCommentResultSchema.parse(await options.operations.publishPrReviewComment(prReviewCommentRequestSchema.parse(input)))],
+    [IPC_CHANNELS.publishPrGeneralComment, async (_event, input) => prReviewCommentResultSchema.parse(await options.operations.publishPrGeneralComment(prGeneralCommentRequestSchema.parse(input)))],
+    [IPC_CHANNELS.reevaluatePrReviewFinding, async (_event, input) => prReviewVerdictSchema.parse(await options.operations.reevaluatePrReviewFinding(prReviewReevaluateSchema.parse(input)))],
+    [IPC_CHANNELS.openReviewRulesDirectory, async () => { await options.operations.openReviewRulesDirectory(); }],
+    [IPC_CHANNELS.listPrDiscussion, async (_event, input) => prDiscussionSchema.parse(await options.operations.listPrDiscussion(prReviewLoadSchema.parse(input)))],
+    [IPC_CHANNELS.openPrLink, async (_event, url) => { await options.operations.openPrLink(z.string().url().max(2_000).parse(url)); }],
+    [IPC_CHANNELS.openPr, async (_event, input) => { await options.operations.openPr(prReviewLoadSchema.parse(input)); }],
+    [IPC_CHANNELS.loadPrReviewDiff, async (_event, input) => prReviewDiffResponseSchema.parse(await options.operations.loadPrReviewDiff(prReviewDiffRequestSchema.parse(input)))],
+    [IPC_CHANNELS.loadPrReview, async (_event, input) => prReviewSnapshotSchema.parse(await options.operations.loadPrReview(prReviewLoadSchema.parse(input)))],
+    [IPC_CHANNELS.peekPrReview, async (_event, input) => prReviewSnapshotSchema.nullable().parse(await options.operations.peekPrReview(prReviewLoadSchema.parse(input)))],
+    [IPC_CHANNELS.prefetchPrReviews, async (_event, input) => { await options.operations.prefetchPrReviews(prReviewPrefetchSchema.parse(input)); }],
+    [IPC_CHANNELS.runPrReview, async (_event, input) => prReviewReportSchema.parse(await options.operations.runPrReview(prReviewRunSchema.parse(input)))],
+    [IPC_CHANNELS.followUpPrReview, async (_event, input) => prReviewFollowUpResultSchema.parse(await options.operations.followUpPrReview(prReviewFollowUpSchema.parse(input)))],
+    [IPC_CHANNELS.cancelPrReview, async (_event, input) => options.operations.cancelPrReview(z.string().uuid().parse(input))],
+    [
+      IPC_CHANNELS.runAssistantTurn,
+      async (_event, input) =>
+        assistantTurnResponseSchema.parse(
+          await options.operations.runAssistantTurn(
+            assistantTurnRequestSchema.parse(input),
+          ),
+        ),
+    ],
+    [
+      IPC_CHANNELS.listAssistantModels,
+      async () =>
+        z
+          .array(retrievalAnswerProviderSchema)
+          .max(100)
+          .parse(await options.operations.listAssistantModels()),
+    ],
+    [
+      IPC_CHANNELS.listManagedQwenModels,
+      async () => z.array(managedQwenModelStatusSchema).max(2).parse(await options.operations.listManagedQwenModels()),
+    ],
+    [
+      IPC_CHANNELS.installManagedQwenModel,
+      async (_event, input) => options.operations.installManagedQwenModel(managedQwenModelIdSchema.parse(input)),
     ],
     [
       IPC_CHANNELS.listModelProviderProfiles,
@@ -1317,7 +2050,17 @@ export const registerDecisionIpc = (
   ];
 
   for (const [channel, handler] of handlers) {
-    options.ipcMain.handle(channel, handler);
+    options.ipcMain.handle(channel, async (event, input) => {
+      try {
+        return await handler(event, input);
+      } catch (error) {
+        if (error instanceof z.ZodError) throw new Error(refusedInput(error));
+        // A disk full or a folder refused, in words: from every write but a capture's, the page showed Node's own
+        // English line, with a temporary file's name in it.
+        const refusal = fileSystemRefusal(error);
+        throw refusal === null ? error : new Error(refusal, { cause: error });
+      }
+    });
   }
   return () => {
     for (const [channel] of handlers) {

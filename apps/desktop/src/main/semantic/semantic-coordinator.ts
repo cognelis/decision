@@ -1,5 +1,6 @@
 import {
   TextDecisionAnalyzer,
+  isCompletedDecisionStatus,
   routeSemanticDecision,
   validateSemanticClassification,
   type CompletedDecisionAnalysis,
@@ -18,7 +19,7 @@ import type {
   CaptureAuditRecordInput,
 } from "@cognelis/decision-storage";
 import { createHash } from "node:crypto";
-import { basename } from "node:path";
+import { decisionProjectFor } from "@cognelis/decision-integrations";
 
 import type {
   SemanticClassificationService,
@@ -40,6 +41,12 @@ interface SemanticDecisionCoordinatorOptions {
   runtime: SemanticRuntimeLike;
   audit: CaptureAuditLike;
   classifier?: SemanticClassificationService;
+  /**
+   * Whether a model is asked at all. Off by default in settings: this is the
+   * one model caller that runs on every turn without the reader asking, and on
+   * the fixed corpus the bundled model scored below the rules alone.
+   */
+  modelEnabled?: () => boolean;
   analyzer?: TextDecisionAnalyzer;
   now?: () => Date;
   timeoutMs?: number;
@@ -90,6 +97,7 @@ export class SemanticDecisionCoordinator {
   readonly #classifier:
     | SemanticClassificationService
     | undefined;
+  readonly #modelEnabled: () => boolean;
   readonly #analyzer: TextDecisionAnalyzer;
   readonly #now: () => Date;
   readonly #timeoutMs: number;
@@ -99,6 +107,7 @@ export class SemanticDecisionCoordinator {
     this.#runtime = options.runtime;
     this.#audit = options.audit;
     this.#classifier = options.classifier;
+    this.#modelEnabled = options.modelEnabled ?? (() => true);
     this.#analyzer =
       options.analyzer ?? new TextDecisionAnalyzer();
     this.#now = options.now ?? (() => new Date());
@@ -116,7 +125,7 @@ export class SemanticDecisionCoordinator {
 
   async process(
     pair: SemanticDecisionPair,
-  ): Promise<"processed"> {
+  ): Promise<"processed" | "deferred"> {
     const started = performance.now();
     const pending = this.#analyzer.analyze({
       userText: pair.context?.taskBackground ?? null,
@@ -127,7 +136,11 @@ export class SemanticDecisionCoordinator {
       : this.#analyzer.complete(pending, pair.userText);
     const ruleBand: SemanticBand = rule?.band ?? "low";
     const ruleScore = rule?.score ?? 0;
-    const model = await this.#classify(pair);
+    const completedStatus = isCompletedDecisionStatus(pair.userText);
+    const model = completedStatus ? null : await this.#classify(pair);
+    // Cut short by quit, which aborts every model call: left in the spool, the pair is read again at the next
+    // start, model and all, rather than by the rules alone now and never by the model.
+    if (this.#closed) return "deferred";
     const modelBand: SemanticModelBand =
       model?.band ?? "unavailable";
     const route = routeSemanticDecision({
@@ -135,6 +148,8 @@ export class SemanticDecisionCoordinator {
       ruleScore,
       modelBand,
       answerRelation: model?.answerRelation ?? null,
+      ruleSignals: completedStatus ? ["answer_is_status_update"] : rule?.signals ?? [],
+      ...(model === null ? {} : { modelIntent: model.decisionIntent }),
       pairAgeMs: Math.max(
         0,
         this.#now().getTime() - Date.parse(pair.capturedAt),
@@ -152,6 +167,7 @@ export class SemanticDecisionCoordinator {
       if (route.finalBand !== "low") {
         const event = this.#event(
           pair,
+          await decisionProjectFor(pair.cwd),
           rule,
           model,
           route.finalBand,
@@ -206,7 +222,9 @@ export class SemanticDecisionCoordinator {
   }
 
   async #classify(pair: SemanticDecisionPair) {
-    if (this.#classifier === undefined) {
+    // Not an error and not a failure to record: nothing was asked of a model,
+    // so the route reads `unavailable` and the rules answer on their own.
+    if (this.#classifier === undefined || !this.#modelEnabled()) {
       return null;
     }
     const controller = new AbortController();
@@ -245,6 +263,8 @@ export class SemanticDecisionCoordinator {
       ]);
       return validateSemanticClassification(pair, output);
     } catch (error) {
+      // A quit is not the model's failure.
+      if (this.#closed) return null;
       const errorCode: CaptureAuditErrorCode =
         controller.signal.aborted
           ? "classification_timeout"
@@ -290,6 +310,8 @@ export class SemanticDecisionCoordinator {
 
   #event(
     pair: SemanticDecisionPair,
+    // The repository's name, as search resolves it: a worktree or a subdirectory is the same project.
+    project: string,
     rule: CompletedDecisionAnalysis | null,
     model: ReturnType<
       typeof validateSemanticClassification
@@ -299,14 +321,22 @@ export class SemanticDecisionCoordinator {
     detectorVersion: string,
     signals: string[],
   ): CapturedDecisionEvent {
+    /*
+     * A model that read the exchange as "no decision here" has no standing to
+     * say what the decision was: the same reading produced its band, and the
+     * band was rejected. The rules lead in any case — they quote whole
+     * paragraphs of the message and can be checked against it — and the model
+     * only fills what they left empty.
+     */
+    const extraction = model === null || model.band === "low" ? null : model;
     const question =
-      model?.question ??
       rule?.question ??
+      extraction?.question ??
       fallbackQuestion(pair.assistantText);
     const options =
       (rule?.options.length ?? 0) > 0
         ? rule!.options
-        : (model?.optionLabels ?? []).map((label) => ({ label }));
+        : (extraction?.optionLabels ?? []).map((label) => ({ label }));
     const context = rule?.context ?? pair.context;
     return capturedDecisionEventSchema.parse({
       eventVersion: 1,
@@ -321,7 +351,7 @@ export class SemanticDecisionCoordinator {
         `${pair.userTurnId ?? "prompt"}`,
       batchId:
         `${pair.sourceClient}:${pair.sessionId}:semantic:${pair.pairId}`,
-      project: basename(pair.cwd),
+      project,
       cwd: pair.cwd,
       capturedAt: pair.capturedAt,
       ...(context === undefined

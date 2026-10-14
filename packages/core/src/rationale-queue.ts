@@ -6,6 +6,8 @@ import {
   type CapturedQuestion,
 } from "@cognelis/decision-protocol";
 import { createHash, randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { basename, dirname } from "node:path";
 
 export type RationaleSubmission =
   | {
@@ -13,11 +15,16 @@ export type RationaleSubmission =
       rationale?: string;
       reasonFactors?: string[];
       appliedPrincipleIds?: string[];
+      /** Written while the choice is fresh, before any outcome can colour it. */
+      expectedOutcome?: string;
     }
   | {
       status: "deferred" | "skipped";
       appliedPrincipleIds?: string[];
+      /** Already written when the rationale was put off or skipped: kept, as fresh as it was. */
+      expectedOutcome?: string;
     }
+  | { status: "local_only"; rationale?: string; reasonFactors?: string[]; appliedPrincipleIds?: string[]; expectedOutcome?: string }
   | { status: "not_recorded" };
 
 export interface RationaleCandidate {
@@ -32,6 +39,8 @@ export interface RationaleQueueSnapshot {
   current: RationaleCandidate | null;
   waitingCount: number;
   persistenceStatus?: "saving" | "failed";
+  /** Where a failed save failed: the vault, or the app's own recovery queue on this machine. */
+  persistenceFailure?: DecisionPersistenceError["store"];
 }
 
 export interface CrossModeDuplicate {
@@ -111,15 +120,77 @@ export const rationaleSemanticKey = (
     )
     .digest("hex");
 
+/**
+ * A file system refusal in words, naming the folder and never a temporary file in it: Node's own line ("ENOSPC: no
+ * space left on device, open '…/principle-1-….md.4242.….tmp'") reached the page and the agent as it was, from every
+ * write but a capture's. Null for anything else, which is said as it is.
+ */
+export const fileSystemRefusal = (cause: unknown): string | null => {
+  if (typeof cause !== "object" || cause === null || !("code" in cause)) return null;
+  const path = "path" in cause && typeof cause.path === "string" ? cause.path : null;
+  const syscall = "syscall" in cause ? cause.syscall : undefined;
+  // Held open for a moment (Obsidian, a sync client, an antivirus scan: Windows refuses the rename or unlink with
+  // EPERM or EBUSY, which renameReplacing retries a little): the folder's permissions are not the trouble, and a
+  // reader sent to check them went the wrong way.
+  if ((syscall === "rename" || syscall === "unlink") && (cause.code === "EPERM" || cause.code === "EBUSY")) {
+    return "文件正被其它程序占用（如 Obsidian、同步或杀毒软件），请稍后再试";
+  }
+  const making = syscall === "mkdir";
+  // A file's own folder (a note, its temporary copy), or the folder it is in.
+  let folder = path === null ? null : making || /\.[^./\\]+$/u.test(basename(path)) ? dirname(path) : path;
+  // A folder it could not make, in the nearest one there: a recursive mkdir names the whole path it was asked for
+  // (decisions/2026/10, where decisions was the one refused).
+  while (making && folder !== null && folder !== dirname(folder) && !existsSync(folder)) folder = dirname(folder);
+  switch (String(cause.code)) {
+    case "EACCES":
+    case "EPERM":
+      // Read or written: a folder it may not list (the preferences) is refused the same way.
+      return `没有访问${folder === null ? "这个文件夹" : ` ${folder} `}的权限，请检查它的权限设置`;
+    case "EROFS":
+      return `${folder === null ? "要写入的文件夹" : `${folder} `}所在的磁盘是只读的`;
+    case "ENOSPC":
+    case "EDQUOT":
+      return `磁盘空间不足${folder === null ? "" : `，没能写入 ${folder}`}，请清理出空间后再试`;
+    default:
+      return null;
+  }
+};
+
+/** A file system refusal in words: "EACCES: permission denied, mkdir '…'" told the reader nothing to do. */
+const persistenceReason = (cause: unknown, place = "仓库"): string => {
+  const code = typeof cause === "object" && cause !== null && "code" in cause ? String(cause.code) : "";
+  if (code === "EACCES" || code === "EPERM") return `没有写入${place}目录的权限，请检查它的权限设置`;
+  if (code === "EROFS") return `${place}所在的磁盘是只读的`;
+  if (code === "ENOSPC" || code === "EDQUOT") return "磁盘空间不足";
+  return cause instanceof Error ? cause.message : String(cause);
+};
+
+/**
+ * A save that failed in the app's own recovery queue on this machine, not in the vault, and whether the note
+ * was written before it: every failure was said to be Obsidian's, a note already written included.
+ */
+export class RecoveryQueueWriteError extends Error {
+  constructor(cause: unknown, noteWritten: boolean) {
+    const reason = persistenceReason(cause, "本机数据");
+    super(noteWritten ? `决策已写入 Obsidian，但本机恢复队列没能更新：${reason}` : `决策没能写入本机恢复队列：${reason}`, { cause });
+    this.name = "RecoveryQueueWriteError";
+  }
+}
+
+export class LocalDecisionWriteError extends Error {
+  constructor(cause: unknown) { super(`本机记录没能保存：${persistenceReason(cause)}`, { cause }); this.name = "LocalDecisionWriteError"; }
+}
+
 export class DecisionPersistenceError extends Error {
+  readonly store: "vault" | "recovery_queue" | "local";
+
   constructor(cause: unknown) {
     super(
-      `Decision persistence failed: ${
-        cause instanceof Error ? cause.message : String(cause)
-      }`,
+      cause instanceof RecoveryQueueWriteError || cause instanceof LocalDecisionWriteError ? cause.message : `决策没能写入 Obsidian：${persistenceReason(cause)}`,
       { cause },
     );
     this.name = "DecisionPersistenceError";
+    this.store = cause instanceof RecoveryQueueWriteError ? "recovery_queue" : cause instanceof LocalDecisionWriteError ? "local" : "vault";
   }
 }
 
@@ -140,6 +211,7 @@ export class RationaleQueue {
   #current: RationaleCandidate | null = null;
   #currentSubmission: RationaleSubmission | null = null;
   #persistenceFailed = false;
+  #persistenceFailure: DecisionPersistenceError["store"] = "vault";
 
   constructor(
     idFactory: IdFactory = randomUUID,
@@ -290,12 +362,17 @@ export class RationaleQueue {
     return this.#persist();
   }
 
+  /** Whether a question was taken in, queued still or disposed of since: brought again, it is a duplicate. */
+  has(candidateKey: string): boolean {
+    return this.#seen.has(candidateKey);
+  }
+
   snapshot(): RationaleQueueSnapshot {
     return {
       current: this.#current,
       waitingCount: this.#waiting.length,
       ...(this.#persistenceFailed
-        ? { persistenceStatus: "failed" as const }
+        ? { persistenceStatus: "failed" as const, persistenceFailure: this.#persistenceFailure }
         : this.#current?.status === "completed"
           ? { persistenceStatus: "saving" as const }
           : {}),
@@ -327,13 +404,20 @@ export class RationaleQueue {
     ) {
       throw new Error("Applied principle IDs are invalid");
     }
-    if (submission.status !== "captured") {
+    const expected = "expectedOutcome" in submission ? submission.expectedOutcome : undefined;
+    if (
+      expected !== undefined &&
+      (expected.trim().length === 0 || expected.length > 4_000)
+    ) {
+      throw new Error("An expected outcome needs 1 to 4000 characters");
+    }
+    if (submission.status !== "captured" && submission.status !== "local_only") {
       return;
     }
     const rationale = submission.rationale;
     const factorCount = submission.reasonFactors?.length ?? 0;
     if (
-      (rationale === undefined &&
+      (submission.status === "captured" && rationale === undefined &&
         factorCount === 0 &&
         appliedPrincipleIds.length === 0) ||
       (rationale !== undefined &&
@@ -389,9 +473,11 @@ export class RationaleQueue {
   #recordPersistenceFailure(
     error: unknown,
   ): DecisionPersistenceError {
+    const failure = new DecisionPersistenceError(error);
     this.#persistenceFailed = true;
+    this.#persistenceFailure = failure.store;
     this.#publish();
-    return new DecisionPersistenceError(error);
+    return failure;
   }
 
   #advance(): void {

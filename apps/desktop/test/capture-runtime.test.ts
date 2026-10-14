@@ -22,8 +22,10 @@ const semanticSpoolMethods = () => ({
 });
 
 interface TestIndex {
+  idsByRationaleStatus?(status: "deferred"): string[];
   listByRationaleStatus?(
     status: "deferred",
+    limit?: number,
   ): Array<{
     id: string;
     question: string;
@@ -82,19 +84,130 @@ const createRuntime = (index?: TestIndex) => {
       },
       indexed: true,
     })),
-    rebuildIndex: vi.fn(),
+    rebuildIndex: vi.fn(async () => ({ indexedCount: 0, diagnostics: [] as Array<{ path: string; message: string }> })),
   };
+  const localDecisions = { save: vi.fn((_record: DecisionRecord) => undefined), resolve: vi.fn(), has: vi.fn(() => false) };
   const runtime = new CaptureRuntime({
+    localDecisions,
     spool,
     candidateSpool,
     store,
     ...(index === undefined ? {} : { index }),
     idFactory: () => `id-${++sequence}`,
   });
-  return { candidateSpool, runtime, spool, store };
+  return { candidateSpool, runtime, spool, store, localDecisions };
 };
 
 describe("CaptureRuntime", () => {
+  it("saves local-only choices without writing the vault and retries a failed local write before acknowledging", async () => {
+    const { runtime, spool, store, localDecisions } = createRuntime();
+    await runtime.ingest(serverCaptureFixture());
+    localDecisions.save.mockImplementationOnce(() => { throw new Error("disk full"); });
+    await expect(runtime.queue.submit({ status: "local_only", rationale: "项目中的业务选择" })).rejects.toThrow("本机记录没能保存");
+    expect(runtime.queue.snapshot().persistenceFailure).toBe("local");
+    expect(spool.acknowledge).not.toHaveBeenCalled();
+    await runtime.queue.retryCurrentPersistence();
+    expect(localDecisions.save).toHaveBeenLastCalledWith(expect.objectContaining({ rationaleOriginal: "项目中的业务选择" }));
+    expect(store.save).not.toHaveBeenCalled();
+    expect(spool.acknowledge).toHaveBeenCalled();
+  });
+
+  it("does not restore an older deferred journal after the choice was already kept or resolved locally", async () => {
+    const { runtime, spool, localDecisions } = createRuntime();
+    spool.loadDisposition.mockResolvedValue({ status: "deferred" });
+    localDecisions.has.mockReturnValue(true);
+    await runtime.ingest(serverCaptureFixture());
+    expect(runtime.pendingRationales()).toEqual([]);
+    expect(spool.acknowledge).toHaveBeenCalled();
+    expect(localDecisions.resolve).not.toHaveBeenCalled();
+  });
+
+  it("transfers an existing deferred vault note once, without regenerating its contents after a receipt failure", async () => {
+    const hasDecision = vi.fn(() => false);
+    const { runtime, spool, store, localDecisions } = createRuntime({ hasDecision });
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+    const id = runtime.pendingRationales()[0]!.id;
+    hasDecision.mockReturnValue(true);
+    const transfer = vi.fn(async () => ({ note: { id, path: "/existing.md", contentHash: "hash" }, indexed: true }));
+    Object.assign(store, { keepDeferredLocally: transfer });
+    spool.acknowledge.mockRejectedValueOnce(new Error("receipt full"));
+    await expect(runtime.keepLocalRationale(id, {})).rejects.toThrow();
+    await runtime.keepLocalRationale(id, {});
+    expect(transfer).toHaveBeenCalledTimes(1);
+    expect(localDecisions.save).not.toHaveBeenCalled();
+    expect(runtime.pendingRationales()).toEqual([]);
+  });
+
+  it("clears a partial local write if the user later chooses not to retain the deferred capture", async () => {
+    const { runtime, spool, localDecisions } = createRuntime();
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+    const id = runtime.pendingRationales()[0]!.id;
+    spool.acknowledge.mockRejectedValueOnce(new Error("receipt full"));
+    await expect(runtime.keepLocalRationale(id, {})).rejects.toThrow();
+    expect(localDecisions.save).toHaveBeenCalled();
+    await runtime.discardDeferredRationale(id);
+    expect(localDecisions.resolve).toHaveBeenCalledWith(id, "discarded");
+  });
+
+  it("moves a deferred capture to local storage with its draft, without touching Obsidian", async () => {
+    const { runtime, store, localDecisions } = createRuntime();
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+    const id = runtime.pendingRationales()[0]!.id;
+    await runtime.keepLocalRationale(id, { rationale: "业务原因", reasonFactors: ["reuse"] });
+    expect(localDecisions.save).toHaveBeenCalledWith(expect.objectContaining({ rationaleOriginal: "业务原因", reasonFactors: ["reuse"] }));
+    expect(store.save).not.toHaveBeenCalled();
+    expect(runtime.pendingRationales()).toEqual([]);
+  });
+
+  it("takes in, while it runs, a capture its hook could only spool, once however often it is asked", async () => {
+    const { runtime, spool } = createRuntime();
+    const spooled = serverCaptureFixture();
+    // A hook that found the app too busy to prove itself in time: the capture went only to the spool.
+    const list = vi.fn(async () => [spooled]);
+    Object.assign(spool, { list });
+
+    // Read at startup alone, it waited there for the next start, days for an app that stays in the tray.
+    await Promise.all([runtime.recoverSpooled(), runtime.recoverSpooled()]);
+    expect(list).toHaveBeenCalledTimes(1);
+    const taken = runtime.queue.snapshot();
+    expect(taken.current?.event.sourceEventId).toBe(spooled.sourceEventId);
+
+    // Asked again, what is queued already stays as it is.
+    await runtime.recoverSpooled();
+    expect(runtime.queue.snapshot()).toMatchObject({ current: { candidateId: taken.current?.candidateId }, waitingCount: taken.waitingCount });
+    // And is not written to the spool or looked for among its semantic receipts again, as it was with each capture.
+    expect(spool.append).toHaveBeenCalledTimes(1);
+    expect(spool.claimCrossModeSemantic).toHaveBeenCalledTimes(1);
+  });
+
+  it("says which decision notes a rebuild could not read, rather than calling the index healthy", async () => {
+    const { runtime, store } = createRuntime();
+    vi.mocked(store.rebuildIndex).mockResolvedValueOnce({
+      indexedCount: 4,
+      diagnostics: [
+        { path: "/vault/Decision Journal/decisions/2026/09/dec-7.md", message: "Decision note must begin with YAML frontmatter" },
+        { path: "/vault/Decision Journal/decisions/2026/09/dec-8.md", message: "Flow sequence in block collection must be sufficiently indented and end with a ] at line 2, column 14:\n\nid: [unclosed\n             ^\n" },
+        { path: "/vault/Decision Journal/decisions/2026/09/dec-9 2.md", message: "与 dec-9.md 使用同一个决策 ID，列表里只会出现其中一篇" },
+      ],
+    });
+
+    await runtime.rebuildIndex();
+    expect(runtime.health()).toMatchObject({ index: "degraded", indexMessage: expect.stringContaining("3 处决策笔记这次没能读取") });
+    // In words: the parser's own English, a YAML error with its caret drawing, reached the settings page as it was. A
+    // duplicate id, said in Chinese already, is kept as it is.
+    expect(runtime.health().indexMessage).toContain("dec-7.md（开头没有 --- 包住的属性区）");
+    expect(runtime.health().indexMessage).toContain("dec-8.md（开头的属性区不是有效的 YAML，笔记第 3 行附近有误）");
+    expect(runtime.health().indexMessage).toContain("dec-9 2.md（与 dec-9.md 使用同一个决策 ID，列表里只会出现其中一篇）");
+
+    // Fixed and rebuilt: healthy again, and the message goes.
+    await runtime.rebuildIndex();
+    expect(runtime.health().index).toBe("healthy");
+    expect(runtime.health().indexMessage).toBeUndefined();
+  });
+
   it("promotes a reviewed candidate durably into the rationale queue", async () => {
     const { candidateSpool, runtime, spool } = createRuntime();
     const candidate = {
@@ -242,6 +355,34 @@ describe("CaptureRuntime", () => {
     );
   });
 
+  it("takes recording a candidate whose decision is recorded already as done, not as a failure", async () => {
+    const candidate = serverCandidateFixture();
+    const recordId = `decision-${rationaleCandidateKey(candidate.event, candidate.event.questions[0]!)}`;
+    const { candidateSpool, runtime } = createRuntime({
+      hasDecision: vi.fn((id: string) => id === recordId),
+    });
+
+    await runtime.ingestCandidate(candidate);
+    await runtime.confirmCurrentCandidate();
+
+    expect(candidateSpool.acknowledge).toHaveBeenCalledWith(candidate.candidateId);
+    expect(runtime.candidates.snapshot()).toEqual({ current: null, count: 0 });
+    expect(runtime.queue.snapshot().current).toBeNull();
+  });
+
+  it("still fails a record of a candidate the reader chose not to record when the queue had it", async () => {
+    const { candidateSpool, runtime } = createRuntime();
+    const candidate = serverCandidateFixture();
+    await runtime.ingest(candidate.event);
+    await runtime.queue.submit({ status: "not_recorded" });
+
+    await runtime.ingestCandidate(candidate);
+
+    // Seen and not recorded: taking "record" as done would record nothing and say nothing.
+    await expect(runtime.confirmCurrentCandidate()).rejects.toThrow(/Candidate persistence/u);
+    expect(candidateSpool.acknowledge).not.toHaveBeenCalled();
+  });
+
   it("prioritizes a promoted review without losing the existing rationale", async () => {
     const { runtime } = createRuntime();
     const existing = serverCaptureFixture({
@@ -313,6 +454,76 @@ describe("CaptureRuntime", () => {
     expect(runtime.candidates.snapshot().current).toBeNull();
   });
 
+  it("stops warning that the recovery queue cannot be written once it is written again", async () => {
+    const { runtime, spool } = createRuntime();
+    spool.append.mockRejectedValueOnce(new Error("ENOSPC: no space left on device"));
+
+    await runtime.ingest(serverCaptureFixture());
+    expect(runtime.health()).toMatchObject({ recovery: "degraded", recoveryMessage: expect.stringContaining("无法写入本地恢复队列") });
+
+    // Space freed: the next capture is written, and the warning goes with the problem.
+    await runtime.ingest({ ...serverCaptureFixture(), sourceEventId: "event-after-space-freed" });
+    expect(runtime.health().recovery).toBe("healthy");
+    expect(runtime.health().recoveryMessage).toBeUndefined();
+  });
+
+  it("writes a capture the recovery queue would not take at the next recovery pass, not only with the next capture", async () => {
+    const { runtime, spool } = createRuntime();
+    spool.append.mockRejectedValueOnce(new Error("ENOSPC: no space left on device"));
+    await runtime.ingest(serverCaptureFixture());
+    expect(runtime.health()).toMatchObject({ recovery: "degraded", recoveryMessage: expect.stringContaining("无法写入本地恢复队列") });
+
+    // Space freed, nothing captured or answered since: the ten-minute pass found every spooled event taken in
+    // already and left the one held only here where it was, the warning with it.
+    Object.assign(spool, { list: vi.fn(async () => []) });
+    await runtime.recoverSpooled();
+    expect(spool.append).toHaveBeenCalledTimes(2);
+    expect(runtime.health().recovery).toBe("healthy");
+  });
+
+  it("keeps warning until every capture the recovery queue would not take is written", async () => {
+    const { runtime, spool } = createRuntime();
+    const held = serverCaptureFixture();
+    const later = serverCaptureFixture({ sourceEventId: "event-2", toolUseId: "tool-2", batchId: "test:server-test:tool-2" });
+    const refused = new Set([held.batchId]);
+    const written: string[] = [];
+    spool.append.mockImplementation(async (...args: unknown[]) => {
+      const { batchId } = args[0] as typeof held;
+      if (refused.has(batchId)) throw new Error("ENOSPC: no space left on device");
+      written.push(batchId);
+      return undefined;
+    });
+
+    await runtime.ingest(held);
+    // The next capture is written, the one before it still is not: still said.
+    await runtime.ingest(later);
+    expect(runtime.health()).toMatchObject({ recovery: "degraded", recoveryMessage: expect.stringContaining("无法写入本地恢复队列") });
+
+    // Once it takes the first too, the warning goes.
+    refused.clear();
+    await runtime.ingest(serverCaptureFixture({ sourceEventId: "event-3", toolUseId: "tool-3", batchId: "test:server-test:tool-3" }));
+    expect(written).toContain(held.batchId);
+    expect(runtime.health()).toEqual({ index: "healthy", recovery: "healthy" });
+  });
+
+  it("writes a put-off capture's event before its disposition, or does not put it off", async () => {
+    const { runtime, spool } = createRuntime();
+    const event = serverCaptureFixture();
+    spool.append.mockRejectedValueOnce(new Error("ENOSPC: no space left on device"));
+    await runtime.ingest(event);
+
+    // A disposition alone is never read back at a start: the event goes with it, or the deferral fails.
+    spool.append.mockRejectedValueOnce(new Error("ENOSPC: no space left on device"));
+    await expect(runtime.queue.submit({ status: "deferred" })).rejects.toThrow();
+    expect(spool.saveDisposition).not.toHaveBeenCalled();
+
+    await runtime.queue.retryCurrentPersistence();
+    expect(spool.append).toHaveBeenLastCalledWith(event);
+    expect(spool.append.mock.invocationCallOrder.at(-1)).toBeLessThan(spool.saveDisposition.mock.invocationCallOrder[0]!);
+    expect(runtime.health().recovery).toBe("healthy");
+    expect(runtime.pendingRationales()).toHaveLength(1);
+  });
+
   it("keeps a deferred rationale local without writing or acknowledging it", async () => {
     const { runtime, spool, store } = createRuntime();
     const event = serverCaptureFixture();
@@ -342,6 +553,9 @@ describe("CaptureRuntime", () => {
         selectedAnswer:
           event.questions[0]?.answer.values.join("、"),
         contextSummary: null,
+        capturedQuestion: event.questions[0],
+        // Held here alone: no note in the vault yet.
+        inVault: false,
       },
     ]);
     expect(runtime.queue.snapshot().current).toBeNull();
@@ -354,6 +568,7 @@ describe("CaptureRuntime", () => {
     await runtime.queue.submit({
       status: "deferred",
       appliedPrincipleIds: ["principle-1"],
+      expectedOutcome: "回滚演练一次通过。",
     });
     const pending = runtime.pendingRationales()[0]!;
 
@@ -362,6 +577,7 @@ describe("CaptureRuntime", () => {
       reasonFactors: ["reversibility"],
     });
 
+    // The expectation written before the rationale was put off is not lost with the wait.
     expect(spool.replaceDisposition).toHaveBeenCalledWith(
       event,
       0,
@@ -370,6 +586,7 @@ describe("CaptureRuntime", () => {
         rationale: "先保留可逆方案。",
         reasonFactors: ["reversibility"],
         appliedPrincipleIds: ["principle-1"],
+        expectedOutcome: "回滚演练一次通过。",
       },
     );
     expect(store.save).toHaveBeenCalledWith(
@@ -379,9 +596,71 @@ describe("CaptureRuntime", () => {
         rationaleStatus: "captured",
         rationaleOriginal: "先保留可逆方案。",
         appliedPrincipleIds: ["principle-1"],
+        expectedOutcome: "回滚演练一次通过。",
       }),
     );
     expect(spool.acknowledge).toHaveBeenCalledWith(event, 0);
+    expect(runtime.pendingRationales()).toEqual([]);
+  });
+
+  it("takes a decision in even when the disk will not keep it, and says so", async () => {
+    const { runtime, spool } = createRuntime();
+    spool.append.mockRejectedValueOnce(new Error("ENOSPC"));
+
+    await runtime.ingest(serverCaptureFixture());
+
+    expect(runtime.queue.snapshot().current).not.toBeNull();
+    expect(runtime.health()).toMatchObject({ recovery: "degraded" });
+  });
+
+  it("writes the words given on a retry, not those of a save that failed", async () => {
+    const { runtime, store } = createRuntime();
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+    const pending = runtime.pendingRationales()[0]!;
+    store.save.mockRejectedValueOnce(new Error("vault not writable"));
+
+    await expect(runtime.completeDeferredRationale(pending.id, { rationale: "第一版：随手写的" })).rejects.toThrow();
+    await runtime.completeDeferredRationale(pending.id, { rationale: "第二版：改过的完整理由" });
+
+    expect(store.save).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: pending.id, rationaleOriginal: "第二版：改过的完整理由" }),
+    );
+  });
+
+  it("does not ask again a put-off decision whose rationale is being written, or could not be", async () => {
+    const { runtime, spool, store } = createRuntime();
+    const event = serverCaptureFixture();
+    // Put off in an earlier run: held in the spool alone, restored at this start and never queued.
+    let disposition: RationaleSubmission = { status: "deferred" };
+    spool.loadDisposition.mockImplementation(async () => disposition);
+    Object.assign(spool, {
+      list: vi.fn(async () => [event]),
+      replaceDisposition: vi.fn(async (_event: unknown, _index: number, submission: RationaleSubmission) => {
+        disposition = submission;
+      }),
+    });
+    await runtime.ingest(event);
+    const [pending] = runtime.pendingRationales();
+
+    // Refused by the vault, then a capture comes in (each one reads the spool again).
+    store.save.mockRejectedValueOnce(new Error("EPERM: operation not permitted"));
+    await expect(runtime.completeDeferredRationale(pending!.id, { rationale: "本机 HTTP 便于诊断" })).rejects.toThrow();
+    await runtime.recoverSpooled();
+    expect(runtime.queue.snapshot().current).toBeNull();
+    expect(runtime.pendingRationales().map((item) => item.id)).toEqual([pending!.id]);
+
+    // Completed again, its note held at the write while another capture comes in.
+    let written = (): void => undefined;
+    store.save.mockImplementationOnce(() => new Promise((resolve) => {
+      written = () => resolve({ note: { id: pending!.id, path: "/note.md", contentHash: "hash" }, indexed: true });
+    }));
+    const completing = runtime.completeDeferredRationale(pending!.id, { rationale: "本机 HTTP 便于诊断，跨平台" });
+    await runtime.recoverSpooled();
+    expect(runtime.queue.snapshot().current).toBeNull();
+    written();
+    await completing;
+    expect(store.save).toHaveBeenCalledTimes(2);
     expect(runtime.pendingRationales()).toEqual([]);
   });
 
@@ -392,6 +671,7 @@ describe("CaptureRuntime", () => {
     await runtime.queue.submit({
       status: "deferred",
       appliedPrincipleIds: ["principle-2"],
+      expectedOutcome: "回滚演练一次通过。",
     });
     const pending = runtime.pendingRationales()[0]!;
     await runtime.skipDeferredRationale(pending.id);
@@ -399,7 +679,7 @@ describe("CaptureRuntime", () => {
     expect(spool.replaceDisposition).toHaveBeenCalledWith(
       event,
       0,
-      { status: "skipped", appliedPrincipleIds: ["principle-2"] },
+      { status: "skipped", appliedPrincipleIds: ["principle-2"], expectedOutcome: "回滚演练一次通过。" },
     );
     expect(store.save).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -437,10 +717,12 @@ describe("CaptureRuntime", () => {
     spool.loadDisposition.mockResolvedValue({
       status: "deferred",
       appliedPrincipleIds: ["principle-recovered"],
+      expectedOutcome: "恢复后预期仍在。",
     });
 
     await runtime.ingest(event);
     const pending = runtime.pendingRationales()[0]!;
+    expect(pending.capturedQuestion).toEqual(event.questions[0]);
     await runtime.completeDeferredRationale(pending.id, {
       rationale: "恢复后补充理由。",
     });
@@ -449,10 +731,12 @@ describe("CaptureRuntime", () => {
       status: "captured",
       rationale: "恢复后补充理由。",
       appliedPrincipleIds: ["principle-recovered"],
+      expectedOutcome: "恢复后预期仍在。",
     });
     expect(store.save).toHaveBeenCalledWith(
       expect.objectContaining({
         appliedPrincipleIds: ["principle-recovered"],
+        expectedOutcome: "恢复后预期仍在。",
       }),
     );
   });
@@ -481,6 +765,7 @@ describe("CaptureRuntime", () => {
         sourceClient: legacy.sourceClient,
         selectedAnswer: legacy.selectedAnswer,
         contextSummary: legacy.context,
+        capturedQuestion: null,
       },
     ]);
     await runtime.completeDeferredRationale(legacy.id, update);
@@ -562,6 +847,7 @@ describe("CaptureRuntime", () => {
         sourceClient: newer.sourceClient,
         selectedAnswer: newer.selectedAnswer,
         contextSummary: newer.context,
+        capturedQuestion: null,
       },
       {
         id: older.id,
@@ -571,19 +857,75 @@ describe("CaptureRuntime", () => {
         sourceClient: older.sourceClient,
         selectedAnswer: older.selectedAnswer,
         contextSummary: older.context,
+        capturedQuestion: null,
       },
     ]);
   });
 
+  it("lists the latest deferred decisions alone and counts all of them", async () => {
+    const backlog = Array.from({ length: 80 }, (_, index) => ({
+      id: `decision-${String(index).padStart(3, "0")}`,
+      question: `待补 ${index}`,
+      created: new Date(Date.UTC(2026, 0, 1) + index * 86_400_000).toISOString(),
+      project: "decision",
+      sourceClient: "codex" as const,
+      selectedAnswer: "答案",
+      context: "当时的背景",
+    }));
+    const limits: Array<number | undefined> = [];
+    const { runtime } = createRuntime({
+      listByRationaleStatus: (_status, limit) => {
+        limits.push(limit);
+        return [...backlog].reverse().slice(0, limit);
+      },
+      idsByRationaleStatus: () => backlog.map((decision) => decision.id),
+    });
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+
+    // Every snapshot carried every one of them with its context: megabytes with a backlog of thousands. Listed
+    // are the newest 50: first every one put off in a capture, which is found nowhere else, then the vault's.
+    const listed = runtime.pendingRationales();
+    expect(listed).toHaveLength(50);
+    expect(limits).toEqual([50]);
+    const ids = listed.map((decision) => decision.id);
+    expect(ids[0]).toMatch(/^decision-[a-f0-9]{64}$/u);
+    expect(ids).toContain("decision-079");
+    expect(ids).not.toContain("decision-030");
+    expect(ids).not.toContain("decision-000");
+    // The one deferred in this run, not yet in the index, counts as well.
+    expect(runtime.pendingRationaleCount()).toBe(81);
+  });
+
+  it("lists at most 50 of the rationales put off in captures, and counts them all", async () => {
+    const { runtime } = createRuntime({ listByRationaleStatus: () => [], idsByRationaleStatus: () => [] });
+    for (let index = 0; index < 55; index += 1) {
+      await runtime.ingest(serverCaptureFixture({ sessionId: `session-${index}`, toolUseId: `tool-${index}`, batchId: `test:session-${index}:tool-${index}` }));
+      await runtime.queue.submit({ status: "deferred" });
+    }
+
+    // Held in the spool alone, these were all listed, and only the vault's cut short: a backlog of a thousand
+    // put megabytes in every snapshot again.
+    expect(runtime.pendingRationales()).toHaveLength(50);
+    expect(runtime.pendingRationaleCount()).toBe(55);
+  });
+
   it("keeps local deferred rationales available when the index read fails", async () => {
+    // Read fine while the capture came in; unreadable (a damaged page, a closed handle) by the next snapshot.
+    let readable = true;
     const { runtime } = createRuntime({
       listByRationaleStatus: () => {
         throw new Error("index unavailable");
+      },
+      hasDecision: () => {
+        if (!readable) throw new Error("index unavailable");
+        return false;
       },
     });
     const event = serverCaptureFixture();
     await runtime.ingest(event);
     await runtime.queue.submit({ status: "deferred" });
+    readable = false;
 
     expect(runtime.pendingRationales()).toEqual([
       {
@@ -595,13 +937,46 @@ describe("CaptureRuntime", () => {
         selectedAnswer:
           event.questions[0]?.answer.values.join("、"),
         contextSummary: null,
+        capturedQuestion: event.questions[0],
+        // Whether a note holds it is unknown while the index cannot be read: asked outright, the whole snapshot
+        // (home page, sidebar, tray) went down with the one read.
       },
     ]);
     expect(runtime.health()).toMatchObject({
       index: "degraded",
-      indexMessage: expect.stringMatching(/SQLite 索引读取失败/u),
+      indexMessage: expect.stringMatching(/决策索引读取失败/u),
       recovery: "healthy",
     });
+  });
+
+  it("keeps the captured question when an index summary has the same id", async () => {
+    let indexed: ReturnType<NonNullable<TestIndex["listByRationaleStatus"]>> =
+      [];
+    const { runtime } = createRuntime({
+      listByRationaleStatus: () => indexed,
+    });
+    const event = serverCaptureFixture();
+    await runtime.ingest(event);
+    await runtime.queue.submit({ status: "deferred" });
+    const local = runtime.pendingRationales()[0]!;
+    indexed = [
+      {
+        id: local.id,
+        question: local.question,
+        created: local.created,
+        project: local.project,
+        sourceClient: "test",
+        selectedAnswer: local.selectedAnswer,
+        context: "索引中的摘要上下文。",
+      },
+    ];
+
+    expect(runtime.pendingRationales()).toEqual([
+      expect.objectContaining({
+        id: local.id,
+        capturedQuestion: event.questions[0],
+      }),
+    ]);
   });
 
   it("acknowledges no-record without writing Markdown", async () => {
@@ -624,33 +999,25 @@ describe("CaptureRuntime", () => {
         status: "captured",
         rationale: "不能丢失",
       }),
-    ).rejects.toThrow(/persistence/i);
+    ).rejects.toThrow(/决策没能写入 Obsidian/u);
 
     expect(spool.acknowledge).not.toHaveBeenCalled();
     expect(runtime.queue.snapshot()).toMatchObject({
       current: { status: "completed" },
       persistenceStatus: "failed",
+      persistenceFailure: "vault",
     });
   });
 
-  it("reuses the same record when spool acknowledgement is retried", async () => {
+  it("says it was the recovery queue, not Obsidian, that would not take a rationale", async () => {
     const { runtime, spool, store } = createRuntime();
-    spool.acknowledge.mockRejectedValueOnce(
-      new Error("temporary spool failure"),
-    );
+    spool.saveDisposition.mockRejectedValueOnce(Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" }));
     await runtime.ingest(serverCaptureFixture());
 
-    await expect(
-      runtime.queue.submit({ status: "skipped" }),
-    ).rejects.toThrow(/persistence/i);
-    await runtime.queue.retryCurrentPersistence();
-
-    expect(store.save).toHaveBeenCalledTimes(2);
-    const first = store.save.mock.calls[0]?.[0];
-    const second = store.save.mock.calls[1]?.[0];
-    expect(first?.id).toMatch(/^decision-[a-f0-9]{64}$/u);
-    expect(second).toEqual(first);
-    expect(runtime.queue.snapshot().current).toBeNull();
+    await expect(runtime.queue.submit({ status: "captured", rationale: "不能丢失" }))
+      .rejects.toThrow("决策没能写入本机恢复队列：磁盘空间不足");
+    expect(store.save).not.toHaveBeenCalled();
+    expect(runtime.queue.snapshot()).toMatchObject({ persistenceStatus: "failed", persistenceFailure: "recovery_queue" });
   });
 
   it("acknowledges a cross-mode duplicate spool body", async () => {
@@ -713,7 +1080,7 @@ describe("CaptureRuntime", () => {
     await first.ingest(event);
     await expect(
       first.queue.submit({ status: "skipped" }),
-    ).rejects.toThrow(/persistence/i);
+    ).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
     await second.ingest(event);
     await second.queue.submit({ status: "skipped" });
 
@@ -760,7 +1127,7 @@ describe("CaptureRuntime", () => {
     });
   });
 
-  it("resumes a journaled disposition after restart", async () => {
+  it("finishes a journaled disposition as its capture is taken in again after a restart", async () => {
     const { runtime, spool, store } = createRuntime();
     const event = serverCaptureFixture();
     spool.loadDisposition.mockResolvedValue({
@@ -770,7 +1137,6 @@ describe("CaptureRuntime", () => {
     });
 
     await runtime.ingest(event);
-    await runtime.resumePendingDispositions();
 
     expect(store.save).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -779,6 +1145,118 @@ describe("CaptureRuntime", () => {
       }),
     );
     expect(runtime.queue.snapshot().current).toBeNull();
+  });
+
+  it("finishes a journaled rationale for the capture behind another, and for one the recovery takes in", async () => {
+    const { runtime, spool, store } = createRuntime({ hasDecision: () => false });
+    const a = serverCaptureFixture({ sessionId: "s-a", toolUseId: "tool-a", sourceEventId: "tool-a", batchId: "test:s-a:tool-a", capturedAt: "2026-07-25T00:00:00.000Z" });
+    const b = serverCaptureFixture({ sessionId: "s-b", toolUseId: "tool-b", sourceEventId: "tool-b", batchId: "test:s-b:tool-b", capturedAt: "2026-07-25T00:01:00.000Z" });
+    // Submitted for B and journaled, the app quit before its note was written; A, taken in earlier, was never answered.
+    spool.loadDisposition.mockImplementation(async (...args: unknown[]) =>
+      (args[0] as { batchId: string }).batchId === b.batchId ? { status: "captured", rationale: "B 的理由（已经提交过）" } : null);
+    await runtime.ingest(a);
+    await runtime.ingest(b);
+
+    // Handed at the start to whatever was current (A, with nothing journaled), B's rationale was never applied: once
+    // A was answered, B was asked again, its rationale left on disk.
+    expect(store.save).toHaveBeenCalledWith(expect.objectContaining({ rationaleOriginal: "B 的理由（已经提交过）" }));
+    expect(runtime.queue.snapshot().current?.event.batchId).toBe(a.batchId);
+    await runtime.queue.submit({ status: "captured", rationale: "A 的理由" });
+    expect(runtime.queue.snapshot().current).toBeNull();
+    expect(store.save).toHaveBeenCalledTimes(2);
+
+    // The spool unreadable at the start (EMFILE), B taken in by the ten-minute recovery instead: the same.
+    const recovery = {
+      ...semanticSpoolMethods(),
+      list: vi.fn(async () => [b]),
+      append: vi.fn(async () => undefined),
+      acknowledge: vi.fn(async () => undefined),
+      saveDisposition: vi.fn(async () => undefined),
+      loadDisposition: vi.fn(async (): Promise<RationaleSubmission | null> => ({ status: "captured", rationale: "B 的理由（已经提交过）" })),
+    };
+    const recovered = new CaptureRuntime({ spool: recovery, store, idFactory: () => "recovered" });
+    await recovered.recoverSpooled();
+    expect(store.save).toHaveBeenCalledTimes(3);
+    expect(recovery.acknowledge).toHaveBeenCalledWith(b, 0);
+    expect(recovered.queue.snapshot().current).toBeNull();
+  });
+
+  it("keeps a journaled rationale it cannot finish now in the spool, and says so", async () => {
+    const { runtime, spool, store } = createRuntime();
+    spool.loadDisposition.mockResolvedValue({ status: "captured", rationale: "恢复的原始理由" });
+    store.save.mockRejectedValueOnce(Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" }));
+
+    await expect(runtime.ingest(serverCaptureFixture())).resolves.toEqual({ accepted: 0, duplicates: 1 });
+
+    // Not asked again, not acknowledged: the next pass over the spool tries once more.
+    expect(runtime.queue.snapshot().current).toBeNull();
+    expect(spool.acknowledge).not.toHaveBeenCalled();
+    expect(runtime.health()).toMatchObject({ recovery: "degraded", recoveryMessage: expect.stringMatching(/下次恢复时重试/u) });
+  });
+
+  it("writes the note once: a retry after its receipt was refused redoes the receipt alone", async () => {
+    const { runtime, spool, store } = createRuntime();
+    const refused = Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" });
+    spool.acknowledge.mockRejectedValueOnce(refused).mockRejectedValueOnce(refused);
+    await runtime.ingest(serverCaptureFixture());
+
+    await expect(runtime.queue.submit({ status: "captured", rationale: "理由" })).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
+    // Tried again with the disk still full: the note, in the vault already, was written over again (over whatever the
+    // reader had changed in Obsidian since), and the failure then said Obsidian had refused it.
+    store.save.mockRejectedValueOnce(refused);
+    await expect(runtime.queue.retryCurrentPersistence()).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
+    await runtime.queue.retryCurrentPersistence();
+
+    expect(store.save).toHaveBeenCalledTimes(1);
+    expect(spool.acknowledge).toHaveBeenCalledTimes(3);
+    expect(runtime.queue.snapshot().current).toBeNull();
+  });
+
+  it("writes a journaled note once while its receipt is refused, however often the event comes back in", async () => {
+    const { runtime, spool, store } = createRuntime();
+    const refused = Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" });
+    // Read back from its journal at each pass: a new object each time, saying the same.
+    spool.loadDisposition.mockImplementation(async () => ({ status: "captured", rationale: "恢复的原始理由" }));
+    spool.acknowledge.mockRejectedValueOnce(refused).mockRejectedValueOnce(refused);
+    const event = serverCaptureFixture();
+
+    await runtime.ingest(event);
+    expect(runtime.health()).toMatchObject({ recovery: "degraded", recoveryMessage: expect.stringMatching(/下次恢复时重试/u) });
+    await runtime.ingest(event);
+    await runtime.ingest(event);
+
+    // Told apart by identity, each pass wrote the note again, over what the reader had changed in Obsidian since.
+    expect(store.save).toHaveBeenCalledTimes(1);
+    expect(spool.acknowledge).toHaveBeenCalledTimes(3);
+    // Finished at the third pass: the promise of another try went with it, where it stayed.
+    expect(runtime.health().recovery).toBe("healthy");
+    expect(runtime.health().recoveryMessage).toBeUndefined();
+  });
+
+  it("writes a completed rationale's note once when 补完 is pressed again after its receipt was refused", async () => {
+    const { runtime, spool, store } = createRuntime();
+    const refused = Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" });
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+    const id = runtime.pendingRationales()[0]!.id;
+    spool.acknowledge.mockRejectedValueOnce(refused).mockRejectedValueOnce(refused);
+
+    await expect(runtime.completeDeferredRationale(id, { rationale: "补上的理由" })).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
+    await expect(runtime.completeDeferredRationale(id, { rationale: "补上的理由" })).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
+    expect(store.save).toHaveBeenCalledTimes(1);
+  });
+
+  it("says the note is in Obsidian when a retry finds the recovery queue still unwritable", async () => {
+    const { runtime, spool } = createRuntime();
+    const refused = Object.assign(new Error("ENOSPC: no space left on device"), { code: "ENOSPC" });
+    spool.acknowledge.mockRejectedValueOnce(refused);
+    await runtime.ingest(serverCaptureFixture());
+    await expect(runtime.queue.submit({ status: "captured", rationale: "理由" })).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
+
+    // The disk still full, the retry fails writing the capture again, before it reaches the receipt: said as not
+    // written at all, where the note was in the vault.
+    spool.append.mockRejectedValueOnce(refused);
+    await expect(runtime.queue.retryCurrentPersistence()).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
   });
 
   it("acknowledges an already indexed record without prompting again", async () => {
@@ -986,8 +1464,6 @@ describe("CaptureRuntime", () => {
       ),
     );
     await runtime.ingest(event);
-
-    await runtime.resumePendingDispositions();
 
     expect(runtime.health()).toMatchObject({
       index: "healthy",

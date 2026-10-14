@@ -2,7 +2,7 @@ import type {
   KnowledgeGraphSnapshot,
   OutcomeVerdict,
 } from "@cognelis/decision-core";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 interface KnowledgeGraphViewProps {
   graph: KnowledgeGraphSnapshot | null;
@@ -24,14 +24,21 @@ const verdictLabels: Record<OutcomeVerdict, string> = {
   unclear: "暂无法判断",
 };
 
-const confidenceLabels: Record<
-  KnowledgeGraphSnapshot["principles"][number]["confidence"],
-  string
-> = {
-  low: "单点证据",
-  medium: "多条印证",
-  high: "稳定模式",
-};
+// Worded by the decisions behind it as well, as the methodology page and consult_decision_principles word it: adopted
+// at low confidence, a principle backed by none, or by three, read 单点证据.
+const confidenceLabel = ({
+  confidence,
+  sourceDecisionIds: { length },
+}: KnowledgeGraphSnapshot["principles"][number]): string =>
+  length === 0
+    ? "待验证"
+    : length === 1
+      ? "单点证据"
+      : confidence === "high"
+        ? "稳定模式"
+        : confidence === "medium"
+          ? "多条印证"
+          : "低可信";
 
 const relationLabels = {
   duplicate: "确认重复",
@@ -50,6 +57,8 @@ export const KnowledgeGraphView = ({
   onOpenPrinciple,
   onMergePrinciples,
 }: KnowledgeGraphViewProps) => {
+  // Each principle's 查看详情 says which principle it opens.
+  const idPrefix = useId();
   const [query, setQuery] = useState("");
   const [relationFilter, setRelationFilter] =
     useState<RelationFilter>("all");
@@ -290,21 +299,24 @@ export const KnowledgeGraphView = ({
                 <div>
                   <span>已采纳原则</span>
                   <div>
-                    <em>{confidenceLabels[principle.confidence]}</em>
+                    <em className={`methodology-confidence ${principle.confidence}`}>
+                      {confidenceLabel(principle)}
+                    </em>
                     <button
                       type="button"
                       className="text-button"
+                      aria-describedby={`${idPrefix}-${principle.id}`}
                       onClick={() => onOpenPrinciple(principle.id)}
                     >
                       查看详情
                     </button>
                   </div>
                 </div>
-                <strong>{principle.title}</strong>
+                <strong id={`${idPrefix}-${principle.id}`}>{principle.title}</strong>
                 <p>{principle.principle}</p>
               </header>
 
-              <div className="knowledge-graph-projects" aria-label="关联项目">
+              <div className="knowledge-graph-projects" role="group" aria-label="关联项目">
                 {principle.projectIds.map((id) => {
                   const project = projectMap.get(id);
                   return project === undefined ? null : (

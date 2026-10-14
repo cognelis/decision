@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   removeRuntimeDescriptor,
+  writeObsidianSearchShutdownMarker,
   writeRuntimeDescriptor,
 } from "../src/main/runtime-file.js";
 
@@ -47,5 +48,22 @@ describe("runtime descriptor", () => {
     await removeRuntimeDescriptor(path);
 
     await expect(access(path)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("atomically writes a content-free Obsidian shutdown marker", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-runtime-"));
+    const path = join(root, "obsidian-search", "shutdown-complete.json");
+
+    await writeObsidianSearchShutdownMarker(path, 4_242);
+
+    expect(JSON.parse(await readFile(path, "utf8"))).toEqual({
+      closed: true,
+      pid: 4_242,
+      version: 1,
+    });
+    expect((await stat(path)).mode & 0o777).toBe(0o600);
+    expect((await stat(join(root, "obsidian-search"))).mode & 0o777).toBe(
+      0o700,
+    );
   });
 });

@@ -43,11 +43,19 @@ export const updateMergeSources = (
   const retainedEvidence = current.input.sourceDecisionIds.filter((id) =>
     allowedEvidence.has(id),
   );
+  // Only evidence a new source brings is checked on its own: what was on offer
+  // before and is not checked now was left out, or taken out, by the reader.
+  const offeredBefore = new Set(
+    current.availableEvidence.map((decision) => decision.id),
+  );
   const sourceDecisionIds = [
     ...retainedEvidence,
     ...availableEvidence
       .map((decision) => decision.id)
-      .filter((decisionId) => !retainedEvidence.includes(decisionId)),
+      .filter(
+        (decisionId) =>
+          !retainedEvidence.includes(decisionId) && !offeredBefore.has(decisionId),
+      ),
   ].slice(0, 5);
   const autoEvidenceSummary = mergeEvidenceSummary(sources);
   return {

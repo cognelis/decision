@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
 import {
+  mkdir,
   mkdtemp,
   readFile,
   readdir,
+  rm,
   stat,
   writeFile,
 } from "node:fs/promises";
@@ -14,6 +17,60 @@ import { CaptureAuditStore } from "../src/index.js";
 const FIXED_SALT = Buffer.alloc(32, 7);
 
 describe("CaptureAuditStore", () => {
+  it("retains the newest receipts across read batches while expiring and quarantining others", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-audit-batches-"));
+    let now = new Date("2026-07-18T00:00:00.000Z");
+    const store = new CaptureAuditStore(root, {
+      now: () => now,
+      maximumItems: 3,
+      salt: FIXED_SALT,
+    });
+    const expired = await store.record({
+      sourceClient: "codex",
+      sessionId: "synthetic",
+      stage: "hook_received",
+    });
+    now = new Date("2026-07-27T12:00:00.000Z");
+    await Promise.all(Array.from({ length: 35 }, (_, index) => {
+      const receiptId = `receipt-${String(index).padStart(2, "0")}`;
+      const filename = createHash("sha256").update(receiptId).digest("hex");
+      return writeFile(join(root, "items", `${filename}.json`), JSON.stringify({
+        ...expired,
+        receiptId,
+        // Equal timestamps exercise the receipt ID tie-break across batches.
+        createdAt: now.toISOString(),
+      }));
+    }));
+    for (const digit of ["e", "f"]) {
+      await writeFile(join(root, "items", `${digit.repeat(64)}.json`), "not-json");
+    }
+
+    expect((await store.list()).map((receipt) => receipt.receiptId)).toEqual([
+      "receipt-32", "receipt-33", "receipt-34",
+    ]);
+    expect(await readdir(join(root, "items"))).toHaveLength(3);
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(2);
+  });
+
+  it("counts the week at most once a minute, and at once again after a receipt it writes itself", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-audit-summary-"));
+    let now = new Date("2026-07-27T12:00:00.000Z");
+    const store = new CaptureAuditStore(root, { now: () => now, salt: FIXED_SALT });
+    const receipt = { sourceClient: "codex", sessionId: "one", stage: "hook_received" } as const;
+    await store.record(receipt);
+    expect((await store.summary()).total).toBe(1);
+
+    // The bridge, a process of its own, writes one: counted within the minute, not read again at every turn.
+    await new CaptureAuditStore(root, { now: () => now, salt: FIXED_SALT }).record(receipt);
+    expect((await store.summary()).total).toBe(1);
+    now = new Date(now.getTime() + 61_000);
+    expect((await store.summary()).total).toBe(2);
+
+    // One it writes itself counts at once.
+    await store.record(receipt);
+    expect((await store.summary()).total).toBe(3);
+  });
+
   it("records only HMAC identifiers in private files", async () => {
     const root = await mkdtemp(join(tmpdir(), "decision-audit-"));
     const store = new CaptureAuditStore(root, {
@@ -95,6 +152,22 @@ describe("CaptureAuditStore", () => {
     expect(await first.fingerprint("session")).toBe(
       firstReceipt?.sessionFingerprint,
     );
+  });
+
+  it("replaces a salt cut short, and tries again after a read the disk refused", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-audit-salt-"));
+    const store = new CaptureAuditStore(root, { now: () => new Date("2026-07-27T12:00:00.000Z") });
+    const receipt = { sourceClient: "codex", sessionId: "session", stage: "hook_received" } as const;
+    // Not readable as a file once: the next record reads it again.
+    await mkdir(join(root, "salt"), { recursive: true });
+    await expect(store.record(receipt)).rejects.toThrow();
+    await rm(join(root, "salt"), { recursive: true });
+    // Cut short by an earlier version's write: replaced, not refused for good.
+    await writeFile(join(root, "salt"), Buffer.alloc(10, 1));
+
+    await expect(store.record(receipt)).resolves.toMatchObject({ stage: "hook_received" });
+    expect(await readFile(join(root, "salt"))).toHaveLength(32);
+    expect((await readdir(root)).filter((name) => name.endsWith(".tmp"))).toEqual([]);
   });
 
   it("expires seven-day receipts and keeps the newest capacity", async () => {
@@ -191,7 +264,9 @@ describe("CaptureAuditStore", () => {
       processed: 1,
       high: 1,
       medium: 0,
-      failures: 1,
+      // A lost pair and a routing error are terminal; an unavailable provider
+      // and a classification timeout still fall back to the rules.
+      failures: 2,
       stages: {
         classification_completed: 1,
         failed: 4,
@@ -204,5 +279,23 @@ describe("CaptureAuditStore", () => {
         routing_failed: 1,
       },
     });
+  });
+
+  it("applies retention from record at most hourly, so a hook does not read a week of receipts", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-audit-throttle-"));
+    let now = new Date("2026-07-27T12:00:00.000Z");
+    const store = new CaptureAuditStore(root, { now: () => now, salt: FIXED_SALT });
+    const receipt = { sourceClient: "codex", sessionId: "synthetic", stage: "hook_received" } as const;
+    await store.record(receipt);
+    // Only a scan moves this aside: a record that scans quarantines it.
+    await writeFile(join(root, "items", `${"e".repeat(64)}.json`), "not-json");
+
+    now = new Date("2026-07-27T12:59:00.000Z");
+    await store.record(receipt);
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(0);
+
+    now = new Date("2026-07-27T13:01:00.000Z");
+    await store.record(receipt);
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(1);
   });
 });

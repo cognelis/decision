@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProfiledModelGateway } from "../src/main/model/profiled-model-gateway.js";
 import { PracticeAssetService } from "../src/main/practice-asset-service.js";
 import { PracticeAssetHistoryStore } from "../src/main/practice-asset-history-store.js";
+import { practiceAssetBasis } from "../src/shared/renderer-api.js";
 
 const methodology = (
   overrides: Partial<MethodologyRecord> = {},
@@ -120,6 +121,15 @@ describe("PracticeAssetService", () => {
     expect(generate).toHaveBeenCalledTimes(1);
   });
 
+  it("says an adopted asset of the same sources exists when asked to generate, as manual drafting does", async () => {
+    const { generate, service } = await makeService([methodology()]);
+    await service.setStatus((await service.generate("skill", ["principle-1"])).id, "accepted");
+
+    // Returned as if just drafted: opened without a word, the list behind it switched to 待确认 where it is not.
+    await expect(service.generate("skill", ["principle-1"])).rejects.toThrow("已经存在使用相同来源的技能");
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+
   it("creates a fully traceable manual draft without invoking a model", async () => {
     const { assets, generate, service } = await makeService([methodology()]);
     const input = {
@@ -155,6 +165,50 @@ describe("PracticeAssetService", () => {
     await expect(
       service.createManual("workflow", ["principle-1"], input),
     ).rejects.toThrow("已经存在使用相同来源的工作流");
+  });
+
+  it("creates an asset with a long English title, its slug within 64 characters", async () => {
+    const { service } = await makeService([methodology()]);
+    const record = await service.createManual("skill", ["principle-1"], {
+      title: "Handle optimistic UI updates with useOptimistic in React nineteen",
+      summary: "用 useOptimistic 处理乐观更新。",
+      trigger: "界面需要在请求返回前先显示结果时。",
+      steps: ["先渲染乐观状态。", "请求返回后换成真实状态。"],
+      checks: ["失败时能回到真实状态。"],
+      fallback: "回退到等待请求完成再更新。",
+    });
+    expect(record.slug.length).toBeLessThanOrEqual(64);
+  });
+
+  it("keeps a regenerated replacement draft replacing its asset", async () => {
+    const { methodologies, service, setNow } = await makeService([methodology()]);
+    const accepted = await service.setStatus((await service.generate("workflow", ["principle-1"])).id, "accepted");
+    await methodologies.save(methodology({ updatedAt: "2026-08-04T08:00:00.000Z", principle: "第二版：先验证，再明确退出双轨的时点。" }));
+    setNow("2026-08-05T10:00:00.000Z");
+    const replacement = await service.regenerate(accepted.id);
+    // The principle moves on again before the replacement is taken: it is regenerated in its turn.
+    await methodologies.save(methodology({ updatedAt: "2026-08-06T08:00:00.000Z", principle: "第三版：先验证，再限定双轨的期限。" }));
+    setNow("2026-08-07T10:00:00.000Z");
+
+    const again = await service.regenerate(replacement.id);
+
+    expect(again.supersedesId).toBe(accepted.id);
+  });
+
+  it("adds no restore point for an asset saved as it was", async () => {
+    const { service } = await makeService([methodology()]);
+    const accepted = await service.setStatus((await service.generate("workflow", ["principle-1"])).id, "accepted");
+    const draft = {
+      title: accepted.title,
+      summary: accepted.summary,
+      trigger: accepted.trigger,
+      steps: accepted.steps,
+      checks: accepted.checks,
+      fallback: accepted.fallback,
+    };
+
+    await expect(service.revise(accepted.id, draft)).resolves.toEqual(accepted);
+    await expect(service.listVersions(accepted.id)).resolves.toEqual([]);
   });
 
   it("rejects incomplete manual drafts before writing anything", async () => {
@@ -208,6 +262,84 @@ describe("PracticeAssetService", () => {
       generation: created.generation,
     });
     await expect(service.list("accepted")).resolves.toEqual([accepted]);
+  });
+
+  it("adopts or dismisses drafts only, as the page offers", async () => {
+    const { assets, service } = await makeService([methodology()]);
+    const accepted = await service.setStatus((await service.generate("workflow", ["principle-1"])).id, "accepted");
+
+    // Adopted: dismissed, its published skill stayed loaded in the clients with no way to withdraw it; adopted again,
+    // its date moved and every client copy read as out of date.
+    await expect(service.setStatus(accepted.id, "dismissed")).rejects.toThrow("已采纳的技能或工作流不能忽略");
+    await expect(service.setStatus(accepted.id, "accepted")).rejects.toThrow("已经采纳");
+    await expect(assets.find(accepted.id)).resolves.toMatchObject({ status: "accepted", acceptedAt: accepted.acceptedAt });
+
+    const draft = await service.createManual("skill", ["principle-1"], {
+      title: "另一份草案",
+      summary: "先确认回退入口。",
+      trigger: "扩大发布之前。",
+      steps: ["确认回退入口。", "确认负责人。"],
+      checks: ["回退入口可用。"],
+      fallback: "回退入口不可用时停止。",
+    });
+    await service.setStatus(draft.id, "dismissed");
+    // Dismissed: adopted past its review, which the page never offers.
+    await expect(service.setStatus(draft.id, "accepted")).rejects.toThrow("已忽略的草案不能直接采纳");
+    await expect(service.setStatus(draft.id, "dismissed")).rejects.toThrow("已经忽略");
+  });
+
+  it("dismisses a draft whose replacement was drafted as it now stands, keeping a step saved meanwhile", async () => {
+    const { assets, generate, methodologies, service } = await makeService([methodology()]);
+    const draft = await service.generate("skill", ["principle-1"]);
+    await methodologies.save(methodology({ updatedAt: "2026-08-04T08:00:00.000Z", principle: "第二版：先验证，再扩大范围。" }));
+    const drafting = generate.getMockImplementation()!;
+    const edited = [...draft.steps, "读者在 Obsidian 里补充的一步。"];
+    generate.mockImplementationOnce(async (request) => {
+      // Saved in Obsidian while the model drafts the replacement.
+      await assets.save({ ...(await assets.find(draft.id))!, steps: edited });
+      return drafting(request);
+    });
+
+    await service.regenerate(draft.id);
+
+    // Written back as read before the call, the draft lost the step without a word.
+    await expect(assets.find(draft.id)).resolves.toMatchObject({ status: "dismissed", steps: edited });
+  });
+
+  it("refuses an edit begun before the asset was changed in Obsidian, rather than write its old steps back", async () => {
+    const { assets, service } = await makeService([methodology()]);
+    const accepted = await service.setStatus((await service.generate("workflow", ["principle-1"])).id, "accepted");
+    const opened = practiceAssetBasis(accepted);
+    // A step saved in Obsidian after the page opened the asset.
+    const edited = [...accepted.steps, "读者在 Obsidian 里补充的一步。"];
+    await assets.save({ ...accepted, steps: edited });
+    const { title: _title, ...shown } = accepted;
+    const form = { title: "新标题", summary: shown.summary, trigger: shown.trigger, steps: shown.steps, checks: shown.checks, fallback: shown.fallback };
+
+    // Only the title meant to change: every field was written back as the page had it, the step gone.
+    await expect(service.revise(accepted.id, form, opened)).rejects.toThrow("刚在 Obsidian 里被改过");
+    await expect(assets.find(accepted.id)).resolves.toMatchObject({ title: accepted.title, steps: edited });
+    // Opened again, the edit goes through.
+    const reopened = (await assets.find(accepted.id))!;
+    await expect(service.revise(accepted.id, { ...form, steps: edited }, practiceAssetBasis(reopened))).resolves.toMatchObject({ title: "新标题", steps: edited });
+  });
+
+  it("hands back each draft as the note holds it, so an edit begun from it is not refused as changed in Obsidian", async () => {
+    const { service } = await makeService([methodology()]);
+    // A double space and a tab in a step: the note keeps them as one space each.
+    const created = await service.createManual("skill", ["principle-1"], {
+      title: "手写技能", summary: "先确认回退入口。", trigger: "扩大发布之前。",
+      steps: ["确认回退入口。", "确认  负责人。"], checks: ["回退入口可用。"], fallback: "回退入口不可用时停止。",
+    });
+    const form = (from: typeof created, title: string, steps = from.steps) =>
+      ({ title, summary: from.summary, trigger: from.trigger, steps, checks: from.checks, fallback: from.fallback });
+
+    // Handed back as built, its basis never matched the note: the first edit, nothing touched in Obsidian, refused.
+    const renamed = await service.revise(created.id, form(created, "新标题", [...created.steps, "确认\t记录。"]), practiceAssetBasis(created));
+    // And the next one too, from what that save handed back.
+    await expect(service.revise(created.id, form(renamed, "再改标题"), practiceAssetBasis(renamed))).resolves.toMatchObject({ title: "再改标题" });
+    const drafted = await service.generate("workflow", ["principle-1"]);
+    await expect(service.revise(drafted.id, form(drafted, "生成后改标题"), practiceAssetBasis(drafted))).resolves.toMatchObject({ title: "生成后改标题" });
   });
 
   it("blocks stale candidates until the user regenerates or explicitly edits them", async () => {
@@ -337,6 +469,38 @@ describe("PracticeAssetService", () => {
         snapshot: { sourcePrincipleIds: [originalSource.id] },
       },
     ]);
+  });
+
+  it("restores an earlier wording without its sources once they were retired by a merge", async () => {
+    const originalSource = methodology({ id: "principle-source" });
+    const mergedSource = methodology({ id: "principle-merged", origin: "principle_merge", sourcePrincipleIds: ["principle-source", "principle-other"] });
+    const { methodologies, service } = await makeService([originalSource, mergedSource]);
+    const accepted = await service.setStatus((await service.generate("skill", [originalSource.id])).id, "accepted");
+    await service.setStatus((await service.createSourceMigrationDraft(accepted.id, [mergedSource.id])).id, "accepted");
+    // The merge's sources archived, as 整理来源 does once every reference has moved.
+    await methodologies.save({ ...originalSource, status: "retired", retiredAt: "2026-08-04T10:00:00.000Z", supersededById: mergedSource.id });
+
+    // Back on the retired principle, it could not be published, and the merge listed it to migrate again.
+    await expect(service.restoreVersion(accepted.id, 1)).resolves.toMatchObject({
+      summary: accepted.summary,
+      sourcePrincipleIds: [mergedSource.id],
+    });
+  });
+
+  it("sets aside a waiting replacement drafted from the sources an asset has since moved off", async () => {
+    const originalSource = methodology({ id: "principle-source" });
+    const mergedSource = methodology({ id: "principle-merged", origin: "principle_merge", sourcePrincipleIds: ["principle-source", "principle-other"] });
+    const { assets, methodologies, service, setNow } = await makeService([originalSource, mergedSource]);
+    const accepted = await service.setStatus((await service.generate("skill", [originalSource.id])).id, "accepted");
+    // The source revised: a regenerated replacement waits, drafted from it.
+    setNow("2026-08-04T10:00:00.000Z");
+    await methodologies.save({ ...originalSource, principle: "先验证可回退路径，并记录回退条件。", updatedAt: "2026-08-04T10:00:00.000Z" });
+    const waiting = await service.regenerate(accepted.id);
+    // Then the asset moved to the merge.
+    await service.setStatus((await service.createSourceMigrationDraft(accepted.id, [mergedSource.id])).id, "accepted");
+
+    // Left waiting, it held the merge's sources back from archiving, and moving it paid a model call to fail.
+    await expect(assets.find(waiting.id)).resolves.toMatchObject({ status: "dismissed" });
   });
 
   it("migrates an unaccepted practice draft without creating a replacement application", async () => {

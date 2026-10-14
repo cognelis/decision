@@ -3,17 +3,17 @@ import type {
   PracticeAssetRecord,
   PracticeAssetStatus,
 } from "@cognelis/decision-core";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import {
-  mkdir,
   readFile,
   readdir,
   rename,
-  unlink,
-  writeFile,
 } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { join } from "node:path";
+import { parse as parseYaml } from "yaml";
+import { assertVaultPresent, normalizedNote } from "./markdown.js";
+import { escapeNoteText, notePropertiesYaml, ownTitleHeading, unescapeNoteText } from "./markdown-markers.js";
+import { existingNote, replaceNote, rewrittenNote } from "./note-rewrite.js";
 
 const DEFAULT_FOLDER = "Decision Journal";
 const TRIGGER_START = "<!-- decision:practice-trigger-start -->";
@@ -35,10 +35,17 @@ const STATUSES: readonly PracticeAssetStatus[] = [
 interface PracticeAssetRepositoryOptions {
   folder?: string;
   rename?: typeof rename;
+  /** The vault folder must already exist: a write never makes it up (see assertVaultPresent). */
+  existingVault?: boolean;
 }
 
 export interface SerializePracticeAssetOptions {
   includeSourceSnapshots?: boolean;
+  /**
+   * Escaped for Obsidian, as the vault's note is (the default). An agent reads its published SKILL.md as plain text,
+   * where `\<branch>` is a backslash and `grep '\<template'` another command: written for it as the reader wrote it.
+   */
+  escapeText?: boolean;
 }
 
 const requireText = (
@@ -95,7 +102,7 @@ const section = (
     throw new Error(`Practice asset is missing ${label}`);
   }
   return requireText(
-    markdown.slice(startIndex + start.length, endIndex),
+    unescapeNoteText(markdown.slice(startIndex + start.length, endIndex)),
     label,
     maximum,
   );
@@ -143,9 +150,9 @@ const parseFrontmatter = (
   };
 };
 
-const titleFromBody = (body: string): string => {
-  const match = /^#\s+(.+)$/mu.exec(body);
-  return requireText(match?.[1], "title", 120);
+const titleFromBody = (body: string, property: unknown): string => {
+  const match = ownTitleHeading(body, [TRIGGER_START, STEPS_START, CHECKS_START, FALLBACK_START], property);
+  return requireText(match === null ? undefined : unescapeNoteText(match.text), "title", 120);
 };
 
 const validatedRecord = (input: PracticeAssetRecord): PracticeAssetRecord => {
@@ -249,7 +256,8 @@ const validatedRecord = (input: PracticeAssetRecord): PracticeAssetRecord => {
     createdAt: requireDate(input.createdAt, "createdAt"),
     updatedAt: requireDate(input.updatedAt, "updatedAt"),
     acceptedAt,
-    title: requireText(input.title, "title", 120),
+    // One line, as it is read back from its "# " heading: a model's title broken over two lost the second.
+    title: requireText(input.title.replace(/\s*[\r\n]+\s*/gu, " "), "title", 120),
     summary: requireText(input.summary, "summary", 800),
     trigger: requireText(input.trigger, "trigger", 1_500),
     steps,
@@ -275,10 +283,14 @@ export const serializePracticeAsset = (
   options: SerializePracticeAssetOptions = {},
 ): string => {
   const record = validatedRecord(input);
-  const frontmatter = stringifyYaml(
+  // Drawn by a model from principles that came from captured decisions: text, not structure or Dataview code.
+  const text = options.escapeText === false ? (value: string) => value : escapeNoteText;
+  const frontmatter = notePropertiesYaml(
     {
       name: record.slug,
       description: record.summary,
+      // Which heading is the app's title, wherever headings of the reader's stand beside it (namedTitleHeading).
+      title: text(record.title),
       metadata: {
         decision: {
           type: record.kind,
@@ -309,19 +321,19 @@ export const serializePracticeAsset = (
     { lineWidth: 0 },
   ).trimEnd();
   const steps = record.steps
-    .map((step, index) => `${index + 1}. ${step}`)
+    .map((step, index) => `${index + 1}. ${text(step)}`)
     .join("\n");
-  const checks = record.checks.map((check) => `- ${check}`).join("\n");
+  const checks = record.checks.map((check) => `- ${text(check)}`).join("\n");
   return `---
 ${frontmatter}
 ---
 
-# ${record.title}
+# ${text(record.title)}
 
 ## 使用条件
 
 ${TRIGGER_START}
-${record.trigger}
+${text(record.trigger)}
 ${TRIGGER_END}
 
 ## 操作步骤
@@ -339,12 +351,23 @@ ${CHECKS_END}
 ## 失败处理
 
 ${FALLBACK_START}
-${record.fallback}
+${text(record.fallback)}
 ${FALLBACK_END}
 `;
 };
 
-export const parsePracticeAsset = (markdown: string): PracticeAssetRecord => {
+/** The properties the app writes; the rest of a skill's frontmatter (allowed-tools, license, metadata of its own) is the reader's. */
+const PRACTICE_KEYS = ["name", "description", "title", ["metadata", "decision"]] as const;
+const PRACTICE_MARKERS = [
+  [TRIGGER_START, TRIGGER_END],
+  [STEPS_START, STEPS_END],
+  [CHECKS_START, CHECKS_END],
+  [FALLBACK_START, FALLBACK_END],
+] as const;
+
+export const parsePracticeAsset = (note: string): PracticeAssetRecord => {
+  // Saved with Windows line endings (git's autocrlf) or a BOM, the same note: read as it was, it left every list.
+  const markdown = normalizedNote(note);
   const { properties, body } = parseFrontmatter(markdown);
   const metadata = properties.metadata;
   if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
@@ -381,7 +404,7 @@ export const parsePracticeAsset = (markdown: string): PracticeAssetRecord => {
     createdAt: requireDate(values.created, "createdAt"),
     updatedAt: requireDate(values.updated, "updatedAt"),
     acceptedAt: optionalDate(values.accepted_at, "acceptedAt"),
-    title: titleFromBody(body),
+    title: titleFromBody(body, properties.title),
     summary: requireText(properties.description, "summary", 800),
     trigger: section(body, TRIGGER_START, TRIGGER_END, "trigger", 1_500),
     steps: listSection(body, STEPS_START, STEPS_END, "steps", 2, 12),
@@ -468,12 +491,79 @@ export const parsePracticeAsset = (markdown: string): PracticeAssetRecord => {
   });
 };
 
+const asObject = (value: unknown): Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+
+/** The app's own text in a vault note as the reader wrote it: its marked sections and title, unescaped. */
+const unescapedPracticeBody = (body: string, property: unknown): string => {
+  let result = body;
+  for (const [start, end] of PRACTICE_MARKERS) {
+    const from = result.indexOf(start);
+    const to = from < 0 ? -1 : result.indexOf(end, from + start.length);
+    if (to < 0) continue;
+    result = `${result.slice(0, from)}${unescapeNoteText(result.slice(from, to))}${result.slice(to)}`;
+  }
+  const title = ownTitleHeading(result, PRACTICE_MARKERS.map(([start]) => start), property);
+  return title === null
+    ? result
+    : `${result.slice(0, title.index)}${unescapeNoteText(title.line)}${result.slice(title.index + title.line.length)}`;
+};
+
+/**
+ * The skill as Claude Code and Codex read it, and what its publication is compared by. Taken from the vault note
+ * when given: the frontmatter keys (allowed-tools, license, metadata of its own) and sections (an example) the
+ * reader added in Obsidian go with it; published from the record alone, they stayed in the vault and the card said
+ * 已是最新版本. The app's own text is as the reader wrote it, with none of the note's escaping (an agent read
+ * `\<branch>` literally), the source snapshots left out.
+ */
+export const publishedPracticeAsset = (
+  input: PracticeAssetRecord,
+  note: string | null = null,
+  publication?: { target: string; version: number },
+): string => {
+  const record = validatedRecord(input);
+  const own = parseFrontmatter(serializePracticeAsset(record, { includeSourceSnapshots: false, escapeText: false }));
+  const vault = note === null ? null : parseFrontmatter(normalizedNote(note));
+  // The note's `title` only tells the vault which heading is the app's: not a skill's key, nor in its hash.
+  const { name: _name, description: _description, title: _title, metadata: readerMetadata, ...readerKeys } = vault?.properties ?? {};
+  const { decision: _decision, ...readerMetadataKeys } = asObject(readerMetadata);
+  const properties = {
+    name: own.properties.name,
+    // Claude Code and Codex choose a skill by its description alone, its body read once chosen: what it does and
+    // when to use it, within the 1,024 characters Agent Skills allow. The summary alone left 使用条件 to the body.
+    description: Array.from(`${record.summary} 使用条件：${record.trigger}`).slice(0, 1_024).join(""),
+    ...readerKeys,
+    metadata: {
+      ...readerMetadataKeys,
+      decision: {
+        ...(publication === undefined ? {} : { publication_target: publication.target, publication_version: publication.version }),
+        ...asObject(asObject(own.properties.metadata).decision),
+      },
+    },
+  };
+  return `---\n${notePropertiesYaml(properties, { lineWidth: 0 }).trimEnd()}\n---\n${vault === null ? own.body : unescapedPracticeBody(vault.body, vault.properties.title)}`;
+};
+
+/** Whose a published skill says it is: the asset, the client and the version Decision wrote it as; null for another's. */
+export const publishedPracticeIdentity = (content: string): { id: string; target: unknown; version: unknown } | null => {
+  try {
+    const decision = asObject(asObject(parseFrontmatter(normalizedNote(content)).properties.metadata).decision);
+    return typeof decision.id === "string"
+      ? { id: decision.id, target: decision.publication_target, version: decision.publication_version }
+      : null;
+  } catch {
+    return null;
+  }
+};
+
 export class PracticeAssetRepository {
   readonly #vaultPath: string;
   readonly #folder: string;
   readonly #rename: typeof rename;
+  readonly #requiredVault: string | null;
 
   constructor(vaultPath: string, options: PracticeAssetRepositoryOptions = {}) {
+    this.#requiredVault = options.existingVault === true ? vaultPath : null;
     this.#vaultPath = vaultPath;
     this.#folder = options.folder ?? DEFAULT_FOLDER;
     this.#rename = options.rename ?? rename;
@@ -481,43 +571,53 @@ export class PracticeAssetRepository {
 
   async save(record: PracticeAssetRecord): Promise<void> {
     const validated = validatedRecord(record);
-    const path = this.#pathFor(validated);
-    await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-    const temporary = `${path}.${randomUUID()}.tmp`;
-    try {
-      await writeFile(temporary, serializePracticeAsset(validated), {
-        encoding: "utf8",
-        mode: 0o600,
-      });
-      await this.#rename(temporary, path);
-    } catch (error) {
-      await unlink(temporary).catch(() => undefined);
-      throw error;
-    }
+    // Renamed in Obsidian, the note is written where it now is, not forked under the id's own file name.
+    const path = (await this.#notes()).find((note) => note.record.id === validated.id)?.path ?? this.#pathFor(validated);
+    if (this.#requiredVault !== null) await assertVaultPresent(this.#requiredVault);
+    const raw = await existingNote(path);
+    const content = rewrittenNote(raw, serializePracticeAsset(validated), {
+      ownKeys: PRACTICE_KEYS,
+      markers: PRACTICE_MARKERS,
+      parse: parsePracticeAsset,
+    });
+    await replaceNote(path, raw, content, this.#rename);
   }
 
   async list(): Promise<PracticeAssetRecord[]> {
-    const paths = [
-      ...(await this.#listSkillPaths()),
-      ...(await this.#listWorkflowPaths()),
-    ];
-    const records: PracticeAssetRecord[] = [];
-    for (const path of paths) {
-      try {
-        records.push(parsePracticeAsset(await readFile(path, "utf8")));
-      } catch {
-        // External Markdown remains untouched; invalid notes are omitted.
-      }
-    }
-    return records.sort(
+    return (await this.#notes()).map((note) => note.record).sort(
       (left, right) =>
         right.updatedAt.localeCompare(left.updatedAt) ||
         left.id.localeCompare(right.id),
     );
   }
 
+  async #notes(): Promise<Array<{ path: string; record: PracticeAssetRecord; note: string }>> {
+    // A vault that is not there is not one with no skills (see MethodologyRepository.list).
+    if (this.#requiredVault !== null) await assertVaultPresent(this.#requiredVault);
+    const paths = [
+      ...(await this.#listSkillPaths()),
+      ...(await this.#listWorkflowPaths()),
+    ];
+    const notes: Array<{ path: string; record: PracticeAssetRecord; note: string }> = [];
+    for (const path of paths) {
+      try {
+        const note = await readFile(path, "utf8");
+        notes.push({ path, record: parsePracticeAsset(note), note });
+      } catch {
+        // External Markdown remains untouched; invalid notes are omitted.
+      }
+    }
+    return notes;
+  }
+
   async find(id: string): Promise<PracticeAssetRecord | null> {
     return (await this.list()).find((record) => record.id === id) ?? null;
+  }
+
+  /** The asset with its note as written, for what the reader added to it in Obsidian (see publishedPracticeAsset). */
+  async findNote(id: string): Promise<{ record: PracticeAssetRecord; note: string } | null> {
+    const found = (await this.#notes()).find((entry) => entry.record.id === id);
+    return found === undefined ? null : { record: found.record, note: found.note };
   }
 
   #pathFor(record: PracticeAssetRecord): string {

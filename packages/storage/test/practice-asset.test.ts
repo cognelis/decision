@@ -1,5 +1,5 @@
 import type { PracticeAssetRecord } from "@cognelis/decision-core";
-import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   parsePracticeAsset,
   PracticeAssetRepository,
+  publishedPracticeAsset,
   serializePracticeAsset,
 } from "../src/index.js";
 
@@ -140,6 +141,62 @@ describe("practice asset Markdown", () => {
     );
     expect(await readFile(skillPath, "utf8")).toContain("# 可逆改动验证");
     expect((await stat(skillPath)).mode & 0o777).toBe(0o600);
+  });
+
+  it("keeps what the reader added to a skill in Obsidian when it is saved again", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "practice-assets-kept-"));
+    const repository = new PracticeAssetRepository(vault);
+    await repository.save(fixture());
+    const path = join(vault, "Decision Journal", "skills", "skill-018f-606cdd9ffe00", "SKILL.md");
+    // The client's own fields, metadata of the reader's, and a section with a link: saved as SKILL.md, all gone.
+    const edited = (await readFile(path, "utf8"))
+      .replace("metadata:\n", "allowed-tools: Bash(git:*)\nlicense: MIT\nbuild: 007\nmetadata:\n  team: platform\n  ticket: 0042\n")
+      .concat("\n## 备注\n\n来自 [[发布清单]]。\n");
+    await writeFile(path, edited, "utf8");
+
+    await repository.save(fixture({ status: "accepted", acceptedAt: "2026-08-04T08:00:00.000Z", updatedAt: "2026-08-04T08:00:00.000Z", fallback: "回退本轮改动。" }));
+
+    const saved = await readFile(path, "utf8");
+    expect(saved).toContain("allowed-tools: Bash(git:*)\nlicense: MIT\nbuild: 007\n");
+    // Beside the app's own metadata, in the same block.
+    expect(saved).toContain("metadata:\n  team: platform\n  ticket: 0042\n");
+    expect(saved).toContain("## 备注\n\n来自 [[发布清单]]。");
+    expect(await repository.find("skill-018f")).toMatchObject({ status: "accepted", fallback: "回退本轮改动。" });
+  });
+
+  it("knows its title by the note's title property, and publishes the skill without it, its hash unchanged", () => {
+    const markdown = serializePracticeAsset(fixture());
+    expect(markdown).toContain("\ntitle: 可逆改动验证\n");
+    // A heading of the reader's between the title and the first section: read as the nearest, it stood as the title.
+    expect(parsePracticeAsset(markdown.replace("\n# 可逆改动验证\n", "\n# 可逆改动验证\n\n# 我的批注\n")).title).toBe("可逆改动验证");
+
+    // Not a key of the skill's, nor in what its sourceHash is taken from: a note from before it publishes the same.
+    const published = publishedPracticeAsset(fixture(), markdown);
+    expect(published).not.toMatch(/^title:/mu);
+    expect(published).toBe(publishedPracticeAsset(fixture(), markdown.replace(/^title: .*\n/mu, "")));
+  });
+
+  it("writes a model's steps as text, with no Dataview code in the skill", () => {
+    const record = fixture({ steps: ["运行 `$= dv.current()` 检查。", "```dataviewjs 之后再回退。"], fallback: "<code>$= app.vault</code>" });
+    const markdown = serializePracticeAsset(record);
+
+    expect(markdown).not.toMatch(/```dataviewjs|\$=/u);
+    expect(parsePracticeAsset(markdown)).toEqual(record);
+  });
+
+  it("saves a workflow renamed in Obsidian where it now is", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "practice-assets-renamed-"));
+    const repository = new PracticeAssetRepository(vault);
+    const workflow = fixture({ id: "workflow-018f", slug: "decision-staged-rollout", kind: "workflow", title: "分阶段发布" });
+    await repository.save(workflow);
+    const directory = join(vault, "Decision Journal", "workflows");
+    const [original] = await readdir(directory);
+    await rename(join(directory, original!), join(directory, "分阶段发布.md"));
+
+    // Written under the id's own file name, the edit forked a second workflow with the same id.
+    await repository.save({ ...workflow, steps: [...workflow.steps, "回顾本轮结果。"] });
+    expect(await readdir(directory)).toEqual(["分阶段发布.md"]);
+    expect((await repository.list()).map((record) => record.steps.length)).toEqual([4]);
   });
 
   it("keeps invalid external notes untouched and cleans a failed temporary write", async () => {

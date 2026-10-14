@@ -2,9 +2,46 @@ import { z } from "zod";
 
 export const MODEL_TRACE_VERSION = 1 as const;
 
+export const managedQwenModelIdSchema = z.enum(["qwen3.5-2b-q4-k-m", "qwen3.5-4b-q4-k-m"]);
+export type ManagedQwenModelId = z.infer<typeof managedQwenModelIdSchema>;
+export const managedQwenModelStatusSchema = z.object({
+  modelId: managedQwenModelIdSchema,
+  status: z.enum(["available", "missing", "checksum_failed", "installing", "failed"]),
+  downloadedBytes: z.number().int().nonnegative(),
+  totalBytes: z.number().int().positive(),
+  error: z.string().max(2000).optional(),
+}).strict().refine((value) => value.downloadedBytes <= value.totalBytes);
+export type ManagedQwenModelStatus = z.infer<typeof managedQwenModelStatusSchema>;
+
 const boundedText = (maximum: number) =>
   z.string().trim().min(1).max(maximum);
 const identifierSchema = boundedText(200);
+const tokenPriceSchema = z.number().nonnegative().max(1_000_000);
+export const modelPricingSchema = z.object({
+  currency: z.string().trim().min(1).max(8),
+  inputPerMillion: tokenPriceSchema,
+  outputPerMillion: tokenPriceSchema,
+  cachedInputPerMillion: tokenPriceSchema.optional(),
+  peak: z.object({
+    inputPerMillion: tokenPriceSchema,
+    outputPerMillion: tokenPriceSchema,
+    cachedInputPerMillion: tokenPriceSchema,
+    holidayYear: z.number().int().min(2000).max(2100),
+    holidays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/u).refine((date) => Number.isFinite(Date.parse(`${date}T00:00:00Z`)) && new Date(`${date}T00:00:00Z`).toISOString().startsWith(date))).min(1).max(366),
+  }).strict().superRefine((peak, context) => {
+    if (peak.holidays.some((date) => !date.startsWith(`${peak.holidayYear}-`))) context.addIssue({ code: "custom", path: ["holidays"], message: "节假日日期必须属于日历年份" });
+  }).optional(),
+}).strict().superRefine((price, context) => {
+  if (price.peak !== undefined && price.cachedInputPerMillion === undefined) context.addIssue({ code: "custom", path: ["cachedInputPerMillion"], message: "峰谷计费需要空闲时段缓存命中单价" });
+});
+export type ModelPricing = z.infer<typeof modelPricingSchema>;
+/** A prompt's ceiling before it crosses a provider boundary. */
+const PROMPT_CHARS = 20_000;
+/**
+ * A PR review's: it budgets its own prompts to the model it calls (a local model's stay far under the ordinary
+ * ceiling) and needs the room only to read a whole PR with a remote model, as pr-agent and Claude Code do.
+ */
+const PR_REVIEW_PROMPT_CHARS = 120_000;
 const fingerprintSchema = z.string().regex(/^[a-f0-9]{64}$/u);
 const jsonObjectSchema = z
   .record(z.string(), z.unknown())
@@ -19,6 +56,8 @@ export const modelPurposeSchema = z.enum([
   "methodology-extraction",
   "skill-drafting",
   "workflow-drafting",
+  "retrieval-answer",
+  "pr-review",
 ]);
 
 export const modelBackendKindSchema = z.enum([
@@ -38,6 +77,18 @@ export const modelApiProtocolSchema = z.enum([
   "messages",
 ]);
 
+export const modelProxySchema = z.object({
+  mode: z.enum(["environment", "direct", "custom"]),
+  url: z.string().trim().min(1).max(2_000).refine((value) => {
+    try { const url = new URL(value); return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password && url.pathname === "/" && !url.search && !url.hash; } catch { return false; }
+  }, "Proxy must be an HTTP(S) origin without credentials, path, query or fragment").optional(),
+  noProxy: z.string().trim().max(2_000).refine((value) => !/[\0\r\n]/u.test(value), "Invalid proxy bypass list").optional(),
+}).strict().superRefine((proxy, context) => {
+  if ((proxy.mode === "custom") !== (proxy.url !== undefined)) context.addIssue({ code: "custom", path: ["url"], message: "Only custom proxy mode requires a proxy URL" });
+  if (proxy.mode !== "custom" && proxy.noProxy !== undefined) context.addIssue({ code: "custom", path: ["noProxy"], message: "Only custom proxy mode configures bypass hosts" });
+});
+export type ModelProxy = z.infer<typeof modelProxySchema>;
+
 const modelProviderProfileBaseSchema = z
   .object({
     version: z.literal(1),
@@ -52,6 +103,22 @@ const modelProviderProfileBaseSchema = z
     baseUrl: z.string().url().max(2_000).optional(),
     apiProtocol: modelApiProtocolSchema.optional(),
     credentialRef: identifierSchema.optional(),
+    proxy: modelProxySchema.optional(),
+    /**
+     * How an OpenAI-compatible endpoint is asked for JSON. "schema" sends a
+     * strict json_schema response_format; "object" sends json_object and
+     * describes the shape in the prompt instead, for services such as
+     * DeepSeek that accept json_object only. Defaults to "schema".
+     */
+    jsonMode: z.enum(["schema", "object"]).optional(),
+    fallbackOnFailure: z.boolean().optional(),
+    /**
+     * What this backend charges, supplied by the user. Deliberately not a
+     * built-in table: vendor prices change, and a stale table would print
+     * confident numbers that are quietly wrong. Absent means costs are shown
+     * in tokens only.
+     */
+    pricing: modelPricingSchema.optional(),
   })
   .strict();
 
@@ -91,12 +158,15 @@ const refineProviderProfile = (
       | z.infer<typeof modelApiProtocolSchema>
       | undefined;
     credentialRef?: string | undefined;
+    proxy?: ModelProxy | undefined;
   },
   context: z.RefinementCtx,
   credentialRequired: boolean,
 ): void => {
   const remote = remoteKinds.has(profile.kind);
   const cli = cliKinds.has(profile.kind);
+  if (profile.kind === "qwen" && !managedQwenModelIdSchema.safeParse(profile.model).success) context.addIssue({ code: "custom", path: ["model"], message: "请选择受支持的 2B 或 4B 本地模型" });
+  if (!remote && !cli && profile.proxy !== undefined) context.addIssue({ code: "custom", path: ["proxy"], message: "Only remote and CLI providers support proxy settings" });
   if (!cli && profile.model === undefined) {
     context.addIssue({
       code: "custom",
@@ -259,6 +329,8 @@ export const localModelClientStatusSchema = z
       "diagnostics_failed",
     ]),
     checkedAt: z.string().datetime(),
+    modelsSource: z.enum(["server", "client", "cache"]).optional(),
+    models: z.array(z.object({ id: boundedText(200), label: boundedText(200) }).strict()).max(100).optional(),
   })
   .strict();
 
@@ -283,6 +355,7 @@ export const modelInvocationErrorCodeSchema = z.enum([
   "authentication_failed",
   "authorization_failed",
   "rate_limited",
+  "quota_exhausted",
   "provider_unavailable",
   "invalid_output",
   "output_limit",
@@ -318,15 +391,15 @@ export const normalizedTokenUsageSchema = z
 
 export const modelTimingSchema = z
   .object({
-    queuedMs: z.number().int().nonnegative().max(120_000),
-    providerMs: z.number().int().nonnegative().max(120_000),
+    queuedMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+    providerMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
     firstOutputMs: z
       .number()
       .int()
       .nonnegative()
-      .max(120_000)
+      .max(Number.MAX_SAFE_INTEGER)
       .optional(),
-    totalMs: z.number().int().nonnegative().max(120_000),
+    totalMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   })
   .strict();
 
@@ -338,12 +411,18 @@ export const structuredGenerationRequestSchema = z
     promptVersion: boundedText(100),
     schemaVersion: boundedText(100),
     locale: boundedText(50),
-    systemPrompt: boundedText(20_000),
-    userPrompt: boundedText(20_000),
+    systemPrompt: boundedText(PR_REVIEW_PROMPT_CHARS),
+    userPrompt: boundedText(PR_REVIEW_PROMPT_CHARS),
     outputSchema: jsonObjectSchema,
     maxOutputTokens: z.number().int().positive().max(8_192),
   })
-  .strict();
+  .strict()
+  .superRefine((request, context) => {
+    if (request.purpose === "pr-review") return;
+    for (const key of ["systemPrompt", "userPrompt"] as const) {
+      if (request[key].length > PROMPT_CHARS) context.addIssue({ code: "custom", path: [key], message: `Prompt exceeds ${PROMPT_CHARS} characters` });
+    }
+  });
 
 export const modelInvocationProfileSchema = z
   .object({
@@ -354,13 +433,14 @@ export const modelInvocationProfileSchema = z
     providerVersion: boundedText(200).optional(),
     promptVersion: boundedText(100),
     schemaVersion: boundedText(100),
+    pricing: modelPricingSchema.optional(),
   })
   .strict();
 
 export const modelInvocationInputSchema = z
   .object({
-    systemPrompt: boundedText(20_000),
-    userPrompt: boundedText(20_000),
+    systemPrompt: boundedText(PR_REVIEW_PROMPT_CHARS),
+    userPrompt: boundedText(PR_REVIEW_PROMPT_CHARS),
     outputSchema: jsonObjectSchema,
     clientSystemPromptVisibility: z
       .enum(["visible", "opaque"])
@@ -395,6 +475,14 @@ export const modelInvocationTraceSchema = z
     providerRequestId: boundedText(500).optional(),
     processExitCode: z.number().int().optional(),
     diagnosticExcerpt: boundedText(2_000).optional(),
+    request: z.object({
+      clientExecutable: boundedText(2_000).optional(),
+      configuredTimeoutMs: z.number().int().min(1_000).max(120_000),
+      generationTimeoutMs: z.number().int().min(1_000).max(120_000),
+      requestedMaxOutputTokens: z.number().int().positive().max(8_192),
+      systemPromptChars: z.number().int().nonnegative().max(PR_REVIEW_PROMPT_CHARS),
+      userPromptChars: z.number().int().nonnegative().max(PR_REVIEW_PROMPT_CHARS),
+    }).strict().optional(),
     createdAt: z.string().datetime(),
     expiresAt: z.string().datetime(),
   })

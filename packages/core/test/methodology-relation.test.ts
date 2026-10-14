@@ -36,6 +36,24 @@ describe("assessMethodologyDuplicateGroup", () => {
     });
   });
 
+  it("takes a pair's newest verdict, as the quality view does", () => {
+    const stale = duplicate("principle-a", "principle-b");
+    const newer: MethodologyRelationRecord = {
+      ...duplicate("principle-b", "principle-a"),
+      id: "relation:principle-a:principle-b:2",
+      updatedAt: "2026-08-09T10:00:00.000Z",
+      disposition: "unrelated",
+    };
+
+    // Any duplicate fact counted, the pair since judged unrelated still opened a merge.
+    for (const relations of [[stale, newer], [newer, stale]]) {
+      expect(assessMethodologyDuplicateGroup(["principle-a", "principle-b"], relations)).toMatchObject({
+        complete: false,
+        missingPairs: [["principle-a", "principle-b"]],
+      });
+    }
+  });
+
   it("accepts a complete five-principle duplicate group", () => {
     const ids = ["a", "b", "c", "d", "e"];
     const relations = ids.flatMap((first, index) =>

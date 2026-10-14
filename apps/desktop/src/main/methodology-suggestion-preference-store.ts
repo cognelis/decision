@@ -1,10 +1,10 @@
+import { renameReplacing } from "@cognelis/decision-storage";
 import { createHash, randomUUID } from "node:crypto";
 import {
   chmod,
   lstat,
   mkdir,
   readFile,
-  rename,
   stat,
   unlink,
   writeFile,
@@ -77,6 +77,13 @@ export class MethodologySuggestionPreferenceStore {
     const preferences = await this.#load();
     const key = keyFor(suggestionId);
     return preferences.deferred.some((item) => item.key === key);
+  }
+
+  /** For building suggestions in which the deferred ones take no place among those shown. */
+  async deferredTest(): Promise<(suggestionId: string) => boolean> {
+    const preferences = await this.#load();
+    const keys = new Set(preferences.deferred.map((item) => item.key));
+    return (suggestionId) => keys.has(keyFor(suggestionId));
   }
 
   async partition<T extends { id: string }>(
@@ -157,7 +164,7 @@ export class MethodologySuggestionPreferenceStore {
         `${JSON.stringify(preferences, null, 2)}\n`,
         { encoding: "utf8", mode: 0o600, flag: "wx" },
       );
-      await rename(temporary, this.#path);
+      await renameReplacing(temporary, this.#path);
       await chmod(this.#path, 0o600);
     } finally {
       await unlink(temporary).catch(() => undefined);

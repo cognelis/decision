@@ -5,47 +5,6 @@ import { describe, expect, it } from "vitest";
 
 const THIS_TEST = "scripts/test/release-portability.test.ts";
 
-const LEGACY_BRAND_ALLOWLIST = new Set([
-  "apps/bridge/resources/decision-island-bridge",
-  "apps/bridge/resources/decision-island-bridge.cmd",
-  "apps/bridge/src/runtime-client.ts",
-  "apps/bridge/test/hooks-cli.test.ts",
-  "apps/bridge/test/install-cli.test.ts",
-  "apps/bridge/test/runtime-client.test.ts",
-  "apps/bridge/test/vite-config.test.ts",
-  "apps/bridge/vite.config.ts",
-  "apps/desktop/src/main/application-paths.ts",
-  "apps/desktop/src/main/integration-status.ts",
-  "apps/desktop/test/application-paths.test.ts",
-  "apps/desktop/test/brand-migration.test.ts",
-  "apps/desktop/test/bridge-path.test.ts",
-  "apps/desktop/test/forge-config.test.ts",
-  "apps/desktop/test/integration-status.test.ts",
-  "config/decision-environment.mjs",
-  "docs/superpowers/plans/2026-08-15-cognelis-brand-migration.md",
-  "docs/superpowers/plans/2026-08-16-cross-platform-binary-release.md",
-  "docs/superpowers/specs/2026-08-14-github-open-source-publishing-design.md",
-  "docs/superpowers/specs/2026-08-15-cognelis-migration-and-github-publication-design.md",
-  "docs/superpowers/specs/2026-08-16-cross-platform-binary-release-design.md",
-  "packages/integrations/src/claude.ts",
-  "packages/integrations/src/codex.ts",
-  "packages/integrations/src/hooks.ts",
-  "packages/integrations/test/claude.test.ts",
-  "packages/integrations/test/codex.test.ts",
-  "packages/integrations/test/install.test.ts",
-  "packages/storage/src/legacy-markers.ts",
-  "packages/storage/test/markdown.test.ts",
-  "packages/storage/test/methodology-relation.test.ts",
-  "packages/storage/test/methodology.test.ts",
-  "scripts/test/decision-environment.test.ts",
-  "scripts/build-foundation-model-helper.sh",
-  "scripts/build-native.mjs",
-  "scripts/build-liquid-glass-addon.sh",
-  "scripts/platform-artifacts.mjs",
-  "scripts/smoke-support.mjs",
-  "scripts/test/smoke-support.test.ts",
-]);
-
 const candidateFiles = (): string[] =>
   execFileSync(
     "git",
@@ -53,7 +12,7 @@ const candidateFiles = (): string[] =>
     { encoding: "utf8" },
   )
     .split("\0")
-    .filter((path) => path.length > 0)
+    .filter((path) => path.length > 0 && existsSync(path))
     .sort();
 
 const textFiles = (files: readonly string[]): string[] =>
@@ -166,23 +125,45 @@ describe("release candidate portability", () => {
           !path.includes("/test/")) ||
         (path.startsWith("scripts/") && !path.startsWith("scripts/test/")),
     );
+    expect(matches(productionFiles, /\/(?:Users|home)\//u)).toEqual([]);
+    // Homebrew's documented default prefix is no one machine's path, but it stays out of source save in the
+    // one list of known install folders, the PATH fallback for a login shell that does not answer.
+    const knownInstallFolders = "apps/desktop/src/main/login-shell-path.ts";
     expect(
-      matches(productionFiles, /\/(?:Users|home)\/|\/opt\/homebrew\//u),
+      matches(productionFiles.filter((path) => path !== knownInstallFolders), /\/opt\/homebrew\//u),
     ).toEqual([]);
   });
 
-  it("keeps the legacy brand inside explicit 1.x compatibility files", () => {
-    const legacyBrand =
-      /Decision Island|decision-island|DECISION_ISLAND|DecisionIsland|decisionIsland/u;
-    const findings = matches(textFiles(candidateFiles()), legacyBrand);
-
-    expect(
-      findings.filter((path) => !LEGACY_BRAND_ALLOWLIST.has(path)),
-    ).toEqual([]);
-    expect(
-      [...LEGACY_BRAND_ALLOWLIST].filter(
-        (path) => !existsSync(path) || !legacyBrand.test(readFileSync(path, "utf8")),
+  it("keeps the shortcut the README gives a page in step with the sidebar", () => {
+    // The sidebar order is what ⌘/Ctrl+1…8 follow, so moving an entry silently
+    // renumbers every page after it. The README names one of those numbers,
+    // and nothing else notices when it stops being true.
+    const shell = readFileSync(
+      "apps/desktop/src/renderer/components/DesktopShell.tsx",
+      "utf8",
+    );
+    const order = [
+      ...shell.matchAll(/surface: "[a-z-]+", label: "([^"]+)"/gu),
+    ].map((entry) => entry[1]!);
+    const claims = [
+      ...readFileSync("README.md", "utf8").matchAll(
+        /「([^」]+)」[^（。]*（⌘\/Ctrl\+(\d)）/gu,
       ),
-    ).toEqual([]);
+    ];
+
+    expect(order.length).toBeGreaterThan(0);
+    expect(claims.length).toBeGreaterThan(0);
+    expect(
+      claims.map(([, label, digit]) => `${label}=${digit}`),
+    ).toEqual(
+      claims.map(([, label]) => `${label}=${order.indexOf(label!) + 1}`),
+    );
+  });
+
+  it("uses the current product name in all shipped code and documentation", () => {
+    const retiredTerms = /island|灵动岛|小岛|浮岛|决策岛|理由岛|弹岛/iu;
+    const files = candidateFiles();
+    expect(files.filter((path) => retiredTerms.test(path))).toEqual([]);
+    expect(matches(textFiles(files), retiredTerms)).toEqual([]);
   });
 });

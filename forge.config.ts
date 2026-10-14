@@ -1,7 +1,9 @@
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
+import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import type { ForgeConfig } from "@electron-forge/shared-types";
+import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 import { readDecisionEnvironment } from "./config/decision-environment.mjs";
 import packageJson from "./package.json";
@@ -173,7 +175,9 @@ const ignorePackagedSource = (file: string): boolean => {
 const config: ForgeConfig = {
   packagerConfig: {
     asar: {
-      unpack: "**/*.{node,dylib,so}",
+      // The libraries a native addon loads beside it as well: on Windows llama.dll and ggml*.dll, which left
+      // in the archive Windows could not load, and local recognition and vector search had no model.
+      unpack: "**/*.{node,dylib,so,dll}",
     },
     ignore: ignorePackagedSource,
     name: "Decision",
@@ -186,6 +190,7 @@ const config: ForgeConfig = {
       "dist/semantic",
       "dist/native",
       "apps/desktop/assets",
+      "skills",
     ],
     ...(localElectronZipDir === undefined
       ? {}
@@ -224,6 +229,20 @@ const config: ForgeConfig = {
           config: "apps/desktop/vite.renderer.config.ts",
         },
       ],
+    }),
+    // Set in the packaged binary itself. Running as Node stays on: the bridge's launchers start this binary
+    // with ELECTRON_RUN_AS_NODE=1, and run so it still takes --inspect. Off: NODE_OPTIONS, through which an
+    // environment variable ran its own code in the app and in every bridge, and --inspect on the app's own
+    // process. The app loads only from app.asar, checked against the hash the build wrote beside it. Cookie
+    // encryption is left alone: the app keeps no cookies (its requests go through Node), so it would only
+    // add a keychain read.
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
     }),
   ],
 };

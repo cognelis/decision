@@ -36,18 +36,8 @@ const run = (command, arguments_, cwd) =>
 const clearAppleOutputs = async (repositoryRoot) => {
   const semanticDirectory = join(repositoryRoot, "dist", "semantic");
   const nativeDirectory = join(repositoryRoot, "dist", "native");
-  await Promise.all([
-    mkdir(semanticDirectory, { recursive: true }),
-    mkdir(nativeDirectory, { recursive: true }),
-  ]);
-  await Promise.all(
-    [
-      join(semanticDirectory, "decision-foundation-model-helper"),
-      join(semanticDirectory, "decision-island-foundation-model-helper"),
-      join(nativeDirectory, "decision-liquid-glass.node"),
-      join(nativeDirectory, "decision-island-liquid-glass.node"),
-    ].map((path) => rm(path, { force: true })),
-  );
+  await Promise.all([semanticDirectory, nativeDirectory].map((directory) => rm(directory, { recursive: true, force: true })));
+  await Promise.all([semanticDirectory, nativeDirectory].map((directory) => mkdir(directory, { recursive: true })));
   await copyFile(
     join(
       repositoryRoot,
@@ -66,8 +56,8 @@ export const buildNativeResources = async ({
   repositoryRoot = process.cwd(),
 } = {}) => {
   const plan = nativeBuildPlan(platform);
+  await clearAppleOutputs(repositoryRoot);
   if (plan.length === 0) {
-    await clearAppleOutputs(repositoryRoot);
     return;
   }
   for (const script of plan) {

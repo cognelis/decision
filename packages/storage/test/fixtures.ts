@@ -48,5 +48,10 @@ export const recordFixture = (
   reviewDueDate: null,
   outcome: null,
   outcomeReview: null,
+  sourceKind: null,
+  sourceForm: null,
+  occurredAt: null,
+  sensitivity: "private",
+  expectedOutcome: null,
   ...overrides,
 });

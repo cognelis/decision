@@ -1,3 +1,4 @@
+import { FuseV1Options } from "@electron/fuses";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
@@ -100,24 +101,6 @@ describe("macOS packaging", () => {
     });
   });
 
-  it("supports legacy release variables while preferring current values", () => {
-    const distribution = createMacDistributionConfig({
-      DECISION_RELEASE: "1",
-      DECISION_SIGNING_IDENTITY:
-        "Developer ID Application: Current Team (ABCDE12345)",
-      DECISION_ISLAND_SIGNING_IDENTITY:
-        "Developer ID Application: Legacy Team (FGHIJ67890)",
-      DECISION_ISLAND_NOTARY_KEYCHAIN_PROFILE: "legacy-profile",
-    });
-
-    expect(distribution.osxSign).toMatchObject({
-      identity: "Developer ID Application: Current Team (ABCDE12345)",
-    });
-    expect(distribution.osxNotarize).toEqual({
-      keychainProfile: "legacy-profile",
-    });
-  });
-
   it("rejects mixed notarization strategies", () => {
     expect(() =>
       createMacDistributionConfig({
@@ -185,6 +168,15 @@ describe("macOS packaging", () => {
     );
   });
 
+  it("sweeps model traces and expired candidates at startup and once a day, not only when they are next used", () => {
+    const source = readFileSync(new URL("../src/main/index.ts", import.meta.url), "utf8");
+    const sweep = /const sweepRetention = \(\): void => \{([\s\S]*?)\n {2}\};/u.exec(source)?.[1] ?? "";
+
+    expect(sweep).toContain("modelTraces.list()");
+    expect(sweep).toContain("candidateSpool.list()");
+    expect(source).toMatch(/sweepRetention\(\);\s*setInterval\(sweepRetention, 24 \* 60 \* 60 \* 1_000\)\.unref\(\);/u);
+  });
+
   it("packages semantic helper metadata but never model weights", () => {
     const resources =
       forgeConfig.packagerConfig?.extraResource ?? [];
@@ -209,6 +201,8 @@ describe("macOS packaging", () => {
         ),
       }),
     );
+    // On Windows the addon's own DLLs: left inside app.asar, LoadLibrary could not find them.
+    expect((asar as { unpack: string }).unpack).toMatch(/\bdll\b/u);
     expect(packageJson.dependencies).toMatchObject({
       "node-llama-cpp": "3.19.1",
     });
@@ -231,6 +225,26 @@ describe("macOS packaging", () => {
     expect(ignore("/node_modules/a/test/runtime.test.js")).toBe(true);
     expect(ignore("/node_modules/.package-lock.json")).toBe(true);
     expect(ignore("/apps")).toBe(true);
+  });
+
+  it("runs no code handed to the packaged app through NODE_OPTIONS or --inspect, and still runs the bridge as Node", () => {
+    const fuses = (forgeConfig.plugins ?? []).find(
+      (plugin) => typeof plugin === "object" && plugin !== null && "name" in plugin && plugin.name === "fuses",
+    );
+
+    expect(fuses).toMatchObject({
+      config: {
+        [FuseV1Options.RunAsNode]: true,
+        [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+        [FuseV1Options.EnableNodeCliInspectArguments]: false,
+        [FuseV1Options.OnlyLoadAppFromAsar]: true,
+        [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      },
+    });
+    // What running as Node stays on for: both launchers start the app's own binary that way.
+    for (const launcher of ["decision-bridge", "decision-bridge.cmd"]) {
+      expect(readFileSync(new URL(`../../bridge/resources/${launcher}`, import.meta.url), "utf8")).toContain("ELECTRON_RUN_AS_NODE=1");
+    }
   });
 
   it.each(["build", "make"] as const)(

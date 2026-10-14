@@ -11,6 +11,16 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("decision consultation protocol", () => {
+  it("takes the languages of the code a consultation is about, and none from a released client", () => {
+    const request = {
+      consultationVersion: DECISION_CONSULTATION_VERSION, requestId: "consultation-languages", sourceClient: "codex", project: "decision",
+      question: "错误要不要包一层？", options: [], context: null, requestedAt: "2026-08-08T10:00:00.000Z",
+    } as const;
+    expect(decisionConsultationRequestSchema.parse({ ...request, languages: ["go", "typescript"] }).languages).toEqual(["go", "typescript"]);
+    expect(decisionConsultationRequestSchema.parse(request)).not.toHaveProperty("languages");
+    expect(decisionConsultationRequestSchema.safeParse({ ...request, languages: [""] }).success).toBe(false);
+  });
+
   it("accepts a bounded read-only consultation round trip", () => {
     const request = decisionConsultationRequestSchema.parse({
       consultationVersion: DECISION_CONSULTATION_VERSION,

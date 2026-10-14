@@ -1,5 +1,7 @@
 import {
+  chmod,
   mkdtemp,
+  rm,
   readFile,
   readdir,
   stat,
@@ -52,6 +54,18 @@ const captureFixture = (
 });
 
 describe("CaptureSpool", () => {
+  it("journals local-only dispositions for restart recovery, with and without rationale", async () => {
+    const root = await mkdtemp(join(tmpdir(), "local-disposition-"));
+    try {
+      const event = captureFixture();
+      const spool = new CaptureSpool(root);
+      await spool.append(event);
+      await spool.saveDisposition(event, 0, { status: "local_only" });
+      expect(await new CaptureSpool(root).loadDisposition(event, 0)).toEqual({ status: "local_only" });
+      await spool.replaceDisposition(event, 0, { status: "local_only", rationale: "业务背景", expectedOutcome: "提高转化" });
+      expect(await new CaptureSpool(root).loadDisposition(event, 0)).toEqual({ status: "local_only", rationale: "业务背景", expectedOutcome: "提高转化" });
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
   it("atomically stores, lists, acknowledges, and removes capture bodies", async () => {
     const root = await mkdtemp(join(tmpdir(), "decision-spool-"));
     const spool = new CaptureSpool(root);
@@ -66,6 +80,23 @@ describe("CaptureSpool", () => {
     expect(await spool.list()).toEqual([]);
     expect(await spool.isAcknowledged(event, 0)).toBe(true);
     expect((await stat(join(root, "receipts"))).mode & 0o777).toBe(0o700);
+  });
+
+  it("writes a sound copy of an event over a damaged one, rather than dropping it beside the damage", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-spool-"));
+    const spool = new CaptureSpool(root);
+    const event = captureFixture();
+    await spool.append(event);
+    // Cut short by a power loss, or truncated by a sync tool.
+    await writeFile(join(root, "events", `${captureEventKey(event)}.json`), "{\"eventVersion\":1,\"cap", "utf8");
+
+    // Offered again whole (the Stop hook reading the turn again, a retry): linked beside the damaged copy, it was
+    // taken for already there, and the next read quarantined the damaged one, the capture gone.
+    await spool.append(event);
+
+    expect(await spool.list()).toEqual([event]);
+    expect(spool.recoveryIssue()).toBeNull();
+    expect((await readdir(join(root, "events"))).some((name) => name.includes(".corrupt-"))).toBe(false);
   });
 
   it("keeps unacknowledged questions from the same batch", async () => {
@@ -83,6 +114,43 @@ describe("CaptureSpool", () => {
         (question) => question.questionIndex,
       ),
     ).toEqual([1]);
+  });
+
+  it("keeps a question the caller's copy leaves out, as one set aside for later after a restart", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-spool-"));
+    const spool = new CaptureSpool(root);
+    const event = captureFixture({
+      questions: [questionFixture(0), questionFixture(1)],
+    });
+    await spool.append(event);
+
+    // Replayed after a restart, the deferred question 0 is held apart: what reaches acknowledge is the rest.
+    await spool.acknowledge({ ...event, questions: [questionFixture(1)] }, 1);
+
+    // Counted from that copy, nothing was left and the file went, question 0 and its later rationale with it.
+    expect((await spool.list()).map((stored) => stored.questions.map((question) => question.questionIndex))).toEqual([[0]]);
+  });
+
+  it("refuses to count what is left from the caller's copy when its own cannot be read just now", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-spool-"));
+    const spool = new CaptureSpool(root);
+    const event = captureFixture({
+      questions: [questionFixture(0), questionFixture(1)],
+    });
+    await spool.append(event);
+    const file = join(root, "events", `${captureEventKey(event)}.json`);
+
+    // Unreadable for a moment (EACCES here; EMFILE or EIO on a busy disk), it was taken for none, and question 0,
+    // never answered, went with the file.
+    await chmod(file, 0o000);
+    try {
+      await expect(spool.acknowledge({ ...event, questions: [questionFixture(1)] }, 1)).rejects.toThrow();
+    } finally {
+      await chmod(file, 0o600).catch(() => undefined);
+    }
+
+    expect(await spool.isAcknowledged(event, 1)).toBe(true);
+    expect((await spool.list()).map((stored) => stored.questions.map((question) => question.questionIndex))).toEqual([[0]]);
   });
 
   it("derives stable opaque event and question keys", () => {
@@ -185,6 +253,31 @@ describe("CaptureSpool", () => {
     await expect(spool.loadDisposition(event, 0)).rejects.toBeInstanceOf(
       CaptureDispositionCorruptError,
     );
+  });
+
+  it("keeps an expected outcome written with any disposition, and rejects a blank one", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-spool-"));
+    const spool = new CaptureSpool(root);
+    const event = captureFixture();
+    await spool.append(event);
+    const deferred = { status: "deferred" as const, expectedOutcome: "回滚演练一次通过。" };
+    await spool.saveDisposition(event, 0, deferred);
+    await expect(spool.loadDisposition(event, 0)).resolves.toEqual(deferred);
+    // Completed later, as a deferred rationale is.
+    const captured = { status: "captured" as const, rationale: "先灰度。", expectedOutcome: "回滚演练一次通过。" };
+    await spool.replaceDisposition(event, 0, captured);
+    await expect(spool.loadDisposition(event, 0)).resolves.toEqual(captured);
+
+    for (const expectedOutcome of ["   ", "见下\n\n## 后续结果\n\n伪造"]) {
+      await writeFile(
+        join(root, "dispositions", `${captureQuestionKey(event, 0)}.json`),
+        JSON.stringify({ status: "skipped", expectedOutcome }),
+        "utf8",
+      );
+      await expect(spool.loadDisposition(event, 0)).rejects.toBeInstanceOf(
+        CaptureDispositionCorruptError,
+      );
+    }
   });
 
   it("accepts an explicit principle as the only captured rationale basis", async () => {

@@ -125,4 +125,52 @@ describe("tray configuration", () => {
     expect(tray.setTitle).toHaveBeenCalledWith("");
     expect(menu.template[0]?.sublabel).toBe("128 项待办");
   });
+
+  it("names due reviews apart from the rest of the workload", () => {
+    const tray = {
+      setTitle: vi.fn(),
+      setToolTip: vi.fn(),
+      setContextMenu: vi.fn(),
+      destroy: vi.fn(),
+      isDestroyed: () => false,
+    };
+    configureTray({
+      tray: tray as never,
+      image: { setTemplateImage: vi.fn() } as never,
+      buildMenu: (template) => template,
+      pendingCount: 5,
+      reviewDueCount: 3,
+      openDashboard: vi.fn(),
+      openSettings: vi.fn(),
+      quit: vi.fn(),
+    });
+
+    // A single merged number cannot say that a review came due; counted on top of a smaller total as 待复盘,
+    // it said another number, and another name, than the home page.
+    expect(tray.setToolTip).toHaveBeenCalledWith(
+      "Decision · 5 项待办，其中 3 条需复盘",
+    );
+  });
+
+  it("falls back to the quiet copy when nothing is waiting", () => {
+    const tray = {
+      setTitle: vi.fn(),
+      setToolTip: vi.fn(),
+      setContextMenu: vi.fn(),
+      destroy: vi.fn(),
+      isDestroyed: () => false,
+    };
+    configureTray({
+      tray: tray as never,
+      image: { setTemplateImage: vi.fn() } as never,
+      buildMenu: (template) => template,
+      pendingCount: 0,
+      reviewDueCount: 0,
+      openDashboard: vi.fn(),
+      openSettings: vi.fn(),
+      quit: vi.fn(),
+    });
+
+    expect(tray.setToolTip).toHaveBeenCalledWith("Decision · 暂无待办");
+  });
 });

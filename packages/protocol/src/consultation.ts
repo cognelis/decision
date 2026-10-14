@@ -19,6 +19,11 @@ export const decisionConsultationRequestSchema = z
     options: z.array(capturedOptionSchema).max(8),
     context: consultationText(6_000).nullable(),
     requestedAt: z.string().datetime(),
+    /**
+     * The programming languages of the code the choice is about. A preference or idea kept for some languages is
+     * recalled only where they meet; left out, such entries are recalled as before.
+     */
+    languages: z.array(consultationText(40)).max(8).optional(),
   })
   .strict();
 
@@ -35,33 +40,72 @@ export const decisionConsultationMatchSchema = z
     relevance: z.enum(["strong", "possible"]),
     reason: consultationText(1_000),
     matchedTerms: z.array(consultationText(100)).max(3),
-  })
-  .strict();
+  });
+
+/**
+ * A preference or an idea recalled beside the principles — never among them.
+ *
+ * `matches` are accepted principles: rules the reader confirmed through the
+ * methodology flow. These are not, and the separation is the point. Every one
+ * carries its `standing`, so no consumer can present it as settled.
+ */
+export const decisionConsultationSignalSchema = z
+  .object({
+    recordId: consultationText(200),
+    kind: z.enum(["preference", "idea"]),
+    title: consultationText(500),
+    summary: consultationText(4_000),
+    standing: consultationText(500),
+    qualifier: consultationText(4_000).nullable(),
+    relevanceScore: z.number().int().min(0).max(100),
+    /**
+     * Never "strong", unlike a principle match: a preference allows exceptions
+     * and an idea is not a commitment, so the boundary is held here rather than
+     * left to every caller to respect.
+     */
+    relevance: z.literal("possible"),
+    reason: consultationText(1_000),
+    matchedTerms: z.array(consultationText(100)).max(3),
+  });
 
 export const decisionConsultationFeedbackReceiptSchema = z
   .object({
     token: consultationText(200),
     expiresAt: z.string().datetime(),
-  })
-  .strict();
+  });
 
+/**
+ * An answer, its keys unknown to this build passed over rather than refused: 1.1.0's bridge refused every key it
+ * did not know, and told an agent Decision was unavailable at every consultation the App answered with more.
+ */
 export const decisionConsultationResponseSchema = z
   .object({
     consultationVersion: z.literal(DECISION_CONSULTATION_VERSION),
     requestId: consultationText(200),
     status: z.enum(["matched", "no_match"]),
+    noMatchReason: z.enum(["no_accepted_principles", "no_relevant_principles"]).optional(),
     generatedBy: z.literal("deterministic_local_match"),
     matches: z.array(decisionConsultationMatchSchema).max(3),
+    /**
+     * Defaulted rather than required: a caller on the previous shape still
+     * parses, and gets an empty list rather than a missing field.
+     */
+    signals: z.array(decisionConsultationSignalSchema).max(3).default([]),
+    /**
+     * The reader's preferences and ideas could not be read this time (a folder the App may not list): none listed
+     * is then not none held. Unsaid, an agent went on as if the reader had stated no constraint at all.
+     */
+    signalsUnavailable: z.literal(true).optional(),
     feedback: decisionConsultationFeedbackReceiptSchema.nullable().default(null),
     boundary: z
       .object({
         advisoryOnly: z.literal(true),
         noDecisionWritten: z.literal(true),
         noPrincipleApplied: z.literal(true),
-      })
-      .strict(),
+        /** Nothing here was treated as a rule, whatever it matched. */
+        noPreferencePromoted: z.literal(true).default(true),
+      }),
   })
-  .strict()
   .superRefine((response, context) => {
     if (
       (response.status === "matched" && response.matches.length === 0) ||
@@ -81,9 +125,27 @@ export type DecisionConsultationRequest = z.infer<
 export type DecisionConsultationMatch = z.infer<
   typeof decisionConsultationMatchSchema
 >;
+export type DecisionConsultationSignal = z.infer<
+  typeof decisionConsultationSignalSchema
+>;
 export type DecisionConsultationResponse = z.infer<
   typeof decisionConsultationResponseSchema
 >;
+
+/**
+ * Sent by a bridge that reads what the App has answered with since 1.1.0 (the reader's preferences and ideas, why
+ * nothing matched). One that does not send it is answered in 1.1.0's shape: an MCP server started before an update
+ * runs on in its session, and 1.1.0's refused every key it did not know. A header, which an App from before ignores.
+ */
+export const CONSULTATION_SHAPE_HEADER = "x-decision-consultation-shape";
+export const CONSULTATION_SHAPE = "2";
+
+/** A consultation as Decision 1.1.0 answered one: without what was added since. */
+export const consultationAsReleased = (response: DecisionConsultationResponse): Record<string, unknown> => {
+  const { noMatchReason: _reason, signals: _signals, signalsUnavailable: _unavailable, boundary, ...released } = response;
+  const { noPreferencePromoted: _promoted, ...releasedBoundary } = boundary;
+  return { ...released, boundary: releasedBoundary };
+};
 
 export const decisionConsultationFeedbackRatingSchema = z.enum([
   "helpful",

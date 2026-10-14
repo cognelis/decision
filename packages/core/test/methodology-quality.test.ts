@@ -1,4 +1,4 @@
-import type { MethodologyRecord } from "../src/index.js";
+import type { MethodologyRecord, MethodologyRelationRecord } from "../src/index.js";
 import { assessMethodologyQuality } from "../src/index.js";
 import { describe, expect, it } from "vitest";
 
@@ -111,6 +111,57 @@ describe("assessMethodologyQuality", () => {
     expect(quality.flags).toEqual(
       expect.arrayContaining(["mixed_outcomes", "unclear_outcomes"]),
     );
+  });
+
+  it("assesses a library of hundreds against each other in well under a second or two", () => {
+    const library = Array.from({ length: 400 }, (_, n) => record({
+      id: `principle-${n}`,
+      title: `原则 ${n}：先保留回退路径`,
+      principle: `第 ${n} 条：上线前保留旧实现，并通过分步切换验证新路径；涉及模块 ${n % 37}。`,
+      appliesWhen: `需求仍变化且结果需要真实反馈时，场景 ${n % 11}。`,
+      sourceDecisionIds: [`decision-${n}`],
+    }));
+    const started = performance.now();
+    const assessed = library.map((item) => assessMethodologyQuality(item, library, []));
+    // Tokenizing both sides of every pair, a library this size froze the window for seconds (a thousand: 34 s).
+    expect(performance.now() - started).toBeLessThan(2_000);
+    expect(assessed[0]?.relations.length).toBeGreaterThan(0);
+  });
+
+  it("finds in a large library the relations it finds pair by pair, comparing only what is related", () => {
+    const base = record();
+    const related = [
+      base,
+      record({ id: "principle-similar", status: "accepted", title: "保留回退路径后分步切换", principle: "上线前保留旧实现，通过分步切换逐步验证新的实现路径。", appliesWhen: "需求仍变化，实施效果还需要真实反馈时。", sourceDecisionIds: ["decision-9"] }),
+      record({ id: "principle-opposed", status: "accepted", title: "一次切换并删除旧实现", principle: "上线前删除旧实现，并通过一次切换完成新路径替换。", appliesWhen: "需求稳定且维护双轨实现的成本很高时。", sourceDecisionIds: ["decision-2"] }),
+      // Worded apart from it, but citing its decision with the opposite action.
+      record({ id: "principle-evidence", title: "receipts", principle: "删除 receipts", appliesWhen: "spool", sourceDecisionIds: ["decision-1"] }),
+      // Nothing in common but a duplicate the reader recorded.
+      record({ id: "principle-fact", title: "ledger", principle: "ledger rows", appliesWhen: "export", sourceDecisionIds: ["decision-7"] }),
+    ];
+    const facts: MethodologyRelationRecord[] = [{
+      id: "relation-1", createdAt: "2026-08-06T10:00:00.000Z", updatedAt: "2026-08-06T10:00:00.000Z",
+      principleIds: [base.id, "principle-fact"], principleTitles: [base.title, "ledger"], disposition: "duplicate", note: "人工确认重复。",
+    }];
+    // Each in words of its own.
+    const unrelated = Array.from({ length: 4_000 }, (_, n) => record({
+      id: `principle-u${n}`, title: `rule${n}`, principle: `alpha${n} beta${n}`, appliesWhen: `gamma${n}`, sourceDecisionIds: [`decision-u${n}`],
+    }));
+    const library = [...unrelated.slice(0, 2_000), ...related, ...unrelated.slice(2_000)];
+
+    const started = performance.now();
+    const assessed = library.map((item) => assessMethodologyQuality(item, library, [], facts));
+    // Compared with every other one, four thousand principles held the main process for seconds on every list.
+    expect(performance.now() - started).toBeLessThan(1_000);
+
+    const byId = (relations: Array<{ id: string }>) => [...relations].sort((left, right) => left.id.localeCompare(right.id));
+    for (const item of related) {
+      const pairwise = library.flatMap((other) => assessMethodologyQuality(item, [item, other], [], facts).relations);
+      expect(byId(assessed[library.indexOf(item)]!.relations)).toEqual(byId(pairwise));
+    }
+    expect(assessed[library.indexOf(base)]!.relations.map((relation) => relation.id).sort())
+      .toEqual(["principle-evidence", "principle-fact", "principle-opposed", "principle-similar"]);
+    expect(assessed.every((quality, index) => related.includes(library[index]!) || quality.relations.length === 0)).toBe(true);
   });
 
   it("finds similar active principles and explains shared evidence", () => {

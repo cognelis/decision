@@ -3,14 +3,16 @@ import {
   type RuntimeDescriptor,
   type SemanticRecognitionStatus,
 } from "@cognelis/decision-protocol";
-import type {
-  CandidateQueueSnapshot,
-  DecisionCandidateQueue,
-  RationaleQueue,
-  RationaleQueueSnapshot,
+import {
+  CandidatePersistenceError,
+  type CandidateQueueSnapshot,
+  type DecisionCandidateQueue,
+  type RationaleQueue,
+  type RationaleQueueSnapshot,
 } from "@cognelis/decision-core";
 
 import type { ThemePreference } from "../shared/appearance.js";
+import type { CaptureClassifier } from "../shared/capture-classifier.js";
 import type {
   AppSnapshot,
   AppHealth,
@@ -51,6 +53,8 @@ interface AppControllerOptions {
   runtimeFile: string;
   token: string;
   writeRuntime(path: string, descriptor: RuntimeDescriptor): Promise<void>;
+  /** Told the runtime file could not be written (a full disk, a read-only folder), the app starts all the same. */
+  onRuntimeUnwritable?: (error: unknown) => void;
   removeRuntime(path: string): Promise<void>;
   now?: () => Date;
   pid?: number;
@@ -59,8 +63,12 @@ interface AppControllerOptions {
   dashboard?: () => DashboardSnapshot;
   integrationStatus?: () => IntegrationStatus;
   pendingRationales?: () => PendingRationaleSummary[];
+  pendingRationaleCount?: () => number;
   semanticRecognition?: () => SemanticRecognitionStatus;
   modelTraceContentEnabled?: () => boolean;
+  reviewRemindersEnabled?: () => boolean;
+  localCredentialsEnabled?: () => boolean;
+  captureClassifier?: () => CaptureClassifier;
   theme?: () => ThemePreference;
   onSnapshot?: (snapshot: AppSnapshot) => void;
 }
@@ -69,6 +77,7 @@ export class AppController {
   readonly #options: AppControllerOptions;
   #started = false;
   #primarySurface: PrimarySurface = "dashboard";
+  #surfaceBeforeClose: DesktopPrimarySurface = "dashboard";
   #candidateReviewReturnSurface: PrimarySurface = "dashboard";
   #candidateReviewOpen = false;
   #candidateReviewSessionActive = false;
@@ -76,6 +85,7 @@ export class AppController {
   #candidateReviewProcessed = 0;
   #candidateReviewTotal = 0;
   #candidateAction: "confirm" | "ignore" | null = null;
+  #failedCandidateAction: "confirm" | "ignore" | null = null;
   readonly #unsubscribes: Array<() => void> = [];
 
   constructor(options: AppControllerOptions) {
@@ -114,6 +124,8 @@ export class AppController {
               this.#candidateReviewProcessed + snapshot.count,
             );
           }
+          // The action restores the return surface before publishing an emptied review queue.
+          if (snapshot.current === null && this.#candidateAction !== null) return;
           if (
             snapshot.current === null &&
             this.#candidateReviewRationaleId === null &&
@@ -126,13 +138,18 @@ export class AppController {
       );
     }
     const address = await this.#options.server.start();
-    await this.#options.writeRuntime(this.#options.runtimeFile, {
-      protocolVersion: PROTOCOL_VERSION,
-      port: address.port,
-      token: this.#options.token,
-      pid: this.#options.pid ?? process.pid,
-      startedAt: (this.#options.now ?? (() => new Date()))().toISOString(),
-    });
+    try {
+      await this.#options.writeRuntime(this.#options.runtimeFile, {
+        protocolVersion: PROTOCOL_VERSION,
+        port: address.port,
+        token: this.#options.token,
+        pid: this.#options.pid ?? process.pid,
+        startedAt: (this.#options.now ?? (() => new Date()))().toISOString(),
+      });
+    } catch (error) {
+      if (this.#options.onRuntimeUnwritable === undefined) throw error;
+      this.#options.onRuntimeUnwritable(error);
+    }
     this.#started = true;
     this.#publish();
   }
@@ -146,8 +163,20 @@ export class AppController {
   }
 
   closePrimarySurface(): void {
+    if (this.#primarySurface !== "hidden") this.#surfaceBeforeClose = this.#primarySurface;
     this.#primarySurface = "hidden";
     this.#publish();
+  }
+
+  /**
+   * The app brought forward (the Dock, a second launch): a window that was closed comes back to the page
+   * it was on, and one already open stays where the reader is. Sent home either way, what they were
+   * writing went with the page.
+   */
+  reopen(): void {
+    if (this.#primarySurface === "hidden" && !this.#candidateReviewSessionActive) {
+      this.#requestPrimarySurface(this.#surfaceBeforeClose);
+    }
   }
 
   openCandidateReview(): void {
@@ -173,32 +202,44 @@ export class AppController {
 
   async confirmCandidate(candidateId: string): Promise<void> {
     const candidates = this.#requireCandidates();
-    this.#candidateAction = "confirm";
-    try {
-      await candidates.promote(candidateId);
-    } finally {
-      this.#candidateAction = null;
-    }
-    this.#candidateReviewProcessed += 1;
-    this.#candidateReviewOpen = false;
-    this.#candidateReviewRationaleId =
-      this.#options.queue.snapshot().current?.candidateId ?? null;
-    if (this.#candidateReviewRationaleId === null) {
-      this.#resetCandidateReview();
-    }
-    this.#publish();
+    await this.#settleCandidate("confirm", () => candidates.promote(candidateId));
   }
 
   async ignoreCandidate(candidateId: string): Promise<void> {
     const candidates = this.#requireCandidates();
-    this.#candidateAction = "ignore";
+    await this.#settleCandidate("ignore", () => candidates.ignore(candidateId));
+  }
+
+  /** A retry that succeeds moves on as the action it retries would have: into the rationale, or to the next. */
+  async retryCandidate(): Promise<void> {
+    const candidates = this.#requireCandidates();
+    const action = this.#failedCandidateAction;
+    if (action === null) {
+      throw new Error("The current decision candidate is not awaiting persistence retry");
+    }
+    await this.#settleCandidate(action, () => candidates.retryCurrentPersistence());
+  }
+
+  async #settleCandidate(action: "confirm" | "ignore", persist: () => Promise<void>): Promise<void> {
+    this.#candidateAction = action;
     try {
-      await candidates.ignore(candidateId);
+      await persist();
+    } catch (error) {
+      if (error instanceof CandidatePersistenceError) this.#failedCandidateAction = action;
+      throw error;
     } finally {
       this.#candidateAction = null;
     }
+    this.#failedCandidateAction = null;
     this.#candidateReviewProcessed += 1;
-    if (candidates.snapshot().current === null) {
+    if (action === "confirm") {
+      this.#candidateReviewOpen = false;
+      this.#candidateReviewRationaleId =
+        this.#options.queue.snapshot().current?.candidateId ?? null;
+      if (this.#candidateReviewRationaleId === null) {
+        this.#resetCandidateReview();
+      }
+    } else if (this.#requireCandidates().snapshot().current === null) {
       this.#resetCandidateReview();
     }
     this.#publish();
@@ -214,6 +255,9 @@ export class AppController {
 
   async stop(): Promise<void> {
     if (!this.#started) {
+      // Quit while still starting: nothing to stop yet, but the window must let the quit close it.
+      // Without this it cancelled that close, and every later one: the app could not be quit at all.
+      this.#options.windows.prepareToQuit();
       return;
     }
     this.#started = false;
@@ -270,12 +314,19 @@ export class AppController {
         codex: "unknown",
       },
       pendingRationales: this.#options.pendingRationales?.() ?? [],
+      ...(this.#options.pendingRationaleCount === undefined
+        ? {}
+        : { pendingRationaleCount: this.#options.pendingRationaleCount() }),
       health: this.#options.health?.() ?? {
         index: "healthy",
         recovery: "healthy",
       },
       modelTraceContentEnabled:
         this.#options.modelTraceContentEnabled?.() ?? true,
+      localCredentialsEnabled: this.#options.localCredentialsEnabled?.() ?? false,
+      reviewRemindersEnabled:
+        this.#options.reviewRemindersEnabled?.() ?? true,
+      captureClassifier: this.#options.captureClassifier?.() ?? "rules",
       semanticRecognition: this.#options.semanticRecognition?.() ?? {
         provider: "rules",
         providerLabel: "规则识别",

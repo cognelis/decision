@@ -117,6 +117,74 @@ describe("readLastAssistantText", () => {
 });
 
 describe("readLastDecisionTurn", () => {
+  it.each(["claude-code", "codex"])("keeps the latest long messages for %s instead of reusing older text", async (client) => {
+    const path = await makePath();
+    const userText = "当前任务：" + "背景".repeat(4_100);
+    const assistantText = "分析".repeat(4_100) + "\n\n当前选择 C 还是 D？";
+    const line = (role: string, text: string) => JSON.stringify({
+      [client === "codex" ? "payload" : "message"]: {
+        role,
+        content: [{ type: "text", text }],
+      },
+    });
+    await writeFile(path, [
+      line("user", "旧任务，不能混进当前背景"),
+      line("assistant", "旧问题：选择 A 还是 B？"),
+      line("user", userText),
+      line("assistant", assistantText),
+    ].join("\n"));
+
+    await expect(readLastDecisionTurn(path)).resolves.toEqual({
+      userText: userText.slice(0, 8_000),
+      assistantText: assistantText.slice(-8_000),
+    });
+    await expect(readLastAssistantText(path)).resolves.toBe(assistantText.slice(-8_000));
+  });
+
+  it("reads the prompt Claude Code writes as a plain string, and skips what it writes as the user's that the user did not type", async () => {
+    const path = await makePath();
+    const user = (content: string, extra: Record<string, unknown> = {}) =>
+      JSON.stringify({ type: "user", ...extra, message: { role: "user", content } });
+    await writeFile(path, [
+      user("旧任务"),
+      JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "旧问题：A 还是 B？" }] } }),
+      user("继续开发 Decision，优先提高采集质量。"),
+      JSON.stringify({ type: "user", message: { role: "user", content: [{ type: "tool_result", content: "ok" }] } }),
+      JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "先修复还是先发布？" }] } }),
+      user("Stop hook feedback: keep going", { isMeta: true }),
+      user("<task-notification><summary>done</summary></task-notification>"),
+    ].join("\n"));
+
+    await expect(readLastDecisionTurn(path)).resolves.toEqual({
+      userText: "继续开发 Decision，优先提高采集质量。",
+      assistantText: "先修复还是先发布？",
+    });
+  });
+
+  it("does not pair a Claude Code prompt with the question of the turn before it", async () => {
+    const path = await makePath();
+    await writeFile(path, [
+      JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "A 还是 B？" }] } }),
+      JSON.stringify({ type: "user", message: { role: "user", content: "A" } }),
+      JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "tool_use", name: "Edit" }] } }),
+    ].join("\n"));
+
+    await expect(readLastDecisionTurn(path)).resolves.toBeNull();
+  });
+
+  it("does not reuse a previous answer after a new user message", async () => {
+    const path = await makePath();
+    await writeFile(path, [
+      { role: "user", content: [{ type: "text", text: "旧任务" }] },
+      { role: "assistant", content: [{ type: "text", text: "选择 A 还是 B？" }] },
+      { role: "user", content: [{ type: "text", text: "新的任务" }] },
+      { role: "assistant", content: [{ type: "tool_use", name: "Read" }] },
+    ].map((message) => JSON.stringify({ message })).join("\n"));
+
+    await expect(readLastDecisionTurn(path)).resolves.toBeNull();
+    await expect(readLastAssistantText(path)).resolves.toBeNull();
+  });
+
   it("recovers the latest Claude user and assistant visible messages", async () => {
     const path = await makePath();
     await writeFile(

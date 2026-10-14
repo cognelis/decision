@@ -8,10 +8,13 @@ const thirdArgument = process.argv[3];
 const mode =
   thirdArgument === "compact" ||
   thirdArgument === "rationale-dialog" ||
+  thirdArgument === "rationale-continuous" ||
+  thirdArgument === "rationale-compact" ||
   thirdArgument === "tall"
     ? thirdArgument
     : "default";
-const compact = mode === "compact";
+const compact = mode === "compact" || mode === "rationale-compact";
+const continuous = mode === "rationale-continuous" || mode === "rationale-compact";
 const tall = mode === "tall";
 const screenshotPath = mode === "default" ? thirdArgument : process.argv[4];
 if (theme !== "light" && theme !== "dark") {
@@ -20,11 +23,9 @@ if (theme !== "light" && theme !== "dark") {
 let server;
 let window;
 
-const close = async (exitCode) => {
-  if (window !== undefined && !window.isDestroyed()) window.destroy();
-  if (server !== undefined) await server.close();
-  app.exit(exitCode);
-};
+const close = require("./electron-check-lifecycle.cjs").createElectronCheckLifecycle({
+  app, getWindow: () => window, getServer: () => server,
+});
 
 const measureDashboardLayout = async () => {
   const { createServer } = await import("vite");
@@ -53,20 +54,21 @@ const measureDashboardLayout = async () => {
     frame: false,
     transparent: true,
     backgroundColor: "#00000000",
-    webPreferences: { backgroundThrottling: false, offscreen: true },
+    webPreferences: { partition: `preview-${process.pid}`, backgroundThrottling: false, offscreen: true },
   });
   await window.loadURL(
     `http://127.0.0.1:${port}/?preview=dashboard&theme=${theme}`,
   );
+  await require("./preview-sidebar.cjs").expandSidebar(window);
 
   let interactionMetrics = {};
-  if (mode === "rationale-dialog") {
+  if (mode === "rationale-dialog" || continuous) {
     interactionMetrics = await window.webContents.executeJavaScript(`
       new Promise((resolve, reject) => {
         const deadline = Date.now() + 12000;
         const openDialog = () => {
           const button = [...document.querySelectorAll("button")].find(
-            (candidate) => candidate.textContent?.trim() === "补充理由"
+            (candidate) => (candidate.getAttribute("aria-label") ?? candidate.textContent?.trim()) === ${JSON.stringify(continuous ? "连续补充" : "补充理由")}
           );
           const card = document.querySelector(".dashboard-rationale-card");
           const scroll = document.querySelector(".dashboard-scroll");
@@ -94,7 +96,14 @@ const measureDashboardLayout = async () => {
             }
             requestAnimationFrame(() => requestAnimationFrame(() => {
               const dialogRect = dialog.getBoundingClientRect();
+              const editorRect = textarea.getBoundingClientRect();
+              const actions = dialog.querySelector(".rationale-workspace-actions").getBoundingClientRect();
+              const composer = dialog.querySelector(".rationale-composer");
               resolve({
+                rationaleActionsVisible: actions.bottom <= innerHeight && actions.top >= dialogRect.top,
+                rationaleEditorVisible: editorRect.top >= dialogRect.top && editorRect.bottom <= actions.top,
+                rationaleComposerFits: composer.scrollHeight <= composer.clientHeight + 1,
+                rationaleProgressVisible: dialog.querySelector("progress") !== null,
                 rationaleCardHeightStable:
                   Math.abs(card.getBoundingClientRect().height - cardHeightBefore) < 1,
                 rationaleDialogCentered:
@@ -131,7 +140,7 @@ const measureDashboardLayout = async () => {
         const rationaleButton = [...document.querySelectorAll("button")]
           .find((button) => button.textContent?.trim() === "补充理由");
         const discardButton = [...document.querySelectorAll("button")]
-          .find((button) => button.textContent?.trim() === "不记录");
+          .find((button) => button.textContent?.trim() === "不保留");
         const rationaleList = document.querySelector(
           ".dashboard-rationale-list"
         );
@@ -285,6 +294,63 @@ const measureDashboardLayout = async () => {
               startButtonHeight: startBounds.height,
               startButtonWidth: startBounds.width,
               summaryColumns,
+              summaryInteractiveCount: summaryItems.filter(
+                (item) =>
+                  item.tagName === "BUTTON" &&
+                  item.classList.contains("interactive")
+              ).length,
+              summaryItemHeights: summaryItems.map(
+                (item) => item.getBoundingClientRect().height
+              ),
+              recentItemsAreButtons: recentItems.every(
+                (item) => item.firstElementChild?.tagName === "BUTTON"
+              ),
+              // The two bottom actions are one block. Each pushing itself
+              // down would leave the free space between them instead.
+              sidebarActionGaps: (() => {
+                const boxes = [
+                  ...document.querySelectorAll(".desktop-shortcut-help"),
+                ].map((action) => action.getBoundingClientRect());
+                return boxes
+                  .slice(1)
+                  .map((box, index) =>
+                    Math.round(box.top - boxes[index].bottom)
+                  );
+              })(),
+              sidebarActionLabels: [
+                ...document.querySelectorAll(".desktop-shortcut-help"),
+              ].map((button) => button.getAttribute("aria-label") ?? ""),
+              sidebarActionsFit: (() => {
+                const actions = [
+                  ...document.querySelectorAll(".desktop-shortcut-help"),
+                ];
+                if (actions.length === 0) return false;
+                const sidebarBounds = sidebar.getBoundingClientRect();
+                const boxes = actions.map((action) =>
+                  action.getBoundingClientRect()
+                );
+                const inside = boxes.every(
+                  (box) =>
+                    box.width > 0 &&
+                    box.height > 0 &&
+                    box.left >= sidebarBounds.left &&
+                    box.right <= sidebarBounds.right + 1 &&
+                    box.bottom <= sidebarBounds.bottom + 1
+                );
+                // Two stacked buttons can each be inside the sidebar and still
+                // be painted over one another; overflow alone never says so.
+                const separate = boxes.every((box, index) =>
+                  boxes.every(
+                    (other, otherIndex) =>
+                      index === otherIndex ||
+                      box.right <= other.left + 1 ||
+                      other.right <= box.left + 1 ||
+                      box.bottom <= other.top + 1 ||
+                      other.bottom <= box.top + 1
+                  )
+                );
+                return inside && separate;
+              })(),
               viewportHeight: innerHeight,
               viewportWidth: innerWidth,
             });

@@ -98,9 +98,21 @@ const tokens = (value: string): Set<string> => {
   return result;
 };
 
-const diceSimilarity = (left: string, right: string): number => {
-  const leftTokens = tokens(left);
-  const rightTokens = tokens(right);
+/**
+ * A principle's text and its tokens, worked out once per record: compared with every other principle, a list of
+ * a thousand tokenized both sides of a million pairs, and the window froze for half a minute.
+ */
+const preparedTexts = new WeakMap<MethodologyRecord, { text: string; tokens: Set<string> }>();
+const prepared = (record: MethodologyRecord): { text: string; tokens: Set<string> } => {
+  const text = activeText(record);
+  const cached = preparedTexts.get(record);
+  if (cached !== undefined && cached.text === text) return cached;
+  const fresh = { text, tokens: tokens(text) };
+  preparedTexts.set(record, fresh);
+  return fresh;
+};
+
+const diceSimilarity = (leftTokens: Set<string>, rightTokens: Set<string>): number => {
   if (leftTokens.size === 0 || rightTokens.size === 0) return 0;
   let shared = 0;
   for (const token of leftTokens) {
@@ -118,11 +130,9 @@ const sharedEvidenceCount = (
 };
 
 const opposingPairs = (
-  left: MethodologyRecord,
-  right: MethodologyRecord,
+  leftText: string,
+  rightText: string,
 ): Array<readonly [string, string]> => {
-  const leftText = activeText(left);
-  const rightText = activeText(right);
   return opposingSignals.filter(
     ([first, second]) =>
       (leftText.includes(first) && rightText.includes(second)) ||
@@ -134,9 +144,11 @@ const relationship = (
   record: MethodologyRecord,
   candidate: MethodologyRecord,
 ): MethodologyQualityRelation | null => {
-  const similarity = diceSimilarity(activeText(record), activeText(candidate));
+  const left = prepared(record);
+  const right = prepared(candidate);
+  const similarity = diceSimilarity(left.tokens, right.tokens);
   const sharedEvidence = sharedEvidenceCount(record, candidate);
-  const opposites = opposingPairs(record, candidate);
+  const opposites = opposingPairs(left.text, right.text);
   if ((similarity >= 0.16 || sharedEvidence > 0) && opposites.length > 0) {
     const cues = opposites
       .slice(0, 2)
@@ -167,6 +179,82 @@ const relationship = (
     };
   }
   return null;
+};
+
+/** Which records of one list hold each token, cite each decision and carry each id, and how many tokens each has. */
+interface Neighbours {
+  records: readonly MethodologyRecord[];
+  sizes: Uint32Array;
+  byToken: Map<string, number[]>;
+  byEvidence: Map<string, number[]>;
+  byId: Map<string, number[]>;
+}
+
+const neighbourhoods = new WeakMap<readonly MethodologyRecord[], Neighbours>();
+
+const listed = (map: Map<string, number[]>, key: string, index: number): void => {
+  const indexes = map.get(key);
+  if (indexes === undefined) map.set(key, [index]);
+  else if (indexes.at(-1) !== index) indexes.push(index);
+};
+
+const neighboursIn = (records: readonly MethodologyRecord[]): Neighbours => {
+  const known = neighbourhoods.get(records);
+  // The same list, as each of its records is assessed in turn; one changed in place since is indexed again.
+  if (known !== undefined && known.records.length === records.length && known.records.every((record, index) => record === records[index])) {
+    return known;
+  }
+  const neighbours: Neighbours = {
+    records: [...records],
+    sizes: new Uint32Array(records.length),
+    byToken: new Map(),
+    byEvidence: new Map(),
+    byId: new Map(),
+  };
+  records.forEach((record, index) => {
+    const { tokens: own } = prepared(record);
+    neighbours.sizes[index] = own.size;
+    for (const token of own) listed(neighbours.byToken, token, index);
+    for (const id of record.sourceDecisionIds) listed(neighbours.byEvidence, id, index);
+    listed(neighbours.byId, record.id, index);
+  });
+  neighbourhoods.set(records, neighbours);
+  return neighbours;
+};
+
+/**
+ * The records of the list that may stand in a relation with this one, in list order: alike enough, citing a
+ * decision it cites, or with a fact recorded between them. Every other pair reads as no relation (see
+ * relationship), so it is not compared: compared with all of them, a library of a thousand froze the main process
+ * for five seconds on every ⌘K and every visit to the principles page.
+ */
+const candidatesFor = (
+  record: MethodologyRecord,
+  records: readonly MethodologyRecord[],
+  facts: MethodologyRelationRecord[],
+): MethodologyRecord[] => {
+  const { sizes, byToken, byEvidence, byId } = neighboursIn(records);
+  const own = prepared(record).tokens;
+  const shared = new Uint32Array(records.length);
+  const touched: number[] = [];
+  for (const token of own) {
+    for (const index of byToken.get(token) ?? []) {
+      const count = (shared[index] ?? 0) + 1;
+      shared[index] = count;
+      if (count === 1) touched.push(index);
+    }
+  }
+  const found = new Set<number>();
+  for (const index of touched) {
+    // As diceSimilarity counts it; below 0.16 neither a similarity nor, without shared evidence, a conflict is read.
+    if ((2 * (shared[index] ?? 0)) / (own.size + (sizes[index] ?? 0)) >= 0.16) found.add(index);
+  }
+  for (const id of record.sourceDecisionIds) for (const index of byEvidence.get(id) ?? []) found.add(index);
+  for (const fact of facts) {
+    if (!fact.principleIds.includes(record.id)) continue;
+    for (const id of fact.principleIds) for (const index of byId.get(id) ?? []) found.add(index);
+  }
+  return [...found].sort((left, right) => left - right).map((index) => records[index]!);
 };
 
 const relationFactFor = (
@@ -336,7 +424,7 @@ export const assessMethodologyQuality = (
     unclearEvidenceCount,
     missingEvidenceCount,
   });
-  const relations = records
+  const relations = candidatesFor(record, records, relationFacts)
     .filter(
       (candidate) =>
         candidate.id !== record.id &&

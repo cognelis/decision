@@ -11,13 +11,7 @@ export const readDecisionEnvironmentWithSource = (environment, suffix) => {
     return { value: current, source: "current" };
   }
 
-  const legacy = environmentValue(
-    environment,
-    `DECISION_ISLAND_${suffix}`,
-  );
-  return legacy === undefined
-    ? { value: undefined, source: "default" }
-    : { value: legacy, source: "legacy" };
+  return { value: undefined, source: "default" };
 };
 
 export const readDecisionEnvironment = (environment, suffix) =>

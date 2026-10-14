@@ -1,3 +1,6 @@
+import { zonedFormatter } from "../../../calendar-date.js";
+import { IconButton, ActionIcon } from "../../IconButton.js";
+import type { DecisionBrowseFilter } from "../decisions/DecisionLibraryPanel.js";
 import type {
   KnowledgeGraphSnapshot,
   MethodologyEvidenceMatch,
@@ -6,7 +9,7 @@ import type {
   MethodologyStatus,
   MethodologySuggestion,
 } from "@cognelis/decision-core";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 
 import type {
   DecisionLibraryItem,
@@ -25,7 +28,8 @@ import type {
   MethodologyVersionItem,
   MethodologyWorkspaceApi,
 } from "../../../../shared/renderer-api.js";
-import { ModalDialog } from "../../ModalDialog.js";
+import { methodologyRevisionBasis } from "../../../../shared/methodology-basis.js";
+import { ModalDialog, usePageShownAgain } from "../../ModalDialog.js";
 import { DesktopPageHeader } from "../DesktopPageHeader.js";
 import { DecisionAnalyticsView } from "./DecisionAnalyticsView.js";
 import { KnowledgeGraphView } from "./KnowledgeGraphView.js";
@@ -42,26 +46,54 @@ import {
   assessMergeCandidate,
   buildRelationReviewQueue,
   confirmedDuplicate,
-  pendingRelationCount,
   qualityBadgeFor,
   type MethodologyMergeCandidateAssessment,
   type MethodologyRelationReviewItem,
 } from "./methodology-relation-model.js";
+import type {
+  MethodologyNotice,
+  MethodologyView,
+  MethodologyWorkspaceHost,
+  StatusFilter,
+} from "./methodology-view-types.js";
+import { useEvidenceLinking } from "./use-evidence-linking.js";
+import { useManualDrafting } from "./use-manual-drafting.js";
+import { useSuggestionInbox } from "./use-suggestion-inbox.js";
+import { useMarkdownImport } from "./use-markdown-import.js";
+import { useValidationInbox } from "./use-validation-inbox.js";
+import {
+  methodologyRevisionFields,
+  revisionFrom,
+  usePrincipleEvolution,
+  type MethodologyRevisionField,
+  type MethodologyRevisionFormDraft,
+} from "./use-principle-evolution.js";
+import { useRelationReview } from "./use-relation-review.js";
+import {
+  useMergeWorkbench,
+  type MethodologyMergeFormDraft,
+} from "./use-merge-workbench.js";
 
 interface MethodologyPanelProps {
   api: MethodologyWorkspaceApi;
+  /** Principle notes that could not be read, and so are in no list: said, until they read again. */
+  unreadableNotice?: string | null;
+  /** A principle to open on arrival, from quick jump. */
+  initialPrincipleId?: string | null;
+  initialSourceDecisionId?: string | null;
+  /**
+   * A tab asked for, such as the retrospective under 分析: shown on arrival, and when asked for
+   * while the page is already open. Null when nothing is asked for.
+   */
+  initialView?: MethodologyView | null;
+  onInitialSourceConsumed?(): void;
   onOpenDecision(id: string): void;
+  /** Opens the knowledge page already narrowed by these filters. */
+  onBrowseDecisions(filter: DecisionBrowseFilter): void;
+  onInitialNavigationConsumed?(): void;
 }
 
-type StatusFilter = MethodologyStatus | "all";
-type MethodologyView = "records" | "analysis" | "graph" | "assets";
 type MethodologyCreationMode = "chooser" | "manual" | null;
-
-interface MethodologyNotice {
-  tone: "success" | "warning" | "error";
-  text: string;
-  action?: "discard_merge_draft" | "discard_revision_draft";
-}
 
 type MethodologyUsageFilter =
   "all" | "pending_outcome" | "pending_review" | "reviewed" | "attention";
@@ -102,58 +134,15 @@ const methodologyUsageDecisionLabel = (
   return verdictLabels[decision.outcomeReview.verdict];
 };
 
-type MethodologyMergeFormDraft = Extract<
-  ManualFormDraft,
-  { key: "methodology_merge" }
->;
-
-type MethodologyRevisionFormDraft = Extract<
-  ManualFormDraft,
-  { key: "methodology_revision" }
->;
-
-type MethodologyRevisionField = keyof MethodologyRevisionInput;
-type MethodologyRevisionRebaseChoice = "current" | "draft" | null;
-
-interface MethodologyRevisionRebaseState {
-  saved: MethodologyRevisionFormDraft;
-  baseline: MethodologyEvolutionInput;
-  source: MethodologyItem;
-  usage: MethodologyUsageSnapshot;
-  sourceDecisionIds: string[];
-  removedEvidenceCount: number;
-  choices: Record<
-    MethodologyRevisionField,
-    MethodologyRevisionRebaseChoice
-  >;
-}
-
-const methodologyRevisionFields: Array<{
-  field: MethodologyRevisionField;
-  label: string;
-}> = [
-  { field: "title", label: "标题" },
-  { field: "principle", label: "原则" },
-  { field: "appliesWhen", label: "适用条件" },
-  { field: "caution", label: "注意事项" },
-  { field: "evidenceSummary", label: "证据摘要" },
-];
-
-interface MethodologyMergeRelationReviewState {
-  candidateId: string;
-  pendingSourceIds: string[];
-  totalPairCount: number;
-  note: string;
-}
-
 const methodologyViews: Array<{
   value: MethodologyView;
   label: string;
+  icon: ComponentProps<typeof ActionIcon>["name"];
 }> = [
-  { value: "records", label: "原则" },
-  { value: "analysis", label: "分析" },
-  { value: "graph", label: "图谱" },
-  { value: "assets", label: "技能与流程" },
+  { value: "records", label: "原则", icon: "principles" },
+  { value: "analysis", label: "分析", icon: "analysis" },
+  { value: "graph", label: "图谱", icon: "graph" },
+  { value: "assets", label: "技能与流程", icon: "flow" },
 ];
 
 const statusLabels: Record<MethodologyStatus, string> = {
@@ -161,12 +150,6 @@ const statusLabels: Record<MethodologyStatus, string> = {
   accepted: "已采纳",
   retired: "已归档",
   dismissed: "已忽略",
-};
-
-const confidenceLabels: Record<MethodologyItem["confidence"], string> = {
-  low: "单点证据",
-  medium: "多条印证",
-  high: "稳定模式",
 };
 
 const suggestionReadinessLabels: Record<
@@ -210,10 +193,8 @@ const methodologyHistoryReasonLabels: Record<
 > = {
   revision_applied: "应用修订前",
   restore_checkpoint: "恢复旧版前",
+  evidence_changed: "调整证据前",
 };
-
-const normalizedSearch = (value: string): string =>
-  value.normalize("NFKC").trim().toLocaleLowerCase("zh-CN");
 
 const verdictLabels: Record<
   NonNullable<DecisionLibraryItem["outcomeReview"]>["verdict"],
@@ -226,39 +207,16 @@ const verdictLabels: Record<
   unclear: "暂无法判断",
 };
 
-const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+/** Groups one 批量生成 turns into candidates, each a call to the generation model; the rest wait for the next. */
+const SUGGESTION_BATCH_SIZE = 6;
+
+const dateFormatter = zonedFormatter({
   year: "numeric",
   month: "short",
   day: "numeric",
   hour: "2-digit",
   minute: "2-digit",
 });
-
-const revisionFrom = (item: MethodologyItem): MethodologyRevisionInput => ({
-  title: item.title,
-  principle: item.principle,
-  appliesWhen: item.appliesWhen,
-  caution: item.caution,
-  evidenceSummary: item.evidenceSummary,
-});
-
-const evolutionSourceSnapshot = (
-  item: MethodologyItem,
-): MethodologyEvolutionInput => ({
-  ...revisionFrom(item),
-  sourceDecisionIds: [...item.sourceDecisionIds],
-});
-
-const initialRevisionRebaseChoice = (
-  baseline: string,
-  current: string,
-  draft: string,
-): MethodologyRevisionRebaseChoice => {
-  if (current === draft) return "current";
-  if (current === baseline) return "draft";
-  if (draft === baseline) return "current";
-  return null;
-};
 
 const methodologyVersionDiffs = (
   current: MethodologyItem,
@@ -288,14 +246,26 @@ const methodologyVersionDiffs = (
     },
   ].filter((field) => field.before !== field.after);
 
-const confidenceLabelFor = (item: MethodologyItem): string =>
-  item.quality.evidenceCount === 0
-    ? "待验证"
-    : confidenceLabels[item.quality.recommendedConfidence];
+// By the decisions behind it as well, as the graph and consult_decision_principles word it: adopted at low
+// confidence, a principle backed by three decisions read 单点证据. Counted here by its reviewed evidence, where the
+// graph and the tool count its source decisions: one principle can carry two counts.
+const confidenceLabelFor = ({ quality: { evidenceCount, recommendedConfidence } }: MethodologyItem): string =>
+  evidenceCount === 0 ? "待验证"
+    : evidenceCount === 1 ? "单点证据"
+      : recommendedConfidence === "high" ? "稳定模式"
+        : recommendedConfidence === "medium" ? "多条印证"
+          : "低可信";
 
 export const MethodologyPanel = ({
   api,
+  unreadableNotice = null,
+  initialPrincipleId = null,
+  initialSourceDecisionId = null,
+  initialView = null,
+  onInitialSourceConsumed,
   onOpenDecision,
+  onBrowseDecisions,
+  onInitialNavigationConsumed,
 }: MethodologyPanelProps) => {
   const [status, setStatus] = useState<StatusFilter>("candidate");
   const [items, setItems] = useState<MethodologyItem[]>([]);
@@ -306,50 +276,35 @@ export const MethodologyPanel = ({
   const [revision, setRevision] = useState<MethodologyRevisionInput | null>(
     null,
   );
-  const [evolving, setEvolving] = useState(false);
-  const [evolutionDraft, setEvolutionDraft] =
-    useState<MethodologyEvolutionInput | null>(null);
-  const [evolutionSaving, setEvolutionSaving] = useState(false);
-  const [evolutionError, setEvolutionError] = useState<string | null>(null);
-  const [evolutionDraftSaveState, setEvolutionDraftSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
-  const [evolutionDraftClosing, setEvolutionDraftClosing] = useState(false);
-  const [evolutionDraftRestoredAt, setEvolutionDraftRestoredAt] = useState<
-    string | null
-  >(null);
-  const [evolutionDraftRecoveryMessage, setEvolutionDraftRecoveryMessage] =
-    useState<string | null>(null);
-  const [evolutionRebase, setEvolutionRebase] =
-    useState<MethodologyRevisionRebaseState | null>(null);
-  const [evolutionRebaseSaving, setEvolutionRebaseSaving] = useState(false);
-  const [evolutionRebaseError, setEvolutionRebaseError] = useState<
-    string | null
-  >(null);
-  const evolutionDraftSaveEpoch = useRef(0);
-  const hydratedUsageForPrinciple = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  // Said of the record it was about: one opened from anywhere else, say once created, showed it as its own.
+  useEffect(() => setDetailError(null), [selected?.id]);
   const [confirmingAcceptance, setConfirmingAcceptance] = useState(false);
-  const [choosingSources, setChoosingSources] = useState(false);
-  const [linkingEvidence, setLinkingEvidence] = useState(false);
-  const [reviewedDecisions, setReviewedDecisions] = useState<
-    DecisionLibraryItem[]
-  >([]);
-  const [selectedSources, setSelectedSources] = useState<string[]>([]);
-  const [sourceQuery, setSourceQuery] = useState("");
-  const [evidenceMatches, setEvidenceMatches] = useState<
-    MethodologyEvidenceMatch[]
-  >([]);
-  const [evidenceMatchLoading, setEvidenceMatchLoading] = useState(false);
-  const [evidenceMatchError, setEvidenceMatchError] = useState<string | null>(
-    null,
-  );
-  const [sourceLoading, setSourceLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [revisionKey, setRevisionKey] = useState(0);
-  const [view, setView] = useState<MethodologyView>("records");
+  usePageShownAgain(() => setRevisionKey((value) => value + 1));
+  // An ignored record leaves the list it was opened from, with focus on its row: the row that takes
+  // its place takes focus, not the page (where Tab starts over), or the status filter once none is left.
+  const refocusAfterIgnore = useRef<{ id: string; index: number } | null>(null);
+  const listRef = useRef<HTMLOListElement>(null);
+  const statusFilterRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const pending = refocusAfterIgnore.current;
+    if (pending === null || items.some((item) => item.id === pending.id)) return;
+    refocusAfterIgnore.current = null;
+    if (document.activeElement !== null && document.activeElement !== document.body) return;
+    const rows = listRef.current?.querySelectorAll<HTMLElement>(".methodology-row") ?? [];
+    (
+      rows[Math.min(pending.index, rows.length - 1)] ??
+      statusFilterRef.current?.querySelector<HTMLElement>('[aria-pressed="true"]')
+    )?.focus();
+  }, [items]);
+  const [view, setView] = useState<MethodologyView>(initialView ?? "records");
+  useEffect(() => {
+    if (initialView !== null) setView(initialView);
+  }, [initialView]);
   const [practiceToolbarHost, setPracticeToolbarHost] =
     useState<HTMLElement | null>(null);
   const [graph, setGraph] = useState<KnowledgeGraphSnapshot | null>(null);
@@ -359,140 +314,123 @@ export const MethodologyPanel = ({
     useState<MethodologyBuildProgress | null>(null);
   const [buildProgressUnavailable, setBuildProgressUnavailable] =
     useState(false);
-  const [suggestions, setSuggestions] = useState<MethodologySuggestion[]>([]);
-  const [deferredSuggestions, setDeferredSuggestions] = useState<
-    MethodologySuggestion[]
-  >([]);
-  const [suggestionLoading, setSuggestionLoading] = useState(true);
-  const [suggestionError, setSuggestionError] = useState<string | null>(null);
-  const [suggestionActionError, setSuggestionActionError] = useState<
-    string | null
-  >(null);
-  const [suggestionRevision, setSuggestionRevision] = useState(0);
-  const [suggestionInboxOpen, setSuggestionInboxOpen] = useState(false);
   const [workbenchOpen, setWorkbenchOpen] = useState(false);
-  const [suggestionInboxMode, setSuggestionInboxMode] = useState<
-    "active" | "deferred"
-  >("active");
-  const [suggestionActionId, setSuggestionActionId] = useState<string | null>(
-    null,
-  );
-  const [validationItems, setValidationItems] = useState<
-    MethodologyValidationItem[]
-  >([]);
-  const [validationLoading, setValidationLoading] = useState(true);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [validationInboxOpen, setValidationInboxOpen] = useState(false);
-  const [validationActionId, setValidationActionId] = useState<string | null>(
-    null,
-  );
-  const [validationActionError, setValidationActionError] = useState<
-    string | null
-  >(null);
-  const [importing, setImporting] = useState(false);
-  const [importPreview, setImportPreview] =
-    useState<MethodologyImportPreview | null>(null);
-  const [selectedImportCandidates, setSelectedImportCandidates] = useState<
-    string[]
-  >([]);
-  const [importSaving, setImportSaving] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
-  const [creationMode, setCreationMode] =
-    useState<MethodologyCreationMode>(null);
-  const [manualDraft, setManualDraft] = useState<MethodologyManualInput>({
-    title: "",
-    principle: "",
-    appliesWhen: "",
-    caution: "",
-  });
-  const [manualSaving, setManualSaving] = useState(false);
-  const [manualError, setManualError] = useState<string | null>(null);
-  const [manualEvidenceDraft, setManualEvidenceDraft] =
-    useState<MethodologyEvidenceManualInput | null>(null);
-  const [manualEvidenceSaving, setManualEvidenceSaving] = useState(false);
-  const [manualEvidenceError, setManualEvidenceError] = useState<string | null>(
-    null,
-  );
-  const [manualFormDrafts, setManualFormDrafts] = useState<ManualFormDraft[]>(
-    [],
-  );
-  const [manualDraftRestoredAt, setManualDraftRestoredAt] = useState<
-    string | null
-  >(null);
-  const [manualEvidenceRestoredAt, setManualEvidenceRestoredAt] = useState<
-    string | null
-  >(null);
-  const [manualEvidencePendingSources, setManualEvidencePendingSources] =
-    useState<string[] | null>(null);
-  const [manualDraftSaveState, setManualDraftSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
-  const [manualEvidenceDraftSaveState, setManualEvidenceDraftSaveState] =
-    useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [manualDraftStorageError, setManualDraftStorageError] = useState<
-    string | null
-  >(null);
-  const manualDraftSaveEpoch = useRef(0);
-  const manualEvidenceDraftSaveEpoch = useRef(0);
   const [notice, setNotice] = useState<MethodologyNotice | null>(null);
+  // Which open the page is on: moved on by every record the reader opens or closes and by every read begun to open
+  // one. Landing once the reader had opened another, a slow read put its record over theirs.
+  const selectionTurn = useRef(0);
+  const chooseRecord = (record: MethodologyItem | null): void => {
+    selectionTurn.current += 1;
+    setSelected(record);
+  };
   const [confirmingBatch, setConfirmingBatch] = useState(false);
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
-  const [reviewingRelation, setReviewingRelation] =
-    useState<MethodologyQualityRelation | null>(null);
-  const [relationDisposition, setRelationDisposition] =
-    useState<MethodologyRelationDisposition | null>(null);
-  const [relationNote, setRelationNote] = useState("");
-  const [relationSaving, setRelationSaving] = useState(false);
-  const [relationError, setRelationError] = useState<string | null>(null);
-  const [relationQueue, setRelationQueue] = useState<
-    MethodologyRelationReviewItem[] | null
-  >(null);
-  const [relationQueueTotal, setRelationQueueTotal] = useState(0);
-  const [relationQueueLoading, setRelationQueueLoading] = useState(false);
-  const [relationQueueSaving, setRelationQueueSaving] = useState(false);
-  const [relationQueueDisposition, setRelationQueueDisposition] =
-    useState<MethodologyRelationDisposition | null>(null);
-  const [relationQueueNote, setRelationQueueNote] = useState("");
-  const [relationQueueError, setRelationQueueError] = useState<string | null>(
-    null,
+  /**
+   * Every hook lifted out of this panel asks for the same four or five things.
+   * Built once, from setters only, so its identity never changes and no hook
+   * re-runs an effect because the page re-rendered.
+   */
+  const host = useMemo<MethodologyWorkspaceHost>(
+    () => ({
+      openRecord: (record, options) => {
+        selectionTurn.current += 1;
+        setSelected(record);
+        setEditing(false);
+        setConfirmingAcceptance(false);
+        if (options?.status !== undefined) setStatus(options.status);
+        setView(options?.view ?? "records");
+      },
+      opening: () => {
+        const turn = ++selectionTurn.current;
+        return () => selectionTurn.current === turn;
+      },
+      showRecord: (record) => setSelected(record),
+      replaceRecord: (record) =>
+        setItems((current) =>
+          current.map((entry) => (entry.id === record.id ? record : entry)),
+        ),
+      refreshRecords: () => setRevisionKey((value) => value + 1),
+      notify: (notice) => setNotice(notice),
+      dismissAcceptancePrompt: () => setConfirmingAcceptance(false),
+      showView: (view) => setView(view),
+      filterBy: (next) => setStatus(next),
+      leaveEditor: () => setEditing(false),
+    }),
+    [],
   );
-  const [mergeDraft, setMergeDraft] =
-    useState<MethodologyMergeDraftState | null>(null);
-  const [mergeLoading, setMergeLoading] = useState(false);
-  const [mergeSaving, setMergeSaving] = useState(false);
-  const [mergeError, setMergeError] = useState<string | null>(null);
-  const [mergeDraftSaveState, setMergeDraftSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
-  const [mergeDraftClosing, setMergeDraftClosing] = useState(false);
-  const [mergeDraftRestoredAt, setMergeDraftRestoredAt] = useState<
-    string | null
-  >(null);
-  const [mergeDraftRecoveryMessage, setMergeDraftRecoveryMessage] = useState<
-    string | null
-  >(null);
-  const mergeDraftSaveEpoch = useRef(0);
-  const [mergeRelationReview, setMergeRelationReview] =
-    useState<MethodologyMergeRelationReviewState | null>(null);
-  const [mergeRelationSaving, setMergeRelationSaving] = useState(false);
-  const [mergeRelationError, setMergeRelationError] = useState<string | null>(
-    null,
-  );
-  const [mergeRelationOutcome, setMergeRelationOutcome] = useState<
-    string | null
-  >(null);
-  const [mergeLifecycleOpen, setMergeLifecycleOpen] = useState(false);
-  const [mergeLifecyclePlan, setMergeLifecyclePlan] =
-    useState<MethodologyMergeLifecyclePlan | null>(null);
-  const [mergeLifecycleLoading, setMergeLifecycleLoading] = useState(false);
-  const [mergeLifecycleError, setMergeLifecycleError] = useState<string | null>(
-    null,
-  );
-  const [mergeLifecycleBusyAssetId, setMergeLifecycleBusyAssetId] = useState<
-    string | null
-  >(null);
-  const [mergeLifecycleSaving, setMergeLifecycleSaving] = useState(false);
+
+  // Called as the caller last passed it, without being a reason to read again: passed anew on every render of
+  // the app (each snapshot it pushes), it dropped the jump's read under way and began another, and under a burst
+  // of pushes the record never opened.
+  const initialNavigationConsumed = useRef(onInitialNavigationConsumed);
+  useEffect(() => {
+    initialNavigationConsumed.current = onInitialNavigationConsumed;
+  });
+
+  // Quick jump knows the id but not which status tab holds it, so the record
+  // itself decides which filter has to be showing for it to be in the list.
+  useEffect(() => {
+    const onInitialNavigationConsumed = initialNavigationConsumed.current;
+    if (initialPrincipleId === null) {
+      onInitialNavigationConsumed?.();
+      return;
+    }
+    let active = true;
+    const current = host.opening();
+    void api
+      .listMethodologies()
+      .then((records) => {
+        const record = records.find((item) => item.id === initialPrincipleId);
+        if (!active || !current() || record === undefined) return;
+        host.openRecord(record, { status: record.status, view: "records" });
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setError(caught instanceof Error ? caught.message : String(caught));
+        }
+      })
+      .finally(() => {
+        if (active) initialNavigationConsumed.current?.();
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, host, initialPrincipleId]);
+
+  const {
+    beginRelationReview,
+    clearRelationReview,
+    closeRelationQueue,
+    openRelationQueue,
+    postponeRelationQueueItem,
+    relationDisposition,
+    relationError,
+    relationNote,
+    relationQueue,
+    relationQueueDisposition,
+    relationQueueError,
+    relationQueueLoading,
+    relationQueueNote,
+    relationQueueSaving,
+    relationQueueTotal,
+    relationSaving,
+    reviewingRelation,
+    saveRelationQueueItem,
+    saveRelationReview,
+    setRelationDisposition,
+    setRelationError,
+    setRelationNote,
+    setRelationQueue,
+    setRelationQueueDisposition,
+    setRelationQueueError,
+    setRelationQueueLoading,
+    setRelationQueueNote,
+    setRelationQueueSaving,
+    setRelationQueueTotal,
+    setRelationSaving,
+    setReviewingRelation,
+  } = useRelationReview({ api, selected, host });
   const [usage, setUsage] = useState<MethodologyUsageSnapshot | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [usageError, setUsageError] = useState<string | null>(null);
@@ -506,190 +444,33 @@ export const MethodologyPanel = ({
     number | null
   >(null);
   const [restoringVersion, setRestoringVersion] = useState(false);
-  const sourceRequestSequence = useRef(0);
   const acceptanceConfirmationRef = useRef<HTMLElement>(null);
-  const storedMergeDraft = manualFormDrafts.find(
-    (draft): draft is MethodologyMergeFormDraft =>
-      draft.key === "methodology_merge",
-  );
-  const storedRevisionDraft = manualFormDrafts.find(
-    (draft): draft is MethodologyRevisionFormDraft =>
-      draft.key === "methodology_revision",
-  );
+  // Which principle the usage filter and the history view were set for: kept when it is read again.
+  const usageShownFor = useRef<string | null>(null);
+  const historyShownFor = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!confirmingAcceptance) return;
-    acceptanceConfirmationRef.current?.scrollIntoView?.({ block: "nearest" });
-  }, [confirmingAcceptance]);
 
+  // Taking the place of the button pressed, the confirmation takes focus (its 确认, or 返回检查 while that cannot be
+  // had): left on the dialog itself, Tab went back to its top and its words went unread. Closed by 返回检查, focus
+  // goes back to the button that opened it.
+  const acceptanceShown = useRef(false);
   useEffect(() => {
-    let active = true;
-    void api
-      .listManualFormDrafts()
-      .then((drafts) => {
-        if (active) setManualFormDrafts(drafts);
-      })
-      .catch((caught: unknown) => {
-        if (active) {
-          setManualDraftStorageError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [api]);
-
-  useEffect(() => {
-    if (
-      creationMode !== "manual" ||
-      !Object.values(manualDraft).some((value) => value.trim().length > 0)
-    ) {
+    const wasShown = acceptanceShown.current;
+    acceptanceShown.current = confirmingAcceptance;
+    const confirmation = acceptanceConfirmationRef.current;
+    if (confirmingAcceptance) {
+      confirmation?.scrollIntoView?.({ block: "nearest" });
+      (confirmation?.querySelector<HTMLElement>(".primary-button:not(:disabled)") ??
+        confirmation?.querySelector<HTMLElement>("button:not(:disabled)"))?.focus();
       return;
     }
-    const epoch = manualDraftSaveEpoch.current + 1;
-    manualDraftSaveEpoch.current = epoch;
-    setManualDraftSaveState("idle");
-    const timeout = window.setTimeout(() => {
-      if (manualDraftSaveEpoch.current !== epoch) return;
-      setManualDraftSaveState("saving");
-      void api
-        .saveManualFormDraft({ key: "methodology_manual", input: manualDraft })
-        .then((saved) => {
-          if (manualDraftSaveEpoch.current !== epoch) return;
-          setManualFormDrafts((current) => [
-            ...current.filter((draft) => draft.key !== saved.key),
-            saved,
-          ]);
-          setManualDraftSaveState("saved");
-          setManualDraftStorageError(null);
-        })
-        .catch((caught: unknown) => {
-          if (manualDraftSaveEpoch.current !== epoch) return;
-          setManualDraftSaveState("error");
-          setManualDraftStorageError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        });
-    }, 500);
-    return () => window.clearTimeout(timeout);
-  }, [api, creationMode, manualDraft]);
+    const focused = document.activeElement;
+    if (!wasShown || (focused !== null && focused !== document.body && focused.getAttribute("role") !== "dialog")) return;
+    document.querySelector<HTMLElement>(".methodology-detail-footer .primary-button")?.focus();
+  }, [confirmingAcceptance]);
 
-  useEffect(() => {
-    if (manualEvidenceDraft === null) return;
-    const epoch = manualEvidenceDraftSaveEpoch.current + 1;
-    manualEvidenceDraftSaveEpoch.current = epoch;
-    setManualEvidenceDraftSaveState("idle");
-    const timeout = window.setTimeout(() => {
-      if (manualEvidenceDraftSaveEpoch.current !== epoch) return;
-      setManualEvidenceDraftSaveState("saving");
-      void api
-        .saveManualFormDraft({
-          key: "methodology_evidence_manual",
-          input: manualEvidenceDraft,
-        })
-        .then((saved) => {
-          if (manualEvidenceDraftSaveEpoch.current !== epoch) return;
-          setManualFormDrafts((current) => [
-            ...current.filter((draft) => draft.key !== saved.key),
-            saved,
-          ]);
-          setManualEvidenceDraftSaveState("saved");
-          setManualDraftStorageError(null);
-        })
-        .catch((caught: unknown) => {
-          if (manualEvidenceDraftSaveEpoch.current !== epoch) return;
-          setManualEvidenceDraftSaveState("error");
-          setManualDraftStorageError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        });
-    }, 500);
-    return () => window.clearTimeout(timeout);
-  }, [api, manualEvidenceDraft]);
 
-  useEffect(() => {
-    if (mergeDraft === null) return;
-    const epoch = mergeDraftSaveEpoch.current + 1;
-    mergeDraftSaveEpoch.current = epoch;
-    setMergeDraftSaveState("idle");
-    const timeout = window.setTimeout(() => {
-      if (mergeDraftSaveEpoch.current !== epoch) return;
-      setMergeDraftSaveState("saving");
-      void api
-        .saveManualFormDraft({
-          key: "methodology_merge",
-          sourcePrincipleIds: mergeDraft.sources.map((source) => source.id),
-          input: mergeDraft.input,
-        })
-        .then((saved) => {
-          if (
-            mergeDraftSaveEpoch.current !== epoch ||
-            saved.key !== "methodology_merge"
-          ) {
-            return;
-          }
-          setManualFormDrafts((current) => [
-            ...current.filter((draft) => draft.key !== saved.key),
-            saved,
-          ]);
-          setMergeDraftRestoredAt(saved.updatedAt);
-          setMergeDraftSaveState("saved");
-          setManualDraftStorageError(null);
-        })
-        .catch((caught: unknown) => {
-          if (mergeDraftSaveEpoch.current !== epoch) return;
-          setMergeDraftSaveState("error");
-          setManualDraftStorageError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        });
-    }, 500);
-    return () => window.clearTimeout(timeout);
-  }, [api, mergeDraft]);
 
-  useEffect(() => {
-    if (!evolving || evolutionDraft === null || selected === null) return;
-    const epoch = evolutionDraftSaveEpoch.current + 1;
-    evolutionDraftSaveEpoch.current = epoch;
-    setEvolutionDraftSaveState("idle");
-    const timeout = window.setTimeout(() => {
-      if (evolutionDraftSaveEpoch.current !== epoch) return;
-      setEvolutionDraftSaveState("saving");
-      void api
-        .saveManualFormDraft({
-          key: "methodology_revision",
-          sourcePrincipleId: selected.id,
-          sourceUpdatedAt: selected.updatedAt,
-          sourceSnapshot: evolutionSourceSnapshot(selected),
-          input: evolutionDraft,
-        })
-        .then((saved) => {
-          if (
-            evolutionDraftSaveEpoch.current !== epoch ||
-            saved.key !== "methodology_revision"
-          ) {
-            return;
-          }
-          setManualFormDrafts((current) => [
-            ...current.filter((draft) => draft.key !== saved.key),
-            saved,
-          ]);
-          setEvolutionDraftRestoredAt(saved.updatedAt);
-          setEvolutionDraftSaveState("saved");
-          setManualDraftStorageError(null);
-        })
-        .catch((caught: unknown) => {
-          if (evolutionDraftSaveEpoch.current !== epoch) return;
-          setEvolutionDraftSaveState("error");
-          setManualDraftStorageError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        });
-    }, 500);
-    return () => window.clearTimeout(timeout);
-  }, [api, evolutionDraft, evolving, selected]);
 
   useEffect(() => {
     if (selected === null) {
@@ -709,8 +490,12 @@ export const MethodologyPanel = ({
     setUsage(null);
     setUsageLoading(true);
     setUsageError(null);
-    setUsageFilter("all");
-    setUsageProject("__all__");
+    // Read again for the same principle (the page shown again), the filter the reader set stays.
+    if (usageShownFor.current !== selected.id) {
+      setUsageFilter("all");
+      setUsageProject("__all__");
+    }
+    usageShownFor.current = selected.id;
     void api
       .getMethodologyUsage(selected.id)
       .then((snapshot) => {
@@ -732,8 +517,14 @@ export const MethodologyPanel = ({
   }, [api, revisionKey, selected?.id]);
 
   useEffect(() => {
-    setActiveVersion(null);
-    setPendingRestoreVersion(null);
+    // The version looked at and a restore asked for stay while the page reads it again; another principle,
+    // or this one no longer accepted, starts from its current version.
+    const shown = `${selected?.id ?? ""}:${selected?.status ?? ""}`;
+    if (historyShownFor.current !== shown) {
+      setActiveVersion(null);
+      setPendingRestoreVersion(null);
+    }
+    historyShownFor.current = shown;
     if (selected?.status !== "accepted") {
       setVersions([]);
       setVersionsLoading(false);
@@ -763,17 +554,6 @@ export const MethodologyPanel = ({
       active = false;
     };
   }, [api, revisionKey, selected?.id, selected?.status]);
-
-  const evidenceMatchById = useMemo(
-    () =>
-      new Map(
-        evidenceMatches.map((match, index) => [
-          match.sourceDecisionId,
-          { match, index },
-        ]),
-      ),
-    [evidenceMatches],
-  );
 
   const usageProjects = useMemo(
     () =>
@@ -866,6 +646,304 @@ export const MethodologyPanel = ({
     selected === null || selectedHistoryVersion === null
       ? []
       : methodologyVersionDiffs(selected, selectedHistoryVersion);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(null);
+    void api
+      .listMethodologies(status === "all" ? undefined : status)
+      .then((records) => {
+        if (active) setItems(records);
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setItems([]);
+          setError(caught instanceof Error ? caught.message : String(caught));
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, revisionKey, status]);
+
+  // The relation queue is built from every record, whatever status the list shows; so is its count,
+  // or the workbox says 0 while the queue it opens holds a pair of adopted principles.
+  // Until it is read, or when it cannot be, the records shown stand in rather than a number from before.
+  const [allRecords, setAllRecords] = useState<MethodologyItem[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    void api
+      .listMethodologies()
+      .then((records) => {
+        if (active) setAllRecords(records);
+      })
+      .catch(() => {
+        if (active) setAllRecords(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, revisionKey]);
+  const relationCount = buildRelationReviewQueue(allRecords ?? items).length;
+
+  useEffect(() => {
+    let active = true;
+    setBuildProgressUnavailable(false);
+    void api
+      .getMethodologyBuildProgress()
+      .then((progress) => {
+        if (active) setBuildProgress(progress);
+      })
+      .catch(() => {
+        if (active) {
+          setBuildProgress(null);
+          setBuildProgressUnavailable(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, revisionKey]);
+
+  useEffect(() => {
+    if (view !== "graph") return;
+    let active = true;
+    setGraphLoading(true);
+    setGraphError(null);
+    void api
+      .getKnowledgeGraph()
+      .then((snapshot) => {
+        if (active) setGraph(snapshot);
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setGraph(null);
+          setGraphError(
+            caught instanceof Error ? caught.message : String(caught),
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setGraphLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, revisionKey, view]);
+
+  const {
+    cancelPendingLoad,
+    choosingSources,
+    chooser,
+    closeSourceChooser,
+    evidenceMatchError,
+    evidenceMatchLoading,
+    evidenceMatches,
+    linkingEvidence,
+    openSourceChooser,
+    reviewedDecisions,
+    searchSources,
+    selectedSources,
+    sourceLoading,
+    sourceQuery,
+    toggleSource,
+    visibleReviewedDecisions,
+  } = useEvidenceLinking({ api, selected, reportError: setGenerationError });
+
+  useEffect(() => {
+    if (initialSourceDecisionId === null) return;
+    openSourceChooser([initialSourceDecisionId]);
+    onInitialSourceConsumed?.();
+  }, [initialSourceDecisionId, openSourceChooser, onInitialSourceConsumed]);
+
+  const {
+    closeSuggestionInbox,
+    deferSuggestion,
+    deferredSuggestions,
+    openSuggestionInbox,
+    restoreSuggestion,
+    showSuggestions,
+    suggestionActionError,
+    suggestionActionId,
+    suggestionError,
+    suggestionInboxMode,
+    suggestionInboxOpen,
+    suggestionLoading,
+    suggestions,
+    visibleSuggestionInboxItems,
+  } = useSuggestionInbox({ api, host, revisionKey });
+  // The dialog promised every group and the work stopped at six, saying nothing of the rest.
+  const suggestionBatch = suggestions.slice(0, SUGGESTION_BATCH_SIZE);
+  const suggestionsAfterBatch = suggestions.length - suggestionBatch.length;
+
+  const {
+    chooseImportCandidates,
+    closeImportPreview,
+    commitMarkdownImport,
+    importError,
+    importMarkdown,
+    importPreview,
+    importSaving,
+    importing,
+    selectedImportCandidates,
+    toggleImportCandidate,
+  } = useMarkdownImport({ api, host });
+
+  const {
+    acknowledgeValidation,
+    closeValidationInbox,
+    openValidationInbox,
+    openValidationItem,
+    validationActionError,
+    validationActionId,
+    validationError,
+    validationInboxOpen,
+    validationItems,
+    validationLoading,
+  } = useValidationInbox({
+    api,
+    host,
+    revisionKey,
+    openPrinciple: (id) => void openRelatedPrinciple(id),
+  });
+
+  const {
+    backToChooser,
+    beginManualEvidenceMethodology,
+    closeCreation,
+    closeManualEvidenceMethodology,
+    creationMode,
+    discardManualEvidenceMethodologyDraft,
+    discardManualMethodologyDraft,
+    manualDraft,
+    manualDraftRestoredAt,
+    manualDraftSaveEpoch,
+    manualDraftSaveState,
+    manualDraftStorageError,
+    manualError,
+    manualEvidenceDraft,
+    manualEvidenceDraftSaveEpoch,
+    manualEvidenceDraftSaveState,
+    manualEvidenceError,
+    manualEvidencePendingSources,
+    manualEvidenceRestoredAt,
+    manualEvidenceSaving,
+    manualFormDrafts,
+    draftStore,
+    manualSaving,
+    openCreation,
+    openEvidenceCreation,
+    openManualCreation,
+    saveManualEvidenceMethodology,
+    saveManualMethodology,
+    setCreationMode,
+    setManualDraft,
+    setManualDraftRestoredAt,
+    setManualDraftSaveState,
+    setManualError,
+    setManualEvidenceDraft,
+    setManualEvidenceDraftSaveState,
+    setManualEvidenceError,
+    setManualEvidencePendingSources,
+    setManualEvidenceRestoredAt,
+    setManualEvidenceSaving,
+    setManualSaving,
+    updateManualEvidenceDraft,
+  } = useManualDrafting({
+    api,
+    host,
+    selected,
+    status,
+    chooser,
+  });
+
+  const storedMergeDraft = manualFormDrafts.find(
+    (draft): draft is MethodologyMergeFormDraft =>
+      draft.key === "methodology_merge",
+  );
+
+  const storedRevisionDraft = manualFormDrafts.find(
+    (draft): draft is MethodologyRevisionFormDraft =>
+      draft.key === "methodology_revision",
+  );
+
+  const {
+    applyEvolutionRebase,
+    beginEvolution,
+    clearEvolutionEditor,
+    discardEvolutionFormDraft,
+    evolutionDraft,
+    evolutionDraftClosing,
+    evolutionDraftRecoveryMessage,
+    evolutionDraftRestoredAt,
+    evolutionDraftSaveEpoch,
+    evolutionDraftSaveState,
+    evolutionError,
+    evolutionRebase,
+    evolutionRebaseError,
+    evolutionRebaseSaving,
+    evolutionSaving,
+    evolving,
+    hydratedUsageForPrinciple,
+    preserveEvolutionFormDraft,
+    restoreEvolutionFormDraft,
+    saveEvolution,
+    setEvolutionDraft,
+    setEvolutionDraftClosing,
+    setEvolutionDraftRecoveryMessage,
+    setEvolutionDraftRestoredAt,
+    setEvolutionDraftSaveState,
+    setEvolutionError,
+    setEvolutionRebase,
+    setEvolutionRebaseChoice,
+    setEvolutionRebaseError,
+    setEvolutionRebaseSaving,
+    setEvolutionSaving,
+    setEvolving,
+    toggleEvolutionEvidence,
+  } = usePrincipleEvolution({
+    api,
+    host,
+    draftStore,
+    selected,
+    status,
+    storedRevisionDraft,
+    setDetailError,
+    setUsage,
+    setUsageLoading,
+    setUsageError,
+    newEvolutionEvidence,
+  });
+
+  // The open principle as the list now has it, once read again (the page shown again, after a save): changed
+  // elsewhere meanwhile (in Obsidian, a review of its evidence), the detail said what it said before, and 编辑
+  // began from that. Left as it is while an edit or a revision draft is open, as what they save is checked against
+  // what they began from; but after an edit refused for that, it rests on the principle as read again.
+  const holdSelected = useRef(false);
+  holdSelected.current = editing || evolving;
+  const rebasing = useRef(false);
+  useEffect(() => {
+    if (selected === null || (holdSelected.current && !rebasing.current)) return;
+    rebasing.current = false;
+    const listed = items.find((item) => item.id === selected.id);
+    if (listed !== undefined) {
+      if (listed !== selected) setSelected(listed);
+      return;
+    }
+    // Out of the list as filtered (opened from a decision, a citation): read again on its own.
+    const { id } = selected;
+    void api
+      .listMethodologies()
+      .then((records) => {
+        const reread = records.find((record) => record.id === id);
+        if (reread !== undefined) setSelected((current) => (current?.id === id ? reread : current));
+      })
+      .catch(() => undefined);
+  }, [items]);
+
   const evolutionHasNewEvidence =
     evolutionDraft?.sourceDecisionIds.some((id) =>
       newEvolutionEvidence.some((decision) => decision.id === id),
@@ -908,260 +986,70 @@ export const MethodologyPanel = ({
   const evolutionRebaseUnresolvedCount = evolutionRebaseRows.filter(
     ({ choice }) => choice === null,
   ).length;
-  const visibleSuggestionInboxItems =
-    suggestionInboxMode === "active" ? suggestions : deferredSuggestions;
 
-  const visibleReviewedDecisions = useMemo(() => {
-    const query = normalizedSearch(sourceQuery);
-    return reviewedDecisions
-      .filter((decision) => {
-        if (query.length === 0) return true;
-        return normalizedSearch(
-          [
-            decision.question,
-            decision.selectedAnswer,
-            decision.project,
-            decision.rationale ?? "",
-            decision.context ?? "",
-            decision.outcome ?? "",
-            decision.outcomeReview?.lesson ?? "",
-          ].join("\n"),
-        ).includes(query);
-      })
-      .sort((left, right) => {
-        const leftRank = evidenceMatchById.get(left.id)?.index;
-        const rightRank = evidenceMatchById.get(right.id)?.index;
-        return (
-          (leftRank ?? Number.MAX_SAFE_INTEGER) -
-            (rightRank ?? Number.MAX_SAFE_INTEGER) ||
-          (right.outcomeReview?.reviewedAt ?? "").localeCompare(
-            left.outcomeReview?.reviewedAt ?? "",
-          ) ||
-          left.id.localeCompare(right.id)
-        );
-      });
-  }, [evidenceMatchById, reviewedDecisions, sourceQuery]);
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-    void api
-      .listMethodologies(status === "all" ? undefined : status)
-      .then((records) => {
-        if (active) setItems(records);
-      })
-      .catch((caught: unknown) => {
-        if (active) {
-          setItems([]);
-          setError(caught instanceof Error ? caught.message : String(caught));
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api, revisionKey, status]);
-
-  useEffect(() => {
-    let active = true;
-    setBuildProgressUnavailable(false);
-    void api
-      .getMethodologyBuildProgress()
-      .then((progress) => {
-        if (active) setBuildProgress(progress);
-      })
-      .catch(() => {
-        if (active) {
-          setBuildProgress(null);
-          setBuildProgressUnavailable(true);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [api, revisionKey]);
-
-  useEffect(() => {
-    let active = true;
-    setSuggestionLoading(true);
-    setSuggestionError(null);
-    void Promise.all([
-      api.getMethodologySuggestions(),
-      api.getDeferredMethodologySuggestions(),
-    ])
-      .then(([records, deferred]) => {
-        if (active) {
-          setSuggestions(records);
-          setDeferredSuggestions(deferred);
-        }
-      })
-      .catch((caught: unknown) => {
-        if (active) {
-          setSuggestions([]);
-          setDeferredSuggestions([]);
-          setSuggestionError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        }
-      })
-      .finally(() => {
-        if (active) setSuggestionLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api, revisionKey, suggestionRevision]);
-
-  useEffect(() => {
-    if (
-      suggestionInboxOpen &&
-      suggestionInboxMode === "active" &&
-      suggestions.length === 0 &&
-      deferredSuggestions.length > 0
-    ) {
-      setSuggestionInboxMode("deferred");
-    } else if (
-      suggestionInboxOpen &&
-      suggestionInboxMode === "deferred" &&
-      deferredSuggestions.length === 0 &&
-      suggestions.length > 0
-    ) {
-      setSuggestionInboxMode("active");
-    }
-  }, [
-    deferredSuggestions.length,
-    suggestionInboxMode,
-    suggestionInboxOpen,
-    suggestions.length,
-  ]);
-
-  useEffect(() => {
-    let active = true;
-    setValidationLoading(true);
-    setValidationError(null);
-    void api
-      .getMethodologyValidationInbox()
-      .then((items) => {
-        if (active) setValidationItems(items);
-      })
-      .catch((caught: unknown) => {
-        if (active) {
-          setValidationItems([]);
-          setValidationError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        }
-      })
-      .finally(() => {
-        if (active) setValidationLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api, revisionKey]);
-
-  useEffect(() => {
-    if (view !== "graph") return;
-    let active = true;
-    setGraphLoading(true);
-    setGraphError(null);
-    void api
-      .getKnowledgeGraph()
-      .then((snapshot) => {
-        if (active) setGraph(snapshot);
-      })
-      .catch((caught: unknown) => {
-        if (active) {
-          setGraph(null);
-          setGraphError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        }
-      })
-      .finally(() => {
-        if (active) setGraphLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api, revisionKey, view]);
-
-  const openSourceChooser = (
-    preselected: string[] = [],
-    mode: "generate" | "link" = "generate",
-  ): void => {
-    const requestSequence = sourceRequestSequence.current + 1;
-    sourceRequestSequence.current = requestSequence;
-    setChoosingSources(true);
-    setLinkingEvidence(mode === "link");
-    setSelectedSources([...new Set(preselected)].slice(0, 5));
-    setSourceQuery("");
-    setEvidenceMatches([]);
-    setEvidenceMatchError(null);
-    setEvidenceMatchLoading(mode === "link");
-    setGenerationError(null);
-    setSourceLoading(true);
-    void api
-      .listDecisions({ query: "", reviewState: "reviewed", limit: 200 })
-      .then((records) => {
-        if (sourceRequestSequence.current !== requestSequence) return;
-        setReviewedDecisions(records);
-        if (mode === "link") {
-          const available = new Set(records.map((record) => record.id));
-          setSelectedSources((current) =>
-            current.filter((id) => available.has(id)),
-          );
-        }
-      })
-      .catch((caught: unknown) => {
-        if (sourceRequestSequence.current !== requestSequence) return;
-        setReviewedDecisions([]);
-        setGenerationError(
-          caught instanceof Error ? caught.message : String(caught),
-        );
-      })
-      .finally(() => {
-        if (sourceRequestSequence.current === requestSequence) {
-          setSourceLoading(false);
-        }
-      });
-    if (mode === "link" && selected !== null) {
-      void api
-        .getMethodologyEvidenceMatches(selected.id)
-        .then((matches) => {
-          if (sourceRequestSequence.current === requestSequence) {
-            setEvidenceMatches(matches);
-          }
-        })
-        .catch((caught: unknown) => {
-          if (sourceRequestSequence.current !== requestSequence) return;
-          setEvidenceMatches([]);
-          setEvidenceMatchError(
-            caught instanceof Error ? caught.message : String(caught),
-          );
-        })
-        .finally(() => {
-          if (sourceRequestSequence.current === requestSequence) {
-            setEvidenceMatchLoading(false);
-          }
-        });
-    } else {
-      setEvidenceMatchLoading(false);
-    }
-  };
-
-  const toggleSource = (id: string): void => {
-    setSelectedSources((current) =>
-      current.includes(id)
-        ? current.filter((value) => value !== id)
-        : current.length >= 5
-          ? current
-          : [...current, id],
-    );
-  };
+  const {
+    beginMergePrinciples,
+    beginMergeRelationReview,
+    clearMergeEditor,
+    createMergeDraft,
+    discardMergeFormDraft,
+    loadMergeLifecycle,
+    mergeDraft,
+    mergeDraftClosing,
+    mergeDraftRecoveryMessage,
+    mergeDraftRestoredAt,
+    mergeDraftSaveEpoch,
+    mergeDraftSaveState,
+    mergeError,
+    mergeLifecycleBusyAssetId,
+    mergeLifecycleError,
+    mergeLifecycleLoading,
+    mergeLifecycleOpen,
+    mergeLifecyclePlan,
+    mergeLifecycleSaving,
+    mergeLoading,
+    mergeRelationError,
+    mergeRelationOutcome,
+    mergeRelationReview,
+    mergeRelationSaving,
+    mergeSaving,
+    openMergeLifecycle,
+    prepareMergeAsset,
+    preserveAndCloseMergeDraft,
+    restoreMergeFormDraft,
+    restoreMergeSources,
+    retireMergeSources,
+    saveMergeRelationReview,
+    setMergeDraft,
+    setMergeDraftClosing,
+    setMergeDraftRecoveryMessage,
+    setMergeDraftRestoredAt,
+    setMergeDraftSaveState,
+    setMergeError,
+    setMergeLifecycleBusyAssetId,
+    setMergeLifecycleError,
+    setMergeLifecycleLoading,
+    setMergeLifecycleOpen,
+    setMergeLifecyclePlan,
+    setMergeLifecycleSaving,
+    setMergeLoading,
+    setMergeRelationError,
+    setMergeRelationOutcome,
+    setMergeRelationReview,
+    setMergeRelationSaving,
+    setMergeSaving,
+    toggleMergeEvidence,
+    toggleMergeSource,
+    updateMergeField,
+  } = useMergeWorkbench({
+    api,
+    host,
+    draftStore,
+    selected,
+    status,
+    storedMergeDraft,
+  });
 
   const generate = async (): Promise<void> => {
     if (selectedSources.length === 0) return;
@@ -1169,10 +1057,9 @@ export const MethodologyPanel = ({
     setGenerationError(null);
     try {
       const item = await api.generateMethodology(selectedSources);
-      sourceRequestSequence.current += 1;
-      setChoosingSources(false);
-      setLinkingEvidence(false);
-      setSelectedSources([]);
+      cancelPendingLoad();
+      closeSourceChooser();
+      chooser.choose([]);
       setSelected(item);
       setConfirmingAcceptance(false);
       setStatus("candidate");
@@ -1195,11 +1082,10 @@ export const MethodologyPanel = ({
         selected.id,
         selectedSources,
       );
-      sourceRequestSequence.current += 1;
+      cancelPendingLoad();
       setSelected(updated);
-      setChoosingSources(false);
-      setLinkingEvidence(false);
-      setSelectedSources([]);
+      closeSourceChooser();
+      chooser.choose([]);
       setNotice({
         tone: "success",
         text: `已关联 ${updated.sourceDecisionIds.length} 条复盘证据，并重新计算可信度。`,
@@ -1214,408 +1100,8 @@ export const MethodologyPanel = ({
     }
   };
 
-  const importMarkdown = async (): Promise<void> => {
-    setImporting(true);
-    setNotice(null);
-    try {
-      const preview = await api.importMethodologyMarkdown();
-      if (preview.cancelled) return;
-      if (preview.batchId === null || preview.candidates.length === 0) {
-        const firstFailure = preview.failures[0];
-        setNotice({
-          tone: "warning",
-          text:
-            preview.duplicates.length > 0
-              ? `没有新增候选；已识别并跳过 ${preview.duplicates.length} 条重复内容。`
-              : firstFailure === undefined
-                ? "没有发现可导入的内容。"
-                : `没有可导入内容（${firstFailure.fileName}：${firstFailure.message}）。`,
-        });
-        return;
-      }
-      setImportPreview(preview);
-      setSelectedImportCandidates(
-        preview.candidates
-          .filter((candidate) => candidate.similarTo === null)
-          .map((candidate) => candidate.id),
-      );
-      setImportError(null);
-    } catch (caught) {
-      setNotice({
-        tone: "error",
-        text: `导入失败：${caught instanceof Error ? caught.message : String(caught)}`,
-      });
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const openCreation = (): void => {
-    setCreationMode("chooser");
-    setManualError(null);
-  };
-
-  const openManualCreation = (): void => {
-    const saved = manualFormDrafts.find(
-      (draft) => draft.key === "methodology_manual",
-    );
-    if (saved?.key === "methodology_manual") {
-      setManualDraft({ ...saved.input });
-      setManualDraftRestoredAt(saved.updatedAt);
-      setManualDraftSaveState("saved");
-    } else if (
-      !Object.values(manualDraft).some((value) => value.trim().length > 0)
-    ) {
-      setManualDraft({
-        title: "",
-        principle: "",
-        appliesWhen: "",
-        caution: "",
-      });
-      setManualDraftRestoredAt(null);
-      setManualDraftSaveState("idle");
-    } else {
-      setManualDraftRestoredAt(null);
-    }
-    setManualError(null);
-    setCreationMode("manual");
-  };
-
-  const openEvidenceCreation = (): void => {
-    const saved = manualFormDrafts.find(
-      (draft) => draft.key === "methodology_evidence_manual",
-    );
-    if (saved?.key !== "methodology_evidence_manual") {
-      setCreationMode(null);
-      openSourceChooser();
-      return;
-    }
-    sourceRequestSequence.current += 1;
-    setCreationMode(null);
-    setManualEvidenceDraft({
-      ...saved.input,
-      sourceDecisionIds: [...saved.input.sourceDecisionIds],
-    });
-    setSelectedSources([...saved.input.sourceDecisionIds]);
-    setManualEvidenceRestoredAt(saved.updatedAt);
-    setManualEvidencePendingSources(null);
-    setManualEvidenceDraftSaveState("saved");
-    setManualEvidenceError(null);
-    setSourceLoading(true);
-    void Promise.all([
-      api.listDecisions({ query: "", reviewState: "reviewed", limit: 200 }),
-      ...saved.input.sourceDecisionIds.map((decisionId) =>
-        api.listDecisions({ query: "", decisionId, limit: 1 }),
-      ),
-    ])
-      .then((groups) => {
-        setReviewedDecisions([
-          ...new Map(
-            groups.flat().map((decision) => [decision.id, decision]),
-          ).values(),
-        ]);
-      })
-      .catch((caught: unknown) => {
-        setReviewedDecisions([]);
-        setManualEvidenceError(
-          caught instanceof Error ? caught.message : String(caught),
-        );
-      })
-      .finally(() => setSourceLoading(false));
-  };
-
-  const closeCreation = (): void => {
-    if (manualSaving) return;
-    if (
-      creationMode === "manual" &&
-      Object.values(manualDraft).some((value) => value.trim().length > 0)
-    ) {
-      void api
-        .saveManualFormDraft({
-          key: "methodology_manual",
-          input: manualDraft,
-        })
-        .then((saved) => {
-          setManualFormDrafts((current) => [
-            ...current.filter((draft) => draft.key !== saved.key),
-            saved,
-          ]);
-        })
-        .catch(() => undefined);
-    }
-    setCreationMode(null);
-    setManualError(null);
-  };
-
-  const discardManualMethodologyDraft = async (): Promise<void> => {
-    manualDraftSaveEpoch.current += 1;
-    setManualDraftSaveState("idle");
-    setManualDraftStorageError(null);
-    try {
-      await api.deleteManualFormDraft("methodology_manual");
-      setManualFormDrafts((current) =>
-        current.filter((draft) => draft.key !== "methodology_manual"),
-      );
-      setManualDraft({
-        title: "",
-        principle: "",
-        appliesWhen: "",
-        caution: "",
-      });
-      setManualDraftRestoredAt(null);
-    } catch (caught) {
-      setManualDraftSaveState("error");
-      setManualDraftStorageError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    }
-  };
-
-  const saveManualMethodology = async (): Promise<void> => {
-    setManualSaving(true);
-    setManualError(null);
-    try {
-      const item = await api.createManualMethodology(manualDraft);
-      manualDraftSaveEpoch.current += 1;
-      try {
-        await api.deleteManualFormDraft("methodology_manual");
-        setManualFormDrafts((current) =>
-          current.filter((draft) => draft.key !== "methodology_manual"),
-        );
-      } catch (caught) {
-        setNotice({
-          tone: "warning",
-          text: `候选已保存，但未完成草稿未能清除：${caught instanceof Error ? caught.message : String(caught)}`,
-        });
-      }
-      setCreationMode(null);
-      setManualDraft({
-        title: "",
-        principle: "",
-        appliesWhen: "",
-        caution: "",
-      });
-      setManualDraftRestoredAt(null);
-      setSelected(item);
-      setEditing(false);
-      setConfirmingAcceptance(false);
-      setStatus("candidate");
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setManualError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setManualSaving(false);
-    }
-  };
-
-  const beginManualEvidenceMethodology = (): void => {
-    if (selectedSources.length === 0 || sourceLoading) return;
-    const requestedSources = [...selectedSources];
-    const saved = manualFormDrafts.find(
-      (draft) => draft.key === "methodology_evidence_manual",
-    );
-    sourceRequestSequence.current += 1;
-    if (saved?.key === "methodology_evidence_manual") {
-      setManualEvidenceDraft({
-        ...saved.input,
-        sourceDecisionIds: [...saved.input.sourceDecisionIds],
-      });
-      setSelectedSources([...saved.input.sourceDecisionIds]);
-      setManualEvidenceRestoredAt(saved.updatedAt);
-      setManualEvidencePendingSources(
-        requestedSources.join("\u0000") ===
-          saved.input.sourceDecisionIds.join("\u0000")
-          ? null
-          : requestedSources,
-      );
-      setManualEvidenceDraftSaveState("saved");
-    } else {
-      setManualEvidenceDraft({
-        title: "",
-        principle: "",
-        appliesWhen: "",
-        caution: "",
-        evidenceSummary: "",
-        sourceDecisionIds: requestedSources,
-      });
-      setManualEvidenceRestoredAt(null);
-      setManualEvidencePendingSources(null);
-      setManualEvidenceDraftSaveState("idle");
-    }
-    setManualEvidenceError(null);
-    setChoosingSources(false);
-    setLinkingEvidence(false);
-  };
-
-  const updateManualEvidenceDraft = (
-    patch: Partial<MethodologyEvidenceManualInput>,
-  ): void => {
-    setManualEvidenceDraft((current) =>
-      current === null ? null : { ...current, ...patch },
-    );
-  };
-
-  const closeManualEvidenceMethodology = (): void => {
-    if (manualEvidenceSaving) return;
-    if (manualEvidenceDraft !== null) {
-      void api
-        .saveManualFormDraft({
-          key: "methodology_evidence_manual",
-          input: manualEvidenceDraft,
-        })
-        .then((saved) => {
-          setManualFormDrafts((current) => [
-            ...current.filter((draft) => draft.key !== saved.key),
-            saved,
-          ]);
-        })
-        .catch(() => undefined);
-    }
-    setManualEvidenceDraft(null);
-    setManualEvidenceError(null);
-    setChoosingSources(true);
-  };
-
-  const discardManualEvidenceMethodologyDraft = async (): Promise<void> => {
-    if (manualEvidenceDraft === null) return;
-    const sourceDecisionIds = [
-      ...(manualEvidencePendingSources ??
-        manualEvidenceDraft.sourceDecisionIds),
-    ];
-    manualEvidenceDraftSaveEpoch.current += 1;
-    setManualEvidenceDraftSaveState("idle");
-    setManualDraftStorageError(null);
-    try {
-      await api.deleteManualFormDraft("methodology_evidence_manual");
-      setManualFormDrafts((current) =>
-        current.filter((draft) => draft.key !== "methodology_evidence_manual"),
-      );
-      setSelectedSources(sourceDecisionIds);
-      setManualEvidenceDraft({
-        title: "",
-        principle: "",
-        appliesWhen: "",
-        caution: "",
-        evidenceSummary: "",
-        sourceDecisionIds,
-      });
-      setManualEvidenceRestoredAt(null);
-      setManualEvidencePendingSources(null);
-    } catch (caught) {
-      setManualEvidenceDraftSaveState("error");
-      setManualDraftStorageError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    }
-  };
-
-  const saveManualEvidenceMethodology = async (): Promise<void> => {
-    if (manualEvidenceDraft === null) return;
-    setManualEvidenceSaving(true);
-    setManualEvidenceError(null);
-    try {
-      const item =
-        await api.createManualMethodologyFromEvidence(manualEvidenceDraft);
-      manualEvidenceDraftSaveEpoch.current += 1;
-      let draftCleanupError: string | null = null;
-      try {
-        await api.deleteManualFormDraft("methodology_evidence_manual");
-        setManualFormDrafts((current) =>
-          current.filter(
-            (draft) => draft.key !== "methodology_evidence_manual",
-          ),
-        );
-      } catch (caught) {
-        draftCleanupError =
-          caught instanceof Error ? caught.message : String(caught);
-      }
-      setManualEvidenceDraft(null);
-      setManualEvidenceRestoredAt(null);
-      setManualEvidencePendingSources(null);
-      setSelectedSources([]);
-      setSelected(item);
-      setEditing(false);
-      setConfirmingAcceptance(false);
-      setStatus("candidate");
-      setNotice({
-        tone: draftCleanupError === null ? "success" : "warning",
-        text:
-          draftCleanupError === null
-            ? `已基于 ${item.sourceDecisionIds.length} 条复盘建立人工候选，全程未调用模型。`
-            : `候选已保存，但未完成草稿未能清除：${draftCleanupError}`,
-      });
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setManualEvidenceError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setManualEvidenceSaving(false);
-    }
-  };
-
-  const toggleImportCandidate = (id: string): void => {
-    setSelectedImportCandidates((current) =>
-      current.includes(id)
-        ? current.filter((candidateId) => candidateId !== id)
-        : [...current, id],
-    );
-  };
-
-  const closeImportPreview = (): void => {
-    if (importSaving) return;
-    setImportPreview(null);
-    setSelectedImportCandidates([]);
-    setImportError(null);
-  };
-
-  const commitMarkdownImport = async (): Promise<void> => {
-    if (
-      importPreview?.batchId === null ||
-      importPreview?.batchId === undefined ||
-      selectedImportCandidates.length === 0
-    ) {
-      return;
-    }
-    setImportSaving(true);
-    setImportError(null);
-    try {
-      const report = await api.commitMethodologyMarkdownImport(
-        importPreview.batchId,
-        selectedImportCandidates,
-      );
-      setImportPreview(null);
-      setSelectedImportCandidates([]);
-      const summary = [
-        report.imported.length > 0
-          ? `已导入 ${report.imported.length} 条候选`
-          : null,
-        report.duplicates.length > 0
-          ? `提交前又识别到 ${report.duplicates.length} 条重复内容`
-          : null,
-        report.failures.length > 0
-          ? `${report.failures.length} 条未完成`
-          : null,
-      ]
-        .filter((value): value is string => value !== null)
-        .join("；");
-      setNotice({
-        tone: report.failures.length > 0 ? "warning" : "success",
-        text: summary || "没有新增候选。",
-      });
-      if (report.imported.length > 0) {
-        setStatus("candidate");
-        setRevisionKey((value) => value + 1);
-      }
-    } catch (caught) {
-      setImportError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setImportSaving(false);
-    }
-  };
-
   const generateSuggestionBatch = async (): Promise<void> => {
-    const queue = suggestions.slice(0, 6);
+    const queue = suggestionBatch;
     if (queue.length === 0) return;
     setBatchGenerating(true);
     setBatchProgress({ current: 0, total: queue.length });
@@ -1635,100 +1121,20 @@ export const MethodologyPanel = ({
     }
     setBatchGenerating(false);
     setConfirmingBatch(false);
-    setSuggestionInboxOpen(false);
-    setChoosingSources(false);
+    closeSuggestionInbox();
+    closeSourceChooser();
     setStatus("candidate");
     if (completed > 0) setRevisionKey((value) => value + 1);
+    const laterBatch = suggestionsAfterBatch > 0 ? `还有 ${suggestionsAfterBatch} 组可以再批量生成。` : "";
     setNotice({
       tone: failures.length > 0 ? "warning" : "success",
       text:
         failures.length === 0
-          ? `已生成 ${completed} 条候选，等待逐条审核。`
-          : `已生成 ${completed} 条，${failures.length} 条未完成：${failures[0]}`,
+          ? `已生成 ${completed} 条候选，等待逐条审核。${laterBatch}`
+          : laterBatch === ""
+            ? `已生成 ${completed} 条，${failures.length} 条未完成：${failures[0]}`
+            : `已生成 ${completed} 条，${failures.length} 条未完成：${failures[0]?.replace(/[。.]$/u, "")}。${laterBatch}`,
     });
-  };
-
-  const openSuggestionInbox = (): void => {
-    setSuggestionInboxMode(
-      suggestions.length > 0 || deferredSuggestions.length === 0
-        ? "active"
-        : "deferred",
-    );
-    setSuggestionActionError(null);
-    setSuggestionInboxOpen(true);
-  };
-
-  const deferSuggestion = async (
-    suggestion: MethodologySuggestion,
-  ): Promise<void> => {
-    setSuggestionActionId(suggestion.id);
-    setSuggestionActionError(null);
-    try {
-      await api.deferMethodologySuggestion(suggestion.id);
-      setNotice({
-        tone: "success",
-        text: "已搁置这组复盘素材；有新复盘形成新组合时仍会再次提示。",
-      });
-      setSuggestionRevision((value) => value + 1);
-    } catch (caught) {
-      setSuggestionActionError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setSuggestionActionId(null);
-    }
-  };
-
-  const restoreSuggestion = async (
-    suggestion: MethodologySuggestion,
-  ): Promise<void> => {
-    setSuggestionActionId(suggestion.id);
-    setSuggestionActionError(null);
-    try {
-      await api.restoreMethodologySuggestion(suggestion.id);
-      setNotice({ tone: "success", text: "已恢复到可提炼素材。" });
-      setSuggestionInboxMode("active");
-      setSuggestionRevision((value) => value + 1);
-    } catch (caught) {
-      setSuggestionActionError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setSuggestionActionId(null);
-    }
-  };
-
-  const openValidationItem = (item: MethodologyValidationItem): void => {
-    setValidationInboxOpen(false);
-    setValidationActionError(null);
-    void openRelatedPrinciple(item.revisionDraftId ?? item.principleId);
-  };
-
-  const acknowledgeValidation = async (
-    item: MethodologyValidationItem,
-  ): Promise<void> => {
-    if (item.revisionDraftId !== null) return;
-    setValidationActionId(item.principleId);
-    setValidationActionError(null);
-    try {
-      await api.acknowledgeMethodologyValidation(item.principleId);
-      setValidationItems((current) =>
-        current.filter(
-          (candidate) => candidate.principleId !== item.principleId,
-        ),
-      );
-      setNotice({
-        tone: "success",
-        text: `已确认“${item.title}”在这批新增复盘中仍适用；原则内容与可信度未改变。`,
-      });
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setValidationActionError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setValidationActionId(null);
-    }
   };
 
   const beginEditing = (): void => {
@@ -1744,411 +1150,21 @@ export const MethodologyPanel = ({
     setSaving(true);
     setDetailError(null);
     try {
-      const updated = await api.reviseMethodology(selected.id, revision);
+      const updated = await api.reviseMethodology(selected.id, revision, methodologyRevisionBasis(selected));
       setSelected(updated);
       setEditing(false);
       setConfirmingAcceptance(false);
       setRevisionKey((value) => value + 1);
     } catch (caught) {
       setDetailError(caught instanceof Error ? caught.message : String(caught));
+      // Refused because it changed since, or failed for another reason: read again, the edit kept open on it.
+      rebasing.current = true;
+      setRevisionKey((value) => value + 1);
     } finally {
       setSaving(false);
     }
   };
 
-  const clearEvolutionEditor = (): void => {
-    setEvolving(false);
-    setEvolutionDraft(null);
-    setEvolutionError(null);
-    setEvolutionDraftRestoredAt(null);
-    setEvolutionDraftRecoveryMessage(null);
-  };
-
-  const discardEvolutionFormDraft = async (): Promise<void> => {
-    evolutionDraftSaveEpoch.current += 1;
-    setEvolutionDraftClosing(true);
-    setEvolutionDraftSaveState("idle");
-    setManualDraftStorageError(null);
-    try {
-      await api.deleteManualFormDraft("methodology_revision");
-      setManualFormDrafts((current) =>
-        current.filter((draft) => draft.key !== "methodology_revision"),
-      );
-      clearEvolutionEditor();
-      setEvolutionRebase(null);
-      setEvolutionRebaseError(null);
-      setNotice(null);
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-      setEvolutionDraftSaveState("error");
-      setManualDraftStorageError(message);
-      if (evolutionDraft === null) {
-        setNotice({
-          tone: "error",
-          text: `未能丢弃本机修订草稿：${message}`,
-          action: "discard_revision_draft",
-        });
-      } else {
-        setEvolutionError(`未能丢弃本机草稿：${message}`);
-      }
-    } finally {
-      setEvolutionDraftClosing(false);
-    }
-  };
-
-  const preserveEvolutionFormDraft = async (
-    closeDetail: boolean,
-  ): Promise<void> => {
-    if (
-      selected === null ||
-      evolutionDraft === null ||
-      evolutionDraftClosing
-    ) {
-      return;
-    }
-    const source = selected;
-    const draft = evolutionDraft;
-    const epoch = evolutionDraftSaveEpoch.current + 1;
-    evolutionDraftSaveEpoch.current = epoch;
-    setEvolutionDraftClosing(true);
-    setEvolutionDraftSaveState("saving");
-    setEvolutionError(null);
-    try {
-      const saved = await api.saveManualFormDraft({
-        key: "methodology_revision",
-        sourcePrincipleId: source.id,
-        sourceUpdatedAt: source.updatedAt,
-        sourceSnapshot: evolutionSourceSnapshot(source),
-        input: draft,
-      });
-      if (saved.key !== "methodology_revision") {
-        throw new Error("本机草稿类型不匹配");
-      }
-      if (evolutionDraftSaveEpoch.current !== epoch) return;
-      setManualFormDrafts((current) => [
-        ...current.filter((item) => item.key !== saved.key),
-        saved,
-      ]);
-      setEvolutionDraftSaveState("saved");
-      setManualDraftStorageError(null);
-      clearEvolutionEditor();
-      if (closeDetail) {
-        setSelected(null);
-        setEditing(false);
-        setConfirmingAcceptance(false);
-        setView("records");
-      }
-    } catch (caught) {
-      if (evolutionDraftSaveEpoch.current !== epoch) return;
-      const message = caught instanceof Error ? caught.message : String(caught);
-      setEvolutionDraftSaveState("error");
-      setManualDraftStorageError(message);
-      setEvolutionError(`本机草稿保存失败，编辑窗口仍保持打开：${message}`);
-    } finally {
-      if (evolutionDraftSaveEpoch.current === epoch) {
-        setEvolutionDraftClosing(false);
-      }
-    }
-  };
-
-  const restoreEvolutionFormDraft = async (
-    saved: MethodologyRevisionFormDraft,
-  ): Promise<void> => {
-    setEvolutionDraftClosing(true);
-    setNotice(null);
-    setView("records");
-    try {
-      const records = await api.listMethodologies();
-      const source = records.find(
-        (item) => item.id === saved.sourcePrincipleId,
-      );
-      if (source === undefined) {
-        throw new Error("来源原则已不存在");
-      }
-      if (source.status !== "accepted") {
-        throw new Error("来源原则已不再处于已采纳状态");
-      }
-      const existingRevision = records.find(
-        (item) =>
-          item.status === "candidate" &&
-          item.origin === "principle_revision" &&
-          item.sourcePrincipleIds?.[0] === source.id,
-      );
-      if (existingRevision !== undefined) {
-        throw new Error(`已经存在修订候选“${existingRevision.title}”`);
-      }
-      if (
-        source.updatedAt !== saved.sourceUpdatedAt &&
-        saved.sourceSnapshot === undefined
-      ) {
-        throw new Error("来源原则内容已更新，旧草稿缺少可比较的基线");
-      }
-      const usageSnapshot = await api.getMethodologyUsage(source.id);
-      const originalEvidence = new Set(source.sourceDecisionIds);
-      const newReviewedIds = usageSnapshot.decisions.flatMap((decision) =>
-        decision.outcomeReview !== null && !originalEvidence.has(decision.id)
-          ? [decision.id]
-          : [],
-      );
-      if (newReviewedIds.length === 0) {
-        throw new Error("已经没有可用于修订的采用后新复盘");
-      }
-      const allowedEvidence = new Set([
-        ...source.sourceDecisions.flatMap((decision) =>
-          decision.outcome !== null && decision.outcomeReview !== null
-            ? [decision.id]
-            : [],
-        ),
-        ...newReviewedIds,
-      ]);
-      const sourceDecisionIds = saved.input.sourceDecisionIds.filter((id) =>
-        allowedEvidence.has(id),
-      );
-      const removedEvidenceCount =
-        saved.input.sourceDecisionIds.length - sourceDecisionIds.length;
-      if (source.updatedAt !== saved.sourceUpdatedAt) {
-        const baseline = saved.sourceSnapshot!;
-        const current = revisionFrom(source);
-        const choices = Object.fromEntries(
-          methodologyRevisionFields.map(({ field }) => [
-            field,
-            initialRevisionRebaseChoice(
-              baseline[field],
-              current[field],
-              saved.input[field],
-            ),
-          ]),
-        ) as Record<
-          MethodologyRevisionField,
-          MethodologyRevisionRebaseChoice
-        >;
-        clearEvolutionEditor();
-        setSelected(null);
-        setEvolutionRebase({
-          saved,
-          baseline,
-          source,
-          usage: usageSnapshot,
-          sourceDecisionIds,
-          removedEvidenceCount,
-          choices,
-        });
-        setEvolutionRebaseError(null);
-        return;
-      }
-      setEvolutionRebase(null);
-      setEvolutionRebaseError(null);
-      hydratedUsageForPrinciple.current =
-        selected?.id === source.id ? null : source.id;
-      setSelected(source);
-      setUsage(usageSnapshot);
-      setUsageLoading(false);
-      setUsageError(null);
-      setEditing(false);
-      setConfirmingAcceptance(false);
-      setEvolutionDraft({ ...saved.input, sourceDecisionIds });
-      setEvolutionDraftRestoredAt(saved.updatedAt);
-      setEvolutionDraftSaveState("saved");
-      setEvolutionDraftRecoveryMessage(
-        removedEvidenceCount === 0
-          ? "已按当前原则版本和采用后复盘重新校验。"
-          : `已移除 ${removedEvidenceCount} 条不再可用的证据，请重新确认。`,
-      );
-      setEvolutionError(null);
-      setEvolving(true);
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-      clearEvolutionEditor();
-      setEvolutionRebase(null);
-      setEvolutionRebaseError(null);
-      setSelected(null);
-      setNotice({
-        tone: "warning",
-        text: `未恢复修订草稿：${message}。草稿仍保留在本机，可直接丢弃。`,
-        action: "discard_revision_draft",
-      });
-    } finally {
-      setEvolutionDraftClosing(false);
-    }
-  };
-
-  const setEvolutionRebaseChoice = (
-    field: MethodologyRevisionField,
-    choice: Exclude<MethodologyRevisionRebaseChoice, null>,
-  ): void => {
-    setEvolutionRebase((current) =>
-      current === null
-        ? null
-        : { ...current, choices: { ...current.choices, [field]: choice } },
-    );
-    setEvolutionRebaseError(null);
-  };
-
-  const applyEvolutionRebase = async (): Promise<void> => {
-    if (
-      evolutionRebase === null ||
-      Object.values(evolutionRebase.choices).some((choice) => choice === null)
-    ) {
-      return;
-    }
-    const current = revisionFrom(evolutionRebase.source);
-    const input = {
-      ...Object.fromEntries(
-        methodologyRevisionFields.map(({ field }) => [
-          field,
-          evolutionRebase.choices[field] === "draft"
-            ? evolutionRebase.saved.input[field]
-            : current[field],
-        ]),
-      ),
-      sourceDecisionIds: evolutionRebase.sourceDecisionIds,
-    } as MethodologyEvolutionInput;
-    const source = evolutionRebase.source;
-    const usageSnapshot = evolutionRebase.usage;
-    const removedEvidenceCount = evolutionRebase.removedEvidenceCount;
-    const epoch = evolutionDraftSaveEpoch.current + 1;
-    evolutionDraftSaveEpoch.current = epoch;
-    setEvolutionRebaseSaving(true);
-    setEvolutionRebaseError(null);
-    try {
-      const saved = await api.saveManualFormDraft({
-        key: "methodology_revision",
-        sourcePrincipleId: source.id,
-        sourceUpdatedAt: source.updatedAt,
-        sourceSnapshot: evolutionSourceSnapshot(source),
-        input,
-      });
-      if (saved.key !== "methodology_revision") {
-        throw new Error("本机草稿类型不匹配");
-      }
-      if (evolutionDraftSaveEpoch.current !== epoch) return;
-      setManualFormDrafts((drafts) => [
-        ...drafts.filter((draft) => draft.key !== saved.key),
-        saved,
-      ]);
-      hydratedUsageForPrinciple.current = source.id;
-      setSelected(source);
-      setUsage(usageSnapshot);
-      setUsageLoading(false);
-      setUsageError(null);
-      setEditing(false);
-      setConfirmingAcceptance(false);
-      setEvolutionDraft(input);
-      setEvolutionDraftRestoredAt(saved.updatedAt);
-      setEvolutionDraftSaveState("saved");
-      setEvolutionDraftRecoveryMessage(
-        removedEvidenceCount === 0
-          ? "已按逐字段选择迁移到当前正式版本。"
-          : `已迁移到当前版本，并移除 ${removedEvidenceCount} 条不再可用的证据。`,
-      );
-      setEvolutionError(null);
-      setEvolutionRebase(null);
-      setEvolving(true);
-      setManualDraftStorageError(null);
-    } catch (caught) {
-      setEvolutionRebaseError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setEvolutionRebaseSaving(false);
-    }
-  };
-
-  const beginEvolution = (): void => {
-    if (selected === null || newEvolutionEvidence.length === 0) return;
-    if (storedRevisionDraft !== undefined) {
-      if (storedRevisionDraft.sourcePrincipleId === selected.id) {
-        void restoreEvolutionFormDraft(storedRevisionDraft);
-      } else {
-        setDetailError(
-          "已有另一条原则的未完成修订草稿，请先从原则页继续或丢弃。",
-        );
-      }
-      return;
-    }
-    const newIds = newEvolutionEvidence.map((decision) => decision.id);
-    const sourceDecisionIds = [
-      ...newIds,
-      ...selected.sourceDecisions
-        .map((decision) => decision.id)
-        .filter((id) => !newIds.includes(id)),
-    ].slice(0, 5);
-    const observations = newEvolutionEvidence
-      .filter((decision) => sourceDecisionIds.includes(decision.id))
-      .map(
-        (decision, index) =>
-          `新增复盘 ${index + 1}：${decision.outcomeReview?.lesson ?? decision.outcome ?? "已完成复盘"}`,
-      )
-      .join("；");
-    setEvolutionDraft({
-      ...revisionFrom(selected),
-      evidenceSummary: `${selected.evidenceSummary}\n\n${observations}`.slice(
-        0,
-        3_000,
-      ),
-      sourceDecisionIds,
-    });
-    setEvolutionError(null);
-    setEvolutionDraftRestoredAt(null);
-    setEvolutionDraftRecoveryMessage(null);
-    setEvolutionDraftSaveState("idle");
-    setConfirmingAcceptance(false);
-    setEvolving(true);
-  };
-
-  const toggleEvolutionEvidence = (id: string): void => {
-    setEvolutionDraft((current) => {
-      if (current === null) return current;
-      return current.sourceDecisionIds.includes(id)
-        ? {
-            ...current,
-            sourceDecisionIds: current.sourceDecisionIds.filter(
-              (sourceId) => sourceId !== id,
-            ),
-          }
-        : current.sourceDecisionIds.length >= 5
-          ? current
-          : {
-              ...current,
-              sourceDecisionIds: [...current.sourceDecisionIds, id],
-            };
-    });
-  };
-
-  const saveEvolution = async (): Promise<void> => {
-    if (selected === null || evolutionDraft === null) return;
-    setEvolutionSaving(true);
-    setEvolutionError(null);
-    try {
-      const candidate = await api.createMethodologyRevisionDraft(
-        selected.id,
-        evolutionDraft,
-      );
-      evolutionDraftSaveEpoch.current += 1;
-      try {
-        await api.deleteManualFormDraft("methodology_revision");
-        setManualFormDrafts((current) =>
-          current.filter((draft) => draft.key !== "methodology_revision"),
-        );
-      } catch (caught) {
-        setNotice({
-          tone: "warning",
-          text: `修订候选已创建，但本机草稿未能清除：${caught instanceof Error ? caught.message : String(caught)}`,
-          action: "discard_revision_draft",
-        });
-      }
-      setSelected(candidate);
-      clearEvolutionEditor();
-      setStatus("candidate");
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setEvolutionError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setEvolutionSaving(false);
-    }
-  };
 
   const restoreMethodologyVersion = async (version: number): Promise<void> => {
     if (selected === null) return;
@@ -2183,6 +1199,12 @@ export const MethodologyPanel = ({
       const updated = acknowledgeQualityRisks
         ? await api.setMethodologyStatus(selected.id, nextStatus, true)
         : await api.setMethodologyStatus(selected.id, nextStatus);
+      if (nextStatus === "dismissed") {
+        refocusAfterIgnore.current = {
+          id: selected.id,
+          index: items.findIndex((item) => item.id === selected.id),
+        };
+      }
       setSelected(nextStatus === "dismissed" ? null : updated);
       setEditing(false);
       setConfirmingAcceptance(false);
@@ -2196,12 +1218,14 @@ export const MethodologyPanel = ({
   };
 
   const openRelatedPrinciple = async (id: string): Promise<void> => {
+    const current = host.opening();
     setSaving(true);
     setDetailError(null);
     try {
       const related = (await api.listMethodologies()).find(
         (item) => item.id === id,
       );
+      if (!current()) return;
       if (related === undefined) {
         throw new Error("关联原则已不存在，请刷新后重试。");
       }
@@ -2209,668 +1233,24 @@ export const MethodologyPanel = ({
       setEditing(false);
       setConfirmingAcceptance(false);
     } catch (caught) {
-      setDetailError(caught instanceof Error ? caught.message : String(caught));
+      const message = caught instanceof Error ? caught.message : String(caught);
+      // Opened from the graph, no detail is open to say it in.
+      if (selected === null) setNotice({ tone: "error", text: message });
+      else setDetailError(message);
     } finally {
       setSaving(false);
     }
   };
 
-  const clearMergeEditor = (): void => {
-    setMergeDraft(null);
-    setMergeError(null);
-    setMergeRelationReview(null);
-    setMergeRelationError(null);
-    setMergeRelationOutcome(null);
-    setMergeDraftRestoredAt(null);
-    setMergeDraftRecoveryMessage(null);
-  };
 
-  const discardMergeFormDraft = async (): Promise<void> => {
-    mergeDraftSaveEpoch.current += 1;
-    setMergeDraftClosing(true);
-    setMergeDraftSaveState("idle");
-    setManualDraftStorageError(null);
-    try {
-      await api.deleteManualFormDraft("methodology_merge");
-      setManualFormDrafts((current) =>
-        current.filter((draft) => draft.key !== "methodology_merge"),
-      );
-      clearMergeEditor();
-      setNotice(null);
-    } catch (caught) {
-      setMergeDraftSaveState("error");
-      const message = caught instanceof Error ? caught.message : String(caught);
-      setManualDraftStorageError(message);
-      if (mergeDraft === null) {
-        setNotice({
-          tone: "error",
-          text: `未能丢弃本机合并草稿：${message}`,
-          action: "discard_merge_draft",
-        });
-      } else {
-        setMergeError(`未能丢弃本机草稿：${message}`);
-      }
-    } finally {
-      setMergeDraftClosing(false);
-    }
-  };
-
-  const preserveAndCloseMergeDraft = async (): Promise<void> => {
-    if (mergeDraft === null || mergeDraftClosing) return;
-    const draft = mergeDraft;
-    const epoch = mergeDraftSaveEpoch.current + 1;
-    mergeDraftSaveEpoch.current = epoch;
-    setMergeDraftClosing(true);
-    setMergeDraftSaveState("saving");
-    setMergeError(null);
-    try {
-      const saved = await api.saveManualFormDraft({
-        key: "methodology_merge",
-        sourcePrincipleIds: draft.sources.map((source) => source.id),
-        input: draft.input,
-      });
-      if (saved.key !== "methodology_merge") {
-        throw new Error("本机草稿类型不匹配");
-      }
-      if (mergeDraftSaveEpoch.current !== epoch) return;
-      setManualFormDrafts((current) => [
-        ...current.filter((item) => item.key !== saved.key),
-        saved,
-      ]);
-      setMergeDraftSaveState("saved");
-      setManualDraftStorageError(null);
-      clearMergeEditor();
-      setView("records");
-    } catch (caught) {
-      if (mergeDraftSaveEpoch.current !== epoch) return;
-      const message = caught instanceof Error ? caught.message : String(caught);
-      setMergeDraftSaveState("error");
-      setManualDraftStorageError(message);
-      setMergeError(`本机草稿保存失败，编辑窗口仍保持打开：${message}`);
-    } finally {
-      if (mergeDraftSaveEpoch.current === epoch) {
-        setMergeDraftClosing(false);
-      }
-    }
-  };
-
-  const restoreMergeFormDraft = async (
-    saved: MethodologyMergeFormDraft,
-  ): Promise<void> => {
-    setMergeLoading(true);
-    setMergeError(null);
-    setMergeRelationReview(null);
-    setMergeRelationError(null);
-    setMergeRelationOutcome(null);
-    setNotice(null);
-    setView("records");
-    try {
-      const records = await api.listMethodologies();
-      const sources = saved.sourcePrincipleIds.flatMap((id) => {
-        const source = records.find((item) => item.id === id);
-        return source === undefined ? [] : [source];
-      });
-      if (sources.length !== saved.sourcePrincipleIds.length) {
-        throw new Error("部分来源原则已不存在");
-      }
-      if (sources.some((source) => source.status !== "accepted")) {
-        throw new Error("部分来源原则已不再处于已采纳状态");
-      }
-      if (!allPairsConfirmedDuplicate(sources)) {
-        throw new Error("来源之间的重复关系已经变化");
-      }
-      const existingMerge = records.find(
-        (item) =>
-          item.origin === "principle_merge" &&
-          (item.status === "candidate" || item.status === "accepted") &&
-          sameIdSet(item.sourcePrincipleIds ?? [], saved.sourcePrincipleIds),
-      );
-      if (existingMerge !== undefined) {
-        throw new Error(`同一组来源已经存在“${existingMerge.title}”`);
-      }
-      const availableEvidence = mergeEvidence(sources);
-      if (availableEvidence.length === 0) {
-        throw new Error("来源原则已没有可用于合并的复盘证据");
-      }
-      const allowedEvidence = new Set(
-        availableEvidence.map((decision) => decision.id),
-      );
-      const sourceDecisionIds = saved.input.sourceDecisionIds.filter((id) =>
-        allowedEvidence.has(id),
-      );
-      const removedEvidenceCount =
-        saved.input.sourceDecisionIds.length - sourceDecisionIds.length;
-      const autoEvidenceSummary = mergeEvidenceSummary(sources);
-      setSelected(null);
-      setMergeDraft({
-        sources,
-        availablePrinciples: records.filter(
-          (item) => item.status === "accepted",
-        ),
-        availableEvidence,
-        autoEvidenceSummary,
-        input: { ...saved.input, sourceDecisionIds },
-      });
-      setMergeDraftRestoredAt(saved.updatedAt);
-      setMergeDraftSaveState("saved");
-      setMergeDraftRecoveryMessage(
-        removedEvidenceCount === 0
-          ? "已按当前原则状态和成对关系重新校验。"
-          : `已移除 ${removedEvidenceCount} 条不再可用的证据，请重新确认。`,
-      );
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-      clearMergeEditor();
-      setNotice({
-        tone: "warning",
-        text: `未恢复合并草稿：${message}。草稿仍保留在本机，可直接丢弃。`,
-        action: "discard_merge_draft",
-      });
-    } finally {
-      setMergeLoading(false);
-    }
-  };
-
-  const beginMergePrinciples = async (
-    firstId: string,
-    secondId: string,
-  ): Promise<void> => {
-    if (storedMergeDraft !== undefined) {
-      if (
-        storedMergeDraft.sourcePrincipleIds.includes(firstId) &&
-        storedMergeDraft.sourcePrincipleIds.includes(secondId)
-      ) {
-        await restoreMergeFormDraft(storedMergeDraft);
-      } else {
-        setView("records");
-        setNotice({
-          tone: "warning",
-          text: "已有一份未完成的合并草稿。请先继续或丢弃，再建立另一组。",
-          action: "discard_merge_draft",
-        });
-      }
-      return;
-    }
-    setMergeLoading(true);
-    setMergeError(null);
-    setMergeRelationReview(null);
-    setMergeRelationError(null);
-    setMergeRelationOutcome(null);
-    setNotice(null);
-    try {
-      const records = await api.listMethodologies();
-      const first = records.find((item) => item.id === firstId);
-      const second = records.find((item) => item.id === secondId);
-      if (first === undefined || second === undefined) {
-        throw new Error("来源原则已变化，请刷新图谱后重试。");
-      }
-      const sources = [first, second];
-      const availableEvidence = mergeEvidence(sources);
-      if (availableEvidence.length === 0) {
-        throw new Error("这组原则没有可用于合并草案的已复盘证据。");
-      }
-      const autoEvidenceSummary = mergeEvidenceSummary(sources);
-      setSelected(null);
-      setMergeDraftRestoredAt(null);
-      setMergeDraftRecoveryMessage(null);
-      setMergeDraftSaveState("idle");
-      setMergeDraft({
-        sources,
-        availablePrinciples: records.filter(
-          (item) => item.status === "accepted",
-        ),
-        availableEvidence,
-        autoEvidenceSummary,
-        input: {
-          title: first.title,
-          principle: first.principle,
-          appliesWhen: first.appliesWhen,
-          caution: first.caution,
-          evidenceSummary: autoEvidenceSummary,
-          sourceDecisionIds: availableEvidence
-            .slice(0, 5)
-            .map((decision) => decision.id),
-        },
-      });
-    } catch (caught) {
-      setNotice({
-        tone: "error",
-        text: `无法建立合并草案：${caught instanceof Error ? caught.message : String(caught)}`,
-      });
-    } finally {
-      setMergeLoading(false);
-    }
-  };
-
-  const toggleMergeSource = (id: string): void => {
-    setMergeRelationOutcome(null);
-    setMergeDraft((current) => {
-      if (current === null) return null;
-      const selected = current.sources.some((source) => source.id === id);
-      let sources: MethodologyItem[];
-      if (selected) {
-        if (current.sources.length <= 2) return current;
-        sources = current.sources.filter((source) => source.id !== id);
-      } else {
-        if (current.sources.length >= 5) return current;
-        const candidate = current.availablePrinciples.find(
-          (item) => item.id === id,
-        );
-        if (
-          candidate === undefined ||
-          !current.sources.every((source) =>
-            confirmedDuplicate(source, candidate),
-          )
-        ) {
-          return current;
-        }
-        sources = [...current.sources, candidate];
-      }
-      return updateMergeSources(current, sources);
-    });
-  };
-
-  const beginMergeRelationReview = (
-    assessment: MethodologyMergeCandidateAssessment,
-  ): void => {
-    if (assessment.missingSources.length === 0) {
-      toggleMergeSource(assessment.item.id);
-      return;
-    }
-    setMergeRelationError(null);
-    setMergeRelationOutcome(null);
-    setMergeRelationReview({
-      candidateId: assessment.item.id,
-      pendingSourceIds: assessment.missingSources.map((source) => source.id),
-      totalPairCount: assessment.missingSources.length,
-      note: "",
-    });
-  };
-
-  const saveMergeRelationReview = async (
-    disposition: MethodologyRelationDisposition,
-  ): Promise<void> => {
-    if (mergeDraft === null || mergeRelationReview === null) return;
-    const sourceId = mergeRelationReview.pendingSourceIds[0];
-    if (sourceId === undefined) return;
-    const candidateId = mergeRelationReview.candidateId;
-    setMergeRelationSaving(true);
-    setMergeRelationError(null);
-    try {
-      await api.setMethodologyRelation(
-        sourceId,
-        candidateId,
-        disposition,
-        mergeRelationReview.note.trim() || null,
-      );
-      const refreshed = await api.listMethodologies();
-      const availablePrinciples = refreshed.filter(
-        (item) => item.status === "accepted",
-      );
-      if (disposition !== "duplicate") {
-        setMergeDraft((current) => {
-          if (current === null) return null;
-          const sources = current.sources.map(
-            (source) =>
-              availablePrinciples.find((item) => item.id === source.id) ??
-              source,
-          );
-          return updateMergeSources(current, sources, availablePrinciples);
-        });
-        setMergeRelationReview(null);
-        setMergeRelationOutcome(
-          disposition === "conflict"
-            ? "已记录为冲突；这条原则不会加入当前合并组。"
-            : "已记录为无关；这条原则不会加入当前合并组。",
-        );
-        setRevisionKey((value) => value + 1);
-        return;
-      }
-
-      const remaining = mergeRelationReview.pendingSourceIds.slice(1);
-      if (remaining.length > 0) {
-        setMergeDraft((current) => {
-          if (current === null) return null;
-          const sources = current.sources.map(
-            (source) =>
-              availablePrinciples.find((item) => item.id === source.id) ??
-              source,
-          );
-          return updateMergeSources(current, sources, availablePrinciples);
-        });
-        setMergeRelationReview({
-          ...mergeRelationReview,
-          pendingSourceIds: remaining,
-          note: "",
-        });
-        setRevisionKey((value) => value + 1);
-        return;
-      }
-
-      setMergeDraft((current) => {
-        if (current === null) return null;
-        const sources = current.sources.map(
-          (source) =>
-            availablePrinciples.find((item) => item.id === source.id) ?? source,
-        );
-        const candidate = availablePrinciples.find(
-          (item) => item.id === candidateId,
-        );
-        if (candidate === undefined || sources.length >= 5) {
-          return updateMergeSources(current, sources, availablePrinciples);
-        }
-        return updateMergeSources(
-          current,
-          [...sources, candidate],
-          availablePrinciples,
-        );
-      });
-      setMergeRelationReview(null);
-      setMergeRelationOutcome("缺失关系已逐对确认，这条原则已加入合并组。");
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setMergeRelationError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setMergeRelationSaving(false);
-    }
-  };
-
-  const updateMergeField = (
-    field: keyof MethodologyRevisionInput,
-    value: string,
-  ): void => {
-    setMergeDraft((current) =>
-      current === null
-        ? null
-        : { ...current, input: { ...current.input, [field]: value } },
-    );
-  };
-
-  const toggleMergeEvidence = (id: string): void => {
-    setMergeDraft((current) => {
-      if (current === null) return null;
-      const selectedIds = current.input.sourceDecisionIds;
-      const sourceDecisionIds = selectedIds.includes(id)
-        ? selectedIds.filter((value) => value !== id)
-        : selectedIds.length >= 5
-          ? selectedIds
-          : [...selectedIds, id];
-      return { ...current, input: { ...current.input, sourceDecisionIds } };
-    });
-  };
-
-  const createMergeDraft = async (): Promise<void> => {
-    if (mergeDraft === null) return;
-    setMergeSaving(true);
-    setMergeError(null);
-    try {
-      const created = await api.createMethodologyMergeDraft(
-        mergeDraft.sources.map((source) => source.id),
-        mergeDraft.input,
-      );
-      mergeDraftSaveEpoch.current += 1;
-      try {
-        await api.deleteManualFormDraft("methodology_merge");
-        setManualFormDrafts((current) =>
-          current.filter((draft) => draft.key !== "methodology_merge"),
-        );
-      } catch (caught) {
-        setNotice({
-          tone: "warning",
-          text: `合并候选已创建，但本机草稿未能清除：${caught instanceof Error ? caught.message : String(caught)}`,
-          action: "discard_merge_draft",
-        });
-      }
-      clearMergeEditor();
-      setSelected(created);
-      setEditing(false);
-      setConfirmingAcceptance(false);
-      setStatus("candidate");
-      setView("records");
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setMergeError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setMergeSaving(false);
-    }
-  };
-
-  const loadMergeLifecycle = async (
-    mergeId: string,
-  ): Promise<MethodologyMergeLifecyclePlan> => {
-    const plan = await api.getMethodologyMergePlan(mergeId);
-    setMergeLifecyclePlan(plan);
-    return plan;
-  };
-
-  const openMergeLifecycle = async (mergeId: string): Promise<void> => {
-    setMergeLifecycleOpen(true);
-    setMergeLifecycleLoading(true);
-    setMergeLifecycleError(null);
-    try {
-      await loadMergeLifecycle(mergeId);
-    } catch (caught) {
-      setMergeLifecyclePlan(null);
-      setMergeLifecycleError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setMergeLifecycleLoading(false);
-    }
-  };
-
-  const prepareMergeAsset = async (
-    mergeId: string,
-    assetId: string,
-  ): Promise<void> => {
-    setMergeLifecycleBusyAssetId(assetId);
-    setMergeLifecycleError(null);
-    try {
-      await api.prepareMethodologyMergeAsset(mergeId, assetId);
-      await loadMergeLifecycle(mergeId);
-    } catch (caught) {
-      setMergeLifecycleError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setMergeLifecycleBusyAssetId(null);
-    }
-  };
-
-  const retireMergeSources = async (mergeId: string): Promise<void> => {
-    setMergeLifecycleSaving(true);
-    setMergeLifecycleError(null);
-    try {
-      const plan = await api.retireMethodologyMergeSources(mergeId);
-      setMergeLifecyclePlan(plan);
-      const refreshed = (await api.listMethodologies()).find(
-        (item) => item.id === mergeId,
-      );
-      if (refreshed !== undefined) setSelected(refreshed);
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setMergeLifecycleError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setMergeLifecycleSaving(false);
-    }
-  };
-
-  const restoreMergeSources = async (mergeId: string): Promise<void> => {
-    setMergeLifecycleSaving(true);
-    setMergeLifecycleError(null);
-    try {
-      const plan = await api.restoreMethodologyMergeSources(mergeId);
-      setMergeLifecyclePlan(plan);
-      const refreshed = (await api.listMethodologies()).find(
-        (item) => item.id === mergeId,
-      );
-      if (refreshed !== undefined) setSelected(refreshed);
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setMergeLifecycleError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setMergeLifecycleSaving(false);
-    }
-  };
-
-  const beginRelationReview = (relation: MethodologyQualityRelation): void => {
-    setReviewingRelation(relation);
-    setRelationDisposition(relation.resolution ?? null);
-    setRelationNote(relation.resolutionNote ?? "");
-    setRelationError(null);
-    setConfirmingAcceptance(false);
-  };
-
-  const saveRelationReview = async (): Promise<void> => {
-    if (
-      selected === null ||
-      reviewingRelation === null ||
-      relationDisposition === null
-    ) {
-      return;
-    }
-    setRelationSaving(true);
-    setRelationError(null);
-    try {
-      const updated = await api.setMethodologyRelation(
-        selected.id,
-        reviewingRelation.id,
-        relationDisposition,
-        relationNote.trim() || null,
-      );
-      setSelected(updated);
-      setReviewingRelation(null);
-      setRelationDisposition(null);
-      setRelationNote("");
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setRelationError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setRelationSaving(false);
-    }
-  };
-
-  const clearRelationReview = async (): Promise<void> => {
-    if (selected === null || reviewingRelation === null) return;
-    setRelationSaving(true);
-    setRelationError(null);
-    try {
-      const updated = await api.clearMethodologyRelation(
-        selected.id,
-        reviewingRelation.id,
-      );
-      setSelected(updated);
-      setReviewingRelation(null);
-      setRelationDisposition(null);
-      setRelationNote("");
-      setRevisionKey((value) => value + 1);
-    } catch (caught) {
-      setRelationError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setRelationSaving(false);
-    }
-  };
-
-  const closeRelationQueue = (): void => {
-    setRelationQueue(null);
-    setRelationQueueTotal(0);
-    setRelationQueueDisposition(null);
-    setRelationQueueNote("");
-    setRelationQueueError(null);
-  };
-
-  const openRelationQueue = async (): Promise<void> => {
-    setRelationQueueLoading(true);
-    setNotice(null);
-    try {
-      const records = await api.listMethodologies();
-      const queue = buildRelationReviewQueue(records);
-      if (queue.length === 0) {
-        setNotice({ tone: "success", text: "当前没有待核对的原则关系。" });
-        return;
-      }
-      setSelected(null);
-      setReviewingRelation(null);
-      setRelationQueue(queue);
-      setRelationQueueTotal(queue.length);
-      setRelationQueueDisposition(null);
-      setRelationQueueNote("");
-      setRelationQueueError(null);
-    } catch (caught) {
-      setNotice({
-        tone: "error",
-        text: `关系整理失败：${caught instanceof Error ? caught.message : String(caught)}`,
-      });
-    } finally {
-      setRelationQueueLoading(false);
-    }
-  };
-
-  const saveRelationQueueItem = async (): Promise<void> => {
-    const queue = relationQueue;
-    if (queue === null || relationQueueDisposition === null) return;
-    const current = queue[0];
-    if (current === undefined) return;
-    setRelationQueueSaving(true);
-    setRelationQueueError(null);
-    try {
-      const updated = await api.setMethodologyRelation(
-        current.left.id,
-        current.right.id,
-        relationQueueDisposition,
-        relationQueueNote.trim() || null,
-      );
-      setItems((records) =>
-        records.map((record) => (record.id === updated.id ? updated : record)),
-      );
-      const remaining = queue.slice(1);
-      setRelationQueueDisposition(null);
-      setRelationQueueNote("");
-      if (remaining.length === 0) {
-        closeRelationQueue();
-        setNotice({
-          tone: "success",
-          text: `已完成 ${relationQueueTotal} 组原则关系核对。`,
-        });
-        setRevisionKey((value) => value + 1);
-      } else {
-        setRelationQueue(remaining);
-      }
-    } catch (caught) {
-      setRelationQueueError(
-        caught instanceof Error ? caught.message : String(caught),
-      );
-    } finally {
-      setRelationQueueSaving(false);
-    }
-  };
-
-  const postponeRelationQueueItem = (): void => {
-    if (relationQueue === null || relationQueue.length <= 1) {
-      closeRelationQueue();
-      return;
-    }
-    const [current, ...remaining] = relationQueue;
-    setRelationQueue([...remaining, current!]);
-    setRelationQueueDisposition(null);
-    setRelationQueueNote("");
-    setRelationQueueError(null);
-  };
 
   const selectedIsUnverifiedExternal =
     (selected?.origin === "markdown_import" ||
       selected?.origin === "manual_entry") &&
     selected.sourceDecisionIds.length === 0;
+  // Evidence is linked on what is still under review or adopted: offered on a dismissed or retired one, the chooser
+  // took the reader through picking decisions to a refusal at the end.
+  const selectedTakesEvidence = selected?.status === "candidate" || selected?.status === "accepted";
   const selectedHasImportPlaceholders =
     selected?.origin === "markdown_import" &&
     [selected.appliesWhen, selected.caution].some((value) =>
@@ -2966,6 +1346,78 @@ export const MethodologyPanel = ({
   const relationQueueCompleted =
     relationQueue === null ? 0 : relationQueueTotal - relationQueue.length;
 
+  // Kept while the list is the same: every snapshot the app pushes (each agent turn, each capture) re-rendered
+  // this page with it, and a thousand rows were reconciled each time though none of them had changed.
+  const rows = useMemo(
+    () =>
+      items.map((item) => {
+        const qualityBadge = qualityBadgeFor(item);
+        return (
+          <li key={item.id}>
+            <button
+              type="button"
+              className="methodology-row"
+              onClick={() => {
+                chooseRecord(item);
+                setEditing(false);
+                setEvolving(false);
+                setEvolutionDraft(null);
+                setDetailError(null);
+                setConfirmingAcceptance(false);
+              }}
+            >
+              <span className="methodology-row-copy">
+                <span className="methodology-row-title">
+                  <strong>{item.title}</strong>
+                  {item.origin === "markdown_import" ? (
+                    <em className="imported">Markdown 导入</em>
+                  ) : null}
+                  {item.origin === "manual_entry" ? (
+                    <em className="manual">人工录入</em>
+                  ) : null}
+                  {item.origin === "principle_merge" ? (
+                    <em className="merged">合并草案</em>
+                  ) : null}
+                  {item.origin === "principle_revision" ? (
+                    <em className="revision">修订草案</em>
+                  ) : null}
+                  {qualityBadge === null ? null : (
+                    <em className={qualityBadge.tone}>
+                      {qualityBadge.label}
+                    </em>
+                  )}
+                </span>
+                <span className="methodology-row-principle">
+                  {item.principle}
+                </span>
+              </span>
+              <span
+                className={`methodology-confidence ${item.quality.recommendedConfidence}`}
+              >
+                {confidenceLabelFor(item)}
+              </span>
+              <span>
+                {item.quality.evidenceCount === 0 &&
+                item.sourceDecisionIds.length === 0
+                  ? "待关联证据"
+                  : item.quality.missingEvidenceCount > 0
+                    ? `${item.quality.evidenceCount}/${item.sourceDecisionIds.length} 条证据`
+                    : `${item.quality.evidenceCount} 条证据`}
+              </span>
+              <time dateTime={item.updatedAt}>
+                {dateFormatter.format(new Date(item.updatedAt))}
+              </time>
+              <span className={`methodology-status ${item.status}`}>
+                {statusLabels[item.status]}
+              </span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </li>
+        );
+      }),
+    [items],
+  );
+
   return (
     <section
       className="desktop-view methodology-panel"
@@ -2983,8 +1435,55 @@ export const MethodologyPanel = ({
               ? (graph?.principles.length ?? 0)
               : items.length
         }
-        metaLabel={view === "graph" ? "已采纳原则" : "当前列表"}
+        metaLabel={view === "graph" ? "已采纳原则" : `${status === "all" ? "全部" : statusLabels[status]}原则`}
       />
+
+      <div
+        className="methodology-view-tabs"
+        role="tablist"
+        aria-label="方法论视图"
+      >
+        {methodologyViews.map(({ value, label, icon }) => (
+          <button
+            key={value}
+            id={`methodology-tab-${value}`}
+            type="button"
+            role="tab"
+            aria-selected={view === value}
+            aria-controls="methodology-tab-panel"
+            tabIndex={view === value ? 0 : -1}
+            onClick={() => setView(value)}
+            onKeyDown={(event) => {
+              const currentIndex = methodologyViews.findIndex(
+                (candidate) => candidate.value === value,
+              );
+              const nextIndex =
+                event.key === "ArrowRight"
+                  ? (currentIndex + 1) % methodologyViews.length
+                  : event.key === "ArrowLeft"
+                    ? (currentIndex - 1 + methodologyViews.length) %
+                      methodologyViews.length
+                    : event.key === "Home"
+                      ? 0
+                      : event.key === "End"
+                        ? methodologyViews.length - 1
+                        : null;
+              if (nextIndex === null) return;
+              event.preventDefault();
+              const nextView = methodologyViews[nextIndex];
+              if (nextView === undefined) return;
+              setView(nextView.value);
+              event.currentTarget.parentElement
+                ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+                .item(nextIndex)
+                .focus();
+            }}
+          >
+            <ActionIcon name={icon} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
 
       <div className="desktop-page-scroll methodology-content">
         <section
@@ -2992,58 +1491,10 @@ export const MethodologyPanel = ({
           aria-label="方法论工作区"
         >
           <div className="methodology-toolbar">
-            <div
-              className="methodology-view-tabs"
-              role="tablist"
-              aria-label="方法论视图"
-            >
-              {methodologyViews.map(({ value, label }) => (
-                <button
-                  key={value}
-                  id={`methodology-tab-${value}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={view === value}
-                  aria-controls="methodology-tab-panel"
-                  tabIndex={view === value ? 0 : -1}
-                  onClick={() => setView(value)}
-                  onKeyDown={(event) => {
-                    const currentIndex = methodologyViews.findIndex(
-                      (candidate) => candidate.value === value,
-                    );
-                    const nextIndex =
-                      event.key === "ArrowRight"
-                        ? (currentIndex + 1) % methodologyViews.length
-                        : event.key === "ArrowLeft"
-                          ? (currentIndex - 1 + methodologyViews.length) %
-                            methodologyViews.length
-                          : event.key === "Home"
-                            ? 0
-                            : event.key === "End"
-                              ? methodologyViews.length - 1
-                              : null;
-                    if (nextIndex === null) return;
-                    event.preventDefault();
-                    const nextView = methodologyViews[nextIndex];
-                    if (nextView === undefined) return;
-                    setView(nextView.value);
-                    event.currentTarget.parentElement
-                      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-                      .item(nextIndex)
-                      .focus();
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
             {view === "records" ? (
               <div className="methodology-records-toolbar">
-                <span
-                  className="methodology-toolbar-divider"
-                  aria-hidden="true"
-                />
                 <div
+                  ref={statusFilterRef}
                   className="methodology-status-filter"
                   role="group"
                   aria-label="方法论状态"
@@ -3068,7 +1519,8 @@ export const MethodologyPanel = ({
                   ))}
                 </div>
                 <span className="methodology-result-count" role="status">
-                  {loading ? "正在读取…" : `${items.length} 条`}
+                  {/* Read again after each relation is settled: the count stays put rather than flicker to "reading". */}
+                  {loading && items.length === 0 ? "正在读取…" : `${items.length} 条`}
                 </span>
                 <div className="methodology-toolbar-actions">
                   {storedRevisionDraft === undefined ? null : (
@@ -3100,7 +1552,7 @@ export const MethodologyPanel = ({
                     className={`text-button methodology-workbench-button${
                       suggestions.length +
                         validationItems.length +
-                        pendingRelationCount(items) >
+                        relationCount >
                       0
                         ? " pending"
                         : ""
@@ -3108,19 +1560,19 @@ export const MethodologyPanel = ({
                     aria-label={`方法论工作箱 ${
                       suggestions.length +
                       validationItems.length +
-                      pendingRelationCount(items)
+                      relationCount
                     }`}
                     onClick={() => setWorkbenchOpen(true)}
                   >
                     工作箱
                     {suggestions.length +
                       validationItems.length +
-                      pendingRelationCount(items) >
+                      relationCount >
                     0
                       ? ` ${
                           suggestions.length +
                           validationItems.length +
-                          pendingRelationCount(items)
+                          relationCount
                         }`
                       : ""}
                   </button>
@@ -3136,10 +1588,6 @@ export const MethodologyPanel = ({
               </div>
             ) : view === "assets" ? (
               <div className="methodology-records-toolbar practice-assets-toolbar-host">
-                <span
-                  className="methodology-toolbar-divider"
-                  aria-hidden="true"
-                />
                 <div
                   ref={setPracticeToolbarHost}
                   className="practice-assets-toolbar-portal"
@@ -3148,7 +1596,8 @@ export const MethodologyPanel = ({
             ) : null}
           </div>
 
-          {view === "records" && notice !== null ? (
+          {/* Every view's, not only the list's: a merge begun from the graph failed with nothing said there. */}
+          {notice !== null ? (
             <div
               className={`methodology-operation-notice ${notice.tone}`}
               role={notice.tone === "error" ? "alert" : "status"}
@@ -3185,10 +1634,36 @@ export const MethodologyPanel = ({
             aria-labelledby={`methodology-tab-${view}`}
             tabIndex={-1}
           >
+            {unreadableNotice === null || view !== "records" ? null : (
+              <p className="methodology-message error-message">{unreadableNotice}</p>
+            )}
             {view === "analysis" ? (
               <DecisionAnalyticsView
                 api={api}
                 onOpenDecisions={() => void api.openSurface("decisions")}
+                onOpenDecision={onOpenDecision}
+                onBrowseDecisions={onBrowseDecisions}
+                onOpenPrinciple={(id) => {
+                  const current = host.opening();
+                  void api
+                    .listMethodologies()
+                    .then((records) => {
+                      if (!current()) return;
+                      const record = records.find((item) => item.id === id);
+                      if (record !== undefined) {
+                        host.openRecord(record, { status: record.status, view: "records" });
+                      } else {
+                        setNotice({ tone: "error", text: "这条原则已不存在，可能已被删除。" });
+                      }
+                    })
+                    .catch((caught: unknown) =>
+                      setNotice({
+                        tone: "error",
+                        text: `原则暂时无法读取：${caught instanceof Error ? caught.message : String(caught)}`,
+                      }),
+                    );
+                }}
+                onOpenReviews={() => void api.openSurface("dashboard")}
               />
             ) : view === "graph" ? (
               <KnowledgeGraphView
@@ -3370,6 +1845,7 @@ export const MethodologyPanel = ({
             ) : (
               <div className="methodology-records-body">
                 <ol
+                  ref={listRef}
                   className={`methodology-list${
                     status === "candidate" &&
                     items.length > 0 &&
@@ -3379,71 +1855,7 @@ export const MethodologyPanel = ({
                   }`}
                   aria-label="方法论列表"
                 >
-                  {items.map((item) => {
-                    const qualityBadge = qualityBadgeFor(item);
-                    return (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          className="methodology-row"
-                          onClick={() => {
-                            setSelected(item);
-                            setEditing(false);
-                            setEvolving(false);
-                            setEvolutionDraft(null);
-                            setDetailError(null);
-                            setConfirmingAcceptance(false);
-                          }}
-                        >
-                          <span className="methodology-row-copy">
-                            <span className="methodology-row-title">
-                              <strong>{item.title}</strong>
-                              {item.origin === "markdown_import" ? (
-                                <em className="imported">Markdown 导入</em>
-                              ) : null}
-                              {item.origin === "manual_entry" ? (
-                                <em className="manual">人工录入</em>
-                              ) : null}
-                              {item.origin === "principle_merge" ? (
-                                <em className="merged">合并草案</em>
-                              ) : null}
-                              {item.origin === "principle_revision" ? (
-                                <em className="revision">修订草案</em>
-                              ) : null}
-                              {qualityBadge === null ? null : (
-                                <em className={qualityBadge.tone}>
-                                  {qualityBadge.label}
-                                </em>
-                              )}
-                            </span>
-                            <span className="methodology-row-principle">
-                              {item.principle}
-                            </span>
-                          </span>
-                          <span
-                            className={`methodology-confidence ${item.quality.recommendedConfidence}`}
-                          >
-                            {confidenceLabelFor(item)}
-                          </span>
-                          <span>
-                            {item.quality.evidenceCount === 0 &&
-                            item.sourceDecisionIds.length === 0
-                              ? "待关联证据"
-                              : item.quality.missingEvidenceCount > 0
-                                ? `${item.quality.evidenceCount}/${item.sourceDecisionIds.length} 条证据`
-                                : `${item.quality.evidenceCount} 条证据`}
-                          </span>
-                          <time dateTime={item.updatedAt}>
-                            {dateFormatter.format(new Date(item.updatedAt))}
-                          </time>
-                          <span className={`methodology-status ${item.status}`}>
-                            {statusLabels[item.status]}
-                          </span>
-                          <span aria-hidden="true">›</span>
-                        </button>
-                      </li>
-                    );
-                  })}
+                  {rows}
                 </ol>
 
                 {status === "candidate" &&
@@ -3547,7 +1959,7 @@ export const MethodologyPanel = ({
                         <p>
                           {suggestions.length > 0
                             ? `处理完现有候选后，还有 ${suggestions.length} 组复盘证据可以继续提炼。`
-                            : "核对原则、适用条件和边界；明确采纳后才会进入图谱与实践资产。"}
+                            : "核对原则、适用条件和边界；明确采纳后才会进入图谱和「技能与流程」。"}
                         </p>
                       </div>
                       <div className="methodology-build-actions">
@@ -3557,7 +1969,7 @@ export const MethodologyPanel = ({
                           onClick={() => {
                             const first = items[0];
                             if (first === undefined) return;
-                            setSelected(first);
+                            chooseRecord(first);
                             setEditing(false);
                             setDetailError(null);
                             setConfirmingAcceptance(false);
@@ -3687,7 +2099,7 @@ export const MethodologyPanel = ({
               <div className="methodology-create-boundary">
                 <span>不会自动采纳</span>
                 <span>不会自动建立证据关系</span>
-                <span>采纳后才进入图谱与实践资产</span>
+                <span>采纳后才进入图谱和「技能与流程」</span>
               </div>
               <footer>
                 <button
@@ -3814,30 +2226,7 @@ export const MethodologyPanel = ({
                   type="button"
                   className="text-button"
                   disabled={manualSaving}
-                  onClick={() => {
-                    if (
-                      Object.values(manualDraft).some(
-                        (value) => value.trim().length > 0,
-                      )
-                    ) {
-                      void api
-                        .saveManualFormDraft({
-                          key: "methodology_manual",
-                          input: manualDraft,
-                        })
-                        .then((saved) => {
-                          setManualFormDrafts((current) => [
-                            ...current.filter(
-                              (draft) => draft.key !== saved.key,
-                            ),
-                            saved,
-                          ]);
-                        })
-                        .catch(() => undefined);
-                    }
-                    setManualError(null);
-                    setCreationMode("chooser");
-                  }}
+                  onClick={() => void backToChooser()}
                 >
                   返回选择
                 </button>
@@ -3866,6 +2255,7 @@ export const MethodologyPanel = ({
           <section className="methodology-import-preview">
             <div
               className="methodology-import-summary"
+              role="group"
               aria-label="导入预检结果"
             >
               <div>
@@ -3912,7 +2302,7 @@ export const MethodologyPanel = ({
                   className="text-button"
                   disabled={importSaving}
                   onClick={() =>
-                    setSelectedImportCandidates(
+                    chooseImportCandidates(
                       importPreview.candidates.map((candidate) => candidate.id),
                     )
                   }
@@ -3925,7 +2315,7 @@ export const MethodologyPanel = ({
                   disabled={
                     importSaving || selectedImportCandidates.length === 0
                   }
-                  onClick={() => setSelectedImportCandidates([])}
+                  onClick={() => chooseImportCandidates([])}
                 >
                   清空
                 </button>
@@ -4078,7 +2468,7 @@ export const MethodologyPanel = ({
               <em>
                 {suggestions.length +
                   validationItems.length +
-                  pendingRelationCount(items)}{" "}
+                  relationCount}{" "}
                 项
               </em>
             </header>
@@ -4109,8 +2499,7 @@ export const MethodologyPanel = ({
                   disabled={validationLoading}
                   onClick={() => {
                     setWorkbenchOpen(false);
-                    setValidationActionError(null);
-                    setValidationInboxOpen(true);
+                    openValidationInbox();
                   }}
                 >
                   <span>
@@ -4124,7 +2513,7 @@ export const MethodologyPanel = ({
                 <button
                   type="button"
                   className="methodology-relations-button"
-                  aria-label={`关系核对 ${pendingRelationCount(items)}`}
+                  aria-label={`关系核对 ${relationCount}`}
                   disabled={
                     importing || batchGenerating || relationQueueLoading
                   }
@@ -4138,7 +2527,7 @@ export const MethodologyPanel = ({
                     <small>集中判断相近或冲突原则，结论仍需逐组确认。</small>
                   </span>
                   <em>
-                    {relationQueueLoading ? "…" : pendingRelationCount(items)}
+                    {relationQueueLoading ? "…" : relationCount}
                   </em>
                 </button>
               </li>
@@ -4163,7 +2552,7 @@ export const MethodologyPanel = ({
           description="集中核对已采纳原则在后续真实使用中的新复盘；结论必须由你确认。"
           size="wide"
           dismissible={validationActionId === null}
-          onClose={() => setValidationInboxOpen(false)}
+          onClose={closeValidationInbox}
         >
           <section className="methodology-validation-inbox">
             <header>
@@ -4236,7 +2625,7 @@ export const MethodologyPanel = ({
                               type="button"
                               disabled={validationActionId !== null}
                               onClick={() => {
-                                setValidationInboxOpen(false);
+                                closeValidationInbox();
                                 onOpenDecision(decision.id);
                               }}
                             >
@@ -4295,7 +2684,7 @@ export const MethodologyPanel = ({
                 type="button"
                 className="text-button"
                 disabled={validationActionId !== null}
-                onClick={() => setValidationInboxOpen(false)}
+                onClick={closeValidationInbox}
               >
                 关闭
               </button>
@@ -4310,7 +2699,7 @@ export const MethodologyPanel = ({
           description="把已完成的结果复盘整理成可审核的证据组合；浏览和搁置都不会调用模型。"
           size="wide"
           dismissible={suggestionActionId === null && !batchGenerating}
-          onClose={() => setSuggestionInboxOpen(false)}
+          onClose={closeSuggestionInbox}
         >
           <section className="methodology-material-inbox">
             <header>
@@ -4322,14 +2711,14 @@ export const MethodologyPanel = ({
                 <button
                   type="button"
                   aria-pressed={suggestionInboxMode === "active"}
-                  onClick={() => setSuggestionInboxMode("active")}
+                  onClick={() => showSuggestions("active")}
                 >
                   可提炼 <strong>{suggestions.length}</strong>
                 </button>
                 <button
                   type="button"
                   aria-pressed={suggestionInboxMode === "deferred"}
-                  onClick={() => setSuggestionInboxMode("deferred")}
+                  onClick={() => showSuggestions("deferred")}
                 >
                   已搁置 <strong>{deferredSuggestions.length}</strong>
                 </button>
@@ -4340,11 +2729,11 @@ export const MethodologyPanel = ({
                   className="secondary-button"
                   disabled={batchGenerating || suggestionActionId !== null}
                   onClick={() => {
-                    setSuggestionInboxOpen(false);
+                    closeSuggestionInbox();
                     setConfirmingBatch(true);
                   }}
                 >
-                  批量提炼 {suggestions.length} 组
+                  批量提炼 {suggestionBatch.length} 组
                 </button>
               ) : null}
             </header>
@@ -4426,7 +2815,7 @@ export const MethodologyPanel = ({
                               className="primary-button"
                               disabled={suggestionActionId !== null}
                               onClick={() => {
-                                setSuggestionInboxOpen(false);
+                                closeSuggestionInbox();
                                 openSourceChooser(suggestion.sourceDecisionIds);
                               }}
                             >
@@ -4472,10 +2861,8 @@ export const MethodologyPanel = ({
           size="wide"
           dismissible={!generating}
           onClose={() => {
-            sourceRequestSequence.current += 1;
-            setChoosingSources(false);
-            setLinkingEvidence(false);
-            setSourceQuery("");
+            cancelPendingLoad();
+            closeSourceChooser();
           }}
         >
           <section className="methodology-source-chooser">
@@ -4493,11 +2880,11 @@ export const MethodologyPanel = ({
                     type="button"
                     className="text-button"
                     onClick={() => {
-                      setChoosingSources(false);
+                      closeSourceChooser();
                       setConfirmingBatch(true);
                     }}
                   >
-                    批量生成 {suggestions.length} 条
+                    批量生成 {suggestionBatch.length} 条
                   </button>
                 </header>
                 <div>
@@ -4514,7 +2901,7 @@ export const MethodologyPanel = ({
                         type="button"
                         aria-pressed={selected}
                         onClick={() =>
-                          setSelectedSources(suggestion.sourceDecisionIds)
+                          chooser.choose(suggestion.sourceDecisionIds)
                         }
                       >
                         <span>
@@ -4543,7 +2930,7 @@ export const MethodologyPanel = ({
                 <header>
                   <div>
                     <strong>匹配建议</strong>
-                    <span>只依据原则与复盘中的可解释文本重合</span>
+                    <span>先看文本重合，再补语义相近项供人工核对</span>
                   </div>
                   <span>{evidenceMatches.length} 条</span>
                 </header>
@@ -4573,10 +2960,18 @@ export const MethodologyPanel = ({
                           >
                             <span>
                               <strong>{decision.question}</strong>
-                              <em className={match.strength}>
+                              <em
+                                className={
+                                  match.matchKind === "semantic"
+                                    ? "semantic"
+                                    : match.strength
+                                }
+                              >
                                 {match.alreadyLinked
                                   ? "已关联"
-                                  : evidenceMatchLabels[match.strength]}
+                                  : match.matchKind === "semantic"
+                                    ? "语义相近"
+                                    : evidenceMatchLabels[match.strength]}
                               </em>
                             </span>
                             <small>{match.reason}</small>
@@ -4605,7 +3000,7 @@ export const MethodologyPanel = ({
                   type="search"
                   value={sourceQuery}
                   placeholder="搜索问题、选择、项目或复盘经验"
-                  onChange={(event) => setSourceQuery(event.target.value)}
+                  onChange={(event) => searchSources(event.target.value)}
                 />
               </label>
             )}
@@ -4614,13 +3009,13 @@ export const MethodologyPanel = ({
             ) : reviewedDecisions.length === 0 ? (
               <div className="methodology-empty compact">
                 <strong>还没有可用证据</strong>
-                <span>先在决策库记录实际结果并完成复盘。</span>
+                <span>先在知识页记录实际结果并完成复盘。</span>
                 <button
                   type="button"
                   className="primary-button"
                   onClick={() => {
-                    sourceRequestSequence.current += 1;
-                    setChoosingSources(false);
+                    cancelPendingLoad();
+                    closeSourceChooser();
                     void api.openSurface("decisions");
                   }}
                 >
@@ -4634,7 +3029,7 @@ export const MethodologyPanel = ({
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => setSourceQuery("")}
+                  onClick={() => searchSources("")}
                 >
                   清空搜索
                 </button>
@@ -4685,11 +3080,7 @@ export const MethodologyPanel = ({
                   type="button"
                   className="text-button"
                   disabled={generating}
-                  onClick={() => {
-                    setChoosingSources(false);
-                    setLinkingEvidence(false);
-                    setSourceQuery("");
-                  }}
+                  onClick={closeSourceChooser}
                 >
                   取消
                 </button>
@@ -4923,7 +3314,7 @@ export const MethodologyPanel = ({
       {confirmingBatch ? (
         <ModalDialog
           title="批量提炼方法论"
-          description={`${suggestions.length} 组复盘建议将依次生成候选。`}
+          description={`${suggestionBatch.length} 组复盘建议将依次生成候选${suggestionsAfterBatch > 0 ? `，其余 ${suggestionsAfterBatch} 组留到下一批` : ""}。`}
           size="compact"
           dismissible={!batchGenerating}
           onClose={() => setConfirmingBatch(false)}
@@ -4931,12 +3322,12 @@ export const MethodologyPanel = ({
           <section className="methodology-batch-confirmation">
             <div className="methodology-batch-route" aria-label="批量提炼流程">
               <span>
-                <strong>{suggestions.length}</strong>
+                <strong>{suggestionBatch.length}</strong>
                 <small>证据组合</small>
               </span>
               <b aria-hidden="true">→</b>
               <span>
-                <strong>{suggestions.length}</strong>
+                <strong>{suggestionBatch.length}</strong>
                 <small>待确认候选</small>
               </span>
             </div>
@@ -4955,11 +3346,11 @@ export const MethodologyPanel = ({
               </div>
             ) : (
               <ol className="methodology-batch-preview">
-                {suggestions.slice(0, 3).map((suggestion) => (
+                {suggestionBatch.slice(0, 3).map((suggestion) => (
                   <li key={suggestion.id}>{suggestion.title}</li>
                 ))}
-                {suggestions.length > 3 ? (
-                  <li>以及另外 {suggestions.length - 3} 组</li>
+                {suggestionBatch.length > 3 ? (
+                  <li>以及另外 {suggestionBatch.length - 3} 组</li>
                 ) : null}
               </ol>
             )}
@@ -4975,12 +3366,12 @@ export const MethodologyPanel = ({
               <button
                 type="button"
                 className="primary-button"
-                disabled={batchGenerating || suggestions.length === 0}
+                disabled={batchGenerating || suggestionBatch.length === 0}
                 onClick={() => void generateSuggestionBatch()}
               >
                 {batchGenerating
                   ? "正在生成…"
-                  : `生成 ${suggestions.length} 条候选`}
+                  : `生成 ${suggestionBatch.length} 条候选`}
               </button>
             </footer>
           </section>
@@ -4992,7 +3383,8 @@ export const MethodologyPanel = ({
           title="批量核对原则关系"
           description={`第 ${relationQueueCompleted + 1} 组，共 ${relationQueueTotal} 组`}
           size="wide"
-          dismissible={!relationQueueSaving}
+          // A note typed for this group is not let go by Escape: skipped or saved, it goes with its group.
+          dismissible={!relationQueueSaving && relationQueueNote.trim().length === 0}
           onClose={closeRelationQueue}
         >
           <section className="methodology-relation-queue">
@@ -5131,7 +3523,7 @@ export const MethodologyPanel = ({
           title="核对原则关系"
           description={`“${selected.title}” 与 “${reviewingRelation.title}”`}
           size="compact"
-          dismissible={!relationSaving}
+          dismissible={!relationSaving && relationNote === (reviewingRelation.resolutionNote ?? "")}
           onClose={() => {
             setReviewingRelation(null);
             setRelationDisposition(null);
@@ -5285,14 +3677,14 @@ export const MethodologyPanel = ({
                   <p>{item.principle}</p>
                   <small>适用：{item.appliesWhen}</small>
                   {mergeDraft.sources.length > 2 ? (
-                    <button
+                    <IconButton
                       type="button"
                       aria-label={`移除来源 ${item.title}`}
                       disabled={mergeSaving || mergeRelationReview !== null}
                       onClick={() => toggleMergeSource(item.id)}
                     >
-                      ×
-                    </button>
+                      <ActionIcon name="close" />
+                    </IconButton>
                   ) : null}
                 </article>
               ))}
@@ -5683,7 +4075,7 @@ export const MethodologyPanel = ({
             ) : mergeLifecyclePlan === null ? (
               <div className="methodology-merge-lifecycle-empty">
                 <strong>暂时无法读取整理范围</strong>
-                <span>不会更改任何原则或实践资产。</span>
+                <span>不会更改任何原则或技能与流程。</span>
               </div>
             ) : (
               <>
@@ -5807,7 +4199,7 @@ export const MethodologyPanel = ({
                               onClick={() => {
                                 setMergeLifecycleOpen(false);
                                 setMergeLifecyclePlan(null);
-                                setSelected(null);
+                                chooseRecord(null);
                                 setView("assets");
                               }}
                             >
@@ -5825,7 +4217,7 @@ export const MethodologyPanel = ({
                   <div className="methodology-merge-lifecycle-complete">
                     <div>
                       <strong>来源原则已归档</strong>
-                      <span>合并原则与已审核的实践资产保持不变。</span>
+                      <span>合并原则和已审核的技能与流程保持不变。</span>
                     </div>
                     <button
                       type="button"
@@ -5863,7 +4255,11 @@ export const MethodologyPanel = ({
                 ) : (
                   <div className="methodology-merge-lifecycle-warning">
                     <strong>暂时不能归档</strong>
-                    <span>来源原则状态已经变化，请关闭后重新核对。</span>
+                    <span>
+                      {mergeLifecyclePlan.blockers.length > 0
+                        ? `${mergeLifecyclePlan.blockers.join("；")}，再归档来源。`
+                        : "来源原则状态已经变化，请关闭后重新核对。"}
+                    </span>
                   </div>
                 )}
               </>
@@ -6066,6 +4462,8 @@ export const MethodologyPanel = ({
           size="wide"
           dismissible={
             !saving &&
+            // An edit is let go of only by 取消: a stray Escape or click outside threw it away.
+            !editing &&
             !evolutionSaving &&
             !evolutionDraftClosing &&
             !restoringVersion
@@ -6075,7 +4473,7 @@ export const MethodologyPanel = ({
               void preserveEvolutionFormDraft(true);
               return;
             }
-            setSelected(null);
+            chooseRecord(null);
             setEditing(false);
             clearEvolutionEditor();
             setConfirmingAcceptance(false);
@@ -6413,23 +4811,23 @@ export const MethodologyPanel = ({
                       </div>
                     )}
                     <footer>
-                      应用前不会改变原原则、历史决策或下游实践资产；应用时会先建立恢复点。
+                      应用前不会改变原原则、历史决策或下游的技能与流程；应用时会先建立恢复点。
                     </footer>
                   </section>
                 ) : null}
                 <div className="methodology-detail-grid">
                   <section>
-                    <span>适用条件</span>
+                    <h4>适用条件</h4>
                     <p>{selected.appliesWhen}</p>
                   </section>
                   <section>
-                    <span>注意事项</span>
+                    <h4>注意事项</h4>
                     <p>{selected.caution}</p>
                   </section>
                 </div>
                 {selectedIsUnverifiedExternal ? null : (
                   <section>
-                    <span>证据摘要</span>
+                    <h4>证据摘要</h4>
                     <p>{selected.evidenceSummary}</p>
                   </section>
                 )}
@@ -6441,7 +4839,7 @@ export const MethodologyPanel = ({
                   >
                     <div className="methodology-usage-heading">
                       <div>
-                        <span>实际采用</span>
+                        <h4>实际采用</h4>
                         <strong>采用后的复盘分布</strong>
                       </div>
                       <em>{usage?.linkedDecisionCount ?? 0} 次</em>
@@ -6461,7 +4859,7 @@ export const MethodologyPanel = ({
                             className="text-button"
                             onClick={() => void api.openSurface("decisions")}
                           >
-                            去决策库关联
+                            去知识页关联
                           </button>
                         ) : null}
                       </div>
@@ -6562,23 +4960,20 @@ export const MethodologyPanel = ({
                               ))}
                             </div>
                             {usageProjects.length <= 1 ? null : (
-                              <label>
-                                <span>项目</span>
-                                <select
-                                  aria-label="按项目筛选采用记录"
-                                  value={usageProject}
-                                  onChange={(event) =>
-                                    setUsageProject(event.currentTarget.value)
-                                  }
-                                >
-                                  <option value="__all__">全部项目</option>
-                                  {usageProjects.map((project) => (
-                                    <option key={project} value={project}>
-                                      {project}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
+                              <select
+                                aria-label="按项目筛选采用记录"
+                                value={usageProject}
+                                onChange={(event) =>
+                                  setUsageProject(event.currentTarget.value)
+                                }
+                              >
+                                <option value="__all__">全部项目</option>
+                                {usageProjects.map((project) => (
+                                  <option key={project} value={project}>
+                                    {project}
+                                  </option>
+                                ))}
+                              </select>
                             )}
                           </div>
                           {visibleUsageDecisions.length === 0 ? (
@@ -6782,7 +5177,7 @@ export const MethodologyPanel = ({
                   aria-label="质量检查"
                 >
                   <div className="methodology-quality-heading">
-                    <span>质量检查</span>
+                    <h4>质量检查</h4>
                     <strong
                       className={`methodology-quality-result ${
                         selected.quality.missingEvidenceCount > 0
@@ -6942,18 +5337,20 @@ export const MethodologyPanel = ({
                         ? "这条候选由你人工录入，当前还不是经过结果复盘验证的原则。可以先核对表达与边界，或关联真实复盘证据。"
                         : "这条候选来自本地 Markdown，不等同于经过 Decision 复盘验证的原则。可以先编辑适用条件与边界，再明确采纳为待验证假设。"}
                     </p>
-                    <div className="methodology-evidence-link-actions">
-                      <button
-                        type="button"
-                        className="text-button"
-                        disabled={saving}
-                        onClick={() =>
-                          openSourceChooser(selected.sourceDecisionIds, "link")
-                        }
-                      >
-                        关联复盘证据
-                      </button>
-                    </div>
+                    {selectedTakesEvidence ? (
+                      <div className="methodology-evidence-link-actions">
+                        <button
+                          type="button"
+                          className="text-button"
+                          disabled={saving}
+                          onClick={() =>
+                            openSourceChooser(selected.sourceDecisionIds, "link")
+                          }
+                        >
+                          关联复盘证据
+                        </button>
+                      </div>
+                    ) : null}
                   </section>
                 ) : (
                   <>
@@ -6991,19 +5388,21 @@ export const MethodologyPanel = ({
                         <span>
                           这些证据由你手动关联，原则内容不会被自动改写。
                         </span>
-                        <button
-                          type="button"
-                          className="text-button"
-                          disabled={saving}
-                          onClick={() =>
-                            openSourceChooser(
-                              selected.sourceDecisionIds,
-                              "link",
-                            )
-                          }
-                        >
-                          调整证据关联
-                        </button>
+                        {selectedTakesEvidence ? (
+                          <button
+                            type="button"
+                            className="text-button"
+                            disabled={saving}
+                            onClick={() =>
+                              openSourceChooser(
+                                selected.sourceDecisionIds,
+                                "link",
+                              )
+                            }
+                          >
+                            调整证据关联
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
                   </>

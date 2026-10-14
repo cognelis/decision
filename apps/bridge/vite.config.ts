@@ -10,9 +10,7 @@ const outputDirectory = "dist/bridge";
 
 export const bridgeWrapperNames = [
   "decision-bridge",
-  "decision-island-bridge",
   "decision-bridge.cmd",
-  "decision-island-bridge.cmd",
 ] as const;
 
 export default defineConfig({

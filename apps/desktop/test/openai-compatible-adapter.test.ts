@@ -5,6 +5,10 @@ import type {
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  REASONING_HEADROOM_TOKENS,
+} from "../src/main/model/structured-provider.js";
+
+import {
   OpenAICompatibleAdapter,
 } from "../src/main/model/adapters/openai-compatible-adapter.js";
 import {
@@ -134,6 +138,12 @@ const setup = (
 };
 
 describe("OpenAICompatibleAdapter", () => {
+  it("normalizes DeepSeek cache hits and misses without counting cached input twice", async () => {
+    const { adapter } = setup(profile("chat-completions", "https://api.deepseek.com"), chatFixture({ prompt_tokens: 100, prompt_cache_hit_tokens: 80, prompt_cache_miss_tokens: 20, completion_tokens: 15, total_tokens: 115 }));
+    expect((await adapter.invoke(input)).usage).toMatchObject({ source: "provider_reported", inputTokens: 100, cachedInputTokens: 80, outputTokens: 15, totalTokens: 115 });
+    const invalid = setup(profile("chat-completions", "https://api.deepseek.com"), chatFixture({ prompt_tokens: 100, prompt_cache_hit_tokens: 80, prompt_cache_miss_tokens: 30, completion_tokens: 15, total_tokens: 115 }));
+    expect((await invalid.adapter.invoke(input)).usage.source).toBe("unavailable");
+  });
   it("uses generic JSON Schema output over Chat Completions", async () => {
     const structuredOutput = JSON.stringify({ title: "可逆优先" });
     const fixture = chatFixture();
@@ -149,12 +159,15 @@ describe("OpenAICompatibleAdapter", () => {
       visibleOutput: structuredOutput,
       modelVersion: "local-model-v3",
     });
+    // A generation the reader waits on gets the gateway's thirty-second floor here too, not the
+    // profile's twelve seconds: otherwise the shorter of the two timers wins.
+    expect(requests[0]?.timeoutMs).toBe(30_000);
     expect(requests[0]?.body).toMatchObject({
       messages: [
         { role: "system", content: methodologyRequest.systemPrompt },
         { role: "user", content: methodologyRequest.userPrompt },
       ],
-      max_tokens: 768,
+      max_tokens: 768 + REASONING_HEADROOM_TOKENS,
       response_format: {
         json_schema: {
           name: "decision_structured_output",
@@ -164,7 +177,37 @@ describe("OpenAICompatibleAdapter", () => {
     });
   });
 
-  it("uses the explicit Responses protocol without assuming store support", async () => {
+  it("asks for a plain json object when the service rejects json_schema", async () => {
+    const structuredOutput = JSON.stringify({ title: "可逆优先" });
+    const fixture = chatFixture();
+    (fixture.json as { choices: Array<{ message: { content: string } }> })
+      .choices[0]!.message.content = structuredOutput;
+    const { adapter, requests } = setup(
+      {
+        ...profile("chat-completions", "https://api.deepseek.com"),
+        jsonMode: "object",
+      },
+      fixture,
+    );
+
+    await expect(adapter.generate(methodologyRequest)).resolves.toMatchObject({
+      parsedOutput: { title: "可逆优先" },
+    });
+    const body = requests[0]?.body as {
+      response_format: { type: string };
+      messages: Array<{ role: string; content: string }>;
+    };
+    // DeepSeek accepts json_object only, and its docs require the word "json"
+    // plus the shape to appear in the prompt.
+    expect(body.response_format).toEqual({ type: "json_object" });
+    expect(body.messages[0]?.content).toContain("json");
+    expect(body.messages[0]?.content).toContain(
+      JSON.stringify(methodologyRequest.outputSchema),
+    );
+    expect(body.messages[0]?.content).toContain(methodologyRequest.systemPrompt);
+  });
+
+  it("uses the explicit Responses protocol and asks the service not to keep what it is sent", async () => {
     const { adapter, requests } = setup(
       profile("responses", "http://127.0.0.1:11434/"),
       responsesFixture,
@@ -175,12 +218,14 @@ describe("OpenAICompatibleAdapter", () => {
     expect(requests[0]?.url).toBe(
       "http://127.0.0.1:11434/v1/responses",
     );
+    // Left out, OpenAI or Azure reached through this type kept the captured conversation for 30 days.
     expect(requests[0]?.body).toEqual({
       model: "local-model",
+      store: false,
       tools: [],
       instructions: semanticSystemPrompt,
       input: buildSemanticUserPrompt(input),
-      max_output_tokens: 256,
+      max_output_tokens: 256 + REASONING_HEADROOM_TOKENS,
       text: {
         format: {
           type: "json_schema",
@@ -199,6 +244,9 @@ describe("OpenAICompatibleAdapter", () => {
       providerDurationMs: 16,
       providerRequestId: "compatible-response-id",
     });
+    // A generation too: a vault's notes for an answer, a PR's diff for a review.
+    await adapter.generate(methodologyRequest).catch(() => undefined);
+    expect(requests[1]?.body).toMatchObject({ store: false, input: methodologyRequest.userPrompt });
   });
 
   it("uses the explicit Chat Completions protocol over HTTPS", async () => {
@@ -232,7 +280,7 @@ describe("OpenAICompatibleAdapter", () => {
           content: buildSemanticUserPrompt(input),
         },
       ],
-      max_tokens: 256,
+      max_tokens: 256 + REASONING_HEADROOM_TOKENS,
       tools: [],
       response_format: {
         type: "json_schema",

@@ -9,7 +9,6 @@ import {
   assessMergeCandidate,
   buildRelationReviewQueue,
   explicitRelationBetween,
-  pendingRelationCount,
   qualityBadgeFor,
   relationPairKey,
 } from "../src/renderer/components/pages/methodology/methodology-relation-model.js";
@@ -132,7 +131,6 @@ describe("methodology relation model", () => {
       ["a", "c"],
       ["a", "b"],
     ]);
-    expect(pendingRelationCount([first, second, third])).toBe(2);
   });
 
   it("assesses a merge candidate only when at least one duplicate is confirmed", () => {

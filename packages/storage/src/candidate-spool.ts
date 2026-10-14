@@ -14,6 +14,9 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { ZodError } from "zod";
+import { expireQuarantined, QUARANTINE_MAXIMUM_AGE_MS } from "./quarantine.js";
+import { renameReplacing } from "./replace-file.js";
 
 interface CandidateSpoolOptions {
   now?: () => Date;
@@ -67,7 +70,7 @@ export class CandidateSpool {
         mode: 0o600,
         flag: "wx",
       });
-      await rename(temporary, path);
+      await renameReplacing(temporary, path);
       await chmod(path, 0o600);
     } finally {
       await unlink(temporary).catch(() => undefined);
@@ -98,7 +101,7 @@ export class CandidateSpool {
         mode: 0o600,
         flag: "wx",
       });
-      await rename(temporary, receipt);
+      await renameReplacing(temporary, receipt);
       await chmod(receipt, 0o600);
     } finally {
       await unlink(temporary).catch(() => undefined);
@@ -141,15 +144,22 @@ export class CandidateSpool {
           capturedDecisionCandidateSchema.parse(
             JSON.parse(await readFile(path, "utf8")),
           );
+        const now = this.#now().getTime();
+        const created = Date.parse(candidate.createdAt);
         if (
           (await this.#isAcknowledged(candidate.candidateId)) ||
-          Date.parse(candidate.expiresAt) <= this.#now().getTime()
+          Date.parse(candidate.expiresAt) <= now ||
+          // Created further ahead than it lives: under a clock that ran ahead, it stayed until that date came round.
+          created - now > Date.parse(candidate.expiresAt) - created
         ) {
           await unlink(path).catch(() => undefined);
           continue;
         }
         entries.push({ candidate, path });
-      } catch {
+      } catch (error) {
+        // Only one that does not parse is set aside: one not read now (too many files open, a disk error, a
+        // virus scanner holding it) is kept, and read again next time, not deleted a week later as corrupt.
+        if (!(error instanceof SyntaxError || error instanceof ZodError)) continue;
         const quarantined = join(
           this.#quarantinePath(),
           `${filename}.corrupt-${this.#now().getTime()}-${randomUUID()}`,
@@ -158,6 +168,7 @@ export class CandidateSpool {
         await chmod(quarantined, 0o600).catch(() => undefined);
       }
     }
+    await expireQuarantined(this.#quarantinePath(), QUARANTINE_MAXIMUM_AGE_MS, this.#now().getTime());
     entries.sort(
       (left, right) =>
         Date.parse(left.candidate.createdAt) -

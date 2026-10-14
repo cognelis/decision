@@ -67,9 +67,13 @@ export const semanticDecisionPairSchema = z
 
 export const captureAuditStageSchema = z.enum([
   "hook_received",
+  "stop_cwd_missing",
+  "prompt_text_missing",
   "assistant_text_resolved",
   "pending_saved",
   "user_prompt_matched",
+  "user_prompt_unpaired",
+  "pending_expired",
   "pair_spooled",
   "classification_completed",
   "routed",
@@ -80,6 +84,7 @@ export const captureAuditErrorCodeSchema = z.enum([
   "assistant_text_unavailable",
   "pending_write_failed",
   "pair_not_found",
+  "pending_unreadable",
   "pair_write_failed",
   "pair_delivery_failed",
   "classification_timeout",
@@ -93,6 +98,8 @@ export const captureAuditErrorCodeSchema = z.enum([
   "helper_missing",
   "helper_crashed",
   "trace_write_failed",
+  // A hook's input past the bridge's limit: not read, so its capture is lost.
+  "input_too_large",
   "unknown",
 ]);
 
@@ -147,6 +154,19 @@ export const semanticRouteDecisionSchema = z
   })
   .strict();
 
+const semanticRecognitionAvailabilitySchema = z.enum([
+  "available",
+  "loading",
+  "device_not_eligible",
+  "apple_intelligence_disabled",
+  "assets_unavailable",
+  "model_missing",
+  "checksum_failed",
+  "runtime_unavailable",
+  "helper_missing",
+  "unavailable",
+]);
+
 export const semanticRecognitionStatusSchema = z
   .object({
     provider: z.enum([
@@ -160,24 +180,27 @@ export const semanticRecognitionStatusSchema = z
       "rules",
     ]),
     providerLabel: bounded(100),
-    availability: z.enum([
-      "available",
-      "loading",
-      "device_not_eligible",
-      "apple_intelligence_disabled",
-      "assets_unavailable",
-      "model_missing",
-      "checksum_failed",
-      "runtime_unavailable",
-      "helper_missing",
-      "unavailable",
-    ]),
+    availability: semanticRecognitionAvailabilitySchema,
     mode: z.enum([
       "trace",
       "shadow",
       "disagreement_review",
       "hybrid",
+      /** No model is asked at all; the rules decide on their own. */
+      "rules_only",
     ]),
+    /**
+     * Set when models were asked for and none could answer, so the rules read on their own: each enabled backend tried,
+     * in order, and why it could not be used. Empty when none is enabled.
+     */
+    unavailableModels: z
+      .array(
+        z
+          .object({ providerLabel: bounded(100), availability: semanticRecognitionAvailabilitySchema })
+          .strict(),
+      )
+      .max(100)
+      .optional(),
     modelVersion: bounded(200).optional(),
     promptVersion: bounded(100).optional(),
     processed7d: z.number().int().nonnegative(),

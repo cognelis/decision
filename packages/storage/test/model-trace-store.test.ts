@@ -56,6 +56,27 @@ const successfulTraceInput = (
 });
 
 describe("ModelTraceStore", () => {
+  it("retains the call's peak and cache price snapshot across a metadata-only reload", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-price-snapshot-"));
+    const pricing = { currency: "¥", inputPerMillion: 1, cachedInputPerMillion: 0.02, outputPerMillion: 4, peak: { inputPerMillion: 2, cachedInputPerMillion: 0.04, outputPerMillion: 8, holidayYear: 2026, holidays: ["2026-10-01"] } };
+    const input = successfulTraceInput();
+    await new ModelTraceStore(root, { contentMode: () => "metadata-only" }).record({ ...input, profile: { ...input.profile, pricing } });
+    const [trace] = await new ModelTraceStore(root).list();
+    expect(trace!.profile.pricing).toEqual(pricing);
+    expect(trace!.input).toBeUndefined(); expect(trace!.output).toBeUndefined();
+  });
+  it("retains numeric request settings with metadata-only traces while dropping all request and response bodies", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-request-metadata-"));
+    const store = new ModelTraceStore(root, { contentMode: () => "metadata-only" });
+    const trace = await store.record(successfulTraceInput({ request: { configuredTimeoutMs: 5000, generationTimeoutMs: 30000, requestedMaxOutputTokens: 8192, systemPromptChars: 20, userPromptChars: 30 }, timing: { queuedMs: 160000, providerMs: 300000, totalMs: 460000 } }));
+    expect(trace.input).toBeUndefined(); expect(trace.output).toBeUndefined();
+    expect(trace.timing).toEqual({ queuedMs: 160000, providerMs: 300000, totalMs: 460000 });
+    expect((await store.list())[0]!.request).toEqual(trace.request);
+    const filename = (await readdir(root)).find(name => name.endsWith(".json"))!;
+    const content = await readFile(join(root, filename), "utf8");
+    expect(content).not.toContain("Classify without reasoning");
+    expect(content).not.toContain("Assistant: choose A or B");
+  });
   it("records private traces and supports trace, request, and all deletion", async () => {
     const root = await mkdtemp(join(tmpdir(), "model-traces-"));
     const path = join(root, "model-traces");
@@ -99,6 +120,10 @@ describe("ModelTraceStore", () => {
       }),
     );
     await expect(store.deleteRequest("group-1")).resolves.toBe(2);
+    // A deleted conversation's turns, the folder listed once for all of them.
+    await store.record(successfulTraceInput({ requestId: "turn-a", attemptId: "turn-a-1" }));
+    await store.record(successfulTraceInput({ requestId: "turn-b", attemptId: "turn-b-1" }));
+    await expect(store.deleteRequest(["turn-a", "turn-b", "turn-none"])).resolves.toBe(2);
 
     await store.record(successfulTraceInput());
     await expect(store.clear()).resolves.toBe(1);
@@ -163,6 +188,64 @@ describe("ModelTraceStore", () => {
       newestCreatedAt: "2026-07-30T00:00:00.000Z",
     });
     expect(await readdir(join(root, "quarantine"))).toHaveLength(1);
+  });
+
+  it("lets go a trace written under a clock that ran ahead once the clock is right again", async () => {
+    const root = await mkdtemp(join(tmpdir(), "model-ahead-"));
+    let now = new Date("2027-10-05T09:00:00.000Z"); // a date typed a year ahead
+    let sequence = 0;
+    const store = new ModelTraceStore(root, { now: () => now, idFactory: () => `trace-${sequence++}` });
+    await store.record(successfulTraceInput({ requestId: "while-ahead" }));
+
+    now = new Date("2026-10-20T09:00:00.000Z");
+    await store.record(successfulTraceInput({ requestId: "ordinary" }));
+    // Kept as dated, the prompt and reply said to go after 7 days stayed until October 2027.
+    expect((await store.list()).map((trace) => trace.requestId)).toEqual(["ordinary"]);
+  });
+
+  it("applies retention from record at most hourly, so a model call does not read every trace", async () => {
+    const root = await mkdtemp(join(tmpdir(), "model-throttle-"));
+    let now = new Date("2026-07-30T00:00:00.000Z");
+    let sequence = 0;
+    const store = new ModelTraceStore(root, { now: () => now, idFactory: () => `trace-${sequence++}` });
+    await store.record(successfulTraceInput());
+    // Only a scan moves this aside: a record that scans quarantines it.
+    await writeFile(join(root, `${"e".repeat(64)}.json`), "not-json");
+
+    now = new Date("2026-07-30T00:59:00.000Z");
+    await store.record(successfulTraceInput());
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(0);
+
+    now = new Date("2026-07-30T01:01:00.000Z");
+    await store.record(successfulTraceInput());
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(1);
+  });
+
+  it("ages out what it set aside, and clears it with everything else", async () => {
+    const root = await mkdtemp(join(tmpdir(), "model-quarantine-"));
+    let now = new Date("2026-07-30T00:00:00.000Z");
+    const store = new ModelTraceStore(root, { now: () => now });
+    await writeFile(join(root, `${"e".repeat(64)}.json`), "{\"prompt\":\"private\"");
+    await store.list();
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(1);
+
+    now = new Date("2026-08-07T00:00:00.000Z");
+    await store.list();
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(0);
+
+    // Set aside under a clock a year ahead: gone once the clock is right again, not kept until that day.
+    now = new Date("2027-08-07T00:00:00.000Z");
+    await writeFile(join(root, `${"d".repeat(64)}.json`), "{\"prompt\":\"private\"");
+    await store.list();
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(1);
+    now = new Date("2026-08-07T00:00:00.000Z");
+    await store.list();
+    expect(await readdir(join(root, "quarantine"))).toHaveLength(0);
+
+    await writeFile(join(root, `${"f".repeat(64)}.json`), "{\"prompt\":\"private\"");
+    await store.list();
+    await store.clear();
+    expect(await readdir(join(root, "quarantine")).catch(() => [])).toHaveLength(0);
   });
 
   it("omits model input and output when content tracing is disabled", async () => {

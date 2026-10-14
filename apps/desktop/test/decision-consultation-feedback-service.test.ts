@@ -30,10 +30,12 @@ const response = (relevance: "strong" | "possible" | null) =>
             },
           ],
     feedback: null,
-    boundary: {
+      signals: [],
+  boundary: {
       advisoryOnly: true,
       noDecisionWritten: true,
       noPrincipleApplied: true,
+      noPreferencePromoted: true,
     },
   }) satisfies DecisionConsultationResponse;
 

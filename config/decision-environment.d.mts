@@ -1,4 +1,4 @@
-export type DecisionEnvironmentSource = "current" | "legacy" | "default";
+export type DecisionEnvironmentSource = "current" | "default";
 
 export interface DecisionEnvironmentResolution {
   value: string | undefined;

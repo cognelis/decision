@@ -38,18 +38,19 @@ describe("readDashboardSnapshot", () => {
       countSince: vi.fn(() => 4),
       countReviewAttention: vi.fn(() => 2),
       listRecent: vi.fn(() => [indexedDecision()]),
+      revision: vi.fn(() => 7),
     };
 
-    const snapshot = readDashboardSnapshot(
-      index,
-      new Date("2026-07-31T08:00:00.000Z"),
-    );
+    // A local time, so "today" is July 31 in whatever zone the test runs in.
+    const snapshot = readDashboardSnapshot(index, new Date(2026, 6, 31, 16, 0));
 
+    // Local midnight six days back: today and the six days before it.
     expect(index.countSince).toHaveBeenCalledWith(
-      "2026-07-24T08:00:00.000Z",
+      new Date(2026, 6, 25).toISOString(),
     );
     expect(index.listRecent).toHaveBeenCalledWith(12);
     expect(snapshot).toEqual({
+      revision: 7,
       totalDecisions: 18,
       recorded7d: 4,
       reviewAttention: 2,
@@ -78,6 +79,7 @@ describe("readDashboardSnapshot", () => {
       countSince: vi.fn(() => 0),
       countReviewAttention: vi.fn(() => 0),
       listRecent: vi.fn(() => []),
+      revision: vi.fn(() => 0),
     };
     const onFailure = vi.fn();
 
@@ -92,6 +94,7 @@ describe("readDashboardSnapshot", () => {
       recorded7d: 0,
       reviewAttention: 0,
       recentDecisions: [],
+      unavailable: true,
     });
     expect(onFailure).toHaveBeenCalledWith(failure);
   });

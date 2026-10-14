@@ -40,6 +40,7 @@ const classifier = (
 
 const setup = (options: {
   classifier?: SemanticClassificationService;
+  modelEnabled?: () => boolean;
   now?: () => Date;
   timeoutMs?: number;
 } = {}) => {
@@ -71,6 +72,9 @@ const setup = (options: {
     ...(options.classifier === undefined
       ? {}
       : { classifier: options.classifier }),
+    ...(options.modelEnabled === undefined
+      ? {}
+      : { modelEnabled: options.modelEnabled }),
     now:
       options.now ??
       (() => new Date("2026-07-27T00:05:00.000Z")),
@@ -100,6 +104,13 @@ const clearPair = (
   });
 
 describe("SemanticDecisionCoordinator", () => {
+  it("does not call a model or emit a decision for a completed-status notification", async () => {
+    const classify = vi.fn();
+    const { coordinator, highEvents, mediumCandidates } = setup({ classifier: { classify } });
+    await coordinator.process({ ...clearPair(), userText: "合并了" });
+    expect(classify).not.toHaveBeenCalled();
+    expect(highEvents).toEqual([]); expect(mediumCandidates).toEqual([]);
+  });
   it("routes rule/model high agreement into the rationale queue", async () => {
     const model = classifier(async () => classification());
     const { coordinator, highEvents, mediumCandidates } = setup({
@@ -172,6 +183,87 @@ describe("SemanticDecisionCoordinator", () => {
           },
         ],
       },
+    });
+  });
+
+  it("asks no model, and logs no failure, when the reader turned it off", async () => {
+    const pair = clearPair({
+      assistantText:
+        "前者风险小，后者速度快。\n\n1. 前者\n2. 后者\n\n你希望选择哪一种？",
+      userText: "1",
+    });
+    const classify = vi.fn(async () => classification());
+    const { coordinator, highEvents, auditInputs } = setup({
+      classifier: classifier(classify),
+      modelEnabled: () => false,
+    });
+
+    await coordinator.process(pair);
+
+    expect(classify).not.toHaveBeenCalled();
+    // Nothing was asked, so nothing failed; the rules decided on their own.
+    expect(
+      auditInputs.filter((input) => input.stage === "failed"),
+    ).toEqual([]);
+    expect(highEvents[0]?.detection).toMatchObject({
+      band: "high",
+      detectorVersion: "rules-v1",
+    });
+  });
+
+  it("shows the rules' question even where the model agreed there is one", async () => {
+    // Rules quote a whole paragraph of the message and can be checked against
+    // it line by line; the model returns a span it chose. Where both have an
+    // answer the deterministic one is what the reader sees.
+    const pair = clearPair({
+      assistantText:
+        "前者风险小，后者速度快。\n\n1. 前者\n2. 后者\n\n你希望选择哪一种？",
+      userText: "1",
+    });
+    const model = classifier(async () =>
+      classification({ question: "前者风险小，后者速度快。" }),
+    );
+    const { coordinator, highEvents } = setup({ classifier: model });
+
+    await coordinator.process(pair);
+
+    expect(highEvents[0]?.questions[0]?.question).toBe(
+      "你希望选择哪一种？",
+    );
+  });
+
+  it("ignores what a model names when it read no decision at all", async () => {
+    // A 2B model reading a long message answered `self_resolved` — its own
+    // verdict is that nobody is being asked anything — and filled the option
+    // list with the alphabet at full confidence. The verdict was rejected for
+    // routing; the same reading must not be what the reader is shown.
+    const pair = clearPair({
+      assistantText:
+        "前者风险小，后者速度快。\n\n1. 前者\n2. 后者\n\n你希望选择哪一种？",
+      userText: "1",
+    });
+    const model = classifier(async () =>
+      classification({
+        decisionIntent: "self_resolved",
+        answerRelation: "mixed",
+        question: "前者风险小，后者速度快。",
+        optionLabels: ["前者", "后者"],
+        answerExcerpt: null,
+        confidence: 0.99,
+      }),
+    );
+    const { coordinator, mediumCandidates } = setup({
+      classifier: model,
+    });
+
+    await coordinator.process(pair);
+
+    expect(mediumCandidates[0]?.event.questions[0]).toMatchObject({
+      question: "你希望选择哪一种？",
+      options: [
+        { id: "1", label: "前者" },
+        { id: "2", label: "后者" },
+      ],
     });
   });
 
@@ -380,6 +472,23 @@ describe("SemanticDecisionCoordinator", () => {
       stage: "failed",
       errorCode: "routing_failed",
     });
+  });
+
+  it("leaves a pair whose model call the quit cut short for the next start", async () => {
+    // Read by the rules alone and acknowledged, it would never be read by the model; nor is a quit a failure.
+    let cutShort!: (error: Error) => void;
+    const classify = vi.fn(() => new Promise<SemanticClassification>((_resolve, reject) => { cutShort = reject; }));
+    const { auditInputs, coordinator, highEvents, mediumCandidates } = setup({ classifier: classifier(classify) });
+
+    const processing = coordinator.process(clearPair());
+    await vi.waitFor(() => expect(classify).toHaveBeenCalledOnce());
+    const closing = coordinator.close();
+    cutShort(Object.assign(new Error("Model call was cancelled"), { code: "cancelled" }));
+    await closing;
+
+    await expect(processing).resolves.toBe("deferred");
+    expect([...highEvents, ...mediumCandidates]).toEqual([]);
+    expect(auditInputs).toEqual([]);
   });
 
   it("closes its semantic classification service once", async () => {

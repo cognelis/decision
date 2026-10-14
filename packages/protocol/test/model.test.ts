@@ -151,6 +151,14 @@ describe("model protocol", () => {
     ).toThrow();
   });
 
+  it("lets only a PR review carry a whole PR in its prompt", () => {
+    const request = { requestId: "request-1", promptVersion: "pr-review-v9", schemaVersion: "pr-review-action-batch-v2", locale: "zh-CN",
+      systemPrompt: "x", userPrompt: "x".repeat(60_000), outputSchema: { type: "object" }, maxOutputTokens: 256 };
+    expect(structuredGenerationRequestSchema.parse({ ...request, purpose: "pr-review" }).userPrompt).toHaveLength(60_000);
+    expect(() => structuredGenerationRequestSchema.parse({ ...request, purpose: "retrieval-answer" })).toThrow(/20000/u);
+    expect(() => structuredGenerationRequestSchema.parse({ ...request, purpose: "pr-review", userPrompt: "x".repeat(120_001) })).toThrow();
+  });
+
   it("accepts a secure disabled OpenAI profile", () => {
     const profile = modelProviderProfileSchema.parse({
       version: 1,

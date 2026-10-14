@@ -16,11 +16,12 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  readdir,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { CaptureRuntime } from "../src/main/capture-runtime.js";
 import { SemanticPairInbox } from "../src/main/semantic-pair-inbox.js";
@@ -104,6 +105,80 @@ describe("recovery", () => {
     ).toEqual(["second"]);
     expect(await spool.isAcknowledged("first")).toBe(true);
     expect(await spool.isAcknowledged("second")).toBe(false);
+  });
+
+  it("does not decide again a pair decided already", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-semantic-decided-"));
+    const spool = new SemanticPairSpool(join(root, "semantic-pairs"));
+    const pair = semanticPairFixture();
+    await spool.append(pair);
+    await spool.acknowledge(pair.pairId);
+    const consume = vi.fn(async () => "processed" as const);
+    const inbox = new SemanticPairInbox({ spool, consume });
+
+    // The hook delivers it again: a replay, or the same answer given twice in a Claude Code session.
+    await inbox.enqueue(pair);
+    await inbox.recover();
+    await inbox.flush();
+
+    expect(consume).not.toHaveBeenCalled();
+  });
+
+  it("tries a pair that failed again when the next one arrives, not only at the next start", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-semantic-retry-"));
+    const spool = new SemanticPairSpool(join(root, "semantic-pairs"));
+    const attempts: string[] = [];
+    let failing = true;
+    const inbox = new SemanticPairInbox({
+      spool,
+      consume: async (pair) => {
+        attempts.push(pair.pairId);
+        if (failing) throw new Error("disk full");
+        return "processed";
+      },
+    });
+
+    await inbox.enqueue(semanticPairFixture({ pairId: "first" }));
+    await inbox.flush();
+    failing = false;
+    await inbox.enqueue(semanticPairFixture({ pairId: "second" }));
+
+    await vi.waitFor(async () => {
+      await inbox.flush();
+      expect(await spool.list()).toEqual([]);
+    });
+    expect(attempts.filter((pairId) => pairId === "first").length).toBeGreaterThan(1);
+    expect(attempts).toContain("second");
+  });
+
+  it("finishes only the pair being classified at quit, and keeps the rest for the next start", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-semantic-quit-"));
+    const spool = new SemanticPairSpool(join(root, "semantic-pairs"));
+    let release: (() => void) | undefined;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const attempts: string[] = [];
+    const inbox = new SemanticPairInbox({
+      spool,
+      consume: async (pair) => {
+        attempts.push(pair.pairId);
+        await blocked;
+        return "processed";
+      },
+    });
+    for (const pairId of ["first", "second", "third"]) {
+      await spool.append(semanticPairFixture({ pairId }));
+    }
+    await inbox.recover();
+    await vi.waitFor(() => expect(attempts).toHaveLength(1));
+
+    const closed = inbox.close();
+    release?.();
+    await closed;
+
+    expect(attempts).toHaveLength(1);
+    expect(await spool.list()).toHaveLength(2);
   });
 
   it("returns from enqueue before a semantic consumer finishes", async () => {
@@ -399,6 +474,71 @@ describe("recovery", () => {
     index.close();
   });
 
+  it("keeps a capture waiting while its vault has gone, and saves it once the vault is back", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-vault-gone-"));
+    const vault = join(root, "vault");
+    const index = new SqliteIndex(join(root, "index.sqlite"));
+    const captureSpool = new CaptureSpool(join(root, "capture-spool"));
+    const runtime = new CaptureRuntime({
+      spool: captureSpool,
+      store: new DecisionStore(new MarkdownRepository(vault, { existingVault: true }), index),
+      index,
+      idFactory: () => "vault-gone-decision",
+    });
+
+    // The vault is on a drive that is not connected: the decision cannot be written, and nothing is made up.
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "skipped" }).catch(() => undefined);
+    await expect(readdir(root)).resolves.not.toContain("vault");
+    expect(await captureSpool.list()).toHaveLength(1);
+    expect(index.count()).toBe(0);
+
+    // The drive is back: the same capture, still waiting, is saved.
+    await mkdir(vault);
+    await runtime.queue.retryCurrentPersistence();
+    expect(index.count()).toBe(1);
+    index.close();
+  });
+
+  it("keeps a decision recognised in memory, not from a hook, across a restart, put off or not", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-ingest-recovery-"));
+    const open = () => {
+      const index = new SqliteIndex(join(root, "index.sqlite"));
+      const captureSpool = new CaptureSpool(join(root, "capture-spool"));
+      const runtime = new CaptureRuntime({
+        spool: captureSpool,
+        store: new DecisionStore(new MarkdownRepository(join(root, "vault")), index),
+        index,
+        idFactory: () => "recovered-rationale",
+      });
+      // What the app does as it starts: every spooled capture is taken in again.
+      const boot = async () => {
+        for (const event of await captureSpool.list()) await runtime.ingest(event);
+      };
+      return { index, runtime, boot };
+    };
+    // A text answer the semantic path found: handed straight to the runtime, the bridge never saw it.
+    const first = open();
+    await first.runtime.ingest(serverCaptureFixture());
+    expect(first.runtime.queue.snapshot().current).not.toBeNull();
+    first.index.close();
+
+    const second = open();
+    await second.boot();
+    expect(second.runtime.queue.snapshot().current).not.toBeNull();
+    // Read once more, as the app does after its service starts: nothing is taken in twice.
+    await second.boot();
+    expect(second.runtime.queue.snapshot().waitingCount).toBe(0);
+    await second.runtime.queue.submit({ status: "deferred", expectedOutcome: "两周内规则够用。" });
+    expect(second.runtime.pendingRationales()).toHaveLength(1);
+    second.index.close();
+
+    const third = open();
+    await third.boot();
+    expect(third.runtime.pendingRationales()).toHaveLength(1);
+    third.index.close();
+  });
+
   it("keeps bootstrap running when one question receipt is unreadable", async () => {
     const root = await mkdtemp(
       join(tmpdir(), "decision-recovery-"),
@@ -501,7 +641,6 @@ describe("recovery", () => {
     for (const event of await spool.list()) {
       await restarted.ingest(event);
     }
-    await restarted.resumePendingDispositions();
 
     expect(restarted.queue.snapshot().current).toBeNull();
     expect(restarted.pendingRationales()).toEqual([pending]);
@@ -558,7 +697,7 @@ describe("recovery", () => {
         rationale: "不能因重启丢失的原始理由",
         reasonFactors: ["risk"],
       }),
-    ).rejects.toThrow(/persistence/i);
+    ).rejects.toThrow(/决策没能写入 Obsidian/u);
 
     const recovered = new CaptureRuntime({
       spool,
@@ -569,7 +708,6 @@ describe("recovery", () => {
     for (const pending of await spool.list()) {
       await recovered.ingest(pending);
     }
-    await recovered.resumePendingDispositions();
 
     expect(recovered.queue.snapshot().current).toBeNull();
     expect(await spool.list()).toEqual([]);
@@ -612,7 +750,7 @@ describe("recovery", () => {
     await first.ingest(event);
     await expect(
       first.queue.submit({ status: "skipped" }),
-    ).rejects.toThrow(/persistence/i);
+    ).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
     firstIndex.close();
 
     const recoveredIndex = new SqliteIndex(databasePath);
@@ -630,7 +768,6 @@ describe("recovery", () => {
     for (const pending of await spool.list()) {
       await recovered.ingest(pending);
     }
-    await recovered.resumePendingDispositions();
 
     expect(recovered.queue.snapshot().current).toBeNull();
     expect(await spool.list()).toEqual([]);

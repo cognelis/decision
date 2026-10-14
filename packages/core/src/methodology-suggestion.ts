@@ -68,16 +68,10 @@ const tokens = (value: string): Set<string> => {
   return result;
 };
 
-const similarity = (
-  left: MethodologySuggestionEvidence,
-  right: MethodologySuggestionEvidence,
-): number => {
-  const leftTokens = tokens(
-    `${left.question}\n${left.selectedAnswer}\n${left.outcomeLesson ?? ""}`,
-  );
-  const rightTokens = tokens(
-    `${right.question}\n${right.selectedAnswer}\n${right.outcomeLesson ?? ""}`,
-  );
+const evidenceTokens = (item: MethodologySuggestionEvidence): Set<string> =>
+  tokens(`${item.question}\n${item.selectedAnswer}\n${item.outcomeLesson ?? ""}`);
+
+const similarity = (leftTokens: Set<string>, rightTokens: Set<string>): number => {
   if (leftTokens.size === 0 || rightTokens.size === 0) return 0;
   let shared = 0;
   for (const token of leftTokens) {
@@ -182,6 +176,7 @@ export const buildMethodologySuggestions = (
   evidence: MethodologySuggestionEvidence[],
   existing: MethodologyRecord[],
   limit = 6,
+  isDeferred: (suggestionId: string) => boolean = () => false,
 ): MethodologySuggestion[] => {
   const covered = new Set(
     existing
@@ -198,6 +193,8 @@ export const buildMethodologySuggestions = (
     )
     .sort(sourceOrder)
     .slice(0, 300);
+  // Each review's words, read once: read again for every pair, the page waited on 90,000 of them.
+  const tokensOf = new Map(eligible.map((item) => [item, evidenceTokens(item)]));
   const assigned = new Set<string>();
   const grouped: MethodologySuggestion[] = [];
 
@@ -215,7 +212,7 @@ export const buildMethodologySuggestions = (
       )
       .map((candidate) => ({
         candidate,
-        score: similarity(seed, candidate),
+        score: similarity(tokensOf.get(seed)!, tokensOf.get(candidate)!),
       }))
       .filter(({ candidate, score }) => {
         const sameProject =
@@ -236,10 +233,17 @@ export const buildMethodologySuggestions = (
 
   const singles = eligible
     .filter((item) => !assigned.has(item.id))
-    .slice(0, 4)
     .map((item) => suggestionFrom([item]));
   const boundedLimit = Math.max(1, Math.min(12, Math.trunc(limit)));
-  return [...grouped, ...singles]
+  // A deferred suggestion takes no place among those offered, and is still returned for the deferred
+  // list. Capped before they were set aside, the ones left once the reader deferred what was shown were
+  // never offered at all.
+  const offered = [
+    ...grouped.filter((suggestion) => !isDeferred(suggestion.id)),
+    ...singles.filter((suggestion) => !isDeferred(suggestion.id)).slice(0, 4),
+  ]
     .sort(suggestionOrder)
     .slice(0, boundedLimit);
+  const deferred = [...grouped, ...singles].filter((suggestion) => isDeferred(suggestion.id));
+  return [...offered, ...deferred].sort(suggestionOrder);
 };

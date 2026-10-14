@@ -11,19 +11,19 @@ export const mergeCodexHooks = (
 ): HookConfigDocument =>
   mergeHookDocument(hooks, bridgePath, "codex", platform);
 
-export const codexMcpCommands = (bridgePath: string): CommandSpec[] => [
-  {
-    command: "codex",
-    args: ["mcp", "remove", "decision-island"],
-    tolerateFailure: true,
-    absentMcpName: "decision-island",
-  },
+/** Takes the server out, once it is seen to run this app's bridge. */
+export const codexMcpRemoveCommands = (): CommandSpec[] => [
+  { command: "codex", args: ["mcp", "get", "decision"], tolerateFailure: true, expectsBridgeFor: "codex" },
   {
     command: "codex",
     args: ["mcp", "remove", "decision"],
     tolerateFailure: true,
     absentMcpName: "decision",
   },
+];
+
+export const codexMcpCommands = (bridgePath: string): CommandSpec[] => [
+  ...codexMcpRemoveCommands(),
   {
     command: "codex",
     args: [

@@ -8,15 +8,17 @@ import { homedir } from "node:os";
 
 import {
   buildSemanticUserPrompt,
+  qwenSemanticOutputJsonSchema,
   SEMANTIC_PROMPT_VERSION,
-  semanticOutputJsonSchema,
   semanticSystemPrompt,
 } from "../model/semantic-prompt.js";
-import type { StructuredProviderAttempt } from "../model/structured-provider.js";
+import { malformedJsonShape, MIN_GENERATION_TIMEOUT_MS, type StructuredProviderAttempt } from "../model/structured-provider.js";
 import {
   QWEN_MODEL_MANIFEST,
+  qwenModelManifest,
   verifyQwenModel,
   type QwenModelVerification,
+  type QwenModelManifest,
 } from "./model-manifest.js";
 import type {
   SemanticClassifier,
@@ -26,8 +28,22 @@ import type {
 } from "./semantic-classifier.js";
 
 const DEFAULT_TIMEOUT_MS = 5_000;
+
 const QWEN_MAX_OUTPUT_TOKENS = 512;
 const QWEN_MAX_STRUCTURED_OUTPUT_TOKENS = 1_024;
+
+// llama.cpp expands string length bounds into repetitions and rejects large limits.
+// Keep the original schema for tracing/application validation; the grammar enforces shape.
+export function qwenGenerationSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const visit = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(visit);
+    if (!value || typeof value !== "object") return value;
+    const object = value as Record<string, unknown>;
+    const stringType = object.type === "string" || (Array.isArray(object.type) && object.type.includes("string"));
+    return Object.fromEntries(Object.entries(object).filter(([key]) => !stringType || (key !== "maxLength" && key !== "minLength")).map(([key, item]) => [key, visit(item)]));
+  };
+  return visit(schema) as Record<string, unknown>;
+}
 
 interface QwenSession {
   prompt(
@@ -150,6 +166,7 @@ export class QwenProviderError extends Error {
     | "output_limit"
     | "provider_invalid_output"
     | "runtime_unavailable"
+    | "invalid_configuration"
     | "timeout";
   readonly diagnosticExcerpt: string;
   readonly usage: NormalizedTokenUsage | undefined;
@@ -174,6 +191,7 @@ export class QwenProviderError extends Error {
 
 export interface QwenModelProviderOptions {
   modelsDirectory: string;
+  model?: string;
   verifyModel?: (options: {
     modelsDirectory: string;
   }) => Promise<QwenModelVerification>;
@@ -198,6 +216,9 @@ const isAborted = (signal?: AbortSignal): boolean =>
 
 export class QwenModelProvider implements SemanticClassifier {
   readonly id = "qwen" as const;
+  // One inference at a time (#inferenceTail), each timed by #promptWithDeadline as it starts. ponytail: loading
+  // the model has no timer of its own, only the caller's cancellation; time it too if a load is ever seen to hang.
+  readonly queuesCalls = true;
 
   readonly #modelsDirectory: string;
   readonly #verifyModel: NonNullable<
@@ -206,19 +227,30 @@ export class QwenModelProvider implements SemanticClassifier {
   readonly #loadRuntime: NonNullable<
     QwenModelProviderOptions["loadRuntime"]
   >;
-  readonly #timeoutMs: number;
+  #timeoutMs: number;
+  #manifest: QwenModelManifest = QWEN_MODEL_MANIFEST;
   readonly #activeControllers = new Set<AbortController>();
 
   #resources: Promise<QwenResources> | undefined;
+  #resourcesModelId: string | undefined;
   #inferenceTail: Promise<void> = Promise.resolve();
   #closed = false;
 
   constructor(options: QwenModelProviderOptions) {
     this.#modelsDirectory = options.modelsDirectory;
-    this.#verifyModel = options.verifyModel ?? verifyQwenModel;
+    this.#manifest = qwenModelManifest(options.model ?? QWEN_MODEL_MANIFEST.id);
+    this.#verifyModel = options.verifyModel ?? ((input) => verifyQwenModel({ ...input, manifest: this.#manifest }));
     this.#loadRuntime =
       options.loadRuntime ?? defaultRuntimeLoader;
     this.#timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  }
+
+  setTimeoutMs(timeoutMs: number): void {
+    this.#timeoutMs = timeoutMs;
+  }
+
+  setModel(model: string): void {
+    this.#manifest = qwenModelManifest(model);
   }
 
   async status(): Promise<SemanticProviderStatus> {
@@ -235,7 +267,7 @@ export class QwenModelProvider implements SemanticClassifier {
     return {
       id: this.id,
       availability: verification.availability,
-      modelVersion: QWEN_MODEL_MANIFEST.id,
+      modelVersion: verification.availability === "available" ? verification.manifest.id : this.#manifest.id,
       promptVersion: SEMANTIC_PROMPT_VERSION,
     };
   }
@@ -286,6 +318,10 @@ export class QwenModelProvider implements SemanticClassifier {
       controller.abort();
     }
 
+    await this.#releaseResources();
+  }
+
+  async #releaseResources(): Promise<void> {
     if (this.#resources === undefined) {
       return;
     }
@@ -300,6 +336,7 @@ export class QwenModelProvider implements SemanticClassifier {
     await resources.model.dispose();
     await resources.llama.dispose();
     this.#resources = undefined;
+    this.#resourcesModelId = undefined;
   }
 
   async #invokeNow(
@@ -377,6 +414,7 @@ export class QwenModelProvider implements SemanticClassifier {
         resources.grammar,
         userPrompt,
         QWEN_MAX_OUTPUT_TOKENS,
+        this.#timeoutMs,
         controller,
         signal,
       );
@@ -389,7 +427,7 @@ export class QwenModelProvider implements SemanticClassifier {
       let decoded: unknown;
       try {
         decoded = JSON.parse(output);
-      } catch (error) {
+      } catch {
         if (
           usage.source === "runtime_measured" &&
           (usage.outputTokens ?? 0) >=
@@ -409,10 +447,9 @@ export class QwenModelProvider implements SemanticClassifier {
           "provider_invalid_output",
           "Qwen returned malformed JSON",
           {
-            diagnosticExcerpt: `Qwen output was not valid JSON: ${safeRuntimeDiagnostic(
-              error,
-              [this.#modelsDirectory, homedir()],
-            )}`,
+            // By shape, as the other providers say it: V8's message quotes the text it could not parse, and the
+            // excerpt is kept with trace content turned off.
+            diagnosticExcerpt: `Qwen output was not valid JSON · ${malformedJsonShape(output)}`,
             usage,
           },
         );
@@ -444,7 +481,7 @@ export class QwenModelProvider implements SemanticClassifier {
         traceInput: {
           systemPrompt: semanticSystemPrompt,
           userPrompt,
-          outputSchema: semanticOutputJsonSchema,
+          outputSchema: qwenSemanticOutputJsonSchema,
           clientSystemPromptVisibility: "visible",
         },
         usage,
@@ -528,10 +565,12 @@ export class QwenModelProvider implements SemanticClassifier {
     );
     let session: QwenSession | undefined;
     try {
-      const grammar =
-        await resources.llama.createGrammarForJsonSchema(
-          request.outputSchema,
-        );
+      let grammar: unknown;
+      try {
+        grammar = await resources.llama.createGrammarForJsonSchema(qwenGenerationSchema(request.outputSchema));
+      } catch {
+        throw new QwenProviderError("invalid_configuration", "本机 Qwen 无法编译本次结构化输出格式，请更新应用或选择其他模型。", { diagnosticExcerpt: "Qwen structured output grammar compilation failed" });
+      }
       session = resources.createSession(request.systemPrompt);
       const usageBefore = this.#tokenState(resources.sequence);
       const providerStartedAt = Date.now();
@@ -540,6 +579,9 @@ export class QwenModelProvider implements SemanticClassifier {
         grammar,
         request.userPrompt,
         maxOutputTokens,
+        // Whatever the gateway allowed this call, with the profile's value as
+        // the floor: a reader waiting on an answer is not the capture path.
+        Math.max(this.#timeoutMs, MIN_GENERATION_TIMEOUT_MS),
         controller,
         signal,
       );
@@ -552,7 +594,7 @@ export class QwenModelProvider implements SemanticClassifier {
       let parsedOutput: unknown;
       try {
         parsedOutput = JSON.parse(output) as unknown;
-      } catch (error) {
+      } catch {
         if (
           usage.source === "runtime_measured" &&
           (usage.outputTokens ?? 0) >= maxOutputTokens
@@ -570,10 +612,7 @@ export class QwenModelProvider implements SemanticClassifier {
           "provider_invalid_output",
           "Qwen returned malformed structured JSON",
           {
-            diagnosticExcerpt: `Qwen output was not valid JSON: ${safeRuntimeDiagnostic(
-              error,
-              [this.#modelsDirectory, homedir()],
-            )}`,
+            diagnosticExcerpt: `Qwen output was not valid JSON · ${malformedJsonShape(output)}`,
             usage,
           },
         );
@@ -604,7 +643,11 @@ export class QwenModelProvider implements SemanticClassifier {
       { availability: "available" }
     >,
   ): Promise<QwenResources> {
+    // Calls are serialized; switching releases the old model only after its inference finishes.
+    if (this.#resources !== undefined && this.#resourcesModelId !== verification.manifest.id) await this.#releaseResources();
+    if (this.#closed) throw new QwenProviderError("runtime_unavailable", "Qwen provider is closed");
     if (this.#resources === undefined) {
+      this.#resourcesModelId = verification.manifest.id;
       this.#resources = (async () => {
         const runtime = await this.#loadRuntime();
         const llama = await runtime.getLlama({
@@ -632,7 +675,7 @@ export class QwenModelProvider implements SemanticClassifier {
           });
           const grammar =
             await llama.createGrammarForJsonSchema(
-              semanticOutputJsonSchema,
+              qwenSemanticOutputJsonSchema,
             );
           return {
             llama,
@@ -667,11 +710,19 @@ export class QwenModelProvider implements SemanticClassifier {
     }
   }
 
+  /**
+   * `timeoutMs` is the caller's, not the profile's. The profile's value is a
+   * classification budget — capture must not wait — and this same helper runs
+   * structured generation, where the reader is waiting for a whole answer. The
+   * timer stays because a local inference can ignore an abort; only the number
+   * it counts to belongs to the caller.
+   */
   #promptWithDeadline(
     session: QwenSession,
     grammar: unknown,
     prompt: string,
     maxTokens: number,
+    timeoutMs: number,
     controller: AbortController,
     externalSignal?: AbortSignal,
   ): Promise<string> {
@@ -680,14 +731,14 @@ export class QwenModelProvider implements SemanticClassifier {
         reject(
           new QwenProviderError(
             "timeout",
-            "Qwen classification timed out",
+            "Qwen inference timed out",
             {
-              diagnosticExcerpt: `Qwen classification timed out after ${this.#timeoutMs} ms`,
+              diagnosticExcerpt: `Qwen inference timed out after ${timeoutMs} ms`,
             },
           ),
         );
         controller.abort();
-      }, this.#timeoutMs);
+      }, timeoutMs);
       const onAbort = () => {
         clearTimeout(timer);
         reject(

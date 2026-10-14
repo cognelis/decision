@@ -151,7 +151,7 @@ describe("prepareLocalModel", () => {
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
     expect(result.stdout).toContain(
-      "prepare-local-model.mjs [--check] [--models-dir PATH]",
+      "prepare-local-model.mjs [--check] [--model 2b|4b] [--models-dir PATH]",
     );
     expect(result.stdout).toContain(
       "Downloads only after an explicit invocation",

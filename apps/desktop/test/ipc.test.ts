@@ -1,8 +1,13 @@
+import { createEvidencePreviewApi } from "../src/renderer/evidence-preview-api.js";
 import { DecisionCandidateQueue, RationaleQueue } from "@cognelis/decision-core";
 import { describe, expect, it, vi } from "vitest";
 
+import { DESKTOP_PRIMARY_SURFACES } from "../src/shared/renderer-api.js";
 import { IPC_CHANNELS, registerDecisionIpc } from "../src/main/ipc.js";
-import { RENDERER_METHOD_NAMES } from "../src/shared/renderer-api.js";
+import {
+  OBSIDIAN_SEARCH_METHOD_NAMES,
+  RENDERER_METHOD_NAMES,
+} from "../src/shared/renderer-api.js";
 import { serverCandidateFixture, serverCaptureFixture } from "./fixtures.js";
 
 class FakeIpcMain {
@@ -35,6 +40,19 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
   openSurface: vi.fn(),
   closePrimarySurface: vi.fn(),
   listDecisions: vi.fn(async () => []),
+  listDecisionProjects: vi.fn(async () => []),
+  createProactiveRecord: vi.fn(),
+  listJournalEntries: vi.fn(async () => []),
+  reviseJournalEntry: vi.fn(),
+  getObsidianSearchStatus: vi.fn(async () => obsidianStatus),
+  searchObsidian: vi.fn(async (input) => ({
+    query: input.query,
+    results: [],
+    status: obsidianStatus,
+  })),
+  rebuildObsidianSearch: vi.fn(async () => obsidianStatus),
+  openObsidianNote: vi.fn(async () => undefined),
+  updateDecisionExpectedOutcome: vi.fn(async () => undefined),
   updateDecisionOutcome: vi.fn(async () => undefined),
   updateDecisionReviewDueDate: vi.fn(async () => undefined),
   updateDecisionReview: vi.fn(async (_decisionId, input) => ({
@@ -113,6 +131,7 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
     projects: [],
     sources: [],
     trend: [],
+    retrospective: { reviewAttention: 0, periods: [] },
   })),
   getDecisionConsultationMetrics: vi.fn(async () => ({
     metricsVersion: 1 as const,
@@ -152,11 +171,13 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
     status: "no_match" as const,
     generatedBy: "deterministic_local_match" as const,
     matches: [],
+    signals: [],
     feedback: null,
     boundary: {
       advisoryOnly: true as const,
       noDecisionWritten: true as const,
       noPrincipleApplied: true as const,
+      noPreferencePromoted: true as const,
     },
   })),
   submitDecisionConsultationFeedback: vi.fn(async () => ({
@@ -189,25 +210,132 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
   ignoreCandidate: vi.fn(),
   retryCandidate: vi.fn(),
   chooseVault: vi.fn(async () => null),
+  revealVault: vi.fn(async () => false),
   installIntegrations: vi.fn(),
+  removeIntegrations: vi.fn(),
   rebuildIndex: vi.fn(),
   setTheme: vi.fn(),
   listModelTraces: vi.fn(async () => []),
   deleteModelTrace: vi.fn(),
   deleteModelTraceRequest: vi.fn(),
+  forgetAssistantTurns: vi.fn(async () => undefined),
   clearModelTraces: vi.fn(async () => 0),
   setModelTraceContentEnabled: vi.fn(),
+  setLocalCredentialsEnabled: vi.fn(async () => undefined),
+  setReviewRemindersEnabled: vi.fn(async () => undefined),
+  setCaptureClassifier: vi.fn(async () => undefined),
+  listManagedQwenModels: async () => [],
+  installManagedQwenModel: async () => undefined,
   listModelProviderProfiles: vi.fn(async () => []),
   saveModelProviderProfile: vi.fn(),
   deleteModelProviderProfile: vi.fn(),
   reorderModelProviderProfiles: vi.fn(),
   testModelProviderProfile: vi.fn(),
+  checkAssistantSource: vi.fn(async () => ({ status: "matched" as const, content: "当前内容", truncated: false })),
+  searchAssistantSources: vi.fn(async () => ({ sources: [], issues: [] })),
+  runAssistantTurn: vi.fn(async () => ({
+    version: 1 as const,
+    status: "unavailable" as const,
+    message: "测试替身未配置模型",
+  })),
+  listPrConnections: vi.fn(async () => []),
+  savePrConnection: vi.fn(async () => []),
+  removePrConnection: vi.fn(async () => []),
+  checkPrConnection: vi.fn(async () => ({ account: "user" })),
+  listPullRequests: vi.fn(async () => ({ items: [], nextPage: null })),
+  loadPrReview: vi.fn(),
+  peekPrReview: vi.fn(),
+  prefetchPrReviews: vi.fn(),
+  loadPrReviewDiff: vi.fn(),
+  getPrActionContext: vi.fn(),
+  performPrAction: vi.fn(),
+  publishPrReviewComment: vi.fn(),
+  publishPrGeneralComment: vi.fn(),
+  reevaluatePrReviewFinding: vi.fn(),
+  openReviewRulesDirectory: vi.fn(),
+  listPrDiscussion: vi.fn(async () => ({ comments: [], more: false })),
+  openPrLink: vi.fn(),
+  openPr: vi.fn(),
+  loadPrReviewFile: vi.fn(),
+  runPrReview: vi.fn(),
+  followUpPrReview: vi.fn(),
+  cancelPrReview: vi.fn(async () => undefined),
+  listAssistantModels: vi.fn(async () => []),
+  cancelAssistantTurn: vi.fn(async () => undefined),
+  saveAssistantFeedback: vi.fn(async () => ({
+    status: "saved" as const,
+    recorded: 1,
+  })),
+  exportAssistantConversation: vi.fn(async () => ({
+    status: "cancelled" as const,
+  })),
+  getAssistantFeedbackSummary: vi.fn(async () => ({
+    helpful: 0,
+    notHelpful: 0,
+  })),
   listLocalModelClientStatuses: vi.fn(async () => []),
   ...overrides,
 });
 
+const obsidianStatus = {
+  state: "idle" as const,
+  discoveredNotes: 0,
+  indexedNotes: 0,
+  chunkCount: 0,
+  processedNotes: 0,
+  totalNotes: 0,
+  skippedNotes: 0,
+  failedNotes: 0,
+  synchronizedAt: null,
+  semanticAvailable: false,
+  message: null,
+};
+
+const obsidianSearchResult = {
+  relativePath: "Notes/architecture.md",
+  title: "Architecture",
+  heading: null,
+  snippet: "A safe preview.",
+  matchKind: "keyword" as const,
+};
+
+const expectGenericObsidianFailure = async (
+  invocation: Promise<unknown>,
+  expectedMessage: string,
+): Promise<void> => {
+  const error = await invocation.catch((reason: unknown) => reason);
+  expect(error).toBeInstanceOf(Error);
+  const message = error instanceof Error ? error.message : String(error);
+  expect(message).toBe(expectedMessage);
+  expect(message).not.toContain("/Users/private");
+};
+
 describe("decision IPC", () => {
-  it("exposes only the rationale and settings renderer methods", () => {
+  it("registers a handler for every channel the renderer can invoke", () => {
+    const ipcMain = new FakeIpcMain();
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations(),
+    });
+
+    // Push-only channels flow main → renderer, so they carry no handler; every
+    // other channel the preload can invoke must answer, or the call resolves
+    // to nothing at runtime while every unit test stays green.
+    const pushOnly = new Set<string>([
+      IPC_CHANNELS.snapshotChanged,
+      IPC_CHANNELS.assistantProgress, IPC_CHANNELS.prReviewProgress,
+    ]);
+    const invocable = Object.values(IPC_CHANNELS).filter(
+      (channel) => !pushOnly.has(channel),
+    );
+
+    expect(
+      invocable.filter((channel) => !ipcMain.handlers.has(channel)),
+    ).toEqual([]);
+  });
+
+  it("exposes the complete renderer capability list", () => {
     expect(RENDERER_METHOD_NAMES).toEqual([
       "getSnapshot",
       "onSnapshot",
@@ -221,6 +349,57 @@ describe("decision IPC", () => {
       "openSurface",
       "closePrimarySurface",
       "listDecisions",
+      "listDecisionProjects",
+      "listLocalDecisions",
+      "resolveLocalDecision",
+      "createProactiveRecord",
+      "listJournalEntries",
+      "reviseJournalEntry",
+      "getObsidianSearchStatus",
+      "searchObsidian",
+      "rebuildObsidianSearch",
+      "checkAssistantSource",
+      "searchAssistantSources",
+      "listPrConnections",
+      "savePrConnection",
+      "removePrConnection",
+      "checkPrConnection",
+      "listPullRequests",
+      "loadPrReview",
+      "peekPrReview",
+      "prefetchPrReviews",
+      "loadPrReviewDiff",
+      "getPrActionContext",
+      "performPrAction",
+      "publishPrReviewComment",
+      "publishPrGeneralComment",
+      "reevaluatePrReviewFinding",
+      "openReviewRulesDirectory",
+      "listPrDiscussion",
+      "openPrLink",
+      "openPr",
+      "loadPrReviewFile",
+      "runPrReview",
+      "followUpPrReview",
+      "cancelPrReview",
+      "onPrReviewProgress",
+      "runAssistantTurn",
+      "listAssistantModels",
+      "cancelAssistantTurn",
+      "saveAssistantFeedback",
+      "exportAssistantConversation",
+      "getAssistantFeedbackSummary",
+      "onAssistantProgress",
+      "openObsidianNote",
+      "openVaultDocument",
+      "saveDecisionContextFeedback",
+      "getDecisionContextFeedback",
+      "searchDecisionContext",
+      "updateDecisionScope",
+      "updateDecisionRelation",
+      "openDecisionSource",
+      "prepareDecisionHandoff",
+      "updateDecisionExpectedOutcome",
       "updateDecisionOutcome",
       "updateDecisionReviewDueDate",
       "updateDecisionReview",
@@ -274,14 +453,22 @@ describe("decision IPC", () => {
       "publishPracticeAsset",
       "rollbackPracticeAssetPublication",
       "chooseVault",
+      "revealVault",
       "installIntegrations",
+      "removeIntegrations",
       "rebuildIndex",
       "setTheme",
       "listModelTraces",
       "deleteModelTrace",
       "deleteModelTraceRequest",
+      "forgetAssistantTurns",
       "clearModelTraces",
       "setModelTraceContentEnabled",
+      "setReviewRemindersEnabled",
+      "setLocalCredentialsEnabled",
+      "setCaptureClassifier",
+      "listManagedQwenModels",
+      "installManagedQwenModel",
       "listModelProviderProfiles",
       "saveModelProviderProfile",
       "deleteModelProviderProfile",
@@ -289,6 +476,164 @@ describe("decision IPC", () => {
       "testModelProviderProfile",
       "listLocalModelClientStatuses",
     ]);
+  });
+
+  it("exposes only the Obsidian full-vault search capability", () => {
+    expect(OBSIDIAN_SEARCH_METHOD_NAMES).toEqual([
+      "getObsidianSearchStatus",
+      "searchObsidian",
+      "rebuildObsidianSearch",
+      "openObsidianNote",
+    ]);
+  });
+
+  it("validates desktop evidence requests and returned contracts before forwarding", async () => {
+    const ipcMain = new FakeIpcMain();
+    const scope = vi.fn(async () => ({ status: "saved", revision: 1, originalNoteUnchanged: true }));
+    const relation = vi.fn(async () => ({ status: "saved", revision: 1, originalNotesUnchanged: true }));
+    const open = vi.fn(async () => ({ status: "opened", relativePath: "Decision Journal/decisions/A.md", noNoteWritten: true }));
+    const preview = createEvidencePreviewApi();
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ ...preview, updateDecisionScope: scope, updateDecisionRelation: relation, openDecisionSource: open }) });
+    const reference = { source: "decisions", recordId: "A", expectedContentHash: "a".repeat(64) };
+    await expect(ipcMain.invoke(IPC_CHANNELS.searchDecisionContext, { recordId: "A" })).resolves.toMatchObject({ results: [expect.objectContaining({ id: "A" })] });
+    await expect(ipcMain.invoke(IPC_CHANNELS.updateDecisionScope, { ...reference, expectedRevision: 0, scope: { projects: ["demo"] }, changeReason: "明确限定项目" })).resolves.toMatchObject({ status: "saved" });
+    await expect(ipcMain.invoke(IPC_CHANNELS.updateDecisionRelation, { first: { source: "decisions", recordId: "A", contentHash: "a".repeat(64) }, second: { source: "summarize", recordId: "B", contentHash: "b".repeat(64) }, disposition: "conflict", expectedRevision: 0, reason: "确认冲突" })).resolves.toMatchObject({ status: "saved" });
+    await expect(ipcMain.invoke(IPC_CHANNELS.openDecisionSource, reference)).resolves.toMatchObject({ status: "opened" });
+    await expect(ipcMain.invoke(IPC_CHANNELS.prepareDecisionHandoff, { objective: "继续", references: [reference] })).resolves.toMatchObject({ boundary: { noNoteWritten: true, taskClaimsVerified: false } });
+    await expect(ipcMain.invoke(IPC_CHANNELS.openDecisionSource, { ...reference, path: "../../other.md" })).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.updateDecisionScope, { ...reference, expectedRevision: 0, scope: { paths: ["../other"] }, changeReason: "wrong" })).rejects.toThrow();
+    expect(open).toHaveBeenCalledTimes(1); expect(scope).toHaveBeenCalledTimes(1);
+    open.mockResolvedValueOnce({ status: "opened", relativePath: "", noNoteWritten: true });
+    await expect(ipcMain.invoke(IPC_CHANNELS.openDecisionSource, reference)).rejects.toThrow();
+  });
+
+  it("validates the local credential switch at the IPC boundary", async () => {
+    const ipcMain = new FakeIpcMain();
+    const setLocalCredentialsEnabled = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ setLocalCredentialsEnabled }) });
+    await ipcMain.invoke(IPC_CHANNELS.setLocalCredentialsEnabled, true);
+    await ipcMain.invoke(IPC_CHANNELS.setLocalCredentialsEnabled, false);
+    await expect(ipcMain.invoke(IPC_CHANNELS.setLocalCredentialsEnabled, "true")).rejects.toThrow();
+    expect(setLocalCredentialsEnabled.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it("tells a page in words why its input was refused, not with zod's issues as JSON", async () => {
+    const ipcMain = new FakeIpcMain();
+    const updateDecisionOutcome = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ updateDecisionOutcome }) });
+
+    await expect(ipcMain.invoke(IPC_CHANNELS.updateDecisionOutcome, { decisionId: "dec-1", outcome: "长".repeat(8_001) }))
+      .rejects.toThrow("内容不符合要求：超出上限（最多 8000 字）。");
+    // A section heading in an outcome would cut the note where it is read back.
+    await expect(ipcMain.invoke(IPC_CHANNELS.updateDecisionOutcome, { decisionId: "dec-1", outcome: "命中率 92%\n\n## 复盘结论\n\n结论" }))
+      .rejects.toThrow("实际结果里不能有「## 后续结果」「## 复盘结论」这类笔记分节标题");
+    await expect(ipcMain.invoke(IPC_CHANNELS.setLocalCredentialsEnabled, "true")).rejects.toThrow("内容不符合要求：格式不符合要求。");
+    expect(updateDecisionOutcome).not.toHaveBeenCalled();
+  });
+
+  it("validates explicit platform actions and requires commit and branch anchors", async () => {
+    const ipcMain = new FakeIpcMain();
+    const performPrAction = vi.fn(async () => ({ action: "merge" as const, message: "PR 已合并。" }));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ performPrAction }) });
+    const input = { connectionId: "00000000-0000-4000-8000-000000000001", reference: "org/app#1", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40), sourceBranch: "feature", destinationBranch: "main", action: "merge", body: "", mergeMethod: "merge" };
+    await expect(ipcMain.invoke(IPC_CHANNELS.performPrAction, input)).resolves.toMatchObject({ action: "merge" });
+    for (const invalid of [{ ...input, action: "force-merge" }, { ...input, destinationBranch: "" }, { ...input, sourceCommit: "HEAD" }, { ...input, force: true }]) {
+      await expect(ipcMain.invoke(IPC_CHANNELS.performPrAction, invalid)).rejects.toThrow();
+    }
+    expect(performPrAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("only publishes review comments anchored to a pinned commit and a changed line", async () => {
+    const ipcMain = new FakeIpcMain();
+    const publishPrReviewComment = vi.fn(async () => ({ message: "评论已发布到 src/app.ts:12。" }));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ publishPrReviewComment }) });
+    const input = { connectionId: "00000000-0000-4000-8000-000000000001", reference: "org/app#1", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40), path: "src/app.ts", side: "new", line: 12, body: "P1 · 超时未取消\n\n请求结束后仍在重试。" };
+    await expect(ipcMain.invoke(IPC_CHANNELS.publishPrReviewComment, input)).resolves.toEqual({ message: "评论已发布到 src/app.ts:12。" });
+    for (const invalid of [{ ...input, body: "   " }, { ...input, line: 0 }, { ...input, side: "both" }, { ...input, path: "../secrets" }, { ...input, sourceCommit: "HEAD" }, { ...input, approve: true }]) {
+      await expect(ipcMain.invoke(IPC_CHANNELS.publishPrReviewComment, invalid)).rejects.toThrow();
+    }
+    expect(publishPrReviewComment).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens a PR's own page only for a linked connection and a PR reference", async () => {
+    const ipcMain = new FakeIpcMain();
+    const openPr = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ openPr }) });
+    const input = { connectionId: "00000000-0000-4000-8000-000000000001", reference: "org/app#1" };
+    await expect(ipcMain.invoke(IPC_CHANNELS.openPr, input)).resolves.toBeUndefined();
+    for (const invalid of [{ ...input, connectionId: "not-a-uuid" }, { ...input, reference: " " }, { ...input, url: "https://evil.example" }]) {
+      await expect(ipcMain.invoke(IPC_CHANNELS.openPr, invalid)).rejects.toThrow();
+    }
+    expect(openPr).toHaveBeenCalledWith(input);
+  });
+
+  it("checks a link only by its id and returns nothing but the account name", async () => {
+    const ipcMain = new FakeIpcMain();
+    const checkPrConnection = vi.fn(async () => ({ account: "octo" }));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ checkPrConnection }) });
+    const id = "00000000-0000-4000-8000-000000000001";
+    await expect(ipcMain.invoke(IPC_CHANNELS.checkPrConnection, id)).resolves.toEqual({ account: "octo" });
+    await expect(ipcMain.invoke(IPC_CHANNELS.checkPrConnection, "not-a-uuid")).rejects.toThrow();
+    checkPrConnection.mockResolvedValueOnce({ account: "octo", token: "secret" } as never);
+    await expect(ipcMain.invoke(IPC_CHANNELS.checkPrConnection, id)).rejects.toThrow();
+    expect(checkPrConnection).toHaveBeenCalledTimes(2);
+  });
+
+  it("only publishes a PR-wide comment with text, pinned to the commits it was written for", async () => {
+    const ipcMain = new FakeIpcMain();
+    const publishPrGeneralComment = vi.fn(async () => ({ message: "评论已发布到 PR。" }));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ publishPrGeneralComment }) });
+    const input = { connectionId: "00000000-0000-4000-8000-000000000001", reference: "org/app#1", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40), body: "## PR 概览" };
+    await expect(ipcMain.invoke(IPC_CHANNELS.publishPrGeneralComment, input)).resolves.toEqual({ message: "评论已发布到 PR。" });
+    for (const invalid of [{ ...input, body: "   " }, { ...input, sourceCommit: "HEAD" }, { ...input, path: "src/app.ts" }, { ...input, merge: true }]) {
+      await expect(ipcMain.invoke(IPC_CHANNELS.publishPrGeneralComment, invalid)).rejects.toThrow();
+    }
+    expect(publishPrGeneralComment).toHaveBeenCalledTimes(1);
+  });
+
+  it("validates a finding re-evaluation and its verdict", async () => {
+    const ipcMain = new FakeIpcMain();
+    const reevaluatePrReviewFinding = vi.fn(async () => ({ verdict: "keep" as const, reason: "成立。", replacement: null }));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ reevaluatePrReviewFinding }) });
+    const snapshot = { snapshotId: "00000000-0000-4000-8000-000000000002", reference: "org/app#1", title: "PR", description: "", project: "app", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40), files: [{ path: "src/app.ts", status: "modified" }], warnings: [] };
+    const input = { runId: "00000000-0000-4000-8000-000000000003", profileId: "local", snapshot, finding: { priority: "P1", title: "超时", body: "未取消请求。", path: "src/app.ts", side: "new", line: 3, decisionIndexes: [] }, summary: "一处问题" };
+    await expect(ipcMain.invoke(IPC_CHANNELS.reevaluatePrReviewFinding, input)).resolves.toEqual({ verdict: "keep", reason: "成立。", replacement: null });
+    for (const invalid of [{ ...input, finding: { ...input.finding, line: 0 } }, { ...input, profileId: "" }, { ...input, extra: true }]) {
+      await expect(ipcMain.invoke(IPC_CHANNELS.reevaluatePrReviewFinding, invalid)).rejects.toThrow();
+    }
+    reevaluatePrReviewFinding.mockResolvedValueOnce({ verdict: "approve" } as never);
+    await expect(ipcMain.invoke(IPC_CHANNELS.reevaluatePrReviewFinding, input)).rejects.toThrow();
+  });
+
+  it("validates pinned PR diff and file requests and bounds their responses", async () => {
+    const ipcMain = new FakeIpcMain();
+    const loadPrReviewDiff = vi.fn(async () => ({ diff: "patch" }));
+    const loadPrReviewFile = vi.fn(async () => ({ content: "source", binary: false }));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ loadPrReviewDiff, loadPrReviewFile }) });
+    const input = { connectionId: "00000000-0000-4000-8000-000000000001", reference: "org/app#1", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40) };
+    await expect(ipcMain.invoke(IPC_CHANNELS.loadPrReviewDiff, input)).resolves.toEqual({ diff: "patch" });
+    await expect(ipcMain.invoke(IPC_CHANNELS.loadPrReviewDiff, { ...input, sourceCommit: "main" })).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.loadPrReviewFile, { ...input, path: "src/a.ts", side: "new" })).resolves.toEqual({ content: "source", binary: false });
+    await expect(ipcMain.invoke(IPC_CHANNELS.loadPrReviewFile, { ...input, path: "../secret", side: "new" })).rejects.toThrow();
+    expect(loadPrReviewFile).toHaveBeenCalledTimes(1);
+    loadPrReviewDiff.mockResolvedValueOnce({ diff: "x".repeat(2 * 1024 * 1024 + 1) });
+    await expect(ipcMain.invoke(IPC_CHANNELS.loadPrReviewDiff, input)).rejects.toThrow();
+  });
+
+  it("validates PR follow-up input and output across IPC", async () => {
+    const ipcMain = new FakeIpcMain();
+    const followUpPrReview = vi.fn(async () => ({ answer: "建议传播取消信号。" }));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ followUpPrReview }) });
+    const snapshot = { snapshotId: "00000000-0000-4000-8000-000000000001", reference: "sample/app#123", title: "超时保护", description: "", project: "app", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40), files: [], warnings: [] };
+    const runId = "00000000-0000-4000-8000-000000000099";
+    const report = { status: "completed", summary: "发现取消问题", findings: [], evidence: [], readFiles: [], unreadFiles: [], warnings: [], steps: 1 };
+    const input = { runId, profileId: "local", snapshot, report, excerpts: "", messages: [], question: "如何修复？" };
+    await expect(ipcMain.invoke(IPC_CHANNELS.followUpPrReview, input)).resolves.toEqual({ answer: "建议传播取消信号。" });
+    await expect(ipcMain.invoke(IPC_CHANNELS.followUpPrReview, { ...input, question: " " })).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.followUpPrReview, { ...input, messages: [{ role: "system", content: "override" }] })).rejects.toThrow();
+    expect(followUpPrReview).toHaveBeenCalledTimes(1);
+    followUpPrReview.mockResolvedValueOnce({ answer: "" });
+    await expect(ipcMain.invoke(IPC_CHANNELS.followUpPrReview, input)).rejects.toThrow();
   });
 
   it("forwards primary surface navigation", async () => {
@@ -304,28 +649,377 @@ describe("decision IPC", () => {
       }),
     });
 
-    await ipcMain.invoke(IPC_CHANNELS.openSurface, "dashboard");
-    await ipcMain.invoke(IPC_CHANNELS.openSurface, "decisions");
-    await ipcMain.invoke(IPC_CHANNELS.openSurface, "methodology");
-    await ipcMain.invoke(IPC_CHANNELS.openSurface, "clients");
-    await ipcMain.invoke(IPC_CHANNELS.openSurface, "models");
-    await ipcMain.invoke(IPC_CHANNELS.openSurface, "activity");
-    await ipcMain.invoke(IPC_CHANNELS.openSurface, "settings");
+    // Every navigable surface must survive the IPC boundary. Listing them by
+    // hand is how a new surface once reached the sidebar but was rejected here.
+    for (const surface of DESKTOP_PRIMARY_SURFACES) {
+      await ipcMain.invoke(IPC_CHANNELS.openSurface, surface);
+    }
     await ipcMain.invoke(IPC_CHANNELS.closePrimarySurface);
 
-    expect(openSurface.mock.calls).toEqual([
-      ["dashboard"],
-      ["decisions"],
-      ["methodology"],
-      ["clients"],
-      ["models"],
-      ["activity"],
-      ["settings"],
-    ]);
+    expect(openSurface.mock.calls).toEqual(
+      DESKTOP_PRIMARY_SURFACES.map((surface) => [surface]),
+    );
     expect(closePrimarySurface).toHaveBeenCalledOnce();
     await expect(
       ipcMain.invoke(IPC_CHANNELS.openSurface, "unknown"),
     ).rejects.toThrow();
+  });
+
+  it("forwards valid Obsidian search operations without leaking vault paths", async () => {
+    const ipcMain = new FakeIpcMain();
+    const getObsidianSearchStatus = vi.fn(async () => obsidianStatus);
+    const searchResponse = {
+      query: "architecture 🧭",
+      results: [],
+      status: obsidianStatus,
+    };
+    const searchObsidian = vi.fn(async (input) => ({
+      query: input.query,
+      results: [],
+      status: obsidianStatus,
+    }));
+    const rebuildObsidianSearch = vi.fn(async () => obsidianStatus);
+    const openObsidianNote = vi.fn(async () => undefined);
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({
+        getObsidianSearchStatus,
+        searchObsidian,
+        rebuildObsidianSearch,
+        openObsidianNote,
+      }),
+    });
+
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.getObsidianSearchStatus),
+    ).resolves.toEqual(obsidianStatus);
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, {
+        query: "  architecture 🧭  ",
+      }),
+    ).resolves.toEqual(searchResponse);
+    await ipcMain.invoke(IPC_CHANNELS.searchObsidian, {
+      query: "note",
+      limit: 12,
+    });
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.rebuildObsidianSearch),
+    ).resolves.toEqual(obsidianStatus);
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.openObsidianNote, "目录/ 计划 #? .MD"),
+    ).resolves.toBeUndefined();
+
+    expect(getObsidianSearchStatus).toHaveBeenCalledOnce();
+    expect(searchObsidian.mock.calls).toEqual([
+      [{ query: "architecture 🧭" }],
+      [{ query: "note", limit: 12 }],
+    ]);
+    expect(rebuildObsidianSearch).toHaveBeenCalledOnce();
+    expect(openObsidianNote).toHaveBeenCalledOnce();
+    expect(openObsidianNote).toHaveBeenCalledWith("目录/ 计划 #? .MD");
+  });
+
+  it("rejects malformed Obsidian search input before operations", async () => {
+    const ipcMain = new FakeIpcMain();
+    const searchObsidian = vi.fn();
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({ searchObsidian }),
+    });
+
+    for (const input of [
+      null,
+      [],
+      "query",
+      { query: "   " },
+      { query: "😀".repeat(501) },
+      { query: "x".repeat(1_000_000) },
+      { query: "x", limit: 0 },
+      { query: "x", limit: 51 },
+      { query: "x", limit: 1.5 },
+      { query: "x", limit: Number.NaN },
+      { query: "x", extra: true },
+    ]) {
+      await expect(
+        ipcMain.invoke(IPC_CHANNELS.searchObsidian, input),
+      ).rejects.toThrow();
+    }
+    expect(searchObsidian).not.toHaveBeenCalled();
+  });
+
+  it("accepts exact Unicode code-point boundaries for Obsidian inputs", async () => {
+    const ipcMain = new FakeIpcMain();
+    const searchObsidian = vi.fn(async (input) => ({
+      query: input.query,
+      results: [],
+      status: obsidianStatus,
+    }));
+    const openObsidianNote = vi.fn(async () => undefined);
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({ searchObsidian, openObsidianNote }),
+    });
+    const exactQuery = "😀".repeat(500);
+    const exactPath = `${"😀".repeat(4_093)}.md`;
+
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, { query: exactQuery }),
+    ).resolves.toMatchObject({ query: exactQuery });
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.openObsidianNote, exactPath),
+    ).resolves.toBeUndefined();
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, {
+        query: "😀".repeat(501),
+      }),
+    ).rejects.toThrow();
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.openObsidianNote, `${"😀".repeat(4_094)}.md`),
+    ).rejects.toThrow();
+
+    expect(searchObsidian).toHaveBeenCalledOnce();
+    expect(openObsidianNote).toHaveBeenCalledOnce();
+  });
+
+  it("rejects unsafe Obsidian note paths before operations", async () => {
+    const ipcMain = new FakeIpcMain();
+    const openObsidianNote = vi.fn();
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({ openObsidianNote }),
+    });
+
+    for (const input of [
+      "",
+      "bad\0name.md",
+      "/absolute.md",
+      "C:/absolute.md",
+      "C:relative.md",
+      "folder\\note.md",
+      ".md",
+      ".MD",
+      ".Md",
+      "../note.md",
+      "folder/./note.md",
+      "folder/../note.md",
+      "folder//note.md",
+      "folder/note.txt",
+      `${"😀".repeat(4_097)}.md`,
+      { relativePath: "note.md" },
+    ]) {
+      await expect(
+        ipcMain.invoke(IPC_CHANNELS.openObsidianNote, input),
+      ).rejects.toThrow();
+    }
+    expect(openObsidianNote).not.toHaveBeenCalled();
+  });
+
+  it("rejects unexpected input for argument-free Obsidian operations", async () => {
+    const ipcMain = new FakeIpcMain();
+    const getObsidianSearchStatus = vi.fn();
+    const rebuildObsidianSearch = vi.fn();
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({
+        getObsidianSearchStatus,
+        rebuildObsidianSearch,
+      }),
+    });
+
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.getObsidianSearchStatus, {}),
+    ).rejects.toThrow();
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.rebuildObsidianSearch, "unexpected"),
+    ).rejects.toThrow();
+    expect(getObsidianSearchStatus).not.toHaveBeenCalled();
+    expect(rebuildObsidianSearch).not.toHaveBeenCalled();
+  });
+
+  it("does not expose an unavailable Obsidian operation", async () => {
+    const ipcMain = new FakeIpcMain();
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({
+        getObsidianSearchStatus: undefined,
+        searchObsidian: undefined,
+        rebuildObsidianSearch: undefined,
+        openObsidianNote: undefined,
+      }),
+    });
+
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.getObsidianSearchStatus),
+      "无法获取 Obsidian 搜索状态",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, { query: "note" }),
+      "无法搜索 Obsidian 笔记",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.rebuildObsidianSearch),
+      "无法重建 Obsidian 搜索索引",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.openObsidianNote, "Notes/note.md"),
+      "无法打开 Obsidian 笔记",
+    );
+  });
+
+  it("redacts malformed Obsidian operation outputs and failures", async () => {
+    const ipcMain = new FakeIpcMain();
+    const malformedStatus = { ...obsidianStatus, indexedNotes: -1 };
+    const searchObsidian = vi
+      .fn()
+      .mockResolvedValueOnce({
+        query: "note",
+        results: [
+          { ...obsidianSearchResult, relativePath: "/Users/private/note.md" },
+        ],
+        status: obsidianStatus,
+      })
+      .mockResolvedValueOnce({
+        query: "note",
+        results: [{ ...obsidianSearchResult, snippet: "x".repeat(261) }],
+        status: obsidianStatus,
+      });
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({
+        getObsidianSearchStatus: vi.fn(async () => malformedStatus),
+        searchObsidian,
+        rebuildObsidianSearch: vi.fn(async () => {
+          throw new Error("/Users/private/rebuild failure");
+        }),
+        openObsidianNote: vi.fn(async () => "/Users/private/opened"),
+      }),
+    });
+
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.getObsidianSearchStatus),
+      "无法获取 Obsidian 搜索状态",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, { query: "note" }),
+      "无法搜索 Obsidian 笔记",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, { query: "note" }),
+      "无法搜索 Obsidian 笔记",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.rebuildObsidianSearch),
+      "无法重建 Obsidian 搜索索引",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.openObsidianNote, "Notes/note.md"),
+      "无法打开 Obsidian 笔记",
+    );
+  });
+
+  it("accepts service snippets at the grapheme boundary", async () => {
+    const ipcMain = new FakeIpcMain();
+    const composedGrapheme = "e\u0301";
+    const searchObsidian = vi
+      .fn()
+      .mockResolvedValueOnce({
+        query: "note",
+        results: [
+          { ...obsidianSearchResult, snippet: composedGrapheme.repeat(260) },
+        ],
+        status: obsidianStatus,
+      })
+      .mockResolvedValueOnce({
+        query: "note",
+        results: [
+          { ...obsidianSearchResult, snippet: composedGrapheme.repeat(261) },
+        ],
+        status: obsidianStatus,
+      })
+      .mockResolvedValueOnce({
+        query: "note",
+        results: [{ ...obsidianSearchResult, snippet: "\u0301".repeat(4_097) }],
+        status: obsidianStatus,
+      });
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({ searchObsidian }),
+    });
+
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, { query: "note" }),
+    ).resolves.toMatchObject({
+      results: [{ snippet: composedGrapheme.repeat(260) }],
+    });
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, { query: "note" }),
+      "无法搜索 Obsidian 笔记",
+    );
+    await expectGenericObsidianFailure(
+      ipcMain.invoke(IPC_CHANNELS.searchObsidian, { query: "note" }),
+      "无法搜索 Obsidian 笔记",
+    );
+  });
+
+  it("permits only bounded public Obsidian status messages", async () => {
+    const ipcMain = new FakeIpcMain();
+    const statusWithMessage = (message: string) => ({
+      ...obsidianStatus,
+      state: "unavailable" as const,
+      message,
+    });
+    const getObsidianSearchStatus = vi
+      .fn()
+      .mockResolvedValueOnce(statusWithMessage("新的安全提示"))
+      .mockResolvedValueOnce(statusWithMessage("/private/db"))
+      .mockResolvedValueOnce(statusWithMessage("C:\\private"))
+      .mockResolvedValueOnce(statusWithMessage("first\nsecond"));
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({ getObsidianSearchStatus }),
+    });
+
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.getObsidianSearchStatus),
+    ).resolves.toEqual(statusWithMessage("新的安全提示"));
+    for (const _ of ["/private/db", "C:\\private", "first\nsecond"]) {
+      await expectGenericObsidianFailure(
+        ipcMain.invoke(IPC_CHANNELS.getObsidianSearchStatus),
+        "无法获取 Obsidian 搜索状态",
+      );
+    }
+  });
+
+  it("unregisters every Obsidian handler", () => {
+    const ipcMain = new FakeIpcMain();
+    const unregister = registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations(),
+    });
+    const obsidianChannels = [
+      IPC_CHANNELS.getObsidianSearchStatus,
+      IPC_CHANNELS.searchObsidian,
+      IPC_CHANNELS.rebuildObsidianSearch,
+      IPC_CHANNELS.openObsidianNote,
+    ];
+
+    expect(
+      obsidianChannels.every((channel) => ipcMain.handlers.has(channel)),
+    ).toBe(true);
+    unregister();
+    expect(
+      obsidianChannels.every((channel) => ipcMain.handlers.has(channel)),
+    ).toBe(false);
   });
 
   it("validates decision library queries before reading local history", async () => {
@@ -471,6 +1165,101 @@ describe("decision IPC", () => {
       ipcMain.invoke(IPC_CHANNELS.updateDecisionAppliedPrinciples, {
         decisionId: "decision-1",
         principleIds: ["1", "2", "3", "4", "5", "6"],
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("validates proactive recording and journal revision inputs", async () => {
+    const ipcMain = new FakeIpcMain();
+    const createProactiveRecord = vi.fn(async () => ({
+      recordVersion: 1,
+      status: "created",
+      recordKind: "preference",
+      recordId: "preference-1",
+      knowledgeStatus: "active",
+      sensitivity: "private",
+      storedTranscript: false,
+    }));
+    const listJournalEntries = vi.fn(async () => []);
+    const reviseJournalEntry = vi.fn();
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({
+        createProactiveRecord,
+        listJournalEntries,
+        reviseJournalEntry,
+      }),
+    });
+
+    const preference = {
+      kind: "preference",
+      title: "常规实现决策默认由系统自主完成",
+      content: "普通可逆的方向与实现由系统自行判断并交付结果。",
+      sourceKind: "offline_conversation",
+      sourceForm: "user_paraphrase",
+      sensitivity: "private",
+      project: "decision",
+      appliesWhen: "既定目标和仓库范围内的普通产品与工程取舍。",
+      exceptions: "权限、付费、不可逆操作、公开范围或核心验收冲突。",
+      strength: "default",
+      evidenceMaturity: "self_declared",
+      tags: ["协作偏好"],
+    };
+    await ipcMain.invoke(IPC_CHANNELS.createProactiveRecord, preference);
+    expect(createProactiveRecord).toHaveBeenCalledWith(preference);
+    // The languages a preference is specific to cross as typed, both when it is recorded and when it is revised.
+    await ipcMain.invoke(IPC_CHANNELS.createProactiveRecord, { ...preference, languages: ["Go"] });
+    expect(createProactiveRecord).toHaveBeenLastCalledWith({ ...preference, languages: ["Go"] });
+    const revision = {
+      id: "preference-1",
+      draft: { kind: "preference", title: preference.title, content: preference.content, languages: ["go", "TS"] },
+      change: { changeNote: "限定语言", sourceKind: "app_manual", sourceForm: "user_original" },
+    };
+    await ipcMain.invoke(IPC_CHANNELS.reviseJournalEntry, revision);
+    expect(reviseJournalEntry).toHaveBeenCalledWith("preference-1", { draft: revision.draft, change: revision.change });
+    await expect(ipcMain.invoke(IPC_CHANNELS.reviseJournalEntry, {
+      ...revision, draft: { ...revision.draft, languages: Array.from({ length: 9 }, (_, index) => `l${index}`) },
+    })).rejects.toThrow();
+
+    await ipcMain.invoke(IPC_CHANNELS.listJournalEntries, {
+      query: "自主完成",
+      kind: "preference",
+      knowledgeStatus: "active",
+      limit: 20,
+    });
+    expect(listJournalEntries).toHaveBeenCalledWith({
+      query: "自主完成",
+      kind: "preference",
+      knowledgeStatus: "active",
+      limit: 20,
+    });
+
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.createProactiveRecord, {
+        ...preference,
+        transcript: "should never cross IPC",
+      }),
+    ).rejects.toThrow();
+    // A decision's expected outcome the note would read back as one of its own sections: refused in words.
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.createProactiveRecord, {
+        kind: "decision",
+        title: "缓存怎么做",
+        content: "本地缓存",
+        sourceKind: "app_manual",
+        sourceForm: "user_original",
+        sensitivity: "private",
+        options: [],
+        tags: [],
+        expectedOutcome: "## 复盘结论 之前先看命中率",
+      }),
+    ).rejects.toThrow("预期结果里不能有「## 后续结果」「## 复盘结论」这类笔记分节标题");
+    expect(createProactiveRecord).toHaveBeenCalledTimes(2);
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.listJournalEntries, {
+        query: "",
+        vaultPath: "/private/vault",
       }),
     ).rejects.toThrow();
   });
@@ -984,13 +1773,21 @@ describe("decision IPC", () => {
     ).rejects.toThrow();
     await ipcMain.invoke(
       IPC_CHANNELS.acknowledgeMethodologyValidation,
-      " principle-1 ",
+      { id: " principle-1 ", reviewedAt: "2026-08-08T08:00:00.000Z", decisionId: "decision-1" },
     );
     expect(acknowledgeMethodologyValidation).toHaveBeenCalledWith(
       "principle-1",
+      { reviewedAt: "2026-08-08T08:00:00.000Z", decisionId: "decision-1" },
     );
     await expect(
-      ipcMain.invoke(IPC_CHANNELS.acknowledgeMethodologyValidation, " "),
+      ipcMain.invoke(IPC_CHANNELS.acknowledgeMethodologyValidation, { id: " ", reviewedAt: "2026-08-08T08:00:00.000Z", decisionId: "decision-1" }),
+    ).rejects.toThrow();
+    // A review time as the note holds it, offset and all, is taken as written: refused, 仍适用 could never be said.
+    await ipcMain.invoke(IPC_CHANNELS.acknowledgeMethodologyValidation, { id: "principle-1", reviewedAt: "2026-08-08 16:00:00+08:00", decisionId: "decision-1" });
+    expect(acknowledgeMethodologyValidation).toHaveBeenLastCalledWith("principle-1", { reviewedAt: "2026-08-08 16:00:00+08:00", decisionId: "decision-1" });
+    // What the reader was shown is what is acknowledged: without it, nothing is.
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.acknowledgeMethodologyValidation, "principle-1"),
     ).rejects.toThrow();
 
     await ipcMain.invoke(IPC_CHANNELS.getMethodologyMergePlan, {
@@ -1055,6 +1852,7 @@ describe("decision IPC", () => {
       projects: [],
       sources: [],
       trend: [],
+      retrospective: { reviewAttention: 0, periods: [] },
     }));
     registerDecisionIpc({
       ipcMain,
@@ -1278,7 +2076,8 @@ describe("decision IPC", () => {
       checks: ["改动能够回退。"],
       fallback: "失败时回退并重新评估。",
     };
-    await ipcMain.invoke(IPC_CHANNELS.revisePracticeAsset, revision);
+    // With what the edit began from, carried to the service that compares it with the note as it now stands.
+    await ipcMain.invoke(IPC_CHANNELS.revisePracticeAsset, { ...revision, basis: "[\"打开时的标题\"]" });
     expect(revisePracticeAsset).toHaveBeenCalledWith("skill-1", {
       title: revision.title,
       summary: revision.summary,
@@ -1286,7 +2085,7 @@ describe("decision IPC", () => {
       steps: revision.steps,
       checks: revision.checks,
       fallback: revision.fallback,
-    });
+    }, "[\"打开时的标题\"]");
     await expect(
       ipcMain.invoke(IPC_CHANNELS.revisePracticeAsset, {
         ...revision,
@@ -1358,6 +2157,17 @@ describe("decision IPC", () => {
         force: true,
       }),
     ).rejects.toThrow();
+  });
+
+  it("restricts model installation to the pinned 2B and 4B choices", async () => {
+    const ipcMain = new FakeIpcMain();
+    const installManagedQwenModel = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ installManagedQwenModel }) });
+    await expect(ipcMain.invoke(IPC_CHANNELS.installManagedQwenModel, "../../foreign.gguf")).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.installManagedQwenModel, "qwen3.5-9b-q4-k-m")).rejects.toThrow();
+    expect(installManagedQwenModel).not.toHaveBeenCalled();
+    await ipcMain.invoke(IPC_CHANNELS.installManagedQwenModel, "qwen3.5-4b-q4-k-m");
+    expect(installManagedQwenModel).toHaveBeenCalledWith("qwen3.5-4b-q4-k-m");
   });
 
   it("validates provider controls and never returns credential material", async () => {
@@ -1508,6 +2318,17 @@ describe("decision IPC", () => {
     });
   });
 
+  it("forwards the turns of a deleted conversation, and refuses anything but a list of ids", async () => {
+    const ipcMain = new FakeIpcMain();
+    const forgetAssistantTurns = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ forgetAssistantTurns }) });
+
+    await ipcMain.invoke(IPC_CHANNELS.forgetAssistantTurns, ["turn-1", "turn-2"]);
+    expect(forgetAssistantTurns).toHaveBeenCalledWith(["turn-1", "turn-2"]);
+    await expect(ipcMain.invoke(IPC_CHANNELS.forgetAssistantTurns, "turn-1")).rejects.toThrow();
+    expect(forgetAssistantTurns).toHaveBeenCalledTimes(1);
+  });
+
   it("validates and forwards model trace controls", async () => {
     const ipcMain = new FakeIpcMain();
     const listModelTraces = vi.fn(async () => [{ traceId: "trace-1" }]);
@@ -1589,6 +2410,33 @@ describe("decision IPC", () => {
     ).rejects.toThrow();
   });
 
+  it("validates local storage requests and forwards deferred local retention", async () => {
+    const ipcMain = new FakeIpcMain();
+    const keepLocalRationale = vi.fn(async () => undefined);
+    const listLocalDecisions = vi.fn(async () => ({ records: [], total: 0 }));
+    const resolveLocalDecision = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(() => "candidate-current"), operations: operations({ keepLocalRationale, listLocalDecisions, resolveLocalDecision }) });
+    await ipcMain.invoke(IPC_CHANNELS.rationale, { candidateId: "deferred-local", status: "local_only", rationale: "  原文  " });
+    expect(keepLocalRationale).toHaveBeenCalledWith("deferred-local", { rationale: "  原文  " });
+    await ipcMain.invoke(IPC_CHANNELS.listLocalDecisions, { query: "业务", offset: 100 });
+    expect(listLocalDecisions).toHaveBeenCalledWith("业务", 100);
+    await ipcMain.invoke(IPC_CHANNELS.resolveLocalDecision, { id: "local-id", action: "publish" });
+    expect(resolveLocalDecision).toHaveBeenCalledWith("local-id", "publish");
+    await expect(ipcMain.invoke(IPC_CHANNELS.listLocalDecisions, { query: "", offset: -1 })).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.resolveLocalDecision, { id: "local-id", action: "remove-all" })).rejects.toThrow();
+    expect(resolveLocalDecision).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts a local-only capture with no invented rationale", async () => {
+    const ipcMain = new FakeIpcMain();
+    const onDisposition = vi.fn(async () => undefined);
+    const queue = new RationaleQueue(() => "candidate-current", { onDisposition });
+    queue.ingest(serverCaptureFixture());
+    registerDecisionIpc({ ipcMain, queue, operations: operations() });
+    await ipcMain.invoke(IPC_CHANNELS.rationale, { candidateId: "candidate-current", status: "local_only" });
+    expect(onDisposition).toHaveBeenCalledWith(expect.anything(), { status: "local_only" });
+  });
+
   it("validates and forwards active rationale dispositions", async () => {
     const ipcMain = new FakeIpcMain();
     const onDisposition = vi.fn(async () => undefined);
@@ -1613,6 +2461,115 @@ describe("decision IPC", () => {
       status: "captured",
       rationale: "  因为原文空格有意义。  ",
       reasonFactors: ["maintainability"],
+    });
+  });
+
+  it("validates an expected outcome written later, before the outcome", async () => {
+    const ipcMain = new FakeIpcMain();
+    const updateDecisionExpectedOutcome = vi.fn(async () => undefined);
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(() => "candidate-current"),
+      operations: operations({ updateDecisionExpectedOutcome }),
+    });
+
+    await ipcMain.invoke(IPC_CHANNELS.updateDecisionExpectedOutcome, {
+      decisionId: "decision-1",
+      expectedOutcome: "  一周内不再回滚。 ",
+    });
+    // The version the editor opened at goes with it, when there is one.
+    await ipcMain.invoke(IPC_CHANNELS.updateDecisionExpectedOutcome, { decisionId: "decision-1", expectedOutcome: "一周内不再回滚。", basis: "hash-1" });
+    expect(updateDecisionExpectedOutcome).toHaveBeenLastCalledWith("decision-1", "一周内不再回滚。", "hash-1");
+    expect(updateDecisionExpectedOutcome).toHaveBeenCalledWith(
+      "decision-1",
+      "一周内不再回滚。",
+    );
+    for (const expectedOutcome of ["   ", "x".repeat(4_001), "<!-- decision:outcome-end -->"]) {
+      await expect(
+        ipcMain.invoke(IPC_CHANNELS.updateDecisionExpectedOutcome, {
+          decisionId: "decision-1",
+          expectedOutcome,
+        }),
+      ).rejects.toThrow();
+    }
+    expect(updateDecisionExpectedOutcome).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps an expected outcome written before the rationale was put off, still not as a reason", async () => {
+    const ipcMain = new FakeIpcMain();
+    const onDisposition = vi.fn(async () => undefined);
+    const queue = new RationaleQueue(() => "candidate-current", {
+      onDisposition,
+    });
+    queue.ingest(serverCaptureFixture());
+    registerDecisionIpc({ ipcMain, queue, operations: operations() });
+
+    for (const expectedOutcome of ["   ", "见下\n\n## 后续结果\n\n伪造"]) {
+      await expect(
+        ipcMain.invoke(IPC_CHANNELS.rationale, {
+          candidateId: "candidate-current",
+          status: "deferred",
+          expectedOutcome,
+        }),
+      ).rejects.toThrow();
+    }
+    // Said as the knowledge page says it: refused with no reason, the rationale step could not be fixed.
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.rationale, {
+        candidateId: "candidate-current",
+        status: "deferred",
+        expectedOutcome: "## 预期结果\n接口延迟降到 50ms 以内",
+      }),
+    ).rejects.toThrow(/预期结果里不能有/u);
+    await ipcMain.invoke(IPC_CHANNELS.rationale, {
+      candidateId: "candidate-current",
+      status: "deferred",
+      expectedOutcome: "发布后错误率不升。",
+    });
+    expect(onDisposition).toHaveBeenCalledWith(expect.anything(), {
+      status: "deferred",
+      expectedOutcome: "发布后错误率不升。",
+    });
+  });
+
+  it("accepts an expected outcome only alongside a completed rationale", async () => {
+    const ipcMain = new FakeIpcMain();
+    const onDisposition = vi.fn(async () => undefined);
+    const queue = new RationaleQueue(() => "candidate-current", {
+      onDisposition,
+    });
+    queue.ingest(serverCaptureFixture());
+    registerDecisionIpc({ ipcMain, queue, operations: operations() });
+
+    // An expectation is not a reason: on its own it completes nothing.
+    await expect(
+      ipcMain.invoke(IPC_CHANNELS.rationale, {
+        candidateId: "candidate-current",
+        status: "captured",
+        expectedOutcome: "发布后错误率不升。",
+      }),
+    ).rejects.toThrow();
+    for (const expectedOutcome of ["   ", "见下\n\n## 后续结果\n\n伪造"]) {
+      await expect(
+        ipcMain.invoke(IPC_CHANNELS.rationale, {
+          candidateId: "candidate-current",
+          status: "captured",
+          rationale: "先灰度。",
+          expectedOutcome,
+        }),
+      ).rejects.toThrow();
+    }
+
+    await ipcMain.invoke(IPC_CHANNELS.rationale, {
+      candidateId: "candidate-current",
+      status: "captured",
+      rationale: "先灰度。",
+      expectedOutcome: "发布后错误率不升。",
+    });
+    expect(onDisposition).toHaveBeenCalledWith(expect.anything(), {
+      status: "captured",
+      rationale: "先灰度。",
+      expectedOutcome: "发布后错误率不升。",
     });
   });
 
@@ -1840,5 +2797,24 @@ describe("decision IPC", () => {
     ).rejects.toThrow();
 
     expect(setTheme).toHaveBeenCalledOnce();
+  });
+
+  it("says a disk full or a folder refused in words, naming the folder, never the temporary file", async () => {
+    const ipcMain = new FakeIpcMain();
+    const refusal = (code: string, path: string) => Object.assign(new Error(`${code}: refused, open '${path}'`), { code, path });
+    const setTheme = vi.fn()
+      .mockRejectedValueOnce(refusal("ENOSPC", "/vault/Decision Journal/principles/principle-1-ab12.md.4242.7f3c.tmp"))
+      .mockRejectedValueOnce(refusal("EACCES", "/vault/Decision Journal/decisions/2026"))
+      .mockRejectedValueOnce(new Error("other"));
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ setTheme }) });
+
+    // Node's own line reached the page, English and with the temporary file's name in it.
+    await expect(ipcMain.invoke(IPC_CHANNELS.setTheme, "dark")).rejects.toThrow(
+      "磁盘空间不足，没能写入 /vault/Decision Journal/principles，请清理出空间后再试",
+    );
+    await expect(ipcMain.invoke(IPC_CHANNELS.setTheme, "dark")).rejects.toThrow(
+      "没有访问 /vault/Decision Journal/decisions/2026 的权限，请检查它的权限设置",
+    );
+    await expect(ipcMain.invoke(IPC_CHANNELS.setTheme, "dark")).rejects.toThrow("other");
   });
 });

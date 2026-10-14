@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// Also bundled by Electron: Vite prepends asset imports, so this module has no shebang.
 
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
@@ -438,10 +438,10 @@ export const defaultModelsDirectory = (
   );
 };
 
-const loadBundledManifests = async () =>
+const loadBundledManifests = async (model = "4b") =>
   Promise.all(
     [
-      "qwen3.5-2b-q4-k-m.json",
+      `qwen3.5-${model}-q4-k-m.json`,
       "qwen3-embedding-0.6b-q8-0.json",
     ].map(async (fileName) => {
       const path = fileURLToPath(
@@ -454,12 +454,13 @@ const loadBundledManifests = async () =>
     }),
   );
 
-const CLI_HELP = `Usage: prepare-local-model.mjs [--check] [--models-dir PATH]
+const CLI_HELP = `Usage: prepare-local-model.mjs [--check] [--model 2b|4b] [--models-dir PATH]
 
 Prepare the immutable Qwen generation and embedding GGUFs used by Decision.
 Downloads only after an explicit invocation of this command.
 
 Options:
+  --model 2b|4b      Choose the generation model (default: 4b).
   --check            Verify the expected file without downloading it.
   --models-dir PATH  Use a custom model directory.
   --help, -h         Show this help.
@@ -472,27 +473,31 @@ const runCli = async () => {
     return;
   }
   const check = args.includes("--check");
+  const modelIndex = args.indexOf("--model");
+  const model = modelIndex < 0 ? "4b" : args[modelIndex + 1];
   const directoryIndex = args.indexOf("--models-dir");
   const modelsDirectory =
     directoryIndex >= 0
       ? args[directoryIndex + 1]
       : defaultModelsDirectory();
   if (
+    !["2b", "4b"].includes(model) ||
     modelsDirectory === undefined ||
     args.some(
       (argument, index) =>
         argument.startsWith("--") &&
         argument !== "--check" &&
         argument !== "--models-dir" &&
+        argument !== "--model" &&
         index !== directoryIndex + 1,
     )
   ) {
     throw new LocalModelPreparationError(
       "invalid_options",
-      "Usage: prepare-local-model.mjs [--check] [--models-dir PATH]",
+      "Usage: prepare-local-model.mjs [--check] [--model 2b|4b] [--models-dir PATH]",
     );
   }
-  const manifests = await loadBundledManifests();
+  const manifests = await loadBundledManifests(model);
   if (check) {
     const results = await Promise.all(
       manifests.map((manifest) =>

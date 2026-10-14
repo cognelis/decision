@@ -7,7 +7,10 @@ export {
   mergeCodexHooks,
 } from "./codex.js";
 export {
+  currentHookMarker,
   DECISION_HOOK_MARKER,
+  hookBridgeReference,
+  hookCommandLine,
   mergeHookDocument,
 } from "./hooks.js";
 export type {
@@ -17,7 +20,10 @@ export type {
   HookGroup,
   HookHandler,
 } from "./hooks.js";
-export { commandInvocation, installIntegrations } from "./install.js";
+export { commandInvocation, installIntegrations, removeIntegrations } from "./install.js";
+export { decisionProjectFor, resolveDecisionRepository, normalizeRepositoryRemote } from "./repository-context.js";
+export { detectIntegrationStatus } from "./status.js";
+export type { ClientIntegrationStatus, IntegrationStatus } from "./status.js";
 export type {
   CommandResult,
   CommandRunner,

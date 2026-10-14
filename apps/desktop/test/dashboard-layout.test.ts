@@ -1,14 +1,22 @@
-import { execFile } from "node:child_process";
+import { runElectronCheck } from "./support/run-electron-check.js";
 import { createRequire } from "node:module";
-import { promisify } from "node:util";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   DESKTOP_WINDOW_MIN_SIZE,
   DESKTOP_WINDOW_SIZE,
 } from "../src/shared/decision-layout.js";
 
-const execFileAsync = promisify(execFile);
+/*
+ * Each measurement drives a real Electron process with a 30s budget of its own.
+ * The suite-wide 20s test timeout is shorter than that, so vitest always won
+ * the race: under load these died with "Test timed out in 20000ms" — a message
+ * about the harness, never about the layout — instead of letting the
+ * subprocess report what actually went wrong. A test timeout has to outlast
+ * the budget it is waiting on.
+ */
+vi.setConfig({ testTimeout: 90_000 });
+
 const require = createRequire(import.meta.url);
 const electronPath = require("electron") as string;
 const scriptPath = new URL(
@@ -69,6 +77,12 @@ interface DashboardMetrics {
   startButtonHeight: number;
   startButtonWidth: number;
   summaryColumns: number;
+  summaryInteractiveCount: number;
+  summaryItemHeights: number[];
+  recentItemsAreButtons: boolean;
+  sidebarActionGaps: number[];
+  sidebarActionLabels: string[];
+  sidebarActionsFit: boolean;
   viewportHeight: number;
   viewportWidth: number;
   visualBottomInset: number;
@@ -81,12 +95,12 @@ interface DashboardMetrics {
   rationalePageHeightStable?: boolean;
 }
 
-type DashboardMode = "default" | "compact" | "rationale-dialog" | "tall";
+type DashboardMode = "default" | "compact" | "rationale-dialog" | "rationale-continuous" | "rationale-compact" | "tall";
 
 const measureDashboard = async (
   mode: DashboardMode = "default",
 ): Promise<DashboardMetrics> => {
-  const { stdout } = await execFileAsync(
+  const { stdout } = await runElectronCheck(
     electronPath,
     mode === "default" ? [scriptPath, "dark"] : [scriptPath, "dark", mode],
     {
@@ -104,21 +118,20 @@ describe.skipIf(process.platform !== "darwin")(
       const metrics = await measureDashboard();
 
       expect(metrics).toMatchObject({
-        brandIconBorderRadius: 8,
+        brandIconBorderRadius: 2,
         heading: "首页",
         historyBadge: "历史",
         navigationLabels: [
           "首页",
-          "决策库",
+          "问答",
+          "知识",
+          "评审",
           "方法论",
-          "接入",
-          "模型",
-          "日志",
           "设置",
         ],
         overflowY: "auto",
-        rationaleDescription: "已记录决策，理由尚未补充",
-        sidebarWidth: 188,
+        rationaleDescription: "选择已保存",
+        sidebarWidth: 152,
         summaryColumns: 4,
         viewportHeight: DESKTOP_WINDOW_SIZE.height,
         viewportWidth: DESKTOP_WINDOW_SIZE.width,
@@ -126,20 +139,37 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics.stageWidth).toBe(
         DESKTOP_WINDOW_SIZE.width - metrics.sidebarWidth - 2,
       );
-      expect(metrics.headerHeight).toBe(48);
-      expect(metrics.headingVisible).toBe(false);
-      expect(new Set(metrics.cardHeaderHeights)).toEqual(new Set([48]));
+      // The preview has candidates and a due review, so every overview tile
+      // is a quick-navigation button; buttons and static tiles share one box.
+      expect(metrics.summaryInteractiveCount).toBe(4);
+      expect(new Set(metrics.summaryItemHeights).size).toBe(1);
+      expect(metrics.recentItemsAreButtons).toBe(true);
+      expect(metrics.sidebarActionsFit).toBe(true);
+      // 两个全局命令在品牌下方紧挨着排成一块；「键盘快捷键」留在侧栏底部，
+      // 中间隔着整段导航。所以第一道缝很窄，第二道很宽。
+      const [commandGap, helpGap] = metrics.sidebarActionGaps;
+      expect(commandGap).toBeLessThanOrEqual(8);
+      expect(helpGap).toBeGreaterThan(100);
+      expect(metrics.sidebarActionLabels).toEqual([
+        "主动记录",
+        "快速跳转",
+        "收起菜单栏",
+        "键盘快捷键",
+      ]);
+      expect(metrics.headerHeight).toBe(44);
+      expect(metrics.headingVisible).toBe(true);
+      expect(new Set(metrics.cardHeaderHeights)).toEqual(new Set([40]));
       expect(metrics.cardHeadersSingleRow).toBe(true);
       expect(metrics.rationaleDescriptionWhiteSpace).toBe("nowrap");
-      expect(metrics.pagePaddingTop).toBe(18);
-      expect(metrics.pagePaddingBottom).toBe(18);
-      expect(metrics.pagePaddingLeft).toBe(20);
-      expect(metrics.pagePaddingRight).toBe(20);
+      expect(metrics.pagePaddingTop).toBe(16);
+      expect(metrics.pagePaddingBottom).toBe(16);
+      expect(metrics.pagePaddingLeft).toBe(22);
+      expect(metrics.pagePaddingRight).toBe(22);
       expect(metrics.pageContentLeftInset).toBe(metrics.pageContentRightInset);
       expect(metrics.visualTopInset).toBe(
         metrics.headerHeight + metrics.pagePaddingTop,
       );
-      expect(metrics.visualBottomInset).toBe(18);
+      expect(metrics.visualBottomInset).toBe(16);
       expect(metrics.appScrollHeight).toBe(metrics.appClientHeight);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
       expect(metrics.startButtonWidth).toBeGreaterThanOrEqual(76);
@@ -150,7 +180,8 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics.rationaleDiscardButtonWidth).toBeGreaterThan(
         metrics.rationaleDiscardButtonHeight * 1.5,
       );
-      expect(metrics.rationaleContextWidth).toBeGreaterThanOrEqual(150);
+      // Grid tracks may round a 150px target down by a fraction of a pixel.
+      expect(Math.round(metrics.rationaleContextWidth)).toBeGreaterThanOrEqual(150);
       expect(metrics.rationaleListOverflowY).toBe("auto");
       expect(metrics.rationaleListClientHeight).toBeLessThanOrEqual(128);
       expect(metrics.rationaleListScrollHeight).toBeGreaterThan(
@@ -160,7 +191,9 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics.recentListOverflowY).toBe("auto");
       expect(metrics.scrollHeight).toBe(metrics.clientHeight);
       expect(metrics.scrollTopAfter).toBe(0);
-      expect(metrics.recentListClientHeight).toBe(316);
+      // 四个计数从 88px 的大卡压成一条 52px 的读数条，省下来的高度全给了
+      // 最近决策；这里只守住「它要把剩下的空间吃满」，不锁死具体像素。
+      expect(metrics.recentListClientHeight).toBeGreaterThanOrEqual(360);
       expect(metrics.recentCardContentBottomGap).toBe(0);
       expect(metrics.recentListScrollHeight).toBeGreaterThan(
         metrics.recentListClientHeight,
@@ -197,12 +230,25 @@ describe.skipIf(process.platform !== "darwin")(
       const metrics = await measureDashboard("tall");
 
       expect(metrics.viewportHeight).toBe(900);
-      expect(metrics.headerHeight).toBe(48);
+      expect(metrics.headerHeight).toBe(44);
       expect(metrics.scrollHeight).toBe(metrics.clientHeight);
       expect(metrics.scrollTopAfter).toBe(0);
       expect(metrics.recentListClientHeight).toBeGreaterThan(316);
       expect(metrics.recentCardContentBottomGap).toBe(0);
-      expect(metrics.visualBottomInset).toBe(18);
+      expect(metrics.visualBottomInset).toBe(16);
+    });
+
+    it("keeps the continuous editor and actions visible at both desktop sizes", async () => {
+      for (const mode of ["rationale-continuous", "rationale-compact"] as const) {
+        const metrics = await measureDashboard(mode);
+        expect(metrics).toMatchObject({
+          rationaleActionsVisible: true,
+          rationaleEditorVisible: true,
+          rationaleComposerFits: true,
+          rationaleProgressVisible: true,
+          rationaleEditorFocused: true,
+        });
+      }
     });
 
     it("opens rationale editing in a centered dialog without resizing the dashboard", async () => {

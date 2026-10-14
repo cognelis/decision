@@ -112,6 +112,25 @@ const completed = (item: CorpusCase) => {
 };
 
 describe("TextDecisionAnalyzer", () => {
+  it.each(["确认", "执行", "批准", "执行吧"])("recognizes short approval %s only after an open request", (answer) => {
+    const pending = analyzer.analyze({ userText: null, assistantText: "修改尚未发布。请回复确认，我就提交并推送。" });
+    expect(pending).not.toBeNull();
+    expect(analyzer.complete(pending!, answer).band).not.toBe("low");
+    expect(analyzer.analyze({ userText: null, assistantText: "修改已完成，测试通过。" })).toBeNull();
+  });
+  it("preserves approval with an added task as a mixed answer", () => {
+    const pending = analyzer.analyze({ userText: null, assistantText: "要我现在发布吗？" })!;
+    const completed = analyzer.complete(pending, "确认，另外创建一个测试任务。");
+    expect(completed.band).not.toBe("low");
+    expect(completed.signals).toContain("answer_is_mixed");
+    expect(completed.signals).not.toContain("unrelated_new_task");
+  });
+  it("separates completed status, task numbers and partial scope approval", () => {
+    const pending = analyzer.analyze({ userText: null, assistantText: "1. 实现复制\n2. 增加导航\n\n要我现在做吗？" })!;
+    expect(analyzer.complete(pending, "合并了")).toMatchObject({ band: "low", signals: expect.arrayContaining(["answer_is_status_update"]) });
+    expect(analyzer.complete(pending, "处理1、2即可，3不用").band).not.toBe("low");
+    expect(analyzer.complete(pending, "PR①已合入，建PR②").signals).not.toContain("answer_matches_option");
+  });
   it("extracts options, question and bounded context", () => {
     const analysis = analyzer.analyze({
       userText: "继续开发 Decision。",
@@ -205,6 +224,206 @@ describe("TextDecisionAnalyzer", () => {
         decisionFraming: "可选方案：",
       },
     });
+  });
+
+  it("does not turn a batch of questions into a list of choices", () => {
+    // A real capture: seven independent design questions, each with its own
+    // recommendation, became seven mutually exclusive options whose labels
+    // were whole paragraphs. They are not alternatives — nobody offered a
+    // choice between them.
+    const analysis = analyzer.analyze({
+      userText: null,
+      assistantText: [
+        "这轮评审有几处要你定：",
+        "",
+        "1. **`name` 加进 tenant 的公共类型，还是留在本地类型。** 建议进 tenant。",
+        "2. **converter 用静态类还是模块函数。** 建议随既有惯例。",
+        "3. **未解析成员视图是否收窄。** 建议本次逐字节保持。",
+        "4. **服务改名为 hydrator。** 建议独立 PR 只做改名。",
+      ].join("\n"),
+    });
+
+    expect(analysis?.options ?? []).toEqual([]);
+    // The text itself is still the request, so the reader sees all of it.
+    expect(analysis?.question).toContain("converter 用静态类还是模块函数");
+  });
+
+  it("reads an item that recommends itself as a question, not a choice", () => {
+    // The second real capture: the items carry their own 建议 rather than
+    // their own 还是, and only three of seven read as questions. An option
+    // does not recommend itself — that mark alone gives the batch away.
+    const analysis = analyzer.analyze({
+      userText: null,
+      assistantText: [
+        "几处要你定：",
+        "",
+        "1. **第 1 步是否与本次同 PR。** 建议拆开先合：它没有行为变化。",
+        "2. **物化器直接消费 tenant 的 PO 类型。** 建议照做，少一层转换。",
+        "3. **ADR 需要同步。** 建议本次一起改掉。",
+      ].join("\n"),
+    });
+
+    expect(analysis?.options ?? []).toEqual([]);
+  });
+
+  it("keeps real options when only one of them happens to read as a question", () => {
+    // The threshold is what separates "these items are questions" from "one
+    // option's prose contains 还是". Requiring a single such item would throw
+    // away a genuine pair of alternatives.
+    const analysis = analyzer.analyze({
+      userText: null,
+      assistantText: [
+        "两种切换方式：",
+        "",
+        "1. 一次性同步改，两个仓库同版本发布。",
+        "2. 后端过渡期双写，前端改完后再摘掉，还是要留一个开关。",
+        "",
+        "你希望走哪一种？",
+      ].join("\n"),
+    });
+
+    expect(analysis?.options).toHaveLength(2);
+  });
+
+  it("still reads a plain numbered list as the choices it is", () => {
+    const analysis = analyzer.analyze({
+      userText: null,
+      assistantText: [
+        "两种实现方式：",
+        "",
+        "1. 先规则后模型",
+        "2. 直接本地模型",
+        "",
+        "请选择一种方案",
+      ].join("\n"),
+    });
+
+    expect(analysis?.options.map((option) => option.label)).toEqual([
+      "先规则后模型",
+      "直接本地模型",
+    ]);
+  });
+
+  it("keeps the decision when the message closes on another remark", () => {
+    // The same design question, with a closing note after the recommendation.
+    // The reader answered the options, not the note, so the note is framing.
+    const analysis = analyzer.analyze({
+      userText: null,
+      assistantText: [
+        "**问题 9（契约怎么切换）**：`_display` 是线上契约，旧前端配新后端会丢标签。",
+        "",
+        "- **A**：一次性同步改，两个仓库同版本发布。",
+        "- **B**：后端过渡期双写，前端改完后再摘掉。",
+        "",
+        "我建议 **A**。同版本发布本来就是这个项目的发版惯例。",
+        "",
+        "还有一处待定，我不替你决定：MCP 返回的键叫 `display`。要不要一并改成 `title`，等这题定了我再问。",
+      ].join("\n"),
+    });
+
+    expect(analysis?.question).toBe(
+      "**问题 9（契约怎么切换）**：`_display` 是线上契约，旧前端配新后端会丢标签。",
+    );
+    expect(analysis?.signals).toContain("options_before_closing_remark");
+    // The emphasis is markup, not the option's name.
+    expect(analysis?.options.map((option) => option.id)).toEqual(["A", "B"]);
+    expect(analysis?.options[0]?.label).toBe(
+      "一次性同步改，两个仓库同版本发布。",
+    );
+    expect(
+      analyzer.complete(analysis!, "A").signals,
+    ).toContain("answer_matches_option");
+    // The closing remark is still shown; it is part of what was said.
+    expect(analysis?.context?.decisionFraming).toContain("还有一处待定");
+  });
+
+  it("needs the recommendation to name an option, not merely exist", () => {
+    // A list of finished work followed by advice and a question: nothing here
+    // asks the reader to pick from the list, and pairing them would invent a
+    // decision out of a progress report.
+    const analysis = analyzer.analyze({
+      userText: null,
+      assistantText: [
+        "我做了两处改动：",
+        "",
+        "- 改了缓存键的拼法。",
+        "- 改了失效时间。",
+        "",
+        "我建议接下来先补一轮回归测试。",
+        "",
+        "要不要我现在就跑？",
+      ].join("\n"),
+    });
+
+    expect(analysis?.signals ?? []).not.toContain(
+      "options_before_closing_remark",
+    );
+    expect(analysis?.options ?? []).toEqual([]);
+  });
+
+  it("reads a design question that ends on a recommendation", () => {
+    // The shape a design conversation actually takes: a numbered question, an
+    // option per bullet, and a recommendation instead of a question mark.
+    // Nothing here matches the choice-prompt vocabulary, so the whole exchange
+    // used to be invisible.
+    const analysis = analyzer.analyze({
+      userText: "继续。",
+      assistantText: [
+        "问题 21（修订）：",
+        "",
+        "- A: 只做读取兜底，不写迁移也不改 seed。",
+        "- B: seed metadata 直接写 data_title，读取端不做兜底。",
+        "- C: 在 B 的基础上保留读取兜底，作为过渡期安全网。",
+        "",
+        "我建议 C。B 的问题是迁移脚本本来人在发版时手动跑，和代码上线之间没有任何强制顺序保证。",
+      ].join("\n"),
+    });
+
+    expect(analysis).not.toBeNull();
+    expect(analysis?.signals).toContain("recommends_one_option");
+    // The letter is what the reader types back, so it has to be the id.
+    expect(analysis?.options.map((option) => option.id)).toEqual([
+      "A",
+      "B",
+      "C",
+    ]);
+    expect(analysis?.options[0]?.label).toBe(
+      "只做读取兜底，不写迁移也不改 seed。",
+    );
+  });
+
+  it("needs options under the recommendation, not just the word", () => {
+    // "我建议" on its own is prose. Only a laid-out choice makes it a decision
+    // point, or every explanatory paragraph would become a candidate.
+    expect(
+      analyzer.analyze({
+        userText: "继续。",
+        assistantText:
+          "我看了一遍缓存层。\n\n我建议先把失效逻辑抽出来，再谈并发。",
+      }),
+    ).toBeNull();
+  });
+
+  it("lands a bare letter on the option it names", () => {
+    const pending = analyzer.analyze({
+      userText: "选一个。",
+      assistantText: [
+        "问题 22：",
+        "",
+        "- A: 维持现状写死 name。",
+        "- B: 让用户在导入映射时选定匹配字段。",
+        "- C: 改用生效标题字段里的第一个文本类字段。",
+        "",
+        "我建议 B。",
+      ].join("\n"),
+    });
+    if (pending === null) {
+      throw new Error("expected a pending analysis");
+    }
+
+    for (const answer of ["A", "a", "先A，记下来，完成后继续走那条线"]) {
+      expect(analyzer.complete(pending, answer).band).toBe("high");
+    }
   });
 
   it.each(corpus)(

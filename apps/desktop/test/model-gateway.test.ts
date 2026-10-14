@@ -1,6 +1,7 @@
 import type {
   ModelProviderProfile,
   ModelInvocationTrace,
+  NormalizedTokenUsage,
   SemanticClassification,
   SemanticRecognitionStatus,
   StructuredGenerationRequest,
@@ -10,6 +11,7 @@ import type {
   CaptureAuditSummary,
   ModelTraceRecordInput,
 } from "@cognelis/decision-storage";
+import { z } from "zod";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -17,13 +19,20 @@ import {
 } from "../src/main/model/model-gateway.js";
 import {
   ProfiledModelGateway,
+  outputValidationDiagnostic,
 } from "../src/main/model/profiled-model-gateway.js";
+import {
+  qwenSemanticOutputJsonSchema,
+} from "../src/main/model/semantic-prompt.js";
 import {
   ModelProviderError,
 } from "../src/main/model/http-model-transport.js";
 import {
+  QwenModelProvider,
   QwenProviderError,
+  type QwenRuntimeModule,
 } from "../src/main/semantic/qwen-provider.js";
+import { QWEN_MODEL_MANIFEST } from "../src/main/semantic/model-manifest.js";
 import type {
   SemanticClassifier,
   SemanticClassifierInput,
@@ -388,10 +397,16 @@ describe("StructuredModelGateway", () => {
       failures7d: 1,
     } satisfies Partial<SemanticRecognitionStatus>);
 
-    now = new Date(now.getTime() + 30_001);
-    await expect(gateway.classify(input)).resolves.toEqual(
-      classification("qwen"),
-    );
+    // Half a minute on, though the Mac's clock was set back an hour meanwhile.
+    now = new Date(now.getTime() - 3_600_000);
+    const clock = vi.spyOn(performance, "now").mockReturnValue(performance.now() + 30_001);
+    try {
+      await expect(gateway.classify(input)).resolves.toEqual(
+        classification("qwen"),
+      );
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   it("closes every provider it instantiated exactly once", async () => {
@@ -459,7 +474,7 @@ const profiled = (
       model:
         kind === "apple"
           ? "system-language-model"
-          : "qwen-local-model",
+          : "qwen3.5-2b-q4-k-m",
     };
   }
   return common;
@@ -504,6 +519,7 @@ const profiledGateway = (options: {
   factory: (
     profile: ModelProviderProfile,
   ) => SemanticClassifier;
+  unattendedGenerationMs?: number;
 }) => {
   const traceInputs: ModelTraceRecordInput[] = [];
   const auditFingerprint = vi.fn(async (value: string) =>
@@ -533,11 +549,365 @@ const profiledGateway = (options: {
     },
     now: () => new Date("2026-07-30T00:00:00.000Z"),
     idFactory: () => `profiled-id-${sequence++}`,
+    ...(options.unattendedGenerationMs === undefined ? {} : { unattendedGenerationMs: options.unattendedGenerationMs }),
   });
   return { auditFingerprint, gateway, traceInputs };
 };
 
 describe("ProfiledModelGateway", () => {
+  it("preserves structured failure codes when the provider chain ends", async () => {
+    const { gateway, traceInputs } = profiledGateway({ load: async () => [profiled("local", "qwen", 0)], factory: () => Object.assign(profiledProvider("qwen"), { generate: async () => { throw new QwenProviderError("invalid_configuration", "Unsupported grammar"); } }) });
+    await expect(gateway.generate({ requestId: "grammar", purpose: "pr-review", promptVersion: "test", schemaVersion: "test", locale: "zh-CN", systemPrompt: "JSON", userPrompt: "test", outputSchema: { type: "object" }, maxOutputTokens: 100 }, (value) => value)).rejects.toMatchObject({ failureCode: "invalid_configuration" });
+    expect(traceInputs[0]).toMatchObject({ errorCode: "invalid_configuration" });
+  });
+  it("traces preparation failures before moving to the next enabled provider", async () => {
+    const first = profiled("first", "openai", 0); const second = profiled("second", "anthropic", 1);
+    const broken = profiledProvider("openai"); vi.mocked(broken.status).mockRejectedValue(new Error("probe failed"));
+    const { gateway, traceInputs } = profiledGateway({ load: async () => [first, second], factory: (profile) => profile.profileId === "first" ? broken : profiledProvider("anthropic") });
+    await gateway.classify(input);
+    expect(traceInputs.map((trace) => [trace.attemptIndex, trace.status])).toEqual([[0, "unavailable"], [1, "succeeded"]]);
+    expect(traceInputs[0]!.requestId).toBe(traceInputs[1]!.requestId);
+  });
+  it("stops at a failed profile when fallback is explicitly disabled", async () => {
+    const first = { ...profiled("first", "openai", 0), fallbackOnFailure: false };
+    const factory = vi.fn(() => profiledProvider("openai", async () => { throw new Error("request failed"); }));
+    const { gateway, traceInputs } = profiledGateway({ load: async () => [first, profiled("second", "anthropic", 1)], factory });
+    await expect(gateway.classify(input)).rejects.toThrow("request failed"); expect(factory).toHaveBeenCalledTimes(1); expect(traceInputs).toHaveLength(1);
+  });
+  const draftRequest: StructuredGenerationRequest = {
+    requestId: "draft-request",
+    purpose: "methodology-extraction",
+    promptVersion: "methodology-v1",
+    schemaVersion: "methodology-schema-v1",
+    locale: "zh-CN",
+    systemPrompt: "只返回结构化候选。",
+    userPrompt: "证据 1：小步改动按预期上线。",
+    outputSchema: { type: "object" },
+    maxOutputTokens: 512,
+  };
+  const drafted = (request: StructuredGenerationRequest, usage: NormalizedTokenUsage = { source: "runtime_measured" }) => ({
+    parsedOutput: { title: "可逆优先" },
+    visibleOutput: '{"title":"可逆优先"}',
+    traceInput: {
+      systemPrompt: request.systemPrompt,
+      userPrompt: request.userPrompt,
+      outputSchema: request.outputSchema,
+      clientSystemPromptVisibility: "visible" as const,
+    },
+    usage,
+    providerDurationMs: 21,
+  });
+
+  it("does not truncate a provider duration greater than two minutes", async () => {
+    const provider = Object.assign(profiledProvider("qwen"), { generate: async () => ({ ...drafted(draftRequest), providerDurationMs: 180123 }) });
+    const { gateway, traceInputs } = profiledGateway({ load: async () => [profiled("local", "qwen", 0)], factory: () => provider });
+    await gateway.generate(draftRequest, value => value);
+    expect(traceInputs[0]!.timing.providerMs).toBe(180123);
+  });
+
+  it("keeps validation paths and request limits without quoting rejected values", async () => {
+    const logical = z.object({ title: z.string() }).strict();
+    const request = { ...draftRequest, outputSchema: z.toJSONSchema(logical) };
+    const provider = Object.assign(profiledProvider("qwen"), { generate: async () => ({ ...drafted(request), parsedOutput: { title: null, PRIVATE_FIELD: "PRIVATE_BODY" }, visibleOutput: "PRIVATE_OUTPUT", traceInput: { ...drafted(request).traceInput, clientSystemPromptVisibility: "opaque" as const } }) });
+    const { gateway, traceInputs } = profiledGateway({ load: async () => [profiled("local", "qwen", 0)], factory: () => provider });
+    await expect(gateway.generate(request, value => logical.parse(value))).rejects.toThrow();
+    expect(traceInputs[0]).toMatchObject({ errorCode: "invalid_output", input: { clientSystemPromptVisibility: "opaque" }, request: { configuredTimeoutMs: 10000, generationTimeoutMs: 30000, requestedMaxOutputTokens: 512 } });
+    expect(traceInputs[0]!.diagnosticExcerpt).toContain("title：invalid_type");
+    expect(traceInputs[0]!.diagnosticExcerpt).not.toMatch(/PRIVATE_FIELD|PRIVATE_BODY|PRIVATE_OUTPUT/);
+    expect(outputValidationDiagnostic({ issues: [{ path: ["PRIVATE_FIELD"], code: "usersecret", message: "PRIVATE_BODY", expected: "PRIVATE_OUTPUT" }] }, request.outputSchema)).not.toMatch(/PRIVATE_FIELD|PRIVATE_BODY|PRIVATE_OUTPUT|usersecret/);
+  });
+
+  it("passes over a backend that cannot generate even with its fallback turned off", async () => {
+    // Apple only classifies. Its "fall back on failure" switch is about Apple failing, and Apple
+    // cannot fail at a generation it never attempts.
+    const apple = { ...profiled("apple-first", "apple", 0), fallbackOnFailure: false };
+    const generate = vi.fn(async (request: StructuredGenerationRequest) => drafted(request));
+    const { gateway } = profiledGateway({
+      load: async () => [apple, profiled("qwen-second", "qwen", 10)],
+      factory: (profile) => profile.kind === "apple" ? profiledProvider("apple") : Object.assign(profiledProvider("qwen"), { generate }),
+    });
+
+    await expect(gateway.generate(draftRequest, (value) => value)).resolves.toMatchObject({ profileId: "qwen-second" });
+    expect(generate).toHaveBeenCalledOnce();
+  });
+
+  it("lets a capture wait its turn on the bundled model rather than time out behind the reader's own answer", async () => {
+    // Qwen takes one call at a time. Timed from the call, a capture classified while it wrote an answer was
+    // filed as Qwen's timeout and went down the chain, its text to a remote backend.
+    let finishAnswer!: () => void;
+    const answering = new Promise<void>((resolve) => { finishAnswer = resolve; });
+    const prompts: string[] = [];
+    const session = {
+      prompt: vi.fn(async (prompt: string) => {
+        prompts.push(prompt);
+        if (prompt === "ANSWER") { await answering; return JSON.stringify({ title: "可逆优先" }); }
+        return JSON.stringify({ decisionIntent: "decision", answerRelation: "answers", question: "先提交还是先修复？", optionLabels: ["先提交", "先修复"], answerExcerpt: "先修复", confidence: 0.9 });
+      }),
+      dispose: vi.fn(),
+    };
+    const context = { getSequence: () => ({}), dispose: async () => undefined };
+    const llama = {
+      loadModel: async () => ({ createContext: async () => context, dispose: async () => undefined }),
+      createGrammarForJsonSchema: async () => ({}),
+      dispose: async () => undefined,
+    };
+    const qwen = new QwenModelProvider({
+      modelsDirectory: "/models",
+      verifyModel: async () => ({ availability: "available", modelPath: "/models/qwen.gguf", manifest: QWEN_MODEL_MANIFEST }),
+      loadRuntime: async () => ({ getLlama: async () => llama, LlamaChatSession: function () { return session; } }) as unknown as QwenRuntimeModule,
+    });
+    const remote = profiledProvider("openai");
+    const { gateway, traceInputs } = profiledGateway({
+      load: async () => [{ ...profiled("local", "qwen", 0), timeoutMs: 100 }, profiled("remote", "openai", 1)],
+      factory: (profile) => (profile.kind === "qwen" ? qwen : remote),
+    });
+
+    const answer = gateway.generate({ ...draftRequest, userPrompt: "ANSWER" }, (value) => value, undefined, "local");
+    await vi.waitFor(() => expect(prompts).toEqual(["ANSWER"]));
+    const classified = gateway.classify(input);
+    // Three times the profile's classification budget.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    finishAnswer();
+
+    await expect(classified).resolves.toMatchObject({ provider: "qwen" });
+    await expect(answer).resolves.toMatchObject({ parsedOutput: { title: "可逆优先" } });
+    expect(remote.invoke).not.toHaveBeenCalled();
+    expect(traceInputs.map((trace) => trace.status)).toEqual(["succeeded", "succeeded"]);
+  });
+
+  it("waits for the bundled model to check its file rather than send the text on when that takes a while", async () => {
+    // Qwen hashes its whole model file the first time it is asked whether it is ready: seconds on a slow Mac.
+    const slowCheck = (): SemanticClassifier => Object.assign(profiledProvider("qwen"), {
+      queuesCalls: true,
+      status: vi.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        return { id: "qwen" as const, availability: "available" as const, modelVersion: "qwen-model", promptVersion: "semantic-v1" };
+      }),
+    });
+    const remote = profiledProvider("openai");
+    const { gateway } = profiledGateway({
+      load: async () => [{ ...profiled("local", "qwen", 0), timeoutMs: 100 }, profiled("remote", "openai", 1)],
+      factory: (profile) => (profile.kind === "qwen" ? slowCheck() : remote),
+    });
+
+    await expect(gateway.classify(input)).resolves.toMatchObject({ provider: "qwen" });
+    expect(remote.invoke).not.toHaveBeenCalled();
+  });
+
+  it("ends a draft nobody can stop as a timeout when the bundled model never says it is ready", async () => {
+    // Its file check stuck (a disk gone quiet): no timer of its own, and none from a caller to stop it.
+    const stuck = Object.assign(profiledProvider("qwen"), {
+      queuesCalls: true,
+      status: vi.fn(() => new Promise<never>(() => undefined)),
+      generate: vi.fn(),
+    });
+    const { gateway } = profiledGateway({ load: async () => [profiled("local", "qwen", 0)], factory: () => stuck, unattendedGenerationMs: 100 });
+
+    // Unbounded, the knowledge page's button turned until the app quit.
+    await expect(gateway.generate(draftRequest, (value) => value)).rejects.toMatchObject({ failureCode: "timeout" });
+    expect(stuck.generate).not.toHaveBeenCalled();
+  });
+
+  it("still times the settings test of the bundled model while it writes the reader's answer", async () => {
+    let finishAnswer!: () => void;
+    const answering = new Promise<void>((resolve) => { finishAnswer = resolve; });
+    const prompts: string[] = [];
+    const session = {
+      prompt: vi.fn(async (prompt: string) => {
+        prompts.push(prompt);
+        await answering;
+        return JSON.stringify({ title: "可逆优先" });
+      }),
+      dispose: vi.fn(),
+    };
+    const context = { getSequence: () => ({}), dispose: async () => undefined };
+    const llama = {
+      loadModel: async () => ({ createContext: async () => context, dispose: async () => undefined }),
+      createGrammarForJsonSchema: async () => ({}),
+      dispose: async () => undefined,
+    };
+    const qwen = new QwenModelProvider({
+      modelsDirectory: "/models",
+      verifyModel: async () => ({ availability: "available", modelPath: "/models/qwen.gguf", manifest: QWEN_MODEL_MANIFEST }),
+      loadRuntime: async () => ({ getLlama: async () => llama, LlamaChatSession: function () { return session; } }) as unknown as QwenRuntimeModule,
+    });
+    const { gateway } = profiledGateway({
+      load: async () => [{ ...profiled("local", "qwen", 0), timeoutMs: 100 }],
+      factory: () => qwen,
+    });
+
+    const answer = gateway.generate({ ...draftRequest, userPrompt: "ANSWER" }, (value) => value, undefined, "local");
+    await vi.waitFor(() => expect(prompts).toEqual(["ANSWER"]));
+    // Untimed, it waited out the whole answer, its button turning with no way to stop it.
+    await expect(gateway.testProfile("local")).resolves.toMatchObject({ ok: false, profileId: "local", errorCode: "timeout" });
+    finishAnswer();
+    await answer;
+  });
+
+  it("ends a chain stopped by a disabled fallback with its own error, for a turn to retry and report", async () => {
+    const only = { ...profiled("only", "openai", 0), fallbackOnFailure: false };
+    const { gateway } = profiledGateway({
+      load: async () => [only],
+      factory: () => Object.assign(profiledProvider("openai"), {
+        generate: async () => { throw new ModelProviderError("timeout", "Model provider attempt timed out"); },
+      }),
+    });
+
+    await expect(gateway.generate(draftRequest, (value) => value, undefined, "only")).rejects.toMatchObject({
+      name: "ProfiledModelGatewayError",
+      failureCode: "timeout",
+    });
+  });
+
+  it("keeps what a rejected answer cost and said, for the trace and for the turn", async () => {
+    const usage: NormalizedTokenUsage = { source: "provider_reported", inputTokens: 1_000, outputTokens: 500 };
+    const { gateway, traceInputs } = profiledGateway({
+      load: async () => [profiled("only", "openai", 0)],
+      factory: () => Object.assign(profiledProvider("openai"), {
+        generate: async (request: StructuredGenerationRequest) => ({ ...drafted(request, usage), providerRequestId: "resp-1" }),
+      }),
+    });
+
+    await expect(gateway.generate(draftRequest, () => { throw new Error("not this shape"); })).rejects.toMatchObject({
+      failureCode: "invalid_output",
+      usage: { inputTokens: 1_000, outputTokens: 500 },
+      // What it said, for a review's step to show beside "错误类别：invalid_output".
+      output: '{"title":"可逆优先"}',
+    });
+    expect(traceInputs.at(-1)).toMatchObject({
+      errorCode: "invalid_output",
+      usage: { inputTokens: 1_000, outputTokens: 500 },
+      output: { visibleText: '{"title":"可逆优先"}', parsed: null },
+      providerRequestId: "resp-1",
+    });
+  });
+
+  it("cancels a generation still running when it closes, so no backend is left to run on its own", async () => {
+    let attemptSignal: AbortSignal | undefined;
+    const { gateway } = profiledGateway({
+      load: async () => [profiled("cli", "openai", 0)],
+      factory: () => Object.assign(profiledProvider("openai"), {
+        generate: (_request: StructuredGenerationRequest, signal?: AbortSignal) => {
+          attemptSignal = signal;
+          return new Promise<never>(() => undefined);
+        },
+      }),
+    });
+    const pending = gateway.generate(draftRequest, (value) => value);
+    await vi.waitFor(() => expect(attemptSignal).toBeDefined());
+
+    await gateway.close();
+
+    await expect(pending).rejects.toMatchObject({ code: "cancelled" });
+    expect(attemptSignal?.aborted).toBe(true);
+  });
+
+  it("gives a backend kept for the life of the app the timeout its profile has now", async () => {
+    let timeoutMs = 5_000;
+    const qwen = Object.assign(profiledProvider("qwen"), { setTimeoutMs: vi.fn() });
+    const factory = vi.fn(() => qwen);
+    const { gateway } = profiledGateway({
+      load: async () => [{ ...profiled("local", "qwen", 0), timeoutMs }],
+      factory,
+    });
+
+    await gateway.classify(input);
+    timeoutMs = 9_000;
+    await gateway.classify(input);
+
+    expect(factory).toHaveBeenCalledOnce();
+    expect(qwen.setTimeoutMs).toHaveBeenLastCalledWith(9_000);
+  });
+
+  it("keeps readiness consistent with a stopped fallback chain", async () => {
+    const first = { ...profiled("first", "openai", 0), fallbackOnFailure: false };
+    const provider = profiledProvider("openai"); vi.mocked(provider.status).mockResolvedValue({ id: "openai", availability: "runtime_unavailable" });
+    const factory = vi.fn(() => provider);
+    const { gateway } = profiledGateway({ load: async () => [first, profiled("next", "anthropic", 1)], factory });
+    expect(await gateway.status()).toMatchObject({ provider: "rules", mode: "rules_only", unavailableModels: [{ providerLabel: "first", availability: "runtime_unavailable" }] });
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
+  it("says which backend could not be used and why, with the rules reading on their own meanwhile", async () => {
+    const apple = profiledProvider("apple"); vi.mocked(apple.status).mockResolvedValue({ id: "apple", availability: "apple_intelligence_disabled" });
+    const qwen = profiledProvider("qwen"); vi.mocked(qwen.status).mockRejectedValue(new Error("helper crashed"));
+    const { gateway } = profiledGateway({
+      load: async () => [profiled("Apple", "apple", 0), profiled("Qwen", "qwen", 1), profiled("off", "openai", 2, false)],
+      factory: (profile) => (profile.kind === "apple" ? apple : qwen),
+    });
+    // It said the rules, which were working, were "temporarily unavailable" in 混合模式, and dropped both reasons.
+    expect(await gateway.status()).toMatchObject({
+      provider: "rules", availability: "available", mode: "rules_only",
+      unavailableModels: [{ providerLabel: "Apple", availability: "apple_intelligence_disabled" }, { providerLabel: "Qwen", availability: "unavailable" }],
+    });
+    const none = profiledGateway({ load: async () => [profiled("off", "openai", 0, false)], factory: () => apple });
+    expect(await none.gateway.status()).toMatchObject({ provider: "rules", mode: "rules_only", unavailableModels: [] });
+  });
+  it("bounds a stuck provider, signals cancellation to it and succeeds through fallback", async () => {
+    vi.useFakeTimers();
+    try {
+      let attemptSignal: AbortSignal | undefined;
+      const first = { ...profiled("stuck", "openai", 0), timeoutMs: 1000 };
+      const { gateway, traceInputs } = profiledGateway({ load: async () => [first, profiled("next", "anthropic", 1)], factory: (profile) => profile.profileId === "stuck" ? profiledProvider("openai", async (_input, signal) => { attemptSignal = signal; return new Promise(() => undefined); }) : profiledProvider("anthropic") });
+      const pending = gateway.classify(input); await vi.advanceTimersByTimeAsync(1001); await pending;
+      expect(attemptSignal?.aborted).toBe(true); expect(traceInputs[0]).toMatchObject({ errorCode: "timeout", status: "timed_out" }); expect(traceInputs[1]).toMatchObject({ status: "succeeded", attemptIndex: 1 });
+    } finally { vi.useRealTimers(); }
+  });
+  it("gives a generation longer than the classification budget the profile sets", async () => {
+    vi.useFakeTimers();
+    try {
+      // The built-in local profile's five seconds is a classification budget:
+      // capture must not wait. A generation the reader is waiting on has the
+      // opposite need, and five seconds is not enough to write a cited answer.
+      let attemptSignal: AbortSignal | undefined;
+      const short = { ...profiled("short", "qwen", 0), timeoutMs: 5_000 };
+      const { gateway } = profiledGateway({
+        load: async () => [short],
+        factory: () =>
+          Object.assign(profiledProvider("qwen"), {
+            generate: vi.fn(
+              async (_request: StructuredGenerationRequest, signal?: AbortSignal) => {
+                attemptSignal = signal;
+                return new Promise<never>(() => undefined);
+              },
+            ),
+          }),
+      });
+      const pending = gateway
+        .generate(
+          {
+            requestId: "long-answer",
+            purpose: "retrieval-answer",
+            promptVersion: "assistant-v1",
+            schemaVersion: "assistant-step-v1",
+            locale: "zh-CN",
+            systemPrompt: "只返回一个动作。",
+            userPrompt: "问题",
+            outputSchema: { type: "object" },
+            maxOutputTokens: 512,
+          },
+          (value) => value,
+        )
+        .catch(() => undefined);
+
+      await vi.advanceTimersByTimeAsync(5_001);
+      expect(attemptSignal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(25_000);
+      expect(attemptSignal?.aborted).toBe(true);
+      await pending;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not start a provider for an already cancelled request or fall back after cancellation", async () => {
+    const controller = new AbortController(); controller.abort(); const factory = vi.fn(() => profiledProvider("openai"));
+    const { gateway } = profiledGateway({ load: async () => [profiled("first", "openai", 0)], factory });
+    await expect(gateway.classify(input, controller.signal)).rejects.toMatchObject({ code: "cancelled" }); expect(factory).not.toHaveBeenCalled();
+    const aborting = vi.fn(() => profiledProvider("openai", async () => { const error = new Error("cancelled"); error.name = "AbortError"; throw error; }));
+    const other = profiledGateway({ load: async () => [profiled("first", "openai", 0), profiled("second", "anthropic", 1)], factory: aborting });
+    await expect(other.gateway.classify(input)).rejects.toMatchObject({ name: "AbortError" }); expect(aborting).toHaveBeenCalledTimes(1);
+  });
+
   it("routes generic structured extraction through capable providers and traces unsupported fallbacks", async () => {
     const apple = profiled("apple-first", "apple", 0);
     const qwen = profiled("qwen-second", "qwen", 10);
@@ -722,6 +1092,9 @@ describe("ProfiledModelGateway", () => {
       status: "invalid_output",
       errorCode: "output_limit",
       usage: outputLimitUsage,
+      input: {
+        outputSchema: qwenSemanticOutputJsonSchema,
+      },
       diagnosticExcerpt:
         "Qwen output reached the 512-token limit before completing valid JSON",
     });
@@ -887,6 +1260,40 @@ describe("ProfiledModelGateway", () => {
       providerRequestId: "provider-request-23",
       diagnosticExcerpt: "客户端退出，无法读取模型响应",
     });
+  });
+
+  it("omits empty failure diagnostics from a provider health check", async () => {
+    const codex = profiled(
+      "codex-test",
+      "codex-cli",
+      0,
+      false,
+    );
+    const failed = profiledProvider(
+      "codex-cli",
+      vi.fn(async () => {
+        throw {
+          code: "process_failed",
+          diagnosticExcerpt: "   ",
+        };
+      }),
+    );
+    const { gateway, traceInputs } = profiledGateway({
+      load: vi.fn(async () => [codex]),
+      factory: vi.fn(() => failed),
+    });
+
+    const result = await gateway.testProfile("codex-test");
+
+    expect(result).toMatchObject({
+      ok: false,
+      profileId: "codex-test",
+      errorCode: "process_failed",
+    });
+    expect(result).not.toHaveProperty("diagnosticExcerpt");
+    expect(traceInputs[0]).not.toHaveProperty(
+      "diagnosticExcerpt",
+    );
   });
 
   it("returns the concrete Qwen failure from a provider health check", async () => {
