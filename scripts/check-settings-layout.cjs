@@ -122,6 +122,8 @@ const measureDesktopLayout = async () => {
     height: compact ? 620 : 760,
     show: false,
     frame: false,
+    // Kept at this size on a smaller display (GitHub's macOS runner is 1024x768), which clamps a window otherwise.
+    enableLargerThanScreen: true,
     transparent: true,
     backgroundColor: "#00000000",
     webPreferences: { partition: `preview-${process.pid}`, offscreen: true },
