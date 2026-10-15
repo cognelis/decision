@@ -965,7 +965,7 @@ describe("grouped review with verification", () => {
     expect(report.findings).toEqual([finding]);
     expect(report.filtered).toEqual([{ finding: oldSide, score: 40, reason: "old() 的返回值此前也没人用，是变更前就有的情况。" }]);
     expect(report.summary).toContain("形成 1 条问题；另有 1 条候选经核验把握不足，未列入");
-    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v2")!;
+    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v3")!;
     expect(verify.systemPrompt).toContain("0：完全没有把握");
     expect(JSON.parse(verify.userPrompt)).toMatchObject({ candidates: [{ id: 1, title: finding.title }, { id: 2, title: oldSide.title }], diffs: [{ path: "src/request.ts", lines: ["1/1  const timeout = 100;", "2/- -old();", "-/2 +changed();"] }] });
     expect(report.history.some((event) => event.message === "核验候选问题 1/1" && event.status === "done")).toBe(true);
@@ -974,7 +974,7 @@ describe("grouped review with verification", () => {
   it("gives the verifier the decisions a candidate was raised for, to check that they apply", async () => {
     const test = setup([{ action: "finish_review", summary: "两处问题", findings: [finding, oldSide] }]);
     await test.run();
-    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v2")!;
+    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v3")!;
     expect(verify.systemPrompt).toContain("因决策提出的问题，要核对决策确实点名了这种做法");
     const said = JSON.parse(verify.userPrompt);
     expect(said.candidates[0]).toMatchObject({ id: 1, decisionIndexes: [1] });
@@ -1007,7 +1007,7 @@ describe("grouped review with verification", () => {
     const view = await test.service.load({ connectionId: "00000000-0000-4000-8000-000000000001", reference: "AI/app#1" });
     const report = await test.service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "remote", focus: "" });
     expect(report).toMatchObject({ status: "completed", groups: 2, steps: 3, reviewedFiles: ["src/a.ts", "src/b.ts"] });
-    expect(test.requests.map((request) => request.promptVersion)).toEqual(["pr-review-brief-v1", "pr-review-v9", "pr-review-v9"]);
+    expect(test.requests.map((request) => request.promptVersion)).toEqual(["pr-review-brief-v1", "pr-review-v10", "pr-review-v10"]);
     for (const request of test.requests.slice(1)) expect(request.userPrompt).toContain("需要跨文件核对：\\n- a 与 b 的常量名可能冲突");
     expect(report.summary.startsWith("为两个模块添加常量表。")).toBe(true);
     // A remote model reads a whole 30,000-character file in one group; a local one would need eight.
@@ -1062,7 +1062,7 @@ describe("groups at once", () => {
     // The first groups take the longest, so the groups finish in the reverse of their order.
     const { service, view, seen } = await serviceOver(paths, 400, (request) => request.promptVersion === "pr-review-brief-v1" ? brief
       : { action: "finish_review", summary: `${groupOf(request)} 已核对`, findings: [onFile(groupOf(request))] },
-    (request) => request.promptVersion === "pr-review-v9" ? 40 - paths.indexOf(groupOf(request)) * 10 : 1);
+    (request) => request.promptVersion === "pr-review-v10" ? 40 - paths.indexOf(groupOf(request)) * 10 : 1);
     const report = await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "remote", focus: "" });
     expect(seen.most).toBe(3);
     expect(report).toMatchObject({ status: "completed", groups: 4, reviewedFiles: paths });
@@ -1075,7 +1075,7 @@ describe("groups at once", () => {
     expect(report.summary.indexOf("分 4 组")).toBeGreaterThan(listed.at(-1)!);
     // Groups at work together say which one a step is from, and none waits on another's conclusion.
     expect(report.history.some((event) => event.group === 1 && event.message === "第 1 次调用模型完成")).toBe(true);
-    expect(seen.requests.filter((request) => request.promptVersion === "pr-review-v9").every((request) => JSON.parse(request.userPrompt.split("\n最近步骤")[0]!).previous === "")).toBe(true);
+    expect(seen.requests.filter((request) => request.promptVersion === "pr-review-v10").every((request) => JSON.parse(request.userPrompt.split("\n最近步骤")[0]!).previous === "")).toBe(true);
   });
 
   it("reviews a local model's groups one at a time, each told what the ones before it concluded", async () => {
@@ -1092,10 +1092,10 @@ describe("groups at once", () => {
     const { service, view, seen } = await serviceOver(paths, 400, (request) => request.promptVersion === "pr-review-brief-v1" ? brief
       : groupOf(request) === "src/a.ts" ? new ProfiledModelGatewayError("凭据不可用", "authentication_failed")
       : { action: "finish_review", summary: `${groupOf(request)} 已核对`, findings: [onFile(groupOf(request))] },
-    (request) => request.promptVersion === "pr-review-v9" && groupOf(request) !== "src/a.ts" ? 20 : 1);
+    (request) => request.promptVersion === "pr-review-v10" && groupOf(request) !== "src/a.ts" ? 20 : 1);
     const report = await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "remote", focus: "" });
     expect(report.status).toBe("failed");
-    expect(seen.requests.filter((request) => request.promptVersion === "pr-review-v9").map(groupOf)).not.toContain("src/d.ts");
+    expect(seen.requests.filter((request) => request.promptVersion === "pr-review-v10").map(groupOf)).not.toContain("src/d.ts");
     expect(report.reviewedFiles).toEqual(["src/b.ts", "src/c.ts"]);
     expect(report.findings.map((finding) => finding.path)).toEqual(["src/b.ts", "src/c.ts"]);
   });
@@ -1121,7 +1121,7 @@ describe("groups at once", () => {
     // Both stood under nearly every review: a record whose excerpt ran past the cap, and a search that found more than
     // the five it returns. The conditions are whole; only the excerpt gives way, and the model is told so.
     expect(report.warnings.filter((warning) => /超出预算|超过单次返回上限/u.test(warning))).toEqual([]);
-    const request = requests.find((item) => item.promptVersion === "pr-review-v9")!;
+    const request = requests.find((item) => item.promptVersion === "pr-review-v10")!;
     expect(request.userPrompt).toContain('"moreMatches":true');
     expect(request.userPrompt).toContain('"excerptTruncated":true');
     expect(request.userPrompt).toContain("后台任务另议");
@@ -1207,12 +1207,12 @@ describe("groups at once", () => {
     const report = await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "remote", focus: "" });
     // Every group of such a PR failed with "PR 上下文过大", before a model was asked.
     expect(report).toMatchObject({ status: "completed", groups: 2, reviewedFiles: ["src/a.ts", "src/b.ts"] });
-    expect(requests.filter((request) => request.promptVersion === "pr-review-v9")).toHaveLength(2);
-    expect(requests.filter((request) => request.promptVersion === "pr-review-v9").every((request) => request.userPrompt.split("\n最近步骤")[0]!.length <= 70_000)).toBe(true);
+    expect(requests.filter((request) => request.promptVersion === "pr-review-v10")).toHaveLength(2);
+    expect(requests.filter((request) => request.promptVersion === "pr-review-v10").every((request) => request.userPrompt.split("\n最近步骤")[0]!.length <= 70_000)).toBe(true);
     // The description and brief gave way, the code around each hunk stayed: a context line from before the first hunk.
     expect(report.warnings).toContain("本组内容较多，PR 描述与梗概只纳入了开头。");
     expect(report.warnings.filter((warning) => warning.startsWith("本组内容较多"))).toHaveLength(1);
-    expect(requests.find((request) => request.promptVersion === "pr-review-v9")!.userPrompt).toContain('2/2  const value2 = ');
+    expect(requests.find((request) => request.promptVersion === "pr-review-v10")!.userPrompt).toContain('2/2  const value2 = ');
   });
 
   it("counts a selection's groups as the review packs them, a test without its source included", async () => {
@@ -1347,10 +1347,10 @@ describe("findings turned down before", () => {
   it("tells the reviewer and the verification what the reviewer turned down, and sets aside a candidate like one", async () => {
     const { test, report } = await reviewWith([{ action: "finish_review", summary: "一处问题", findings: [finding] },
       { verdicts: [{ id: 1, score: 0, reason: "与不采纳的「请求仍未取消」同类，那条的原因同样适用。" }] }], [turnedDown]);
-    const reviewer = test.requests.find((request) => request.promptVersion === "pr-review-v9")!;
+    const reviewer = test.requests.find((request) => request.promptVersion === "pr-review-v10")!;
     expect(reviewer.systemPrompt).toContain("dismissedFindings 是评审者以前在这个仓库不采纳的问题和原因");
     expect(JSON.parse(reviewer.userPrompt.split("\n最近步骤")[0]!).dismissedFindings).toEqual([turnedDown]);
-    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v2")!;
+    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v3")!;
     expect(verify.systemPrompt).toContain("时给 0 分");
     expect(JSON.parse(verify.userPrompt).dismissedFindings).toEqual([turnedDown]);
     expect(report.findings).toEqual([]);
@@ -1373,7 +1373,7 @@ describe("findings turned down before", () => {
     const view = await service.load({ connectionId: "00000000-0000-4000-8000-000000000001", reference: "AI/app#1" });
     const long = Array.from({ length: 5 }, (_, index) => ({ title: `不采纳 ${index} ${"题".repeat(190)}`, body: "长".repeat(300), path: "src/request.ts", reason: "因".repeat(500) }));
     await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "local", focus: "", dismissed: long });
-    const { diffs, ...said } = JSON.parse(test.requests.find((request) => request.promptVersion === "pr-review-verify-v2")!.userPrompt);
+    const { diffs, ...said } = JSON.parse(test.requests.find((request) => request.promptVersion === "pr-review-verify-v3")!.userPrompt);
     expect(diffs).toBeDefined();
     expect(JSON.stringify(said).length).toBeLessThanOrEqual(19_000 * 2 / 3);
     const kept = (said.dismissedFindings as typeof long).map((item) => item.title);
@@ -1400,10 +1400,10 @@ describe("findings published before", () => {
   it("tells the reviewer and the verification what the reviewer put on PRs as comments, the team caring about its like", async () => {
     const { test, report } = await reviewWith([{ action: "finish_review", summary: "一处问题", findings: [finding] },
       { verdicts: [{ id: 1, score: 85, reason: "与发布过的「超时后没有释放连接」同类，第 2 行确实没有取消。" }] }], [posted]);
-    const reviewer = test.requests.find((request) => request.promptVersion === "pr-review-v9")!;
+    const reviewer = test.requests.find((request) => request.promptVersion === "pr-review-v10")!;
     expect(reviewer.systemPrompt).toContain("publishedFindings 是评审者以前在这个仓库发布成 PR 评论的问题");
     expect(JSON.parse(reviewer.userPrompt.split("\n最近步骤")[0]!).publishedFindings).toEqual([posted]);
-    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v2")!;
+    const verify = test.requests.find((request) => request.promptVersion === "pr-review-verify-v3")!;
     expect(verify.systemPrompt).toContain("不要只因为它像吹毛求疵或影响小而给低分");
     expect(JSON.parse(verify.userPrompt).publishedFindings).toEqual([posted]);
     expect(report.findings).toEqual([finding]);
@@ -1431,7 +1431,7 @@ describe("repository guides", () => {
     // CLAUDE.md only imports AGENTS.md: read once, said once.
     expect(view.guides).toEqual(["AGENTS.md"]);
     await test.service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "local", focus: "" });
-    const [review, verify] = ["pr-review-v9", "pr-review-verify-v2"].map((version) => test.requests.find((request) => request.promptVersion === version)!);
+    const [review, verify] = ["pr-review-v10", "pr-review-verify-v3"].map((version) => test.requests.find((request) => request.promptVersion === version)!);
     expect(review!.userPrompt).toContain("函数名用动词开头");
     expect(verify!.userPrompt).toContain("函数名用动词开头");
     // Claude Code's: what a rule names but the code silences is no finding, and a nearby comment's constraint is a rule too.
@@ -1473,7 +1473,7 @@ describe("repository guides", () => {
     const dismissed = Array.from({ length: 5 }, (_, index) => ({ title: `以前不采纳的问题 ${index}`, body: "体".repeat(300), path: "src/big.ts", reason: "由".repeat(200) }));
     const view = await service.load({ connectionId, reference: "AI/app#1" });
     const report = await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "local", focus: "", dismissed });
-    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-v9")!.userPrompt.split("\n最近步骤")[0]!) as { dismissedFindings?: unknown[]; repoGuides?: string };
+    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-v10")!.userPrompt.split("\n最近步骤")[0]!) as { dismissedFindings?: unknown[]; repoGuides?: string };
     // Ahead of them, the guides took the room of one: the reviewer raised it again.
     expect(said.dismissedFindings).toHaveLength(5);
     expect(said.repoGuides).toMatch(/登记过例外。$/u);
@@ -1487,7 +1487,7 @@ describe("repository guides", () => {
     const { service, requests } = tight(1, () => ({ action: "finish_review", summary: "已核对", findings: [] }), test.client);
     const view = await service.load({ connectionId, reference: "AI/app#1" });
     await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "local", focus: "" });
-    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-v9")!.userPrompt.split("\n最近步骤")[0]!) as { repoGuides?: string };
+    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-v10")!.userPrompt.split("\n最近步骤")[0]!) as { repoGuides?: string };
     // Cut at its last line break, only "## CLAUDE.md" was left of it.
     expect(said.repoGuides).toMatch(/^## CLAUDE\.md\n\n1\. 不要.+。$/su);
   });
@@ -1503,7 +1503,7 @@ describe("repository guides", () => {
     await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "local", focus: "" });
     // Minutes before; a margin for a loaded machine.
     expect(performance.now() - started).toBeLessThan(10_000);
-    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-v9")!.userPrompt.split("\n最近步骤")[0]!) as { repoGuides?: string };
+    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-v10")!.userPrompt.split("\n最近步骤")[0]!) as { repoGuides?: string };
     expect(said.repoGuides).toMatch(/登记过例外。$/u);
   });
 
@@ -1517,7 +1517,7 @@ describe("repository guides", () => {
     const view = await service.load({ connectionId, reference: "AI/app#1" });
     const report = await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "local", focus: "" });
     expect(report.findings.map((item) => item.decisionIndexes)).toEqual([[1], [2], [3]]);
-    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-verify-v2")!.userPrompt) as { decisions?: Array<{ index: number }>; repoGuides?: string };
+    const said = JSON.parse(requests.find((request) => request.promptVersion === "pr-review-verify-v3")!.userPrompt) as { decisions?: Array<{ index: number }>; repoGuides?: string };
     // Behind 3,000 characters of guides, the third was left out and its candidate scored as a matter of style.
     expect(said.decisions?.map((decision) => decision.index)).toEqual([1, 2, 3]);
     expect(said.repoGuides).toMatch(/登记过例外。$/u);
@@ -1558,7 +1558,7 @@ describe("deep review", () => {
       } });
     const view = await service.load({ connectionId: "00000000-0000-4000-8000-000000000001", reference: "AI/app#1" });
     const report = await service.run({ snapshotId: view.snapshotId, runId: randomUUID(), profileId: "local", focus: "", depth: "deep" });
-    const reviewers = requests.filter((request) => request.promptVersion === "pr-review-v9");
+    const reviewers = requests.filter((request) => request.promptVersion === "pr-review-v10");
     expect(reviewers.map((request) => request.systemPrompt.includes("你只找缺陷与安全问题") ? "bugs" : "rules").sort()).toEqual(["bugs", "rules"]);
     // Only the rules reviewer judges a decision without a recorded scope for itself, rather than only raising it to check.
     expect(reviewers.filter((request) => request.systemPrompt.includes("不必只列为待核对事项")).map((request) => request.systemPrompt.includes("你只核对两类问题"))).toEqual([true]);
@@ -1600,7 +1600,7 @@ describe("deep review", () => {
   it("keeps one reviewer per group unless asked", async () => {
     const test = setup([{ action: "finish_review", summary: "已核对", findings: [] }]);
     const report = await test.run();
-    expect(test.requests.filter((request) => request.promptVersion === "pr-review-v9")).toHaveLength(1);
+    expect(test.requests.filter((request) => request.promptVersion === "pr-review-v10")).toHaveLength(1);
     expect(test.requests[0]!.systemPrompt).not.toContain("深度评审");
     expect(report.depth).toBeUndefined();
   });

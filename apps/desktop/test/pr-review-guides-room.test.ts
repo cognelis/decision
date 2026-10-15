@@ -31,7 +31,7 @@ it("gives a medium PR's one group the repository's whole CLAUDE.md, not the code
   expect(report.groups).toBe(1);
   expect(diffs.join("").length).toBeLessThan(30_000);
   expect(guide.length).toBeLessThan(10_000);
-  const said = JSON.parse(test.requests.find((request) => request.promptVersion === "pr-review-v9")!.userPrompt.split("\n最近步骤")[0]!);
+  const said = JSON.parse(test.requests.find((request) => request.promptVersion === "pr-review-v10")!.userPrompt.split("\n最近步骤")[0]!);
   expect(report.warnings).not.toContain("仓库规范较长，本组只纳入了前一部分。");
   expect(said.repoGuides).toBe(`## CLAUDE.md\n\n${guide}`);
 });

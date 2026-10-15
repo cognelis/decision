@@ -20,6 +20,7 @@
     "check:semantic": "npm run evaluate:semantic",
     "check:overflow": "electron scripts/check-surface-overflow.cjs",
     "report:semantic": "npm run evaluate:semantic -- --report-only",
+    "replay:pr": "node scripts/replay-pr-review.mjs",
     "quality": "npm run check && npm run check:semantic",
     "audit:runtime": "npm audit --omit=dev --audit-level=low",
     "setup:build-runtime": "node scripts/setup-build-runtime.mjs",

@@ -57,6 +57,7 @@ export const prDetailsSchema = z.object({ title: label, description: z.string().
 export type PrDetails = z.infer<typeof prDetailsSchema>;
 /** `url` is where a person reads the comment on the platform; decisions taken from it link back there. */
 export interface PrExistingComment { id: string; url: string; author: string; path: string | null; line: number | null; body: string; createdAt: string }
+export interface PrRepositoryFiles { paths: string[]; complete: boolean }
 export interface PrReviewClient {
   get(reference: string, signal?: AbortSignal): Promise<PrDetails>;
   /** `unsupported`: a name the review cannot carry as given, to be named in a warning and left out. */
@@ -64,6 +65,8 @@ export interface PrReviewClient {
   diff(reference: string, signal?: AbortSignal): Promise<string>;
   readFileContent(pr: PrDetails, path: string, side: "old" | "new", signal?: AbortSignal): Promise<string>;
   readFile(pr: PrDetails, path: string, start: number, signal?: AbortSignal): Promise<string>;
+  /** Fixed-revision repository inventory, including files outside the PR. Missing capability is not an empty repository. */
+  repositoryFiles?(pr: PrDetails, side: "old" | "new", signal?: AbortSignal): Promise<PrRepositoryFiles>;
   /** Newest comments already on the PR; optional so a client without it simply reviews without them. */
   comments?(reference: string, signal?: AbortSignal): Promise<PrExistingComment[]>;
 }
@@ -141,6 +144,7 @@ const glPr = z.object({ title: label, description: z.string().nullish(), source_
 /** Requests stay on the configured origin; redirects never receive credentials. */
 export class HostedPrClient implements PrReviewClient {
   private readonly contents = new Map<string, string>();
+  private readonly inventories = new Map<string, PrRepositoryFiles>();
   constructor(readonly connection: PrConnection, private readonly read: PrRead, private readonly write?: PrWrite) {}
 
   static create(connection: PrConnection, token: string): HostedPrClient {
@@ -654,6 +658,52 @@ export class HostedPrClient implements PrReviewClient {
   async readFile(pr: PrDetails, path: string, start: number, signal?: AbortSignal): Promise<string> {
     z.number().int().min(1).max(1_000_000).parse(start);
     return (await this.readFileContent(pr, path, "new", signal)).split("\n").slice(start - 1, start + 79).join("\n");
+  }
+  async repositoryFiles(pr: PrDetails, side: "old" | "new", signal?: AbortSignal): Promise<PrRepositoryFiles> {
+    prDetailsSchema.parse(pr);
+    const ref = side === "old" ? pr.destination : pr.source;
+    const repository = this.connection.platform === "bitbucket-server" ? pr.destination.repository : ref.repository;
+    const commit = side === "old" ? pr.base ?? ref.commit : ref.commit;
+    const key = `${repository}@${commit}`;
+    signal?.throwIfAborted();
+    const cached = this.inventories.get(key);
+    if (cached) return cached;
+    const paths: string[] = [];
+    let complete = false, unsupported = false;
+    const add = (path: string) => {
+      if (repositoryRelativePathSchema.safeParse(path).data === path) paths.push(path);
+      else unsupported = true;
+    };
+    if (this.connection.platform === "github") {
+      const tree = z.object({ tree: z.array(z.object({ path: z.string(), type: z.string(), mode: z.string() })), truncated: z.boolean() })
+        .parse((await this.json(`/repos/${repoPath(repository)}/git/trees/${commit}?recursive=1`, signal, { bytes: MAX_LIST_PAGE })).data);
+      for (const entry of tree.tree) if (entry.type === "blob" && entry.mode !== "120000") add(entry.path);
+      complete = !tree.truncated;
+    } else {
+      let start = 0;
+      for (let page = 1; page <= 100; page++) {
+        signal?.throwIfAborted();
+        if (this.connection.platform === "gitlab") {
+          const response = await this.json(`/projects/${enc(repository)}/repository/tree?ref=${commit}&recursive=true&per_page=100&page=${page}`, signal, { bytes: MAX_LIST_PAGE });
+          const entries = z.array(z.object({ path: z.string(), type: z.string(), mode: z.string() })).parse(response.data);
+          for (const entry of entries) if (entry.type === "blob" && entry.mode !== "120000") add(entry.path);
+          if (!response.next) { complete = true; break; }
+        } else {
+          const [project, slug] = repository.split("/");
+          const response = z.object({ values: z.array(z.string()), isLastPage: z.boolean(), nextPageStart: z.number().int().nonnegative().optional() })
+            .parse((await this.json(`/rest/api/1.0/projects/${enc(project!)}/repos/${enc(slug!)}/files?at=${commit}&limit=1000&start=${start}`, signal, { bytes: MAX_LIST_PAGE })).data);
+          response.values.forEach(add);
+          if (response.isLastPage) { complete = true; break; }
+          if (response.nextPageStart === undefined || response.nextPageStart <= start) break;
+          start = response.nextPageStart;
+        }
+        if (paths.length >= 20_000) break;
+      }
+    }
+    const result = { paths: [...new Set(paths)].sort().slice(0, 20_000), complete: complete && !unsupported && paths.length <= 20_000 };
+    this.inventories.set(key, result);
+    while (this.inventories.size > 4) this.inventories.delete(this.inventories.keys().next().value!);
+    return result;
   }
   async readFileContent(pr: PrDetails, path: string, side: "old" | "new", signal?: AbortSignal): Promise<string> {
     prDetailsSchema.parse(pr);
