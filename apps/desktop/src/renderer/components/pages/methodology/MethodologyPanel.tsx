@@ -1,3 +1,4 @@
+import { plainHeadline } from "../../question-title.js";
 import { zonedFormatter } from "../../../calendar-date.js";
 import { IconButton, ActionIcon } from "../../IconButton.js";
 import type { DecisionBrowseFilter } from "../decisions/DecisionLibraryPanel.js";
@@ -9,7 +10,7 @@ import type {
   MethodologyStatus,
   MethodologySuggestion,
 } from "@cognelis/decision-core";
-import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 
 import type {
   DecisionLibraryItem,
@@ -30,7 +31,6 @@ import type {
 } from "../../../../shared/renderer-api.js";
 import { methodologyRevisionBasis } from "../../../../shared/methodology-basis.js";
 import { ModalDialog, usePageShownAgain } from "../../ModalDialog.js";
-import { DesktopPageHeader } from "../DesktopPageHeader.js";
 import { DecisionAnalyticsView } from "./DecisionAnalyticsView.js";
 import { KnowledgeGraphView } from "./KnowledgeGraphView.js";
 import { PracticeAssetsView } from "./PracticeAssetsView.js";
@@ -249,12 +249,15 @@ const methodologyVersionDiffs = (
 // By the decisions behind it as well, as the graph and consult_decision_principles word it: adopted at low
 // confidence, a principle backed by three decisions read 单点证据. Counted here by its reviewed evidence, where the
 // graph and the tool count its source decisions: one principle can carry two counts.
-const confidenceLabelFor = ({ quality: { evidenceCount, recommendedConfidence } }: MethodologyItem): string =>
-  evidenceCount === 0 ? "待验证"
-    : evidenceCount === 1 ? "单点证据"
-      : recommendedConfidence === "high" ? "稳定模式"
-        : recommendedConfidence === "medium" ? "多条印证"
-          : "低可信";
+// Its colour comes from the same count as its words: taken from the model's confidence, 单点证据 read green.
+const confidenceFor = ({
+  quality: { evidenceCount, recommendedConfidence },
+}: MethodologyItem): { label: string; tone: "ok" | "warn" | "neutral" } =>
+  evidenceCount === 0 ? { label: "待验证", tone: "neutral" }
+    : evidenceCount === 1 ? { label: "单点证据", tone: "neutral" }
+      : recommendedConfidence === "high" ? { label: "稳定模式", tone: "ok" }
+        : recommendedConfidence === "medium" ? { label: "多条印证", tone: "ok" }
+          : { label: "低可信", tone: "warn" };
 
 export const MethodologyPanel = ({
   api,
@@ -269,6 +272,8 @@ export const MethodologyPanel = ({
 }: MethodologyPanelProps) => {
   const [status, setStatus] = useState<StatusFilter>("candidate");
   const [items, setItems] = useState<MethodologyItem[]>([]);
+  // Which filter the rows shown were read for: switched to another, the rows of the one before stayed with its count.
+  const [itemsFor, setItemsFor] = useState<StatusFilter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<MethodologyItem | null>(null);
@@ -307,9 +312,14 @@ export const MethodologyPanel = ({
   }, [initialView]);
   const [practiceToolbarHost, setPracticeToolbarHost] =
     useState<HTMLElement | null>(null);
+  // 技能与流程 puts its 新建草案 in the page header, where each tab's own action sits.
+  const [practiceActionHost, setPracticeActionHost] =
+    useState<HTMLElement | null>(null);
   const [graph, setGraph] = useState<KnowledgeGraphSnapshot | null>(null);
   const [graphLoading, setGraphLoading] = useState(false);
   const [graphError, setGraphError] = useState<string | null>(null);
+  // 重试 after a failed read asks for the graph alone.
+  const [graphAttempt, setGraphAttempt] = useState(0);
   const [buildProgress, setBuildProgress] =
     useState<MethodologyBuildProgress | null>(null);
   const [buildProgressUnavailable, setBuildProgressUnavailable] =
@@ -439,6 +449,9 @@ export const MethodologyPanel = ({
   const [versions, setVersions] = useState<MethodologyVersionItem[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyReads, setHistoryReads] = useState(0);
+  // A restore that did not go through is not a history that could not be read: the versions stay in view to try again.
+  const [restoreError, setRestoreError] = useState<string | null>(null);
   const [activeVersion, setActiveVersion] = useState<number | null>(null);
   const [pendingRestoreVersion, setPendingRestoreVersion] = useState<
     number | null
@@ -452,21 +465,24 @@ export const MethodologyPanel = ({
 
   // Taking the place of the button pressed, the confirmation takes focus (its 确认, or 返回检查 while that cannot be
   // had): left on the dialog itself, Tab went back to its top and its words went unread. Closed by 返回检查, focus
-  // goes back to the button that opened it.
+  // goes back to the button that opened it. Both sit in the dialog's footer, under the words they answer.
   const acceptanceShown = useRef(false);
   useEffect(() => {
     const wasShown = acceptanceShown.current;
     acceptanceShown.current = confirmingAcceptance;
-    const confirmation = acceptanceConfirmationRef.current;
+    const footer = document
+      .querySelector(".methodology-detail")
+      ?.closest('[role="dialog"]')
+      ?.querySelector<HTMLElement>(".modal-dialog-footer");
     if (confirmingAcceptance) {
-      confirmation?.scrollIntoView?.({ block: "nearest" });
-      (confirmation?.querySelector<HTMLElement>(".primary-button:not(:disabled)") ??
-        confirmation?.querySelector<HTMLElement>("button:not(:disabled)"))?.focus();
+      acceptanceConfirmationRef.current?.scrollIntoView?.({ block: "nearest" });
+      (footer?.querySelector<HTMLElement>(".primary-button:not(:disabled)") ??
+        footer?.querySelector<HTMLElement>("button:not(:disabled)"))?.focus();
       return;
     }
     const focused = document.activeElement;
     if (!wasShown || (focused !== null && focused !== document.body && focused.getAttribute("role") !== "dialog")) return;
-    document.querySelector<HTMLElement>(".methodology-detail-footer .primary-button")?.focus();
+    footer?.querySelector<HTMLElement>(".primary-button")?.focus();
   }, [confirmingAcceptance]);
 
 
@@ -523,6 +539,7 @@ export const MethodologyPanel = ({
     if (historyShownFor.current !== shown) {
       setActiveVersion(null);
       setPendingRestoreVersion(null);
+      setRestoreError(null);
     }
     historyShownFor.current = shown;
     if (selected?.status !== "accepted") {
@@ -553,7 +570,7 @@ export const MethodologyPanel = ({
     return () => {
       active = false;
     };
-  }, [api, revisionKey, selected?.id, selected?.status]);
+  }, [api, revisionKey, selected?.id, selected?.status, historyReads]);
 
   const usageProjects = useMemo(
     () =>
@@ -653,11 +670,15 @@ export const MethodologyPanel = ({
     void api
       .listMethodologies(status === "all" ? undefined : status)
       .then((records) => {
-        if (active) setItems(records);
+        if (active) {
+          setItems(records);
+          setItemsFor(status);
+        }
       })
       .catch((caught: unknown) => {
         if (active) {
           setItems([]);
+          setItemsFor(status);
           setError(caught instanceof Error ? caught.message : String(caught));
         }
       })
@@ -732,7 +753,7 @@ export const MethodologyPanel = ({
     return () => {
       active = false;
     };
-  }, [api, revisionKey, view]);
+  }, [api, revisionKey, view, graphAttempt]);
 
   const {
     cancelPendingLoad,
@@ -765,6 +786,7 @@ export const MethodologyPanel = ({
     deferredSuggestions,
     openSuggestionInbox,
     restoreSuggestion,
+    retrySuggestions,
     showSuggestions,
     suggestionActionError,
     suggestionActionId,
@@ -797,6 +819,7 @@ export const MethodologyPanel = ({
     closeValidationInbox,
     openValidationInbox,
     openValidationItem,
+    retryValidation,
     validationActionError,
     validationActionId,
     validationError,
@@ -1169,7 +1192,7 @@ export const MethodologyPanel = ({
   const restoreMethodologyVersion = async (version: number): Promise<void> => {
     if (selected === null) return;
     setRestoringVersion(true);
-    setHistoryError(null);
+    setRestoreError(null);
     try {
       const restored = await api.restoreMethodologyVersion(
         selected.id,
@@ -1180,7 +1203,7 @@ export const MethodologyPanel = ({
       setPendingRestoreVersion(null);
       setRevisionKey((value) => value + 1);
     } catch (caught) {
-      setHistoryError(
+      setRestoreError(
         caught instanceof Error ? caught.message : String(caught),
       );
     } finally {
@@ -1352,6 +1375,7 @@ export const MethodologyPanel = ({
     () =>
       items.map((item) => {
         const qualityBadge = qualityBadgeFor(item);
+        const confidence = confidenceFor(item);
         return (
           <li key={item.id}>
             <button
@@ -1391,10 +1415,8 @@ export const MethodologyPanel = ({
                   {item.principle}
                 </span>
               </span>
-              <span
-                className={`methodology-confidence ${item.quality.recommendedConfidence}`}
-              >
-                {confidenceLabelFor(item)}
+              <span className={`methodology-confidence ${confidence.tone}`}>
+                {confidence.label}
               </span>
               <span>
                 {item.quality.evidenceCount === 0 &&
@@ -1418,25 +1440,135 @@ export const MethodologyPanel = ({
     [items],
   );
 
+  const workbenchPending =
+    suggestions.length + validationItems.length + relationCount;
+  // A few candidates bring the build guide beside the list, and with it 审核第一条 as the one solid button;
+  // no candidates at all bring a first-step section with a solid button of its own.
+  const guided =
+    error === null &&
+    status === "candidate" &&
+    items.length > 0 &&
+    items.length <= 4;
+  const firstSteps =
+    error === null && !loading && items.length === 0 && status === "candidate";
+  // Read for another filter, the rows shown are the last one's: dimmed and counted as reading, not as theirs.
+  const switchingFilter = loading && itemsFor !== status;
+
+  // Said at the foot of the card it came from (IMP-142): a full-width banner over the tab pushed the list down.
+  // Every view's, not only the list's: a merge begun from the graph failed with nothing said there.
+  const noticeBar =
+    notice === null ? null : (
+      <div
+        className={`settings-status methodology-notice${notice.tone === "success" ? "" : ` ${notice.tone}`}`}
+        role={notice.tone === "error" ? "alert" : "status"}
+      >
+        <span>{notice.text}</span>
+        {notice.action === "discard_merge_draft" ? (
+          <button
+            type="button"
+            className="text-button danger-button"
+            disabled={mergeDraftClosing}
+            onClick={() => void discardMergeFormDraft()}
+          >
+            {mergeDraftClosing ? "正在丢弃…" : "丢弃草稿"}
+          </button>
+        ) : null}
+        {notice.action === "discard_revision_draft" ? (
+          <button
+            type="button"
+            className="text-button danger-button"
+            disabled={evolutionDraftClosing}
+            onClick={() => void discardEvolutionFormDraft()}
+          >
+            {evolutionDraftClosing ? "正在丢弃…" : "丢弃草稿"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="text-button"
+          onClick={() => setNotice(null)}
+        >
+          关闭
+        </button>
+      </div>
+    );
+
   return (
     <section
       className="desktop-view methodology-panel"
       role="region"
       aria-label="方法论"
     >
-      <DesktopPageHeader
-        eyebrow="沉淀"
-        title="方法论"
-        description="从真实结果与复盘中提炼可复用原则。"
-        meta={
-          view === "assets" || view === "analysis"
-            ? undefined
-            : view === "graph"
-              ? (graph?.principles.length ?? 0)
-              : items.length
-        }
-        metaLabel={view === "graph" ? "已采纳原则" : `${status === "all" ? "全部" : statusLabels[status]}原则`}
-      />
+      {/* Each tab's own action sits on the right of the header: the principles' here, the drafts' portalled in. */}
+      <header className="desktop-view-header drag-region">
+        <div>
+          <span>沉淀</span>
+          <h1>方法论</h1>
+          <p>从真实结果与复盘中提炼可复用原则。</p>
+        </div>
+        {view === "records" ? (
+          <div className="methodology-header-actions">
+            {storedRevisionDraft === undefined ? null : (
+              <button
+                type="button"
+                className="secondary-button methodology-draft-resume-button"
+                disabled={evolutionDraftClosing}
+                onClick={() =>
+                  void restoreEvolutionFormDraft(storedRevisionDraft)
+                }
+              >
+                {evolutionDraftClosing ? "正在校验…" : "继续修订"}
+              </button>
+            )}
+            {storedMergeDraft === undefined ? null : (
+              <button
+                type="button"
+                className="secondary-button methodology-merge-resume-button"
+                disabled={mergeLoading || mergeDraftClosing}
+                onClick={() => void restoreMergeFormDraft(storedMergeDraft)}
+              >
+                {mergeLoading ? "正在校验…" : "继续合并"}
+              </button>
+            )}
+            <button
+              type="button"
+              className="secondary-button methodology-workbench-button"
+              aria-label={`方法论工作箱 ${workbenchPending}`}
+              onClick={() => setWorkbenchOpen(true)}
+            >
+              <ActionIcon name="inbox" />
+              工作箱
+              {workbenchPending > 0 ? (
+                <span className="methodology-workbench-count">
+                  {workbenchPending}
+                </span>
+              ) : null}
+            </button>
+            <button
+              type="button"
+              className={`${
+                guided || firstSteps ? "secondary-button" : "primary-button"
+              } methodology-create-button`}
+              disabled={importing || batchGenerating}
+              onClick={openCreation}
+            >
+              <ActionIcon name="plus" />
+              新建原则
+            </button>
+          </div>
+        ) : view === "assets" ? (
+          <div
+            ref={setPracticeActionHost}
+            className="methodology-header-actions"
+          />
+        ) : view === "graph" ? (
+          <div className="desktop-view-meta">
+            {/* Unread is not none: 「0 已采纳原则」 over a failed read. */}
+            <strong>{graphError !== null ? "—" : (graph?.principles.length ?? 0)}</strong>
+            <span>已采纳原则</span>
+          </div>
+        ) : null}
+      </header>
 
       <div
         className="methodology-view-tabs"
@@ -1486,544 +1618,440 @@ export const MethodologyPanel = ({
       </div>
 
       <div className="desktop-page-scroll methodology-content">
-        <section
-          className={`methodology-card${view === "records" ? "" : " graph-view"}`}
-          aria-label="方法论工作区"
+        <div
+          id="methodology-tab-panel"
+          className={`methodology-tab-panel ${view}`}
+          role="tabpanel"
+          aria-labelledby={`methodology-tab-${view}`}
+          tabIndex={-1}
         >
-          <div className="methodology-toolbar">
-            {view === "records" ? (
-              <div className="methodology-records-toolbar">
-                <div
-                  ref={statusFilterRef}
-                  className="methodology-status-filter"
-                  role="group"
-                  aria-label="方法论状态"
-                >
-                  {(
-                    [
-                      ["candidate", "待确认"],
-                      ["accepted", "已采纳"],
-                      ["retired", "已归档"],
-                      ["dismissed", "已忽略"],
-                      ["all", "全部"],
-                    ] as Array<[StatusFilter, string]>
-                  ).map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={status === value}
-                      onClick={() => setStatus(value)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <span className="methodology-result-count" role="status">
-                  {/* Read again after each relation is settled: the count stays put rather than flicker to "reading". */}
-                  {loading && items.length === 0 ? "正在读取…" : `${items.length} 条`}
-                </span>
-                <div className="methodology-toolbar-actions">
-                  {storedRevisionDraft === undefined ? null : (
-                    <button
-                      type="button"
-                      className="text-button methodology-draft-resume-button"
-                      disabled={evolutionDraftClosing}
-                      onClick={() =>
-                        void restoreEvolutionFormDraft(storedRevisionDraft)
-                      }
-                    >
-                      {evolutionDraftClosing ? "正在校验…" : "继续修订"}
-                    </button>
-                  )}
-                  {storedMergeDraft === undefined ? null : (
-                    <button
-                      type="button"
-                      className="text-button methodology-merge-resume-button"
-                      disabled={mergeLoading || mergeDraftClosing}
-                      onClick={() =>
-                        void restoreMergeFormDraft(storedMergeDraft)
-                      }
-                    >
-                      {mergeLoading ? "正在校验…" : "继续合并"}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className={`text-button methodology-workbench-button${
-                      suggestions.length +
-                        validationItems.length +
-                        relationCount >
-                      0
-                        ? " pending"
-                        : ""
-                    }`}
-                    aria-label={`方法论工作箱 ${
-                      suggestions.length +
-                      validationItems.length +
-                      relationCount
-                    }`}
-                    onClick={() => setWorkbenchOpen(true)}
-                  >
-                    工作箱
-                    {suggestions.length +
-                      validationItems.length +
-                      relationCount >
-                    0
-                      ? ` ${
-                          suggestions.length +
-                          validationItems.length +
-                          relationCount
-                        }`
-                      : ""}
-                  </button>
-                  <button
-                    type="button"
-                    className="primary-button methodology-create-button"
-                    disabled={importing || batchGenerating}
-                    onClick={openCreation}
-                  >
-                    新建原则
-                  </button>
-                </div>
-              </div>
-            ) : view === "assets" ? (
-              <div className="methodology-records-toolbar practice-assets-toolbar-host">
-                <div
-                  ref={setPracticeToolbarHost}
-                  className="practice-assets-toolbar-portal"
-                />
-              </div>
-            ) : null}
-          </div>
-
-          {/* Every view's, not only the list's: a merge begun from the graph failed with nothing said there. */}
-          {notice !== null ? (
+          {view === "records" ? (
             <div
-              className={`methodology-operation-notice ${notice.tone}`}
-              role={notice.tone === "error" ? "alert" : "status"}
+              className={`methodology-records-layout${guided ? " guided" : ""}`}
             >
-              <span>{notice.text}</span>
-              {notice.action === "discard_merge_draft" ? (
-                <button
-                  type="button"
-                  disabled={mergeDraftClosing}
-                  onClick={() => void discardMergeFormDraft()}
-                >
-                  {mergeDraftClosing ? "正在丢弃…" : "丢弃草稿"}
-                </button>
-              ) : null}
-              {notice.action === "discard_revision_draft" ? (
-                <button
-                  type="button"
-                  disabled={evolutionDraftClosing}
-                  onClick={() => void discardEvolutionFormDraft()}
-                >
-                  {evolutionDraftClosing ? "正在丢弃…" : "丢弃草稿"}
-                </button>
-              ) : null}
-              <button type="button" onClick={() => setNotice(null)}>
-                关闭
-              </button>
-            </div>
-          ) : null}
-
-          <div
-            id="methodology-tab-panel"
-            className={`methodology-tab-panel ${view}`}
-            role="tabpanel"
-            aria-labelledby={`methodology-tab-${view}`}
-            tabIndex={-1}
-          >
-            {unreadableNotice === null || view !== "records" ? null : (
-              <p className="methodology-message error-message">{unreadableNotice}</p>
-            )}
-            {view === "analysis" ? (
-              <DecisionAnalyticsView
-                api={api}
-                onOpenDecisions={() => void api.openSurface("decisions")}
-                onOpenDecision={onOpenDecision}
-                onBrowseDecisions={onBrowseDecisions}
-                onOpenPrinciple={(id) => {
-                  const current = host.opening();
-                  void api
-                    .listMethodologies()
-                    .then((records) => {
-                      if (!current()) return;
-                      const record = records.find((item) => item.id === id);
-                      if (record !== undefined) {
-                        host.openRecord(record, { status: record.status, view: "records" });
-                      } else {
-                        setNotice({ tone: "error", text: "这条原则已不存在，可能已被删除。" });
-                      }
-                    })
-                    .catch((caught: unknown) =>
-                      setNotice({
-                        tone: "error",
-                        text: `原则暂时无法读取：${caught instanceof Error ? caught.message : String(caught)}`,
-                      }),
-                    );
-                }}
-                onOpenReviews={() => void api.openSurface("dashboard")}
-              />
-            ) : view === "graph" ? (
-              <KnowledgeGraphView
-                graph={graph}
-                loading={graphLoading}
-                error={graphError}
-                mergeLoading={mergeLoading}
-                onOpenPrinciples={() => {
-                  setStatus("candidate");
-                  setView("records");
-                }}
-                onOpenPrinciple={(id) => {
-                  setStatus("accepted");
-                  setView("records");
-                  void openRelatedPrinciple(id);
-                }}
-                onMergePrinciples={(firstId, secondId) =>
-                  void beginMergePrinciples(firstId, secondId)
-                }
-              />
-            ) : view === "assets" ? (
-              <PracticeAssetsView
-                api={api}
-                toolbarHost={practiceToolbarHost}
-                onOpenPrinciples={() => {
-                  setStatus("candidate");
-                  setView("records");
-                }}
-              />
-            ) : error !== null ? (
-              <p className="methodology-message error-message">
-                方法论记录暂时无法读取：{error}
-              </p>
-            ) : !loading && items.length === 0 ? (
-              status === "candidate" && suggestions.length > 0 ? (
-                <section
-                  className="methodology-suggestion-inbox"
-                  aria-label="方法论提炼建议"
-                >
-                  <header>
-                    <div>
-                      <strong>已有复盘可以开始提炼</strong>
-                      <span>
-                        系统只整理证据组合；点击后才会调用模型生成候选。
-                      </span>
+              <section
+                className="methodology-card methodology-records-card"
+                aria-label="原则列表"
+              >
+                <div className="methodology-toolbar">
+                  <div className="methodology-records-toolbar">
+                    <div
+                      ref={statusFilterRef}
+                      className="methodology-status-filter"
+                      role="group"
+                      aria-label="方法论状态"
+                    >
+                      {(
+                        [
+                          ["candidate", "待确认"],
+                          ["accepted", "已采纳"],
+                          ["retired", "已归档"],
+                          ["dismissed", "已忽略"],
+                          ["all", "全部"],
+                        ] as Array<[StatusFilter, string]>
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={status === value}
+                          onClick={() => setStatus(value)}
+                        >
+                          {label}
+                        </button>
+                      ))}
                     </div>
-                    <div className="methodology-suggestion-actions">
-                      <em>{suggestions.length} 组建议</em>
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={openSuggestionInbox}
-                      >
-                        管理素材
-                      </button>
-                      <button
-                        type="button"
-                        className="primary-button"
-                        onClick={() => setConfirmingBatch(true)}
-                      >
-                        批量生成
-                      </button>
-                    </div>
-                  </header>
-                  <ol>
-                    {suggestions.map((suggestion) => (
-                      <li key={suggestion.id}>
+                    <span className="methodology-result-count" role="status">
+                      {/* Read again after each relation is settled: the count stays put rather than flicker to "reading". */}
+                      {error !== null
+                        ? "—"
+                        : (loading && items.length === 0) || switchingFilter
+                          ? "正在读取…"
+                          : `${items.length} 条`}
+                    </span>
+                  </div>
+                </div>
+                {unreadableNotice === null ? null : (
+                  <p className="load-failure">{unreadableNotice}</p>
+                )}
+                {error !== null ? (
+                  <div className="load-failure" role="alert">
+                    <span>方法论记录暂时无法读取：{error}</span>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setRevisionKey((value) => value + 1)}
+                    >
+                      重试
+                    </button>
+                  </div>
+                ) : !loading && items.length === 0 ? (
+                  status === "candidate" && suggestions.length > 0 ? (
+                    <section
+                      className="methodology-suggestion-inbox"
+                      aria-label="方法论提炼建议"
+                    >
+                      <header>
+                        <div>
+                          <strong>已有复盘可以开始提炼</strong>
+                          <span>
+                            系统只整理证据组合；点击后才会调用模型生成候选。
+                          </span>
+                        </div>
+                        <div className="methodology-suggestion-actions">
+                          <em>{suggestions.length} 组建议</em>
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={openSuggestionInbox}
+                          >
+                            管理素材
+                          </button>
+                          <button
+                            type="button"
+                            className="primary-button"
+                            onClick={() => setConfirmingBatch(true)}
+                          >
+                            批量生成
+                          </button>
+                        </div>
+                      </header>
+                      <ol>
+                        {suggestions.map((suggestion) => (
+                          <li key={suggestion.id}>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openSourceChooser(suggestion.sourceDecisionIds)
+                              }
+                            >
+                              <span className="methodology-suggestion-card-heading">
+                                <strong>{suggestion.title}</strong>
+                                <em className={suggestion.readiness}>
+                                  {suggestionReadinessLabels[suggestion.readiness]}
+                                </em>
+                              </span>
+                              <span>{suggestion.summary}</span>
+                              <small>
+                                {suggestionDirectionLabels[suggestion.direction]} ·{" "}
+                                {suggestion.evidenceCount} 条证据 ·{" "}
+                                {suggestion.projectCount} 个项目
+                              </small>
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
+                      <footer>
+                        <span>不满意建议组合时，仍可手动选择任意已复盘决策。</span>
                         <button
                           type="button"
-                          onClick={() =>
-                            openSourceChooser(suggestion.sourceDecisionIds)
-                          }
+                          className="text-button"
+                          onClick={() => openSourceChooser()}
                         >
-                          <span className="methodology-suggestion-card-heading">
-                            <strong>{suggestion.title}</strong>
-                            <em className={suggestion.readiness}>
-                              {suggestionReadinessLabels[suggestion.readiness]}
-                            </em>
-                          </span>
-                          <span>{suggestion.summary}</span>
-                          <small>
-                            {suggestionDirectionLabels[suggestion.direction]} ·{" "}
-                            {suggestion.evidenceCount} 条证据 ·{" "}
-                            {suggestion.projectCount} 个项目
-                          </small>
+                          手动选择
                         </button>
-                      </li>
-                    ))}
-                  </ol>
-                  <footer>
-                    <span>不满意建议组合时，仍可手动选择任意已复盘决策。</span>
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => openSourceChooser()}
+                      </footer>
+                    </section>
+                  ) : status === "candidate" ? (
+                    <section
+                      className="methodology-acquisition"
+                      aria-label="方法论获取路径"
                     >
-                      手动选择
-                    </button>
-                  </footer>
-                </section>
-              ) : status === "candidate" ? (
-                <section
-                  className="methodology-acquisition"
-                  aria-label="方法论获取路径"
-                >
-                  <header>
-                    <div>
-                      <strong>原则可以人工建立，也可以从复盘证据提炼</strong>
-                      <span>
-                        人工内容会标为待验证；只有真实复盘证据会影响可信度。
-                      </span>
-                    </div>
-                    <em>
-                      {buildProgress === null
-                        ? buildProgressUnavailable
-                          ? "进度暂不可用"
-                          : "正在统计决策…"
-                        : `${buildProgress.decisions.total} 条已记录 · ${buildProgress.decisions.reviewed} 条已复盘`}
-                    </em>
-                  </header>
-                  <ol>
-                    <li>
-                      <b>1</b>
-                      <div>
-                        <strong>记录实际结果并完成复盘</strong>
-                        <span>
+                      <header>
+                        <div>
+                          <strong>原则可以人工建立，也可以从复盘证据提炼</strong>
+                          <span>
+                            人工内容会标为待验证；只有真实复盘证据会影响可信度。
+                          </span>
+                        </div>
+                        <em>
                           {buildProgress === null
-                            ? "方法论只使用经过结果验证的决策。"
-                            : buildProgress.decisions.reviewed > 0
-                              ? `${buildProgress.decisions.reviewed} 条证据已经可用。`
-                              : `${buildProgress.decisions.pendingOutcome} 条待回填结果，${buildProgress.decisions.pendingReview} 条待复盘。`}
-                        </span>
-                      </div>
-                    </li>
-                    <li>
-                      <b>2</b>
-                      <div>
-                        <strong>从复盘证据生成原则候选</strong>
-                        <span>
-                          选择 1–5 条证据，由当前启用的模型提炼适用条件和边界。
-                        </span>
-                      </div>
-                    </li>
-                    <li>
-                      <b>3</b>
-                      <div>
-                        <strong>审核并采纳可信原则</strong>
-                        <span>
-                          采纳后才会进入图谱，并可继续生成技能或工作流草案。
-                        </span>
-                      </div>
-                    </li>
-                  </ol>
-                  <footer>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={openCreation}
-                    >
-                      新建第一条原则
-                    </button>
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => void api.openSurface("decisions")}
-                    >
-                      去积累复盘证据
-                    </button>
-                  </footer>
-                </section>
-              ) : (
-                <div className="methodology-empty">
-                  <strong>
-                    暂无{status === "all" ? "全部" : statusLabels[status]}原则
-                  </strong>
-                  <span>切换状态查看其它记录，或从新的复盘证据生成候选。</span>
-                </div>
-              )
-            ) : (
-              <div className="methodology-records-body">
-                <ol
-                  ref={listRef}
-                  className={`methodology-list${
-                    status === "candidate" &&
-                    items.length > 0 &&
-                    items.length <= 4
-                      ? " guided"
-                      : ""
-                  }`}
-                  aria-label="方法论列表"
-                >
-                  {rows}
-                </ol>
-
-                {status === "candidate" &&
-                items.length > 0 &&
-                items.length <= 4 ? (
-                  <section
-                    className="methodology-build-guide"
-                    aria-label="方法论建设进度"
-                  >
-                    <header>
-                      <div>
-                        <span>建设进度</span>
-                        <strong>把真实决策逐步变成可复用方法</strong>
-                      </div>
-                      <small>只统计本地事实，不会自动生成或采纳</small>
-                    </header>
-
-                    {buildProgress === null ? (
-                      <p className="methodology-build-loading" role="status">
-                        {buildProgressUnavailable
-                          ? "建设进度暂时无法读取，现有原则仍可正常处理。"
-                          : "正在汇总完整建设进度…"}
-                      </p>
-                    ) : (
-                      <dl className="methodology-build-metrics">
-                        {(
-                          [
-                            ["已记录决策", buildProgress.decisions.total],
-                            ["完整复盘", buildProgress.decisions.reviewed],
-                            ["待确认原则", buildProgress.principles.candidate],
-                            ["已采纳原则", buildProgress.principles.accepted],
-                            [
-                              "已采纳实践",
-                              buildProgress.practiceAssets.accepted,
-                            ],
-                          ] as const
-                        ).map(([label, value]) => (
-                          <div key={label}>
-                            <dt>{label}</dt>
-                            <dd>{value}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    )}
-
-                    {buildProgress === null ? null : (
-                      <ol
-                        className="methodology-build-path"
-                        aria-label="方法论建设路径"
-                      >
+                            ? buildProgressUnavailable
+                              ? "进度暂不可用"
+                              : "正在统计决策…"
+                            : `${buildProgress.decisions.total} 条已记录 · ${buildProgress.decisions.reviewed} 条已复盘`}
+                        </em>
+                      </header>
+                      <ol>
                         <li>
                           <b>1</b>
                           <div>
-                            <span>复盘证据</span>
-                            <strong>
-                              {buildProgress.decisions.reviewed} 条可用
-                            </strong>
-                            <small>
-                              {buildProgress.decisions.pendingOutcome} 条待结果
-                              · {buildProgress.decisions.pendingReview} 条待复盘
-                            </small>
+                            <strong>记录实际结果并完成复盘</strong>
+                            <span>
+                              {buildProgress === null
+                                ? "方法论只使用经过结果验证的决策。"
+                                : buildProgress.decisions.reviewed > 0
+                                  ? `${buildProgress.decisions.reviewed} 条证据已经可用。`
+                                  : `${buildProgress.decisions.pendingOutcome} 条待回填结果，${buildProgress.decisions.pendingReview} 条待复盘。`}
+                            </span>
                           </div>
                         </li>
                         <li>
                           <b>2</b>
                           <div>
-                            <span>原则沉淀</span>
-                            <strong>
-                              {buildProgress.principles.accepted} 条已采纳
-                            </strong>
-                            <small>
-                              {buildProgress.principles.candidate}{" "}
-                              条等待人工审核
-                            </small>
+                            <strong>从复盘证据生成原则候选</strong>
+                            <span>
+                              选择 1–5 条证据，由当前启用的模型提炼适用条件和边界。
+                            </span>
                           </div>
                         </li>
                         <li>
                           <b>3</b>
                           <div>
-                            <span>实践落地</span>
-                            <strong>
-                              {buildProgress.practiceAssets.accepted} 条已采纳
-                            </strong>
-                            <small>
-                              {buildProgress.practiceAssets.candidate}{" "}
-                              条草案等待确认
-                            </small>
+                            <strong>审核并采纳可信原则</strong>
+                            <span>
+                              采纳后才会进入图谱，并可继续生成技能或工作流草案。
+                            </span>
                           </div>
                         </li>
                       </ol>
-                    )}
-
-                    <div className="methodology-build-next">
-                      <div>
-                        <span>建议下一步</span>
-                        <strong>
-                          先审核{" "}
-                          {buildProgress?.principles.candidate ?? items.length}{" "}
-                          条待确认原则
-                        </strong>
-                        <p>
-                          {suggestions.length > 0
-                            ? `处理完现有候选后，还有 ${suggestions.length} 组复盘证据可以继续提炼。`
-                            : "核对原则、适用条件和边界；明确采纳后才会进入图谱和「技能与流程」。"}
-                        </p>
-                      </div>
-                      <div className="methodology-build-actions">
+                      <footer>
                         <button
                           type="button"
                           className="primary-button"
-                          onClick={() => {
-                            const first = items[0];
-                            if (first === undefined) return;
-                            chooseRecord(first);
-                            setEditing(false);
-                            setDetailError(null);
-                            setConfirmingAcceptance(false);
-                          }}
+                          onClick={openCreation}
                         >
-                          审核第一条
+                          新建第一条原则
                         </button>
-                        {suggestions[0] === undefined ? (
-                          (buildProgress?.decisions.reviewed ?? 0) > 0 ? (
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              onClick={() => openSourceChooser()}
-                            >
-                              继续提炼
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              onClick={() => void api.openSurface("decisions")}
-                            >
-                              去补结果与复盘
-                            </button>
-                          )
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() => void api.openSurface("decisions")}
+                        >
+                          去积累复盘证据
+                        </button>
+                      </footer>
+                    </section>
+                  ) : (
+                    <div className="methodology-empty">
+                      <strong>
+                        暂无{status === "all" ? "全部" : statusLabels[status]}原则
+                      </strong>
+                      <span>切换状态查看其它记录，或从新的复盘证据生成候选。</span>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="methodology-list-head" aria-hidden="true">
+                      <span>原则</span>
+                      <span>可信度</span>
+                      <span>证据</span>
+                      <span>更新时间</span>
+                      <span>状态</span>
+                      <span />
+                    </div>
+                    <ol
+                      ref={listRef}
+                      className="methodology-list"
+                      aria-label="方法论列表"
+                      aria-busy={switchingFilter}
+                    >
+                      {rows}
+                    </ol>
+                  </>
+                )}
+                {noticeBar}
+              </section>
+
+              {guided ? (
+                <section
+                  className="methodology-build-guide"
+                  aria-label="方法论建设进度"
+                >
+                  <header>
+                    <h2>建设进度</h2>
+                    <p>
+                      把真实决策逐步变成可复用方法；只统计本地事实，不会自动生成或采纳。
+                    </p>
+                  </header>
+
+                  {buildProgress === null ? (
+                    <p className="methodology-build-loading" role="status">
+                      {buildProgressUnavailable
+                        ? "建设进度暂时无法读取，现有原则仍可正常处理。"
+                        : "正在汇总完整建设进度…"}
+                    </p>
+                  ) : (
+                    <ol
+                      className="methodology-build-path"
+                      aria-label="方法论建设路径"
+                    >
+                      <li>
+                        <b aria-hidden="true">1</b>
+                        <span>复盘证据</span>
+                        <span className="methodology-build-value">
+                          <strong>{buildProgress.decisions.reviewed}</strong>{" "}
+                          条完整复盘
+                        </span>
+                        <small>
+                          已记录 {buildProgress.decisions.total} 条决策 ·{" "}
+                          {buildProgress.decisions.pendingOutcome} 条待结果 ·{" "}
+                          {buildProgress.decisions.pendingReview} 条待复盘
+                        </small>
+                      </li>
+                      <li>
+                        <b aria-hidden="true">2</b>
+                        <span>原则沉淀</span>
+                        <span className="methodology-build-value">
+                          <strong>{buildProgress.principles.accepted}</strong>{" "}
+                          条已采纳
+                        </span>
+                        <small>
+                          {buildProgress.principles.candidate} 条待确认，等人工审核
+                        </small>
+                      </li>
+                      <li>
+                        <b aria-hidden="true">3</b>
+                        <span>实践落地</span>
+                        <span className="methodology-build-value">
+                          <strong>{buildProgress.practiceAssets.accepted}</strong>{" "}
+                          条已采纳
+                        </span>
+                        <small>
+                          {buildProgress.practiceAssets.candidate}{" "}
+                          条技能或流程草案等待确认
+                        </small>
+                      </li>
+                    </ol>
+                  )}
+
+                  <div className="methodology-build-next">
+                    <h3>
+                      建议下一步：先审核{" "}
+                      {buildProgress?.principles.candidate ?? items.length}{" "}
+                      条待确认原则
+                    </h3>
+                    <p>
+                      {suggestions.length > 0
+                        ? `处理完现有候选后，还有 ${suggestions.length} 组复盘证据可以继续提炼。`
+                        : "核对原则、适用条件和边界；明确采纳后才会进入图谱和「技能与流程」。"}
+                    </p>
+                    <div className="methodology-build-actions">
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() => {
+                          const first = items[0];
+                          if (first === undefined) return;
+                          chooseRecord(first);
+                          setEditing(false);
+                          setDetailError(null);
+                          setConfirmingAcceptance(false);
+                        }}
+                      >
+                        审核第一条
+                      </button>
+                      {suggestions[0] === undefined ? (
+                        (buildProgress?.decisions.reviewed ?? 0) > 0 ? (
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => openSourceChooser()}
+                          >
+                            继续提炼
+                          </button>
                         ) : (
                           <button
                             type="button"
                             className="secondary-button"
-                            onClick={() =>
-                              openSourceChooser(
-                                suggestions[0]?.sourceDecisionIds,
-                              )
-                            }
+                            onClick={() => void api.openSurface("decisions")}
                           >
-                            查看 {suggestions.length} 组建议
+                            去补结果与复盘
                           </button>
-                        )}
+                        )
+                      ) : (
                         <button
                           type="button"
-                          className="text-button"
-                          disabled={importing || batchGenerating}
-                          onClick={openCreation}
+                          className="secondary-button"
+                          onClick={() =>
+                            openSourceChooser(suggestions[0]?.sourceDecisionIds)
+                          }
                         >
-                          新建原则
+                          查看 {suggestions.length} 组建议
                         </button>
-                      </div>
+                      )}
                     </div>
-                  </section>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </section>
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          ) : (
+            <section
+              className={`methodology-card${view === "assets" ? "" : " graph-view"}`}
+              aria-label="方法论工作区"
+            >
+              {view === "assets" ? (
+                <div className="methodology-toolbar">
+                  <div className="methodology-records-toolbar practice-assets-toolbar-host">
+                    <div
+                      ref={setPracticeToolbarHost}
+                      className="practice-assets-toolbar-portal"
+                    />
+                  </div>
+                </div>
+              ) : null}
+              {view === "analysis" ? (
+                <DecisionAnalyticsView
+                  api={api}
+                  onOpenDecisions={() => void api.openSurface("decisions")}
+                  onOpenDecision={onOpenDecision}
+                  onBrowseDecisions={onBrowseDecisions}
+                  onOpenPrinciple={(id) => {
+                    const current = host.opening();
+                    void api
+                      .listMethodologies()
+                      .then((records) => {
+                        if (!current()) return;
+                        const record = records.find((item) => item.id === id);
+                        if (record !== undefined) {
+                          host.openRecord(record, { status: record.status, view: "records" });
+                        } else {
+                          setNotice({ tone: "error", text: "这条原则已不存在，可能已被删除。" });
+                        }
+                      })
+                      .catch((caught: unknown) =>
+                        setNotice({
+                          tone: "error",
+                          text: `原则暂时无法读取：${caught instanceof Error ? caught.message : String(caught)}`,
+                        }),
+                      );
+                  }}
+                  onOpenReviews={() => void api.openSurface("dashboard")}
+                />
+              ) : view === "graph" ? (
+                <KnowledgeGraphView
+                  graph={graph}
+                  loading={graphLoading}
+                  error={graphError}
+                  mergeLoading={mergeLoading}
+                  onRetry={() => setGraphAttempt((value) => value + 1)}
+                  onOpenPrinciples={() => {
+                    setStatus("candidate");
+                    setView("records");
+                  }}
+                  onOpenPrinciple={(id) => {
+                    setStatus("accepted");
+                    setView("records");
+                    void openRelatedPrinciple(id);
+                  }}
+                  onMergePrinciples={(firstId, secondId) =>
+                    void beginMergePrinciples(firstId, secondId)
+                  }
+                />
+              ) : (
+                <PracticeAssetsView
+                  api={api}
+                  toolbarHost={practiceToolbarHost}
+                  actionHost={practiceActionHost}
+                  onOpenPrinciples={() => {
+                    setStatus("candidate");
+                    setView("records");
+                  }}
+                />
+              )}
+              {noticeBar}
+            </section>
+          )}
+        </div>
       </div>
 
       {creationMode === null ? null : (
@@ -2037,6 +2065,60 @@ export const MethodologyPanel = ({
           size="wide"
           dismissible={!manualSaving}
           onClose={closeCreation}
+          footer={
+            creationMode === "chooser" ? (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={closeCreation}
+              >
+                取消
+              </button>
+            ) : (
+              <>
+                <div className="modal-dialog-footer-start">
+                  {manualDraftRestoredAt === null ? null : (
+                    <button
+                      type="button"
+                      className="text-button danger-button"
+                      disabled={manualSaving}
+                      onClick={() => void discardManualMethodologyDraft()}
+                    >
+                      丢弃并新建
+                    </button>
+                  )}
+                  <span
+                    className={`methodology-footer-status${manualDraftSaveState === "error" ? " error" : ""}`}
+                    role="status"
+                  >
+                    {manualDraftSaveState === "saving"
+                      ? "正在保存…"
+                      : manualDraftSaveState === "saved"
+                        ? "已自动保存"
+                        : manualDraftSaveState === "error"
+                          ? "自动保存失败"
+                          : "本机草稿"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={manualSaving}
+                  onClick={() => void backToChooser()}
+                >
+                  返回选择
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={manualSaving || !manualDraftValid}
+                  onClick={() => void saveManualMethodology()}
+                >
+                  {manualSaving ? "正在保存…" : "保存为待确认候选"}
+                </button>
+              </>
+            )
+          }
         >
           {creationMode === "chooser" ? (
             <section className="methodology-create-chooser">
@@ -2096,67 +2178,26 @@ export const MethodologyPanel = ({
                   <small>写入前可逐条选择，重复内容会自动跳过。</small>
                 </button>
               </div>
-              <div className="methodology-create-boundary">
+              <p className="methodology-dialog-note methodology-create-boundary">
                 <span>不会自动采纳</span>
                 <span>不会自动建立证据关系</span>
                 <span>采纳后才进入图谱和「技能与流程」</span>
-              </div>
-              <footer>
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={closeCreation}
-                >
-                  取消
-                </button>
-              </footer>
+              </p>
             </section>
           ) : (
             <section className="methodology-manual-entry">
-              <div
-                className={`manual-form-draft-status${
-                  manualDraftRestoredAt === null ? "" : " restored"
-                }`}
-                role="status"
-              >
-                <span>
-                  <strong>
-                    {manualDraftRestoredAt === null
-                      ? "未完成内容会自动保存"
-                      : "已恢复未完成草稿"}
-                  </strong>
-                  <small>
-                    {manualDraftRestoredAt === null
-                      ? "只写入这台 Mac 的 App 私有目录，不会进入方法论列表。"
-                      : `${dateFormatter.format(new Date(manualDraftRestoredAt))} 保存，只在本机可见。`}
-                  </small>
-                </span>
-                <div>
-                  <em>
-                    {manualDraftSaveState === "saving"
-                      ? "正在保存…"
-                      : manualDraftSaveState === "saved"
-                        ? "已自动保存"
-                        : manualDraftSaveState === "error"
-                          ? "自动保存失败"
-                          : "本机草稿"}
-                  </em>
-                  {manualDraftRestoredAt === null ? null : (
-                    <button
-                      type="button"
-                      className="text-button"
-                      disabled={manualSaving}
-                      onClick={() => void discardManualMethodologyDraft()}
-                    >
-                      丢弃并新建
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="methodology-editor methodology-manual-entry-form">
-                <label>
-                  <span>标题</span>
+              {manualDraftRestoredAt === null ? null : (
+                <p className="methodology-dialog-note">
+                  <strong>已恢复未完成草稿</strong> ·{" "}
+                  {dateFormatter.format(new Date(manualDraftRestoredAt))}{" "}
+                  保存，只在本机可见。
+                </p>
+              )}
+              <div className="form-fields methodology-manual-entry-form">
+                <div className="form-field">
+                  <label htmlFor="methodology-manual-title">标题</label>
                   <input
+                    id="methodology-manual-title"
                     autoFocus
                     maxLength={120}
                     value={manualDraft.title}
@@ -2167,10 +2208,12 @@ export const MethodologyPanel = ({
                       })
                     }
                   />
-                </label>
-                <label>
-                  <span>原则</span>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="methodology-manual-principle">原则</label>
                   <textarea
+                    id="methodology-manual-principle"
+                    rows={3}
                     maxLength={2_000}
                     value={manualDraft.principle}
                     onChange={(event) =>
@@ -2180,65 +2223,53 @@ export const MethodologyPanel = ({
                       })
                     }
                   />
-                </label>
-                <label>
-                  <span>适用条件</span>
-                  <textarea
-                    maxLength={2_000}
-                    value={manualDraft.appliesWhen}
-                    onChange={(event) =>
-                      setManualDraft({
-                        ...manualDraft,
-                        appliesWhen: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  <span>注意事项</span>
-                  <textarea
-                    maxLength={2_000}
-                    value={manualDraft.caution}
-                    onChange={(event) =>
-                      setManualDraft({
-                        ...manualDraft,
-                        caution: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </label>
+                </div>
+                <div className="form-fields-row">
+                  <div className="form-field">
+                    <label htmlFor="methodology-manual-applies">适用条件</label>
+                    <textarea
+                      id="methodology-manual-applies"
+                      rows={3}
+                      maxLength={2_000}
+                      value={manualDraft.appliesWhen}
+                      onChange={(event) =>
+                        setManualDraft({
+                          ...manualDraft,
+                          appliesWhen: event.currentTarget.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="methodology-manual-caution">注意事项</label>
+                    <textarea
+                      id="methodology-manual-caution"
+                      rows={3}
+                      maxLength={2_000}
+                      value={manualDraft.caution}
+                      onChange={(event) =>
+                        setManualDraft({
+                          ...manualDraft,
+                          caution: event.currentTarget.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
-              <p className="methodology-manual-entry-safety">
-                系统不会补写事实或调用模型，也不会把人工输入视为已有证据支持；保存后仍需单独审核。
+              <p className="methodology-dialog-note methodology-manual-entry-safety">
+                系统不会补写事实或调用模型，也不会把人工输入视为已有证据支持；保存后仍需单独审核。未完成的内容只自动保存在这台 Mac 上。
               </p>
               {manualError === null ? null : (
-                <p className="error-message" role="alert">
+                <p className="form-error" role="alert">
                   暂时无法保存：{manualError}
                 </p>
               )}
               {manualDraftStorageError === null ? null : (
-                <p className="error-message" role="alert">
+                <p className="form-error" role="alert">
                   草稿箱暂不可用：{manualDraftStorageError}
                 </p>
               )}
-              <footer>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={manualSaving}
-                  onClick={() => void backToChooser()}
-                >
-                  返回选择
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={manualSaving || !manualDraftValid}
-                  onClick={() => void saveManualMethodology()}
-                >
-                  {manualSaving ? "正在保存…" : "保存为待确认候选"}
-                </button>
-              </footer>
             </section>
           )}
         </ModalDialog>
@@ -2251,6 +2282,28 @@ export const MethodologyPanel = ({
           size="wide"
           dismissible={!importSaving}
           onClose={closeImportPreview}
+          footer={
+            <>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={importSaving}
+                onClick={closeImportPreview}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={importSaving || selectedImportCandidates.length === 0}
+                onClick={() => void commitMarkdownImport()}
+              >
+                {importSaving
+                  ? "正在导入…"
+                  : `导入 ${selectedImportCandidates.length} 条候选`}
+              </button>
+            </>
+          }
         >
           <section className="methodology-import-preview">
             <div
@@ -2326,8 +2379,8 @@ export const MethodologyPanel = ({
               {importPreview.candidates.map((candidate) => {
                 const checked = selectedImportCandidates.includes(candidate.id);
                 return (
-                  <li key={candidate.id} className={checked ? "selected" : ""}>
-                    <label>
+                  <li key={candidate.id}>
+                    <label className={checked ? "selected" : undefined}>
                       <input
                         type="checkbox"
                         checked={checked}
@@ -2365,7 +2418,7 @@ export const MethodologyPanel = ({
                         </span>
                       </span>
                     </label>
-                    <details className="methodology-import-candidate-details">
+                    <details className="disclosure methodology-import-candidate-details">
                       <summary>核对适用条件与边界</summary>
                       <dl>
                         <div>
@@ -2385,7 +2438,7 @@ export const MethodologyPanel = ({
 
             {importPreview.duplicates.length === 0 &&
             importPreview.failures.length === 0 ? null : (
-              <details className="methodology-import-issues">
+              <details className="disclosure methodology-import-issues">
                 <summary>
                   查看已跳过与未识别内容（
                   {importPreview.duplicates.length +
@@ -2420,34 +2473,14 @@ export const MethodologyPanel = ({
               </details>
             )}
 
-            <p className="methodology-import-safety">
+            <p className="methodology-dialog-note methodology-import-safety">
               导入后仍是待确认候选，不会自动采纳、调用模型或生成技能与流程。
             </p>
             {importError === null ? null : (
-              <p className="error-message" role="alert">
+              <p className="form-error" role="alert">
                 导入失败：{importError}
               </p>
             )}
-            <footer>
-              <button
-                type="button"
-                className="text-button"
-                disabled={importSaving}
-                onClick={closeImportPreview}
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                disabled={importSaving || selectedImportCandidates.length === 0}
-                onClick={() => void commitMarkdownImport()}
-              >
-                {importSaving
-                  ? "正在导入…"
-                  : `导入 ${selectedImportCandidates.length} 条候选`}
-              </button>
-            </footer>
           </section>
         </ModalDialog>
       )}
@@ -2458,90 +2491,82 @@ export const MethodologyPanel = ({
           description="把新增复盘、原则复验和关系核对集中在一个入口，逐项处理才会改变知识事实。"
           size="wide"
           onClose={() => setWorkbenchOpen(false)}
+          footer={
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setWorkbenchOpen(false)}
+            >
+              关闭
+            </button>
+          }
         >
           <section className="methodology-workbench">
-            <header>
-              <div>
-                <strong>待处理事项</strong>
-                <span>这里只汇总本地状态，不会自动生成、采纳或修改原则。</span>
-              </div>
-              <em>
-                {suggestions.length +
-                  validationItems.length +
-                  relationCount}{" "}
-                项
-              </em>
-            </header>
             <ol>
-              <li>
-                <button
-                  type="button"
-                  className="methodology-materials-button"
-                  aria-label={`复盘素材 ${suggestions.length}`}
-                  disabled={suggestionLoading}
-                  onClick={() => {
-                    setWorkbenchOpen(false);
-                    openSuggestionInbox();
-                  }}
-                >
-                  <span>
-                    <strong>复盘素材</strong>
-                    <small>把尚未使用的完整复盘整理成可解释证据组合。</small>
-                  </span>
-                  <em>{suggestionLoading ? "…" : suggestions.length}</em>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="methodology-validation-button"
-                  aria-label={`原则复验 ${validationItems.length}`}
-                  disabled={validationLoading}
-                  onClick={() => {
-                    setWorkbenchOpen(false);
-                    openValidationInbox();
-                  }}
-                >
-                  <span>
-                    <strong>原则复验</strong>
-                    <small>核对已采纳原则在新增真实结果中是否仍然适用。</small>
-                  </span>
-                  <em>{validationLoading ? "…" : validationItems.length}</em>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="methodology-relations-button"
-                  aria-label={`关系核对 ${relationCount}`}
-                  disabled={
-                    importing || batchGenerating || relationQueueLoading
-                  }
-                  onClick={() => {
-                    setWorkbenchOpen(false);
-                    void openRelationQueue();
-                  }}
-                >
-                  <span>
-                    <strong>关系核对</strong>
-                    <small>集中判断相近或冲突原则，结论仍需逐组确认。</small>
-                  </span>
-                  <em>
-                    {relationQueueLoading ? "…" : relationCount}
-                  </em>
-                </button>
-              </li>
+              {(
+                [
+                  {
+                    className: "methodology-materials-button",
+                    label: "复盘素材",
+                    detail: "把尚未使用的完整复盘整理成可解释证据组合。",
+                    count: suggestions.length,
+                    loading: suggestionLoading,
+                    disabled: suggestionLoading,
+                    open: openSuggestionInbox,
+                  },
+                  {
+                    className: "methodology-validation-button",
+                    label: "原则复验",
+                    detail: "核对已采纳原则在新增真实结果中是否仍然适用。",
+                    count: validationItems.length,
+                    loading: validationLoading,
+                    disabled: validationLoading,
+                    open: openValidationInbox,
+                  },
+                  {
+                    className: "methodology-relations-button",
+                    label: "关系核对",
+                    detail: "集中判断相近或冲突原则，结论仍需逐组确认。",
+                    count: relationCount,
+                    loading: relationQueueLoading,
+                    disabled: importing || batchGenerating || relationQueueLoading,
+                    open: () => void openRelationQueue(),
+                  },
+                ] as const
+              ).map((queue) => (
+                <li key={queue.label}>
+                  <button
+                    type="button"
+                    className={queue.className}
+                    aria-label={`${queue.label} ${queue.count}`}
+                    disabled={queue.disabled}
+                    onClick={() => {
+                      setWorkbenchOpen(false);
+                      queue.open();
+                    }}
+                  >
+                    <span>
+                      <strong>{queue.label}</strong>
+                      <small>{queue.detail}</small>
+                    </span>
+                    {/* Waiting for the reader, as the header's count says; none waiting is not a call to act. */}
+                    <em
+                      className={
+                        !queue.loading && queue.count > 0
+                          ? "methodology-workbench-count"
+                          : undefined
+                      }
+                    >
+                      {queue.loading ? "…" : queue.count}
+                    </em>
+                    <b aria-hidden="true">›</b>
+                  </button>
+                </li>
+              ))}
             </ol>
-            <footer>
-              <span>三个队列相互独立；关闭工作箱不会确认或忽略任何事项。</span>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => setWorkbenchOpen(false)}
-              >
-                关闭
-              </button>
-            </footer>
+            <p className="methodology-dialog-note">
+              这里只汇总本地状态，不会自动生成、采纳或修改原则。三个队列相互独立；关闭工作箱不会确认或忽略任何事项。
+            </p>
           </section>
         </ModalDialog>
       ) : null}
@@ -2553,35 +2578,53 @@ export const MethodologyPanel = ({
           size="wide"
           dismissible={validationActionId === null}
           onClose={closeValidationInbox}
+          footer={
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={validationActionId !== null}
+              onClick={closeValidationInbox}
+            >
+              关闭
+            </button>
+          }
         >
-          <section className="methodology-validation-inbox">
-            <header>
-              <div>
+          <section
+            className="methodology-validation-inbox"
+            aria-busy={validationLoading}
+          >
+            <header className="methodology-inbox-heading">
+              <p className="methodology-dialog-note">
                 <strong>只处理采用后的新增复盘</strong>
-                <span>
-                  这里不会把相关性当作因果，也不会自动提高可信度或改写原则。
-                </span>
-              </div>
-              <em>{validationItems.length} 条原则待核对</em>
+                ：不会把相关性当作因果，也不会自动提高可信度或改写原则。
+              </p>
+              {/* A failed read counts nothing: "0 条" there read as nothing left to check. */}
+              <span>
+                {validationError !== null
+                  ? "—"
+                  : validationLoading
+                    ? "正在读取…"
+                    : `${validationItems.length} 条原则待核对`}
+              </span>
             </header>
 
-            {validationError === null ? null : (
-              <p className="error-message" role="alert">
-                原则复验暂时无法更新：{validationError}
-              </p>
-            )}
-            {validationActionError === null ? null : (
-              <p className="error-message" role="alert">
-                操作未完成：{validationActionError}
-              </p>
-            )}
-
-            {validationLoading ? (
-              <p className="methodology-validation-empty" role="status">
+            {validationError !== null ? (
+              <div className="load-failure" role="alert">
+                <span>原则复验暂时无法读取：{validationError}</span>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={retryValidation}
+                >
+                  重试
+                </button>
+              </div>
+            ) : validationLoading ? (
+              <p className="methodology-inbox-state" role="status">
                 正在核对采用后的复盘…
               </p>
             ) : validationItems.length === 0 ? (
-              <div className="methodology-validation-empty">
+              <div className="methodology-inbox-state">
                 <strong>没有待复验原则</strong>
                 <span>
                   后续决策明确关联已采纳原则，并完成结果复盘后，会自动出现在这里。
@@ -2590,10 +2633,7 @@ export const MethodologyPanel = ({
             ) : (
               <ol className="methodology-validation-list">
                 {validationItems.map((item) => (
-                  <li
-                    key={item.principleId}
-                    className={item.attentionCount > 0 ? "attention" : ""}
-                  >
+                  <li key={item.principleId}>
                     <article>
                       <header>
                         <div>
@@ -2633,7 +2673,7 @@ export const MethodologyPanel = ({
                                 {decision.project} ·{" "}
                                 {verdictLabels[decision.verdict]}
                               </span>
-                              <strong>{decision.question}</strong>
+                              <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
                               <small>
                                 {decision.lesson ?? decision.selectedAnswer}
                               </small>
@@ -2659,10 +2699,11 @@ export const MethodologyPanel = ({
                               ? "查看并修订"
                               : "查看修订草案"}
                           </button>
+                          {/* One per principle, so not solid: the list held as many filled buttons as principles. */}
                           {item.revisionDraftId === null ? (
                             <button
                               type="button"
-                              className="primary-button"
+                              className="secondary-button"
                               disabled={validationActionId !== null}
                               onClick={() => void acknowledgeValidation(item)}
                             >
@@ -2678,17 +2719,11 @@ export const MethodologyPanel = ({
                 ))}
               </ol>
             )}
-
-            <footer className="methodology-validation-actions">
-              <button
-                type="button"
-                className="text-button"
-                disabled={validationActionId !== null}
-                onClick={closeValidationInbox}
-              >
-                关闭
-              </button>
-            </footer>
+            {validationActionError === null ? null : (
+              <p className="form-error" role="alert">
+                操作未完成：{validationActionError}
+              </p>
+            )}
           </section>
         </ModalDialog>
       ) : null}
@@ -2700,27 +2735,55 @@ export const MethodologyPanel = ({
           size="wide"
           dismissible={suggestionActionId === null && !batchGenerating}
           onClose={closeSuggestionInbox}
+          footer={
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={suggestionActionId !== null || batchGenerating}
+              onClick={closeSuggestionInbox}
+            >
+              关闭
+            </button>
+          }
         >
-          <section className="methodology-material-inbox">
+          <section
+            className="methodology-material-inbox"
+            aria-busy={suggestionLoading}
+          >
             <header>
               <div
-                className="methodology-material-modes"
+                className="methodology-status-filter methodology-material-modes"
                 role="group"
                 aria-label="复盘素材状态"
               >
+                {/* An empty side next to one with groups cannot be shown (the inbox moves straight back): not offered. */}
                 <button
                   type="button"
                   aria-pressed={suggestionInboxMode === "active"}
+                  disabled={
+                    suggestions.length === 0 && deferredSuggestions.length > 0
+                  }
                   onClick={() => showSuggestions("active")}
                 >
-                  可提炼 <strong>{suggestions.length}</strong>
+                  可提炼{" "}
+                  <strong>
+                    {suggestionError === null ? suggestions.length : "—"}
+                  </strong>
                 </button>
                 <button
                   type="button"
                   aria-pressed={suggestionInboxMode === "deferred"}
+                  disabled={
+                    deferredSuggestions.length === 0 && suggestions.length > 0
+                  }
                   onClick={() => showSuggestions("deferred")}
                 >
-                  已搁置 <strong>{deferredSuggestions.length}</strong>
+                  已搁置{" "}
+                  <strong>
+                    {suggestionError === null
+                      ? deferredSuggestions.length
+                      : "—"}
+                  </strong>
                 </button>
               </div>
               {suggestionInboxMode === "active" && suggestions.length > 1 ? (
@@ -2738,22 +2801,23 @@ export const MethodologyPanel = ({
               ) : null}
             </header>
 
-            {suggestionError === null ? null : (
-              <p className="error-message" role="alert">
-                复盘素材暂时无法更新：{suggestionError}
-              </p>
-            )}
-            {suggestionActionError === null ? null : (
-              <p className="error-message" role="alert">
-                操作未完成：{suggestionActionError}
-              </p>
-            )}
-            {suggestionLoading ? (
-              <p className="methodology-material-empty" role="status">
+            {suggestionError !== null ? (
+              <div className="load-failure" role="alert">
+                <span>复盘素材暂时无法读取：{suggestionError}</span>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={retrySuggestions}
+                >
+                  重试
+                </button>
+              </div>
+            ) : suggestionLoading ? (
+              <p className="methodology-inbox-state" role="status">
                 正在整理完整复盘…
               </p>
             ) : visibleSuggestionInboxItems.length === 0 ? (
-              <div className="methodology-material-empty">
+              <div className="methodology-inbox-state">
                 <strong>
                   {suggestionInboxMode === "active"
                     ? "暂时没有新的可提炼素材"
@@ -2790,7 +2854,7 @@ export const MethodologyPanel = ({
                         {suggestion.sources.slice(0, 2).map((source) => (
                           <li key={source.id}>
                             <span>{source.project}</span>
-                            <strong>{source.question}</strong>
+                            <strong className="question-clamp">{plainHeadline(source.question)}</strong>
                             <small>
                               {source.outcomeLesson ?? "已完成结果复盘"}
                             </small>
@@ -2812,7 +2876,7 @@ export const MethodologyPanel = ({
                             </button>
                             <button
                               type="button"
-                              className="primary-button"
+                              className="secondary-button"
                               disabled={suggestionActionId !== null}
                               onClick={() => {
                                 closeSuggestionInbox();
@@ -2840,12 +2904,17 @@ export const MethodologyPanel = ({
                 ))}
               </ol>
             )}
+            {suggestionActionError === null ? null : (
+              <p className="form-error" role="alert">
+                操作未完成：{suggestionActionError}
+              </p>
+            )}
 
-            <footer className="methodology-material-boundary">
+            <p className="methodology-dialog-note methodology-material-boundary">
               <span>本地整理</span>
               <span>不会自动生成原则</span>
               <span>不会自动采纳或发布</span>
-            </footer>
+            </p>
           </section>
         </ModalDialog>
       ) : null}
@@ -2864,6 +2933,55 @@ export const MethodologyPanel = ({
             cancelPendingLoad();
             closeSourceChooser();
           }}
+          footer={
+            <>
+              <span className="modal-dialog-footer-start methodology-footer-status">
+                已选 {selectedSources.length} / 5
+                {suggestionLoading ? " · 正在整理建议" : ""}
+              </span>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={generating}
+                onClick={closeSourceChooser}
+              >
+                取消
+              </button>
+              {linkingEvidence ? (
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={generating || selectedSources.length === 0}
+                  onClick={() => void saveEvidenceLinks()}
+                >
+                  {generating ? "正在保存…" : "保存证据关联"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="secondary-button methodology-manual-evidence-button"
+                    disabled={
+                      generating ||
+                      sourceLoading ||
+                      selectedSources.length === 0
+                    }
+                    onClick={beginManualEvidenceMethodology}
+                  >
+                    人工整理 · 0 次
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={generating || selectedSources.length === 0}
+                    onClick={() => void generate()}
+                  >
+                    {generating ? "正在提炼…" : "模型提炼 · 1 次"}
+                  </button>
+                </>
+              )}
+            </>
+          }
         >
           <section className="methodology-source-chooser">
             {linkingEvidence || suggestions.length === 0 ? null : (
@@ -2959,7 +3077,7 @@ export const MethodologyPanel = ({
                             onClick={() => toggleSource(decision.id)}
                           >
                             <span>
-                              <strong>{decision.question}</strong>
+                              <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
                               <em
                                 className={
                                   match.matchKind === "semantic"
@@ -2995,7 +3113,7 @@ export const MethodologyPanel = ({
             </div>
             {sourceLoading || reviewedDecisions.length === 0 ? null : (
               <label className="methodology-source-search">
-                <span>搜索复盘证据</span>
+                <span className="sr-only">搜索复盘证据</span>
                 <input
                   type="search"
                   value={sourceQuery}
@@ -3005,14 +3123,16 @@ export const MethodologyPanel = ({
               </label>
             )}
             {sourceLoading ? (
-              <p className="methodology-message">正在读取已复盘决策…</p>
+              <p className="methodology-inbox-state" role="status">
+                正在读取已复盘决策…
+              </p>
             ) : reviewedDecisions.length === 0 ? (
-              <div className="methodology-empty compact">
+              <div className="methodology-inbox-state">
                 <strong>还没有可用证据</strong>
                 <span>先在知识页记录实际结果并完成复盘。</span>
                 <button
                   type="button"
-                  className="primary-button"
+                  className="secondary-button"
                   onClick={() => {
                     cancelPendingLoad();
                     closeSourceChooser();
@@ -3023,7 +3143,7 @@ export const MethodologyPanel = ({
                 </button>
               </div>
             ) : visibleReviewedDecisions.length === 0 ? (
-              <div className="methodology-empty compact">
+              <div className="methodology-inbox-state">
                 <strong>没有匹配的复盘</strong>
                 <span>换个关键词，或清空搜索查看全部证据。</span>
                 <button
@@ -3048,7 +3168,7 @@ export const MethodologyPanel = ({
                           onChange={() => toggleSource(decision.id)}
                         />
                         <span>
-                          <strong>{decision.question}</strong>
+                          <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
                           <small>
                             {decision.selectedAnswer} · {decision.project}
                           </small>
@@ -3065,60 +3185,11 @@ export const MethodologyPanel = ({
               </ol>
             )}
             {generationError === null ? null : (
-              <p className="error-message" role="alert">
+              <p className="form-error" role="alert">
                 {linkingEvidence ? "暂时无法保存关联" : "暂时无法提炼"}：
                 {generationError}
               </p>
             )}
-            <footer className="methodology-source-actions">
-              <span>
-                已选 {selectedSources.length} / 5
-                {suggestionLoading ? " · 正在整理建议" : ""}
-              </span>
-              <div>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={generating}
-                  onClick={closeSourceChooser}
-                >
-                  取消
-                </button>
-                {linkingEvidence ? (
-                  <button
-                    type="button"
-                    className="primary-button"
-                    disabled={generating || selectedSources.length === 0}
-                    onClick={() => void saveEvidenceLinks()}
-                  >
-                    {generating ? "正在保存…" : "保存证据关联"}
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="secondary-button methodology-manual-evidence-button"
-                      disabled={
-                        generating ||
-                        sourceLoading ||
-                        selectedSources.length === 0
-                      }
-                      onClick={beginManualEvidenceMethodology}
-                    >
-                      人工整理 · 0 次
-                    </button>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      disabled={generating || selectedSources.length === 0}
-                      onClick={() => void generate()}
-                    >
-                      {generating ? "正在提炼…" : "模型提炼 · 1 次"}
-                    </button>
-                  </>
-                )}
-              </div>
-            </footer>
           </section>
         </ModalDialog>
       ) : null}
@@ -3130,50 +3201,13 @@ export const MethodologyPanel = ({
           size="wide"
           dismissible={!manualEvidenceSaving}
           onClose={closeManualEvidenceMethodology}
-        >
-          <section className="methodology-manual-evidence-entry">
-            <header>
-              <div>
-                <strong>证据已经确定，内容完全由你填写</strong>
-                <span>
-                  不调用模型，也不会根据复盘正文自动补写原则或因果结论。
-                </span>
-              </div>
-              <em>0 次模型调用</em>
-            </header>
-
-            <div
-              className={`manual-form-draft-status${
-                manualEvidenceRestoredAt === null ? "" : " restored"
-              }`}
-              role="status"
-            >
-              <span>
-                <strong>
-                  {manualEvidenceRestoredAt === null
-                    ? "人工整理内容会自动保存"
-                    : "已恢复未完成的人工整理"}
-                </strong>
-                <small>
-                  {manualEvidenceRestoredAt === null
-                    ? "证据选择和输入只保存在这台 Mac 的 App 私有目录。"
-                    : `${dateFormatter.format(new Date(manualEvidenceRestoredAt))} 保存，尚未建立方法论候选。`}
-                </small>
-              </span>
-              <div>
-                <em>
-                  {manualEvidenceDraftSaveState === "saving"
-                    ? "正在保存…"
-                    : manualEvidenceDraftSaveState === "saved"
-                      ? "已自动保存"
-                      : manualEvidenceDraftSaveState === "error"
-                        ? "自动保存失败"
-                        : "本机草稿"}
-                </em>
+          footer={
+            <>
+              <div className="modal-dialog-footer-start">
                 {manualEvidenceRestoredAt === null ? null : (
                   <button
                     type="button"
-                    className="text-button"
+                    className="text-button danger-button"
                     disabled={manualEvidenceSaving}
                     onClick={() => void discardManualEvidenceMethodologyDraft()}
                   >
@@ -3182,117 +3216,22 @@ export const MethodologyPanel = ({
                       : `丢弃并使用刚选的 ${manualEvidencePendingSources.length} 条证据`}
                   </button>
                 )}
+                <span
+                  className={`methodology-footer-status${manualEvidenceDraftSaveState === "error" ? " error" : ""}`}
+                  role="status"
+                >
+                  {manualEvidenceDraftSaveState === "saving"
+                    ? "正在保存…"
+                    : manualEvidenceDraftSaveState === "saved"
+                      ? "已自动保存"
+                      : manualEvidenceDraftSaveState === "error"
+                        ? "自动保存失败"
+                        : "本机草稿"}
+                </span>
               </div>
-            </div>
-
-            <ol className="methodology-manual-evidence-sources">
-              {sourceLoading ? (
-                <li className="loading">
-                  <span>正在恢复</span>
-                  <strong>正在读取草稿关联的复盘证据…</strong>
-                </li>
-              ) : null}
-              {manualEvidenceDecisions.slice(0, 5).map((decision, index) => (
-                <li key={decision.id}>
-                  <span>证据 {index + 1}</span>
-                  <strong>{decision.question}</strong>
-                  <small>
-                    {decision.project} · {decision.selectedAnswer}
-                  </small>
-                  <p>
-                    {decision.outcomeReview?.lesson ??
-                      decision.outcome ??
-                      "已完成结果复盘"}
-                  </p>
-                </li>
-              ))}
-            </ol>
-
-            <div className="methodology-editor methodology-manual-evidence-form">
-              <label className="title-field">
-                <span>候选标题</span>
-                <input
-                  autoFocus
-                  value={manualEvidenceDraft.title}
-                  placeholder="例如：先验证，再扩大不可逆投入"
-                  maxLength={120}
-                  onChange={(event) =>
-                    updateManualEvidenceDraft({ title: event.target.value })
-                  }
-                />
-              </label>
-              <label className="principle-field">
-                <span>原则</span>
-                <textarea
-                  value={manualEvidenceDraft.principle}
-                  placeholder="以后遇到类似决策时，应该如何判断或行动？"
-                  maxLength={2_000}
-                  onChange={(event) =>
-                    updateManualEvidenceDraft({
-                      principle: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                <span>适用条件</span>
-                <textarea
-                  value={manualEvidenceDraft.appliesWhen}
-                  placeholder="什么场景和前提下适用？"
-                  maxLength={2_000}
-                  onChange={(event) =>
-                    updateManualEvidenceDraft({
-                      appliesWhen: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                <span>注意事项</span>
-                <textarea
-                  value={manualEvidenceDraft.caution}
-                  placeholder="什么情况下不应套用，或需要重新验证？"
-                  maxLength={2_000}
-                  onChange={(event) =>
-                    updateManualEvidenceDraft({ caution: event.target.value })
-                  }
-                />
-              </label>
-              <label className="evidence-field">
-                <span>证据摘要</span>
-                <textarea
-                  value={manualEvidenceDraft.evidenceSummary}
-                  placeholder="区分已观察到的结果与有限归纳，并用“证据 1”等编号对应上方复盘。"
-                  maxLength={3_000}
-                  onChange={(event) =>
-                    updateManualEvidenceDraft({
-                      evidenceSummary: event.target.value,
-                    })
-                  }
-                />
-              </label>
-            </div>
-
-            <div className="methodology-manual-evidence-boundary">
-              <span>证据关系由你确认</span>
-              <span>可信度仍由复盘数量与一致性计算</span>
-              <span>保存后只进入待确认列表</span>
-            </div>
-
-            {manualEvidenceError === null ? null : (
-              <p className="error-message" role="alert">
-                暂时无法保存：{manualEvidenceError}
-              </p>
-            )}
-            {manualDraftStorageError === null ? null : (
-              <p className="error-message" role="alert">
-                草稿箱暂不可用：{manualDraftStorageError}
-              </p>
-            )}
-            <footer>
               <button
                 type="button"
-                className="text-button"
+                className="secondary-button"
                 disabled={manualEvidenceSaving}
                 onClick={closeManualEvidenceMethodology}
               >
@@ -3306,7 +3245,141 @@ export const MethodologyPanel = ({
               >
                 {manualEvidenceSaving ? "正在保存…" : "保存人工候选"}
               </button>
-            </footer>
+            </>
+          }
+        >
+          <section className="methodology-manual-evidence-entry">
+            <header className="methodology-inbox-heading">
+              <p className="methodology-dialog-note">
+                <strong>证据已经确定，内容完全由你填写</strong>
+                ：不调用模型，也不会根据复盘正文自动补写原则或因果结论。
+              </p>
+              <em className="methodology-tag">0 次模型调用</em>
+            </header>
+
+            {manualEvidenceRestoredAt === null ? null : (
+              <p className="methodology-dialog-note">
+                <strong>已恢复未完成的人工整理</strong> ·{" "}
+                {dateFormatter.format(new Date(manualEvidenceRestoredAt))}{" "}
+                保存，尚未建立方法论候选。
+              </p>
+            )}
+
+            <ol className="methodology-manual-evidence-sources">
+              {sourceLoading ? (
+                <li className="loading">
+                  <span>正在恢复</span>
+                  <strong>正在读取草稿关联的复盘证据…</strong>
+                </li>
+              ) : null}
+              {manualEvidenceDecisions.slice(0, 5).map((decision, index) => (
+                <li key={decision.id}>
+                  <span>证据 {index + 1}</span>
+                  <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
+                  <small>
+                    {decision.project} · {decision.selectedAnswer}
+                  </small>
+                  <p>
+                    {decision.outcomeReview?.lesson ??
+                      decision.outcome ??
+                      "已完成结果复盘"}
+                  </p>
+                </li>
+              ))}
+            </ol>
+
+            <div className="form-fields methodology-manual-evidence-form">
+              <div className="form-field">
+                <label htmlFor="methodology-evidence-title">候选标题</label>
+                <input
+                  id="methodology-evidence-title"
+                  autoFocus
+                  value={manualEvidenceDraft.title}
+                  placeholder="例如：先验证，再扩大不可逆投入"
+                  maxLength={120}
+                  onChange={(event) =>
+                    updateManualEvidenceDraft({ title: event.target.value })
+                  }
+                />
+              </div>
+              <div className="form-field">
+                <label htmlFor="methodology-evidence-principle">原则</label>
+                <textarea
+                  id="methodology-evidence-principle"
+                  rows={3}
+                  value={manualEvidenceDraft.principle}
+                  placeholder="以后遇到类似决策时，应该如何判断或行动？"
+                  maxLength={2_000}
+                  onChange={(event) =>
+                    updateManualEvidenceDraft({
+                      principle: event.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="form-fields-row">
+                <div className="form-field">
+                  <label htmlFor="methodology-evidence-applies">适用条件</label>
+                  <textarea
+                    id="methodology-evidence-applies"
+                    rows={3}
+                    value={manualEvidenceDraft.appliesWhen}
+                    placeholder="什么场景和前提下适用？"
+                    maxLength={2_000}
+                    onChange={(event) =>
+                      updateManualEvidenceDraft({
+                        appliesWhen: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="methodology-evidence-caution">注意事项</label>
+                  <textarea
+                    id="methodology-evidence-caution"
+                    rows={3}
+                    value={manualEvidenceDraft.caution}
+                    placeholder="什么情况下不应套用，或需要重新验证？"
+                    maxLength={2_000}
+                    onChange={(event) =>
+                      updateManualEvidenceDraft({ caution: event.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="methodology-evidence-summary">证据摘要</label>
+                <textarea
+                  id="methodology-evidence-summary"
+                  rows={3}
+                  value={manualEvidenceDraft.evidenceSummary}
+                  placeholder="区分已观察到的结果与有限归纳，并用“证据 1”等编号对应上方复盘。"
+                  maxLength={3_000}
+                  onChange={(event) =>
+                    updateManualEvidenceDraft({
+                      evidenceSummary: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <p className="methodology-dialog-note methodology-manual-evidence-boundary">
+              <span>证据关系由你确认</span>
+              <span>可信度仍由复盘数量与一致性计算</span>
+              <span>保存后只进入待确认列表</span>
+            </p>
+
+            {manualEvidenceError === null ? null : (
+              <p className="form-error" role="alert">
+                暂时无法保存：{manualEvidenceError}
+              </p>
+            )}
+            {manualDraftStorageError === null ? null : (
+              <p className="form-error" role="alert">
+                草稿箱暂不可用：{manualDraftStorageError}
+              </p>
+            )}
           </section>
         </ModalDialog>
       )}
@@ -3318,19 +3391,40 @@ export const MethodologyPanel = ({
           size="compact"
           dismissible={!batchGenerating}
           onClose={() => setConfirmingBatch(false)}
+          footer={
+            <>
+              <button
+                type="button"
+                className="secondary-button"
+                autoFocus
+                disabled={batchGenerating}
+                onClick={() => setConfirmingBatch(false)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={batchGenerating || suggestionBatch.length === 0}
+                onClick={() => void generateSuggestionBatch()}
+              >
+                {batchGenerating
+                  ? "正在生成…"
+                  : `生成 ${suggestionBatch.length} 条候选`}
+              </button>
+            </>
+          }
         >
           <section className="methodology-batch-confirmation">
-            <div className="methodology-batch-route" aria-label="批量提炼流程">
+            <p className="methodology-batch-route">
               <span>
-                <strong>{suggestionBatch.length}</strong>
-                <small>证据组合</small>
+                <strong>{suggestionBatch.length}</strong> 组证据组合
               </span>
               <b aria-hidden="true">→</b>
               <span>
-                <strong>{suggestionBatch.length}</strong>
-                <small>待确认候选</small>
+                <strong>{suggestionBatch.length}</strong> 条待确认候选
               </span>
-            </div>
+            </p>
             <p>
               每组会调用一次当前生成模型。生成结果只进入待确认列表，不会自动采纳，也不会生成技能或流程。
             </p>
@@ -3354,26 +3448,6 @@ export const MethodologyPanel = ({
                 ) : null}
               </ol>
             )}
-            <footer>
-              <button
-                type="button"
-                className="text-button"
-                disabled={batchGenerating}
-                onClick={() => setConfirmingBatch(false)}
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                disabled={batchGenerating || suggestionBatch.length === 0}
-                onClick={() => void generateSuggestionBatch()}
-              >
-                {batchGenerating
-                  ? "正在生成…"
-                  : `生成 ${suggestionBatch.length} 条候选`}
-              </button>
-            </footer>
           </section>
         </ModalDialog>
       ) : null}
@@ -3384,8 +3458,34 @@ export const MethodologyPanel = ({
           description={`第 ${relationQueueCompleted + 1} 组，共 ${relationQueueTotal} 组`}
           size="wide"
           // A note typed for this group is not let go by Escape: skipped or saved, it goes with its group.
-          dismissible={!relationQueueSaving && relationQueueNote.trim().length === 0}
+          dismissible={!relationQueueSaving}
+          unsaved={relationQueueNote.trim().length > 0}
           onClose={closeRelationQueue}
+          footer={
+            <>
+              <span className="modal-dialog-footer-start methodology-footer-status">
+                还剩 {relationQueue?.length ?? 0} 组
+              </span>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={relationQueueSaving}
+                onClick={postponeRelationQueueItem}
+              >
+                {relationQueue?.length === 1 ? "稍后处理" : "跳过这一组"}
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={
+                  relationQueueSaving || relationQueueDisposition === null
+                }
+                onClick={() => void saveRelationQueueItem()}
+              >
+                {relationQueueSaving ? "保存中…" : "保存并继续"}
+              </button>
+            </>
+          }
         >
           <section className="methodology-relation-queue">
             <header>
@@ -3446,7 +3546,7 @@ export const MethodologyPanel = ({
                 <label
                   key={value}
                   className={
-                    relationQueueDisposition === value ? "selected" : ""
+                    relationQueueDisposition === value ? "selected" : undefined
                   }
                 >
                   <input
@@ -3465,10 +3565,14 @@ export const MethodologyPanel = ({
               ))}
             </div>
 
-            <label className="methodology-relation-queue-note">
-              <span>判断依据（可选）</span>
+            <div className="form-field methodology-relation-queue-note">
+              <label htmlFor="methodology-relation-queue-note">
+                判断依据（可选）
+              </label>
               <textarea
+                id="methodology-relation-queue-note"
                 aria-label="批量核对说明（可选）"
+                rows={2}
                 maxLength={500}
                 value={relationQueueNote}
                 disabled={relationQueueSaving}
@@ -3477,43 +3581,21 @@ export const MethodologyPanel = ({
                   setRelationQueueNote(event.currentTarget.value)
                 }
               />
-              <small>{relationQueueNote.length} / 500</small>
-            </label>
-
-            <div className="methodology-relation-queue-safety">
-              <span>只记录关系结论</span>
-              <p>不会自动合并、删除或改写任何原则。</p>
+              <p className="methodology-field-count">
+                {relationQueueNote.length} / 500
+              </p>
             </div>
 
+            <p className="methodology-dialog-note methodology-relation-queue-safety">
+              <strong>只记录关系结论</strong>
+              ：不会自动合并、删除或改写任何原则。
+            </p>
+
             {relationQueueError === null ? null : (
-              <p className="error-message" role="alert">
+              <p className="form-error" role="alert">
                 保存失败：{relationQueueError}
               </p>
             )}
-
-            <footer>
-              <button
-                type="button"
-                className="text-button"
-                disabled={relationQueueSaving}
-                onClick={postponeRelationQueueItem}
-              >
-                {relationQueue?.length === 1 ? "稍后处理" : "跳过这一组"}
-              </button>
-              <div>
-                <span>还剩 {relationQueue?.length ?? 0} 组</span>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={
-                    relationQueueSaving || relationQueueDisposition === null
-                  }
-                  onClick={() => void saveRelationQueueItem()}
-                >
-                  {relationQueueSaving ? "保存中…" : "保存并继续"}
-                </button>
-              </div>
-            </footer>
           </section>
         </ModalDialog>
       )}
@@ -3521,17 +3603,70 @@ export const MethodologyPanel = ({
       {selected !== null && reviewingRelation !== null ? (
         <ModalDialog
           title="核对原则关系"
-          description={`“${selected.title}” 与 “${reviewingRelation.title}”`}
+          description="两条原则之间是什么关系，由你判断；之后仍可修改或撤销。"
           size="compact"
-          dismissible={!relationSaving && relationNote === (reviewingRelation.resolutionNote ?? "")}
+          dismissible={!relationSaving}
+          unsaved={relationNote !== (reviewingRelation.resolutionNote ?? "")}
           onClose={() => {
             setReviewingRelation(null);
             setRelationDisposition(null);
             setRelationNote("");
             setRelationError(null);
           }}
+          footer={
+            <>
+              {reviewingRelation.resolution === null ||
+              reviewingRelation.resolution === undefined ? null : (
+                <div className="modal-dialog-footer-start">
+                  <button
+                    type="button"
+                    className="text-button danger-button"
+                    disabled={relationSaving}
+                    onClick={() => void clearRelationReview()}
+                  >
+                    撤销结论
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={relationSaving}
+                onClick={() => {
+                  setReviewingRelation(null);
+                  setRelationDisposition(null);
+                  setRelationNote("");
+                  setRelationError(null);
+                }}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={relationSaving || relationDisposition === null}
+                onClick={() => void saveRelationReview()}
+              >
+                {relationSaving ? "保存中…" : "保存关系结论"}
+              </button>
+            </>
+          }
         >
           <section className="methodology-relation-editor">
+            {/* Both titles in full, side by side: in the subtitle a long first title pushed the second out of sight. */}
+            <div className="methodology-relation-comparison">
+              {(
+                [
+                  ["原则 A", selected.title],
+                  ["原则 B", reviewingRelation.title],
+                ] as const
+              ).map(([label, title]) => (
+                <article key={label}>
+                  <span>{label}</span>
+                  <strong>{title}</strong>
+                </article>
+              ))}
+            </div>
             <div
               className="methodology-relation-options"
               role="radiogroup"
@@ -3558,7 +3693,7 @@ export const MethodologyPanel = ({
               ).map(([value, label, description]) => (
                 <label
                   key={value}
-                  className={relationDisposition === value ? "selected" : ""}
+                  className={relationDisposition === value ? "selected" : undefined}
                 >
                   <input
                     type="radio"
@@ -3575,64 +3710,27 @@ export const MethodologyPanel = ({
                 </label>
               ))}
             </div>
-            <label className="methodology-relation-note">
-              <span>核对说明（可选）</span>
+            <div className="form-field methodology-relation-note">
+              <label htmlFor="methodology-relation-note">核对说明（可选）</label>
               <textarea
-                aria-label="核对说明（可选）"
+                id="methodology-relation-note"
+                rows={3}
                 maxLength={500}
                 value={relationNote}
                 disabled={relationSaving}
                 placeholder="记录为什么作出这个判断，便于以后重新核对"
                 onChange={(event) => setRelationNote(event.currentTarget.value)}
               />
-              <small>{relationNote.length} / 500</small>
-            </label>
-            <p className="methodology-relation-safety-copy">
+              <p className="methodology-field-count">{relationNote.length} / 500</p>
+            </div>
+            <p className="methodology-dialog-note methodology-relation-safety-copy">
               这里只记录人工结论，不会合并、删除或改写任何原则。
             </p>
             {relationError === null ? null : (
-              <p className="error-message" role="alert">
+              <p className="form-error" role="alert">
                 保存失败：{relationError}
               </p>
             )}
-            <footer>
-              <div>
-                {reviewingRelation.resolution === null ||
-                reviewingRelation.resolution === undefined ? null : (
-                  <button
-                    type="button"
-                    className="text-button danger-button"
-                    disabled={relationSaving}
-                    onClick={() => void clearRelationReview()}
-                  >
-                    撤销结论
-                  </button>
-                )}
-              </div>
-              <div>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={relationSaving}
-                  onClick={() => {
-                    setReviewingRelation(null);
-                    setRelationDisposition(null);
-                    setRelationNote("");
-                    setRelationError(null);
-                  }}
-                >
-                  取消
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={relationSaving || relationDisposition === null}
-                  onClick={() => void saveRelationReview()}
-                >
-                  {relationSaving ? "保存中…" : "保存关系结论"}
-                </button>
-              </div>
-            </footer>
           </section>
         </ModalDialog>
       ) : null}
@@ -3646,6 +3744,55 @@ export const MethodologyPanel = ({
             !mergeSaving && !mergeRelationSaving && !mergeDraftClosing
           }
           onClose={() => void preserveAndCloseMergeDraft()}
+          footer={
+            // While a missing pair is checked, that check is the step at hand; its answers sit with its question.
+            mergeRelationReview !== null ? undefined : (
+              <>
+                <div className="modal-dialog-footer-start">
+                  <button
+                    type="button"
+                    className="text-button danger-button"
+                    disabled={
+                      mergeSaving || mergeRelationSaving || mergeDraftClosing
+                    }
+                    onClick={() => void discardMergeFormDraft()}
+                  >
+                    丢弃草稿
+                  </button>
+                  <span
+                    className={`methodology-footer-status${mergeDraftSaveState === "error" ? " error" : ""}`}
+                    role="status"
+                  >
+                    {mergeDraftRestoredAt === null ? null : "已恢复 · "}
+                    {mergeDraftSaveLabel}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={
+                    mergeSaving || mergeRelationSaving || mergeDraftClosing
+                  }
+                  onClick={() => void preserveAndCloseMergeDraft()}
+                >
+                  {mergeDraftClosing ? "正在保存…" : "稍后继续"}
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={
+                    mergeSaving ||
+                    mergeRelationSaving ||
+                    mergeDraftClosing ||
+                    !mergeDraftReady
+                  }
+                  onClick={() => void createMergeDraft()}
+                >
+                  {mergeSaving ? "正在创建…" : "创建待确认草案"}
+                </button>
+              </>
+            )
+          }
         >
           <section className="methodology-merge-editor">
             <header className="methodology-merge-source-heading">
@@ -3653,18 +3800,7 @@ export const MethodologyPanel = ({
                 <strong>合并来源</strong>
                 <span>每一对都必须已经人工确认重复</span>
               </div>
-              <div className="methodology-merge-source-meta">
-                <small
-                  className={
-                    mergeDraftSaveState === "error" ? "error" : undefined
-                  }
-                  role="status"
-                >
-                  {mergeDraftRestoredAt === null ? null : "已恢复 · "}
-                  {mergeDraftSaveLabel}
-                </small>
-                <em>{mergeDraft.sources.length} / 5</em>
-              </div>
+              <em>{mergeDraft.sources.length} / 5</em>
             </header>
             <div
               className="methodology-merge-sources"
@@ -3731,7 +3867,7 @@ export const MethodologyPanel = ({
                               <strong>{assessment.item.title}</strong>
                               <small>
                                 已确认 {assessment.confirmedPairCount} 对 ·
-                                待核对{assessment.missingSources.length} 对
+                                待核对 {assessment.missingSources.length} 对
                               </small>
                             </div>
                             <button
@@ -3801,10 +3937,14 @@ export const MethodologyPanel = ({
                 <p className="methodology-merge-relation-question">
                   这两条原则是否表达同一条规则？本次判断会作为独立关系事实保存。
                 </p>
-                <label className="methodology-merge-relation-note">
-                  <span>核对说明（可选）</span>
+                <div className="form-field methodology-merge-relation-note">
+                  <label htmlFor="methodology-merge-relation-note">
+                    核对说明（可选）
+                  </label>
                   <textarea
+                    id="methodology-merge-relation-note"
                     aria-label="合并关系核对说明（可选）"
+                    rows={2}
                     maxLength={500}
                     value={mergeRelationReview.note}
                     disabled={mergeRelationSaving}
@@ -3816,16 +3956,16 @@ export const MethodologyPanel = ({
                       })
                     }
                   />
-                </label>
+                </div>
                 {mergeRelationError === null ? null : (
-                  <p className="error-message" role="alert">
+                  <p className="form-error" role="alert">
                     保存失败：{mergeRelationError}
                   </p>
                 )}
                 <footer>
                   <button
                     type="button"
-                    className="text-button"
+                    className="secondary-button"
                     disabled={mergeRelationSaving}
                     onClick={() => void saveMergeRelationReview("unrelated")}
                   >
@@ -3833,7 +3973,7 @@ export const MethodologyPanel = ({
                   </button>
                   <button
                     type="button"
-                    className="text-button"
+                    className="secondary-button"
                     disabled={mergeRelationSaving}
                     onClick={() => void saveMergeRelationReview("conflict")}
                   >
@@ -3850,15 +3990,18 @@ export const MethodologyPanel = ({
                 </footer>
               </section>
             ) : mergeRelationOutcome === null ? null : (
-              <p className="methodology-merge-relation-outcome" role="status">
+              <p
+                className="methodology-dialog-note methodology-merge-relation-outcome"
+                role="status"
+              >
                 {mergeRelationOutcome}
               </p>
             )}
 
             {mergeRelationReview !== null ? null : (
               <>
-                <div
-                  className={`methodology-merge-guidance${
+                <p
+                  className={`methodology-dialog-note methodology-merge-guidance${
                     mergeDraftRecoveryMessage === null ? "" : " recovered"
                   }`}
                   role="note"
@@ -3868,17 +4011,17 @@ export const MethodologyPanel = ({
                       ? "先以来源 1 预填"
                       : "已重新校验"}
                   </strong>
-                  <span>
-                    {mergeDraftRecoveryMessage ??
-                      "请统一表达、适用边界与注意事项；这里不会调用模型。"}
-                  </span>
-                </div>
+                  ：
+                  {mergeDraftRecoveryMessage ??
+                    "请统一表达、适用边界与注意事项；这里不会调用模型。"}
+                </p>
 
                 <div className="methodology-merge-workspace">
-                  <div className="methodology-merge-fields">
-                    <label className="methodology-merge-title-field">
-                      <span>新标题</span>
+                  <div className="form-fields methodology-merge-fields">
+                    <div className="form-field">
+                      <label htmlFor="methodology-merge-title">新标题</label>
                       <input
+                        id="methodology-merge-title"
                         autoFocus
                         aria-label="新标题"
                         maxLength={120}
@@ -3888,11 +4031,17 @@ export const MethodologyPanel = ({
                           updateMergeField("title", event.currentTarget.value)
                         }
                       />
-                      <small>{mergeDraft.input.title.length} / 120</small>
-                    </label>
-                    <label className="methodology-merge-wide-field">
-                      <span>统一后的原则</span>
+                      <p className="methodology-field-count">
+                        {mergeDraft.input.title.length} / 120
+                      </p>
+                    </div>
+                    <div className="form-field">
+                      <label htmlFor="methodology-merge-principle">
+                        统一后的原则
+                      </label>
                       <textarea
+                        id="methodology-merge-principle"
+                        rows={3}
                         maxLength={2_000}
                         value={mergeDraft.input.principle}
                         disabled={mergeSaving}
@@ -3903,35 +4052,45 @@ export const MethodologyPanel = ({
                           )
                         }
                       />
-                    </label>
-                    <label>
-                      <span>适用条件</span>
+                    </div>
+                    <div className="form-fields-row">
+                      <div className="form-field">
+                        <label htmlFor="methodology-merge-applies">适用条件</label>
+                        <textarea
+                          id="methodology-merge-applies"
+                          rows={3}
+                          maxLength={2_000}
+                          value={mergeDraft.input.appliesWhen}
+                          disabled={mergeSaving}
+                          onChange={(event) =>
+                            updateMergeField(
+                              "appliesWhen",
+                              event.currentTarget.value,
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label htmlFor="methodology-merge-caution">注意事项</label>
+                        <textarea
+                          id="methodology-merge-caution"
+                          rows={3}
+                          maxLength={2_000}
+                          value={mergeDraft.input.caution}
+                          disabled={mergeSaving}
+                          onChange={(event) =>
+                            updateMergeField("caution", event.currentTarget.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="form-field">
+                      <label htmlFor="methodology-merge-evidence-summary">
+                        证据摘要
+                      </label>
                       <textarea
-                        maxLength={2_000}
-                        value={mergeDraft.input.appliesWhen}
-                        disabled={mergeSaving}
-                        onChange={(event) =>
-                          updateMergeField(
-                            "appliesWhen",
-                            event.currentTarget.value,
-                          )
-                        }
-                      />
-                    </label>
-                    <label>
-                      <span>注意事项</span>
-                      <textarea
-                        maxLength={2_000}
-                        value={mergeDraft.input.caution}
-                        disabled={mergeSaving}
-                        onChange={(event) =>
-                          updateMergeField("caution", event.currentTarget.value)
-                        }
-                      />
-                    </label>
-                    <label className="methodology-merge-wide-field">
-                      <span>证据摘要</span>
-                      <textarea
+                        id="methodology-merge-evidence-summary"
+                        rows={3}
                         maxLength={3_000}
                         value={mergeDraft.input.evidenceSummary}
                         disabled={mergeSaving}
@@ -3942,7 +4101,7 @@ export const MethodologyPanel = ({
                           )
                         }
                       />
-                    </label>
+                    </div>
                   </div>
 
                   <aside className="methodology-merge-support">
@@ -3962,7 +4121,7 @@ export const MethodologyPanel = ({
                           return (
                             <label
                               key={decision.id}
-                              className={checked ? "selected" : ""}
+                              className={checked ? "selected" : undefined}
                             >
                               <input
                                 type="checkbox"
@@ -3978,7 +4137,7 @@ export const MethodologyPanel = ({
                                 }
                               />
                               <span>
-                                <strong>{decision.question}</strong>
+                                <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
                                 <small>
                                   {decision.project}
                                   {decision.outcomeReview === null
@@ -3992,58 +4151,18 @@ export const MethodologyPanel = ({
                       </div>
                     </fieldset>
 
-                    <div className="methodology-merge-safety">
+                    <p className="methodology-dialog-note methodology-merge-safety">
                       <strong>可回退</strong>
-                      <p>
-                        只新增一条待确认草案。来源原则、关系结论和已有技能与流程都不会被删除、替换或重新指向。
-                      </p>
-                    </div>
+                      ：只新增一条待确认草案。来源原则、关系结论和已有技能与流程都不会被删除、替换或重新指向。
+                    </p>
                   </aside>
                 </div>
 
                 {mergeError === null ? null : (
-                  <p className="error-message" role="alert">
+                  <p className="form-error" role="alert">
                     创建失败：{mergeError}
                   </p>
                 )}
-
-                <footer className="methodology-merge-actions">
-                  <button
-                    type="button"
-                    className="text-button methodology-merge-discard-button"
-                    disabled={
-                      mergeSaving || mergeRelationSaving || mergeDraftClosing
-                    }
-                    onClick={() => void discardMergeFormDraft()}
-                  >
-                    丢弃草稿
-                  </button>
-                  <div>
-                    <button
-                      type="button"
-                      className="text-button"
-                      disabled={
-                        mergeSaving || mergeRelationSaving || mergeDraftClosing
-                      }
-                      onClick={() => void preserveAndCloseMergeDraft()}
-                    >
-                      {mergeDraftClosing ? "正在保存…" : "稍后继续"}
-                    </button>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      disabled={
-                        mergeSaving ||
-                        mergeRelationSaving ||
-                        mergeDraftClosing ||
-                        !mergeDraftReady
-                      }
-                      onClick={() => void createMergeDraft()}
-                    >
-                      {mergeSaving ? "正在创建…" : "创建待确认草案"}
-                    </button>
-                  </div>
-                </footer>
               </>
             )}
           </section>
@@ -4063,19 +4182,51 @@ export const MethodologyPanel = ({
             setMergeLifecyclePlan(null);
             setMergeLifecycleError(null);
           }}
+          footer={
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={
+                mergeLifecycleSaving || mergeLifecycleBusyAssetId !== null
+              }
+              onClick={() => {
+                setMergeLifecycleOpen(false);
+                setMergeLifecyclePlan(null);
+                setMergeLifecycleError(null);
+              }}
+            >
+              关闭
+            </button>
+          }
         >
-          <section className="methodology-merge-lifecycle">
+          <section
+            className="methodology-merge-lifecycle"
+            aria-busy={mergeLifecycleLoading}
+          >
             {mergeLifecycleLoading ? (
-              <div
-                className="methodology-merge-lifecycle-loading"
+              <p
+                className="methodology-inbox-state methodology-merge-lifecycle-loading"
                 role="status"
               >
                 正在核对来源原则与技能、流程引用…
-              </div>
+              </p>
             ) : mergeLifecyclePlan === null ? (
-              <div className="methodology-merge-lifecycle-empty">
-                <strong>暂时无法读取整理范围</strong>
-                <span>不会更改任何原则或技能与流程。</span>
+              // A read that failed is said once, as a read: it was shown again below as 「操作失败」, though nothing was done.
+              <div className="load-failure" role="alert">
+                <span>
+                  整理范围暂时无法读取
+                  {mergeLifecycleError === null ? "" : `：${mergeLifecycleError}`}
+                  。不会更改任何原则或技能与流程。
+                </span>
+                {selected === null ? null : (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => void openMergeLifecycle(selected.id)}
+                  >
+                    重试
+                  </button>
+                )}
               </div>
             ) : (
               <>
@@ -4083,40 +4234,47 @@ export const MethodologyPanel = ({
                   className="methodology-merge-lifecycle-steps"
                   aria-label="来源整理进度"
                 >
-                  <span
-                    className={
-                      mergeLifecyclePlan.assets.length > 0 ? "current" : "done"
-                    }
-                  >
-                    <b>1</b>
-                    <small>迁移引用</small>
-                  </span>
-                  <i aria-hidden="true" />
-                  <span
-                    className={
-                      mergeLifecyclePlan.pendingReviewCount > 0
-                        ? "current"
-                        : mergeLifecyclePlan.assets.length === 0
-                          ? "done"
-                          : ""
-                    }
-                  >
-                    <b>2</b>
-                    <small>审核草案</small>
-                  </span>
-                  <i aria-hidden="true" />
-                  <span
-                    className={
-                      mergeLifecyclePlan.retired
-                        ? "done"
-                        : mergeLifecyclePlan.canRetire
+                  {(
+                    [
+                      [
+                        "迁移引用",
+                        mergeLifecyclePlan.assets.length > 0 ? "current" : "done",
+                      ],
+                      [
+                        "审核草案",
+                        mergeLifecyclePlan.pendingReviewCount > 0
                           ? "current"
-                          : ""
-                    }
-                  >
-                    <b>3</b>
-                    <small>归档来源</small>
-                  </span>
+                          : mergeLifecyclePlan.assets.length === 0
+                            ? "done"
+                            : "",
+                      ],
+                      [
+                        "归档来源",
+                        mergeLifecyclePlan.retired
+                          ? "done"
+                          : mergeLifecyclePlan.canRetire
+                            ? "current"
+                            : "",
+                      ],
+                    ] as const
+                  ).map(([label, state], index) => (
+                    <Fragment key={label}>
+                      {index === 0 ? null : <i aria-hidden="true" />}
+                      {/* Done, current and still ahead read apart: current and done were the same green, so at the last step all three were. */}
+                      <span
+                        className={state}
+                        aria-current={state === "current" ? "step" : undefined}
+                      >
+                        <b aria-hidden="true">{state === "done" ? "✓" : index + 1}</b>
+                        <small>
+                          {label}
+                          {state === "done" ? (
+                            <span className="sr-only">（已完成）</span>
+                          ) : null}
+                        </small>
+                      </span>
+                    </Fragment>
+                  ))}
                 </div>
 
                 <section className="methodology-merge-lifecycle-sources">
@@ -4125,7 +4283,9 @@ export const MethodologyPanel = ({
                       <span>合并后的原则</span>
                       <strong>{mergeLifecyclePlan.mergeTitle}</strong>
                     </div>
-                    <em>{statusLabels[mergeLifecyclePlan.mergeStatus]}</em>
+                    <em className={`methodology-status ${mergeLifecyclePlan.mergeStatus}`}>
+                      {statusLabels[mergeLifecyclePlan.mergeStatus]}
+                    </em>
                   </header>
                   <ol>
                     {mergeLifecyclePlan.sources.map((source, index) => (
@@ -4151,7 +4311,7 @@ export const MethodologyPanel = ({
                       <div>
                         <strong>需要迁移的引用</strong>
                         <span>
-                          {mergeLifecyclePlan.assets.length} 项 ·
+                          {mergeLifecyclePlan.assets.length} 项 ·{" "}
                           {mergeLifecyclePlan.pendingReviewCount > 0
                             ? `${mergeLifecyclePlan.pendingReviewCount} 项待审核`
                             : `${mergeLifecyclePlan.modelCallsRequired} 次模型调用`}
@@ -4164,7 +4324,7 @@ export const MethodologyPanel = ({
                         <li key={asset.id}>
                           <div>
                             <span>
-                              {asset.kind === "skill" ? "技能" : "流程"} ·
+                              {asset.kind === "skill" ? "技能" : "流程"} ·{" "}
                               {asset.status === "accepted"
                                 ? "已采纳"
                                 : "待确认"}
@@ -4176,10 +4336,11 @@ export const MethodologyPanel = ({
                                 : "替换草案已生成，原内容尚未变更"}
                             </small>
                           </div>
+                          {/* One per reference, so not solid; the dialog's one solid action is archiving at the end. */}
                           {asset.replacementId === null ? (
                             <button
                               type="button"
-                              className="primary-button"
+                              className="secondary-button"
                               disabled={mergeLifecycleBusyAssetId !== null}
                               onClick={() =>
                                 void prepareMergeAsset(
@@ -4221,7 +4382,7 @@ export const MethodologyPanel = ({
                     </div>
                     <button
                       type="button"
-                      className="text-button"
+                      className="secondary-button"
                       disabled={mergeLifecycleSaving}
                       onClick={() =>
                         void restoreMergeSources(mergeLifecyclePlan.mergeId)
@@ -4265,28 +4426,11 @@ export const MethodologyPanel = ({
               </>
             )}
 
-            {mergeLifecycleError === null ? null : (
-              <p className="error-message" role="alert">
+            {mergeLifecycleError === null || mergeLifecyclePlan === null ? null : (
+              <p className="form-error" role="alert">
                 操作失败：{mergeLifecycleError}
               </p>
             )}
-
-            <footer className="methodology-merge-lifecycle-actions">
-              <button
-                type="button"
-                className="text-button"
-                disabled={
-                  mergeLifecycleSaving || mergeLifecycleBusyAssetId !== null
-                }
-                onClick={() => {
-                  setMergeLifecycleOpen(false);
-                  setMergeLifecyclePlan(null);
-                  setMergeLifecycleError(null);
-                }}
-              >
-                关闭
-              </button>
-            </footer>
           </section>
         </ModalDialog>
       ) : null}
@@ -4301,6 +4445,41 @@ export const MethodologyPanel = ({
             setEvolutionRebase(null);
             setEvolutionRebaseError(null);
           }}
+          footer={
+            <>
+              <div className="modal-dialog-footer-start">
+                <button
+                  type="button"
+                  className="text-button danger-button"
+                  disabled={evolutionRebaseSaving}
+                  onClick={() => void discardEvolutionFormDraft()}
+                >
+                  丢弃草稿
+                </button>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={evolutionRebaseSaving}
+                onClick={() => {
+                  setEvolutionRebase(null);
+                  setEvolutionRebaseError(null);
+                }}
+              >
+                暂不迁移
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={
+                  evolutionRebaseSaving || evolutionRebaseUnresolvedCount > 0
+                }
+                onClick={() => void applyEvolutionRebase()}
+              >
+                {evolutionRebaseSaving ? "正在迁移…" : "迁移并继续编辑"}
+              </button>
+            </>
+          }
         >
           <section className="methodology-revision-rebase">
             <header>
@@ -4318,10 +4497,10 @@ export const MethodologyPanel = ({
             </header>
 
             {evolutionRebaseRows.length === 0 ? (
-              <div className="methodology-revision-rebase-empty">
+              <p className="methodology-dialog-note methodology-revision-rebase-empty">
                 <strong>正文没有字段冲突</strong>
-                <span>仅来源版本或证据集合变化，可以直接迁移后继续核对。</span>
-              </div>
+                ：仅来源版本或证据集合变化，可以直接迁移后继续核对。
+              </p>
             ) : (
               <div className="methodology-revision-rebase-fields">
                 {evolutionRebaseRows.map((row) => (
@@ -4343,9 +4522,6 @@ export const MethodologyPanel = ({
                       </article>
                       <button
                         type="button"
-                        className={
-                          row.choice === "current" ? "selected" : undefined
-                        }
                         aria-pressed={row.choice === "current"}
                         disabled={evolutionRebaseSaving}
                         onClick={() =>
@@ -4358,9 +4534,6 @@ export const MethodologyPanel = ({
                       </button>
                       <button
                         type="button"
-                        className={
-                          row.choice === "draft" ? "selected" : undefined
-                        }
                         aria-pressed={row.choice === "draft"}
                         disabled={evolutionRebaseSaving}
                         onClick={() =>
@@ -4377,56 +4550,19 @@ export const MethodologyPanel = ({
               </div>
             )}
 
-            <div className="methodology-revision-rebase-evidence">
-              <strong>证据按当前事实重新校验</strong>
-              <span>
-                保留 {evolutionRebase.sourceDecisionIds.length} 条可用选择
-                {evolutionRebase.removedEvidenceCount === 0
-                  ? "，没有失效证据。"
-                  : `，移除 ${evolutionRebase.removedEvidenceCount} 条失效证据。`}
-              </span>
-            </div>
+            <p className="methodology-dialog-note methodology-revision-rebase-evidence">
+              <strong>证据按当前事实重新校验</strong>：保留{" "}
+              {evolutionRebase.sourceDecisionIds.length} 条可用选择
+              {evolutionRebase.removedEvidenceCount === 0
+                ? "，没有失效证据。"
+                : `，移除 ${evolutionRebase.removedEvidenceCount} 条失效证据。`}
+            </p>
 
             {evolutionRebaseError === null ? null : (
-              <p className="error-message" role="alert">
+              <p className="form-error" role="alert">
                 迁移失败：{evolutionRebaseError}
               </p>
             )}
-
-            <footer className="methodology-revision-rebase-actions">
-              <button
-                type="button"
-                className="text-button danger"
-                disabled={evolutionRebaseSaving}
-                onClick={() => void discardEvolutionFormDraft()}
-              >
-                丢弃草稿
-              </button>
-              <div>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={evolutionRebaseSaving}
-                  onClick={() => {
-                    setEvolutionRebase(null);
-                    setEvolutionRebaseError(null);
-                  }}
-                >
-                  暂不迁移
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={
-                    evolutionRebaseSaving ||
-                    evolutionRebaseUnresolvedCount > 0
-                  }
-                  onClick={() => void applyEvolutionRebase()}
-                >
-                  {evolutionRebaseSaving ? "正在迁移…" : "迁移并继续编辑"}
-                </button>
-              </div>
-            </footer>
           </section>
         </ModalDialog>
       )}
@@ -4442,9 +4578,11 @@ export const MethodologyPanel = ({
           title={
             evolving
               ? "建立原则修订候选"
-              : selected.status === "candidate"
-                ? "审核方法论候选"
-                : "方法论详情"
+              : editing
+                ? "编辑原则"
+                : selected.status === "candidate"
+                  ? "审核方法论候选"
+                  : "方法论详情"
           }
           description={
             evolving
@@ -4478,6 +4616,154 @@ export const MethodologyPanel = ({
             clearEvolutionEditor();
             setConfirmingAcceptance(false);
           }}
+          footer={
+            evolving && evolutionDraft !== null ? (
+              <>
+                <div className="modal-dialog-footer-start">
+                  <button
+                    type="button"
+                    className="text-button danger-button"
+                    disabled={evolutionSaving || evolutionDraftClosing}
+                    onClick={() => void discardEvolutionFormDraft()}
+                  >
+                    丢弃草稿
+                  </button>
+                  <span
+                    className={`methodology-footer-status${evolutionDraftSaveState === "error" ? " error" : ""}`}
+                    role="status"
+                  >
+                    {evolutionDraftRestoredAt === null ? null : "已恢复 · "}
+                    {evolutionDraftSaveLabel}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={evolutionSaving || evolutionDraftClosing}
+                  onClick={() => void preserveEvolutionFormDraft(false)}
+                >
+                  {evolutionDraftClosing ? "正在保存…" : "返回详情"}
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={
+                    evolutionSaving ||
+                    evolutionDraftClosing ||
+                    !evolutionDraftValid
+                  }
+                  onClick={() => void saveEvolution()}
+                >
+                  {evolutionSaving ? "保存中…" : "保存为修订候选"}
+                </button>
+              </>
+            ) : editing && revision !== null ? (
+              <>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={saving}
+                  onClick={() => setEditing(false)}
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={
+                    saving ||
+                    Object.values(revision).some(
+                      (value) => value.trim().length === 0,
+                    )
+                  }
+                  onClick={() => void saveRevision()}
+                >
+                  {saving ? "保存中…" : "保存修改"}
+                </button>
+              </>
+            ) : confirmingAcceptance ? (
+              <>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={saving}
+                  onClick={() => setConfirmingAcceptance(false)}
+                >
+                  返回检查
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={
+                    saving || selected.quality.missingEvidenceCount > 0
+                  }
+                  onClick={() => void setRecordStatus("accepted", true)}
+                >
+                  {saving
+                    ? "保存中…"
+                    : selectedIsUnverifiedExternal
+                      ? "确认采纳为假设"
+                      : selected.origin === "principle_merge"
+                        ? "确认采纳合并候选"
+                        : selected.origin === "principle_revision"
+                          ? "确认应用修订"
+                          : "确认仍然采纳"}
+                </button>
+              </>
+            ) : selected.status === "candidate" ? (
+              <>
+                {/* Leaving a candidate is kept apart from the actions that keep it (the detail dialog's place, by the design). */}
+                <div className="modal-dialog-footer-start">
+                  <button
+                    type="button"
+                    className="text-button danger-button"
+                    disabled={saving}
+                    onClick={() => void setRecordStatus("dismissed")}
+                  >
+                    忽略
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={saving}
+                  onClick={beginEditing}
+                >
+                  编辑
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={saving}
+                  onClick={() => {
+                    if (selectedHasImportPlaceholders) {
+                      beginEditing();
+                      return;
+                    }
+                    if (selectedNeedsAcceptanceConfirmation) {
+                      setConfirmingAcceptance(true);
+                      return;
+                    }
+                    void setRecordStatus("accepted");
+                  }}
+                >
+                  {saving
+                    ? "保存中…"
+                    : selectedHasImportPlaceholders
+                      ? "补充边界后采纳"
+                      : selected.quality.missingEvidenceCount > 0
+                        ? "证据缺失"
+                        : selected.origin === "principle_revision"
+                          ? "检查后应用修订"
+                          : selectedRiskRelations.length > 0
+                            ? "检查后采纳"
+                            : selectedIsUnverifiedExternal
+                              ? "采纳为假设"
+                              : "采纳原则"}
+                </button>
+              </>
+            ) : undefined
+          }
         >
           <article className="methodology-detail">
             {evolving && evolutionDraft !== null ? (
@@ -4491,23 +4777,13 @@ export const MethodologyPanel = ({
                   <aside>
                     <strong>保存后仍是待确认草案</strong>
                     <span>不会直接改写原原则，也不会调用模型。</span>
-                    <small
-                      className={
-                        evolutionDraftSaveState === "error"
-                          ? "error"
-                          : undefined
-                      }
-                      role="status"
-                    >
-                      {evolutionDraftRestoredAt === null ? null : "已恢复 · "}
-                      {evolutionDraftSaveLabel}
-                    </small>
                   </aside>
                 </header>
-                <div className="methodology-evolution-form">
-                  <label className="full-width">
-                    <span>修订标题</span>
+                <div className="form-fields methodology-evolution-form">
+                  <div className="form-field">
+                    <label htmlFor="methodology-evolution-title">修订标题</label>
                     <input
+                      id="methodology-evolution-title"
                       autoFocus
                       maxLength={120}
                       value={evolutionDraft.title}
@@ -4518,10 +4794,14 @@ export const MethodologyPanel = ({
                         })
                       }
                     />
-                  </label>
-                  <label className="full-width">
-                    <span>修订后的原则</span>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="methodology-evolution-principle">
+                      修订后的原则
+                    </label>
                     <textarea
+                      id="methodology-evolution-principle"
+                      rows={3}
                       maxLength={2_000}
                       value={evolutionDraft.principle}
                       onChange={(event) =>
@@ -4531,36 +4811,46 @@ export const MethodologyPanel = ({
                         })
                       }
                     />
-                  </label>
-                  <label>
-                    <span>适用条件</span>
+                  </div>
+                  <div className="form-fields-row">
+                    <div className="form-field">
+                      <label htmlFor="methodology-evolution-applies">适用条件</label>
+                      <textarea
+                        id="methodology-evolution-applies"
+                        rows={3}
+                        maxLength={2_000}
+                        value={evolutionDraft.appliesWhen}
+                        onChange={(event) =>
+                          setEvolutionDraft({
+                            ...evolutionDraft,
+                            appliesWhen: event.currentTarget.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label htmlFor="methodology-evolution-caution">注意事项</label>
+                      <textarea
+                        id="methodology-evolution-caution"
+                        rows={3}
+                        maxLength={2_000}
+                        value={evolutionDraft.caution}
+                        onChange={(event) =>
+                          setEvolutionDraft({
+                            ...evolutionDraft,
+                            caution: event.currentTarget.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="methodology-evolution-evidence-summary">
+                      证据摘要
+                    </label>
                     <textarea
-                      maxLength={2_000}
-                      value={evolutionDraft.appliesWhen}
-                      onChange={(event) =>
-                        setEvolutionDraft({
-                          ...evolutionDraft,
-                          appliesWhen: event.currentTarget.value,
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>注意事项</span>
-                    <textarea
-                      maxLength={2_000}
-                      value={evolutionDraft.caution}
-                      onChange={(event) =>
-                        setEvolutionDraft({
-                          ...evolutionDraft,
-                          caution: event.currentTarget.value,
-                        })
-                      }
-                    />
-                  </label>
-                  <label className="full-width">
-                    <span>证据摘要</span>
-                    <textarea
+                      id="methodology-evolution-evidence-summary"
+                      rows={3}
                       maxLength={3_000}
                       value={evolutionDraft.evidenceSummary}
                       onChange={(event) =>
@@ -4570,7 +4860,7 @@ export const MethodologyPanel = ({
                         })
                       }
                     />
-                  </label>
+                  </div>
                 </div>
                 <section
                   className="methodology-evolution-evidence"
@@ -4578,10 +4868,10 @@ export const MethodologyPanel = ({
                 >
                   <header>
                     <div>
-                      <span>修订证据</span>
-                      <strong>
+                      <h4>修订证据</h4>
+                      <span>
                         已选 {evolutionDraft.sourceDecisionIds.length} / 5 条
-                      </strong>
+                      </span>
                     </div>
                     <small>至少保留一条“采用后新复盘”</small>
                   </header>
@@ -4598,7 +4888,7 @@ export const MethodologyPanel = ({
                         <span>
                           {decision.isNew ? "采用后新复盘" : "原有证据"}
                         </span>
-                        <strong>{decision.question}</strong>
+                        <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
                         <small>
                           {decision.project} ·{" "}
                           {decision.lesson ?? decision.outcome}
@@ -4607,8 +4897,8 @@ export const MethodologyPanel = ({
                     ))}
                   </div>
                 </section>
-                <div
-                  className={`methodology-evolution-boundary${
+                <p
+                  className={`methodology-dialog-note methodology-evolution-boundary${
                     evolutionDraftRecoveryMessage === null ? "" : " recovered"
                   }`}
                 >
@@ -4616,52 +4906,21 @@ export const MethodologyPanel = ({
                     {evolutionDraftRecoveryMessage ??
                       "应用草案时会先保存当前版本"}
                   </span>
-                  <span>原则编号与历史决策关联保持不变</span>
+                  <span>原则编号与过往决策关联保持不变</span>
                   <span>引用它的技能与流程会提示来源已更新</span>
-                </div>
+                </p>
                 {evolutionError === null ? null : (
-                  <p className="error-message" role="alert">
+                  <p className="form-error" role="alert">
                     建立修订失败：{evolutionError}
                   </p>
                 )}
-                <footer className="methodology-detail-actions">
-                  <button
-                    type="button"
-                    className="text-button methodology-evolution-discard"
-                    disabled={evolutionSaving || evolutionDraftClosing}
-                    onClick={() => void discardEvolutionFormDraft()}
-                  >
-                    丢弃草稿
-                  </button>
-                  <div>
-                    <button
-                      type="button"
-                      className="text-button"
-                      disabled={evolutionSaving || evolutionDraftClosing}
-                      onClick={() => void preserveEvolutionFormDraft(false)}
-                    >
-                      {evolutionDraftClosing ? "正在保存…" : "返回详情"}
-                    </button>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      disabled={
-                        evolutionSaving ||
-                        evolutionDraftClosing ||
-                        !evolutionDraftValid
-                      }
-                      onClick={() => void saveEvolution()}
-                    >
-                      {evolutionSaving ? "保存中…" : "保存为修订候选"}
-                    </button>
-                  </div>
-                </footer>
               </div>
             ) : editing && revision !== null ? (
-              <div className="methodology-editor">
-                <label>
-                  <span>标题</span>
+              <div className="form-fields methodology-revision-form">
+                <div className="form-field">
+                  <label htmlFor="methodology-revision-title">标题</label>
                   <input
+                    id="methodology-revision-title"
                     autoFocus
                     maxLength={120}
                     value={revision.title}
@@ -4672,7 +4931,7 @@ export const MethodologyPanel = ({
                       })
                     }
                   />
-                </label>
+                </div>
                 {(
                   [
                     ["principle", "原则", 2_000],
@@ -4681,9 +4940,11 @@ export const MethodologyPanel = ({
                     ["evidenceSummary", "证据摘要", 3_000],
                   ] as const
                 ).map(([field, label, maxLength]) => (
-                  <label key={field}>
-                    <span>{label}</span>
+                  <div key={field} className="form-field">
+                    <label htmlFor={`methodology-revision-${field}`}>{label}</label>
                     <textarea
+                      id={`methodology-revision-${field}`}
+                      rows={3}
                       maxLength={maxLength}
                       value={revision[field]}
                       onChange={(event) =>
@@ -4693,31 +4954,8 @@ export const MethodologyPanel = ({
                         })
                       }
                     />
-                  </label>
+                  </div>
                 ))}
-                <div className="methodology-detail-actions">
-                  <button
-                    type="button"
-                    className="text-button"
-                    disabled={saving}
-                    onClick={() => setEditing(false)}
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    className="primary-button"
-                    disabled={
-                      saving ||
-                      Object.values(revision).some(
-                        (value) => value.trim().length === 0,
-                      )
-                    }
-                    onClick={() => void saveRevision()}
-                  >
-                    {saving ? "保存中…" : "保存修改"}
-                  </button>
-                </div>
               </div>
             ) : (
               <>
@@ -4727,20 +4965,24 @@ export const MethodologyPanel = ({
                       {statusLabels[selected.status]}
                     </span>
                     <span
-                      className={`methodology-confidence ${selected.quality.recommendedConfidence}`}
+                      className={`methodology-confidence ${confidenceFor(selected).tone}`}
                     >
-                      {confidenceLabelFor(selected)}
+                      {confidenceFor(selected).label}
                     </span>
+                    <small>
+                      {selected.generation.provider} ·{" "}
+                      {selected.generation.model}
+                    </small>
                   </div>
                   <h3>{selected.title}</h3>
                   <p>{selected.principle}</p>
                 </header>
                 {selected.origin === "principle_merge" ? (
                   <section className="methodology-merge-provenance">
-                    <div>
-                      <span>合并来源</span>
-                      <strong>原原则保持独立，不会被这条草案覆盖</strong>
-                    </div>
+                    <header>
+                      <h4>合并来源</h4>
+                      <span>原原则保持独立，不会被这条草案覆盖</span>
+                    </header>
                     <ol>
                       {(selected.sourcePrinciples ?? []).map(
                         (source, index) => (
@@ -4764,7 +5006,9 @@ export const MethodologyPanel = ({
                     </ol>
                     {(selected.sourcePrinciples?.length ?? 0) ===
                     (selected.sourcePrincipleIds?.length ?? 0) ? null : (
-                      <p>部分来源原则已不可用，采纳前需要重新核对。</p>
+                      <p className="form-error">
+                        部分来源原则已不可用，采纳前需要重新核对。
+                      </p>
                     )}
                     {selected.status === "accepted" ? (
                       <footer className="methodology-merge-lifecycle-entry">
@@ -4773,7 +5017,7 @@ export const MethodologyPanel = ({
                         </span>
                         <button
                           type="button"
-                          className="text-button"
+                          className="secondary-button"
                           disabled={saving}
                           onClick={() => void openMergeLifecycle(selected.id)}
                         >
@@ -4787,7 +5031,7 @@ export const MethodologyPanel = ({
                   <section className="methodology-evolution-provenance">
                     <header>
                       <div>
-                        <span>修订来源</span>
+                        <h4>修订来源</h4>
                         <strong>
                           {selected.sourcePrinciples?.[0]?.title ??
                             "原原则暂不可用"}
@@ -4796,7 +5040,9 @@ export const MethodologyPanel = ({
                       <em>原原则仍保持已采纳</em>
                     </header>
                     {selected.sourcePrinciples?.[0] === undefined ? (
-                      <p>原原则已不存在，不能应用这条修订草案。</p>
+                      <p className="form-error">
+                        原原则已不存在，不能应用这条修订草案。
+                      </p>
                     ) : (
                       <div>
                         <article>
@@ -4811,7 +5057,7 @@ export const MethodologyPanel = ({
                       </div>
                     )}
                     <footer>
-                      应用前不会改变原原则、历史决策或下游的技能与流程；应用时会先建立恢复点。
+                      应用前不会改变原原则、过往决策或下游的技能与流程；应用时会先建立恢复点。
                     </footer>
                   </section>
                 ) : null}
@@ -4842,17 +5088,22 @@ export const MethodologyPanel = ({
                         <h4>实际采用</h4>
                         <strong>采用后的复盘分布</strong>
                       </div>
-                      <em>{usage?.linkedDecisionCount ?? 0} 次</em>
+                      {/* Unread is not none: 「0 次」 under a failed read said this principle was never used. */}
+                      <em>
+                        {usageError !== null
+                          ? "—"
+                          : `${usage?.linkedDecisionCount ?? 0} 次`}
+                      </em>
                     </div>
                     {usageLoading ? (
                       <p>正在统计采用记录…</p>
                     ) : usageError !== null ? (
-                      <p className="error-message">
+                      <p className="form-error">
                         采用记录暂时无法读取：{usageError}
                       </p>
                     ) : usage === null || usage.linkedDecisionCount === 0 ? (
                       <div className="methodology-usage-empty">
-                        <p>还没有历史决策明确记录采用了这条原则。</p>
+                        <p>还没有过往决策明确记录采用了这条原则。</p>
                         {selected.status === "accepted" ? (
                           <button
                             type="button"
@@ -4865,26 +5116,24 @@ export const MethodologyPanel = ({
                       </div>
                     ) : (
                       <>
-                        <div className="methodology-usage-metrics">
+                        <dl className="methodology-usage-metrics">
                           <div>
-                            <strong>{usage.linkedDecisionCount}</strong>
-                            <span>明确采用</span>
+                            <dt>明确采用</dt>
+                            <dd>{usage.linkedDecisionCount}</dd>
                           </div>
                           <div>
-                            <strong>{usage.reviewedCount}</strong>
-                            <span>已完成复盘</span>
+                            <dt>已完成复盘</dt>
+                            <dd>{usage.reviewedCount}</dd>
                           </div>
                           <div className="favorable">
-                            <strong>{usage.favorableCount}</strong>
-                            <span>符合或优于预期</span>
+                            <dt>符合或优于预期</dt>
+                            <dd>{usage.favorableCount}</dd>
                           </div>
                           <div className="attention">
-                            <strong>
-                              {usage.mixedCount + usage.attentionCount}
-                            </strong>
-                            <span>部分符合或低于预期</span>
+                            <dt>部分符合或低于预期</dt>
+                            <dd>{usage.mixedCount + usage.attentionCount}</dd>
                           </div>
-                        </div>
+                        </dl>
                         <p className="methodology-usage-causality">
                           这里只显示人工关联后的结果分布；它能辅助判断适用边界，但不能单独证明结果由这条原则造成。
                         </p>
@@ -4903,7 +5152,7 @@ export const MethodologyPanel = ({
                             </div>
                             <button
                               type="button"
-                              className="primary-button"
+                              className="secondary-button"
                               disabled={saving}
                               onClick={beginEvolution}
                             >
@@ -4935,7 +5184,7 @@ export const MethodologyPanel = ({
                             </button>
                           </div>
                         )}
-                        <details className="methodology-usage-decisions">
+                        <details className="disclosure methodology-usage-decisions">
                           <summary>
                             {usage.decisions.length < usage.linkedDecisionCount
                               ? `查看最近 ${usage.decisions.length} / ${usage.linkedDecisionCount} 条采用记录`
@@ -4943,7 +5192,7 @@ export const MethodologyPanel = ({
                           </summary>
                           <div className="methodology-usage-controls">
                             <div
-                              className="methodology-usage-filters"
+                              className="methodology-status-filter methodology-usage-filters"
                               role="group"
                               aria-label="采用记录状态"
                             >
@@ -4989,7 +5238,7 @@ export const MethodologyPanel = ({
                                     onClick={() => onOpenDecision(decision.id)}
                                   >
                                     <div>
-                                      <strong>{decision.question}</strong>
+                                      <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
                                       <small>
                                         {decision.project} ·{" "}
                                         {dateFormatter.format(
@@ -5019,24 +5268,27 @@ export const MethodologyPanel = ({
                   </section>
                 ) : null}
                 {selected.status === "accepted" ? (
-                  <details className="practice-version-history methodology-version-history">
+                  <details className="disclosure practice-version-history methodology-version-history">
                     <summary>
                       <span>原则版本</span>
                       <small>
                         {versionsLoading
                           ? "读取中…"
-                          : `${versions.length} 个恢复点`}
+                          : historyError !== null
+                            ? "—"
+                            : `${versions.length} 个恢复点`}
                       </small>
                     </summary>
                     <div className="practice-version-history-body">
-                      {historyError === null ? null : (
-                        <p className="error-message" role="alert">
-                          版本历史暂时无法读取：{historyError}
-                        </p>
-                      )}
-                      {!versionsLoading &&
-                      historyError === null &&
-                      versions.length === 0 ? (
+                      {historyError !== null ? (
+                        // Said once, as a failed read: an empty history and 「0 个恢复点」 were drawn under it as well.
+                        <div className="load-failure" role="alert">
+                          <span>版本历史暂时无法读取：{historyError}</span>
+                          <button type="button" className="secondary-button" disabled={versionsLoading} onClick={() => setHistoryReads((value) => value + 1)}>
+                            重试
+                          </button>
+                        </div>
+                      ) : !versionsLoading && versions.length === 0 ? (
                         <p className="practice-version-empty">
                           第一次应用修订候选前，会自动保存当前原则作为恢复点。
                         </p>
@@ -5140,7 +5392,7 @@ export const MethodologyPanel = ({
                                   <div>
                                     <button
                                       type="button"
-                                      className="text-button"
+                                      className="secondary-button"
                                       disabled={restoringVersion}
                                       onClick={() =>
                                         setPendingRestoreVersion(null)
@@ -5150,7 +5402,7 @@ export const MethodologyPanel = ({
                                     </button>
                                     <button
                                       type="button"
-                                      className="primary-button"
+                                      className="secondary-button danger-button"
                                       disabled={restoringVersion}
                                       onClick={() =>
                                         void restoreMethodologyVersion(
@@ -5158,13 +5410,16 @@ export const MethodologyPanel = ({
                                         )
                                       }
                                     >
-                                      {restoringVersion
-                                        ? "正在恢复…"
-                                        : "确认恢复"}
+                                      {restoringVersion ? "正在恢复…" : "恢复"}
                                     </button>
                                   </div>
                                 </div>
                               ) : null}
+                              {restoreError === null ? null : (
+                                <p className="form-error" role="alert">
+                                  恢复没有完成：{restoreError}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -5211,28 +5466,28 @@ export const MethodologyPanel = ({
                     </strong>
                   </div>
                   {selectedIsUnverifiedExternal ? null : (
-                    <div className="methodology-quality-metrics">
+                    <dl className="methodology-quality-metrics">
                       <div>
-                        <strong>{selected.quality.evidenceCount}</strong>
-                        <span>有效证据</span>
+                        <dt>有效证据</dt>
+                        <dd>{selected.quality.evidenceCount}</dd>
                       </div>
                       <div>
-                        <strong>{selected.quality.projectCount}</strong>
-                        <span>覆盖项目</span>
+                        <dt>覆盖项目</dt>
+                        <dd>{selected.quality.projectCount}</dd>
                       </div>
                       <div>
-                        <strong>{selected.quality.sourceCount}</strong>
-                        <span>证据来源</span>
+                        <dt>证据来源</dt>
+                        <dd>{selected.quality.sourceCount}</dd>
                       </div>
                       <div>
-                        <strong>
+                        <dt>正向 / 注意 / 不明</dt>
+                        <dd>
                           {selected.quality.favorableEvidenceCount} /{" "}
                           {selected.quality.attentionEvidenceCount} /{" "}
                           {selected.quality.unclearEvidenceCount}
-                        </strong>
-                        <span>正向 / 注意 / 不明</span>
+                        </dd>
                       </div>
-                    </div>
+                    </dl>
                   )}
                   <p className="methodology-confidence-reason">
                     {selected.quality.confidenceReason}
@@ -5315,7 +5570,7 @@ export const MethodologyPanel = ({
                     aria-label="Markdown 导入来源"
                   >
                     <div>
-                      <span>导入来源</span>
+                      <h4>导入来源</h4>
                       <strong>
                         {selected.importSource?.fileName ??
                           "旧版导入（未记录文件名）"}
@@ -5328,20 +5583,27 @@ export const MethodologyPanel = ({
                     </small>
                   </section>
                 ) : null}
+                {selected.sourceDecisionIds.some(id => !selected.sourceDecisions.some(decision => decision.id === id)) ? (
+                  <section aria-label="缺失的来源决策">
+                    {selected.sourceDecisionIds.filter(id => !selected.sourceDecisions.some(decision => decision.id === id)).map(id => (
+                      <p className="missing" key={id}>这条决策已删除或暂不可用 · {id}</p>
+                    ))}
+                  </section>
+                ) : null}
                 {selectedIsUnverifiedExternal ? (
                   <section className="methodology-import-evidence-note">
-                    <span>来源与依据</span>
+                    <h4>来源与依据</h4>
                     <strong>{selected.evidenceSummary}</strong>
                     <p>
                       {selected.origin === "manual_entry"
                         ? "这条候选由你人工录入，当前还不是经过结果复盘验证的原则。可以先核对表达与边界，或关联真实复盘证据。"
-                        : "这条候选来自本地 Markdown，不等同于经过 Decision 复盘验证的原则。可以先编辑适用条件与边界，再明确采纳为待验证假设。"}
+                        : "这条候选来自本地 Markdown，不等同于经过 Paraself 复盘验证的原则。可以先编辑适用条件与边界，再明确采纳为待验证假设。"}
                     </p>
                     {selectedTakesEvidence ? (
                       <div className="methodology-evidence-link-actions">
                         <button
                           type="button"
-                          className="text-button"
+                          className="secondary-button"
                           disabled={saving}
                           onClick={() =>
                             openSourceChooser(selected.sourceDecisionIds, "link")
@@ -5354,7 +5616,7 @@ export const MethodologyPanel = ({
                   </section>
                 ) : (
                   <>
-                    <details className="methodology-evidence-section">
+                    <details className="disclosure methodology-evidence-section">
                       <summary>
                         <span>来源决策</span>
                         <small>
@@ -5366,7 +5628,7 @@ export const MethodologyPanel = ({
                         {selected.sourceDecisions.map((decision, index) => (
                           <li key={decision.id}>
                             <strong>
-                              证据 {index + 1} · {decision.question}
+                              证据 {index + 1} · {plainHeadline(decision.question)}
                             </strong>
                             <p>选择：{decision.selectedAnswer}</p>
                             <p>实际：{decision.outcome}</p>
@@ -5413,7 +5675,7 @@ export const MethodologyPanel = ({
                     className="methodology-acceptance-confirmation"
                     aria-label="采纳确认"
                   >
-                    <span>采纳确认</span>
+                    <h4>采纳确认</h4>
                     <p>
                       {selectedIsUnverifiedExternal
                         ? selected.origin === "manual_entry"
@@ -5422,101 +5684,15 @@ export const MethodologyPanel = ({
                         : selected.origin === "principle_merge"
                           ? "这条候选由两条已确认重复的原则人工整理而成。采纳只会新增这条原则，两个来源及其已有技能与流程仍保持原状；请确认统一后的表达与边界准确。"
                           : selected.origin === "principle_revision"
-                            ? "这条草案会应用到原原则并保留原编号。当前版本会先保存为恢复点；历史决策关联保持不变，引用该原则的技能与流程会提示来源已更新，但不会自动改写或发布。"
+                            ? "这条草案会应用到原原则并保留原编号。当前版本会先保存为恢复点；过往决策关联保持不变，引用该原则的技能与流程会提示来源已更新，但不会自动改写或发布。"
                             : `质量检查发现 ${selectedRiskRelations.length} 条仍需关注的关联。采纳不会自动合并或覆盖其它原则，请确认已经检查适用条件和差异。`}
                     </p>
-                    <div className="methodology-detail-actions">
-                      <button
-                        type="button"
-                        className="text-button"
-                        disabled={saving}
-                        onClick={() => setConfirmingAcceptance(false)}
-                      >
-                        返回检查
-                      </button>
-                      <button
-                        type="button"
-                        className="primary-button"
-                        disabled={
-                          saving || selected.quality.missingEvidenceCount > 0
-                        }
-                        onClick={() => void setRecordStatus("accepted", true)}
-                      >
-                        {saving
-                          ? "保存中…"
-                          : selectedIsUnverifiedExternal
-                            ? "确认采纳为假设"
-                            : selected.origin === "principle_merge"
-                              ? "确认采纳合并候选"
-                              : selected.origin === "principle_revision"
-                                ? "确认应用修订"
-                                : "确认仍然采纳"}
-                      </button>
-                    </div>
                   </section>
                 ) : null}
-                {confirmingAcceptance ? null : (
-                  <footer className="methodology-detail-footer">
-                    <small>
-                      {selected.generation.provider} ·{" "}
-                      {selected.generation.model}
-                    </small>
-                    {selected.status === "candidate" ? (
-                      <div className="methodology-detail-actions">
-                        <button
-                          type="button"
-                          className="text-button danger-button"
-                          disabled={saving}
-                          onClick={() => void setRecordStatus("dismissed")}
-                        >
-                          忽略
-                        </button>
-                        <button
-                          type="button"
-                          className="text-button"
-                          disabled={saving}
-                          onClick={beginEditing}
-                        >
-                          编辑
-                        </button>
-                        <button
-                          type="button"
-                          className="primary-button"
-                          disabled={saving}
-                          onClick={() => {
-                            if (selectedHasImportPlaceholders) {
-                              beginEditing();
-                              return;
-                            }
-                            if (selectedNeedsAcceptanceConfirmation) {
-                              setConfirmingAcceptance(true);
-                              return;
-                            }
-                            void setRecordStatus("accepted");
-                          }}
-                        >
-                          {saving
-                            ? "保存中…"
-                            : selectedHasImportPlaceholders
-                              ? "补充边界后采纳"
-                              : selected.quality.missingEvidenceCount > 0
-                                ? "证据缺失"
-                                : selected.origin === "principle_revision"
-                                  ? "检查后应用修订"
-                                  : selectedRiskRelations.length > 0
-                                    ? "检查后采纳"
-                                    : selectedIsUnverifiedExternal
-                                      ? "采纳为假设"
-                                      : "采纳原则"}
-                        </button>
-                      </div>
-                    ) : null}
-                  </footer>
-                )}
               </>
             )}
             {detailError === null ? null : (
-              <p className="error-message" role="alert">
+              <p className="form-error" role="alert">
                 操作失败：{detailError}
               </p>
             )}

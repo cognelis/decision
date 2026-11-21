@@ -1,3 +1,4 @@
+import { modelProxySchema } from "@cognelis/decision-protocol";
 import { renameReplacing } from "@cognelis/decision-storage";
 import { randomUUID } from "node:crypto";
 import {
@@ -13,12 +14,22 @@ import { z } from "zod";
 
 import {
   CAPTURE_CLASSIFIERS,
+  DEFAULT_CAPTURE_CLASSIFIER,
   type CaptureClassifier,
 } from "../shared/capture-classifier.js";
 import {
+  ACCENT_PRESET_IDS,
+  DEFAULT_ACCENT,
   THEME_PREFERENCES,
+  type AccentPreference,
   type ThemePreference,
 } from "../shared/appearance.js";
+
+/** A preset's id, or a colour of the reader's own as #rrggbb, kept lower-case (IMP-140). */
+export const accentPreferenceSchema = z.union([
+  z.enum(ACCENT_PRESET_IDS),
+  z.string().regex(/^#[0-9a-f]{6}$/iu).transform((value) => value.toLowerCase() as `#${string}`),
+]);
 
 const appSettingsV1Schema = z
   .object({
@@ -35,6 +46,8 @@ const appSettingsV2Schema = z
   })
   .strict();
 
+export const modelProxyUrlSchema = modelProxySchema.shape.url.unwrap().nullable();
+
 export const appSettingsSchema = z
   .object({
     version: z.literal(3),
@@ -42,6 +55,7 @@ export const appSettingsSchema = z
     // A choice a later build added reads as the default here, not as a file this build cannot start with.
     theme: z.enum(THEME_PREFERENCES).catch("auto"),
     modelTraceContentEnabled: z.boolean(),
+    modelProxyUrl: modelProxyUrlSchema.optional(),
     /**
      * Additive, so a v3 file written before reminders existed still parses and
      * gains the field on its next save. A version bump is for changes that
@@ -51,11 +65,15 @@ export const appSettingsSchema = z
     localCredentialsEnabled: z.boolean().default(false),
     /**
      * Which engine reads a captured turn. Additive like the field above, and
-     * defaulted to `rules` — on the fixed evaluation corpus the bundled 2B
-     * model scored below the rules alone on every measure, and it is the one
-     * caller that runs unattended on every turn the reader never asked about.
+     * defaulted to the rules plus this machine's Qwen 4B (IMP-153): on the R11
+     * blind set the rules alone took 92 of 104 decisions and wrote 5 that were
+     * not; with 4B, 104 of 104 and 2. Only 4B, and only on this machine: it is
+     * the one caller that runs unattended on every turn the reader never asked
+     * about, and 2B scored below the rules alone on every measure. A `rules`
+     * stored before is moved once (SettingsRepository.moveCaptureClassifier).
      */
-    captureClassifier: z.enum(CAPTURE_CLASSIFIERS).default("rules").catch("rules"),
+    captureClassifier: z.enum(CAPTURE_CLASSIFIERS).default(DEFAULT_CAPTURE_CLASSIFIER).catch(DEFAULT_CAPTURE_CLASSIFIER),
+    accent: accentPreferenceSchema.default(DEFAULT_ACCENT).catch(DEFAULT_ACCENT),
   });
 // Not strict: a field a later build added, the way fields are added above, is left out here rather
 // than keeping this build from starting at all.
@@ -68,12 +86,14 @@ export type AppSettings = z.infer<typeof appSettingsSchema>;
  * key cannot be decrypted until it is filled in again there, in the keychain, and this build moves it back to
  * local when it next reads it (CredentialVault.get).
  */
-const ADDED_SINCE_1_1 = ["reviewRemindersEnabled", "localCredentialsEnabled", "captureClassifier"] as const;
+const ADDED_SINCE_1_1 = ["reviewRemindersEnabled", "localCredentialsEnabled", "captureClassifier", "accent", "modelProxyUrl"] as const;
 
 const addedSettingsSchema = z.object({
+  modelProxyUrl: modelProxyUrlSchema.optional().catch(undefined),
   reviewRemindersEnabled: z.boolean().optional().catch(undefined),
   localCredentialsEnabled: z.boolean().optional().catch(undefined),
   captureClassifier: z.enum(CAPTURE_CLASSIFIERS).optional().catch(undefined),
+  accent: accentPreferenceSchema.optional().catch(undefined),
 });
 
 const storedSettingsSchema = z.union([
@@ -89,7 +109,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   modelTraceContentEnabled: true,
   reviewRemindersEnabled: true,
   localCredentialsEnabled: false,
-  captureClassifier: "rules",
+  captureClassifier: DEFAULT_CAPTURE_CLASSIFIER,
+  accent: DEFAULT_ACCENT,
 };
 
 export const withVaultPath = (
@@ -101,6 +122,11 @@ export const withTheme = (
   settings: AppSettings,
   theme: ThemePreference,
 ): AppSettings => ({ ...settings, theme });
+
+export const withAccent = (
+  settings: AppSettings,
+  accent: AccentPreference,
+): AppSettings => ({ ...settings, accent });
 
 export const withReviewRemindersEnabled = (
   settings: AppSettings,
@@ -117,6 +143,50 @@ export const withModelTraceContentEnabled = (
   modelTraceContentEnabled: boolean,
 ): AppSettings => ({ ...settings, modelTraceContentEnabled });
 
+/**
+ * Settings changed one at a time, each made to the settings the change before left (IMP-140). Built from the
+ * settings as they were while an earlier save was still running, a change to one setting put back the setting that
+ * save had just changed: the theme colour, saved while the picker settles, came back over a theme chosen meanwhile.
+ */
+export const serializeSettingsChanges = (
+  read: () => AppSettings,
+  save: (next: AppSettings) => Promise<void>,
+): ((change: (current: AppSettings) => AppSettings) => Promise<AppSettings>) => {
+  let last: Promise<unknown> = Promise.resolve();
+  return (change) => {
+    const run = last.then(async () => {
+      const next = change(read());
+      await save(next);
+      return next;
+    });
+    last = run.catch(() => undefined);
+    return run;
+  };
+};
+
+const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+/** Why a start could not move the capture classifier off the old default; `retried` when the next start tries again. */
+export interface CaptureClassifierMoveFailure {
+  reason: string;
+  retried: boolean;
+}
+
+const CAPTURE_CLASSIFIER_NAMES: Record<CaptureClassifier, string> = {
+  local: "规则加本机模型",
+  rules: "只用规则",
+  models: "规则加模型",
+};
+
+/** The failure as the reader is told it, naming the classifier kept as it is (IMP-154). */
+export const captureClassifierMoveFailedMessage = (kept: CaptureClassifier, failure: CaptureClassifierMoveFailure): string =>
+  `设置保存不了（${failure.reason}），采集分类这次仍按「${CAPTURE_CLASSIFIER_NAMES[kept]}」` +
+  (kept === "models" ? "：每一轮对话都会按模型页的后端顺序发给所选后端，可能是命令行或远程服务" : "") +
+  "。" +
+  (failure.retried
+    ? "请检查设置所在文件夹的写入权限，下次启动会再试一次；也可以在模型页手动选择。"
+    : "设置只写下了一部分，下次启动以已写下的为准，之后不会再自动更改；需要时请在模型页手动选择。");
+
 const isMissing = (error: unknown): boolean =>
   typeof error === "object" &&
   error !== null &&
@@ -131,10 +201,63 @@ export class SettingsRepository {
   setAside: string | null = null;
   /** Where a load set the file beside the settings aside, unreadable: the settings it held are back at their defaults. */
   addedSetAside: string | null = null;
+  /**
+   * Beside the settings, the record that the capture classifier was decided (IMP-154): moved off the old default,
+   * or chosen by the reader. A file of its own, which no earlier build reads or writes over.
+   */
+  readonly #decidedPath: string;
+  /** Why the capture classifier could not be moved off the old default at this start; null when it was. */
+  captureClassifierMoveFailed: CaptureClassifierMoveFailure | null = null;
 
   constructor(path: string) {
     this.#path = path;
     this.#addedPath = path.replace(/(\.json)?$/u, "-extra.json");
+    this.#decidedPath = path.replace(/(\.json)?$/u, "-migrations.json");
+  }
+
+  /**
+   * The old default `rules` moved to the new one once (IMP-154): the settings to use. Every save before wrote the
+   * field, so a `rules` there cannot be told from one the reader chose. The record first, then the classifier: no
+   * failure at any step leaves the new default used with no record of the move. The record not written, nothing
+   * changes and the next start tries again; written but the classifier not saved, the settings stay as they were
+   * (`rules`) and are not moved again, for the reader to change by hand. `captureClassifierMoveFailed` says which.
+   */
+  async moveCaptureClassifier(settings: AppSettings): Promise<AppSettings> {
+    this.captureClassifierMoveFailed = null;
+    if (await this.#captureClassifierDecided()) return settings;
+    try {
+      await this.recordCaptureClassifierDecided();
+    } catch (error) {
+      this.captureClassifierMoveFailed = { reason: errorMessage(error), retried: true };
+      return settings;
+    }
+    if (settings.captureClassifier !== "rules") return settings;
+    const moved: AppSettings = { ...settings, captureClassifier: DEFAULT_CAPTURE_CLASSIFIER };
+    try {
+      await this.save(moved);
+    } catch (error) {
+      this.captureClassifierMoveFailed = { reason: errorMessage(error), retried: false };
+      return settings;
+    }
+    return moved;
+  }
+
+  /**
+   * Said before a classifier the reader chose is saved: that `rules` is then a choice, kept at every start, even
+   * after a move that failed. Throws when it cannot be written, and the choice is not saved either.
+   */
+  async recordCaptureClassifierDecided(): Promise<void> {
+    await this.#write(this.#decidedPath, { captureClassifier: "decided" });
+  }
+
+  async #captureClassifierDecided(): Promise<boolean> {
+    try {
+      await stat(this.#decidedPath);
+      return true;
+    } catch (error) {
+      // Not known to be absent: left as it is rather than a `rules` the reader chose moved a second time.
+      return !isMissing(error);
+    }
   }
 
   async load(): Promise<AppSettings> {
@@ -146,7 +269,7 @@ export class SettingsRepository {
         return { ...DEFAULT_SETTINGS };
       }
       throw new Error(
-        `读不出设置文件 ${this.#path}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Decision。`,
+        `读不出设置文件 ${this.#path}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Paraself。`,
       );
     }
     let stored: unknown;
@@ -158,7 +281,7 @@ export class SettingsRepository {
     const version = typeof stored === "object" && stored !== null && "version" in stored ? stored.version : undefined;
     // Written by a later build: set aside here, that build would find its settings gone.
     if (typeof version === "number" && version > 3) {
-      throw new Error(`设置文件 ${this.#path} 是更新版本的 Decision 写下的，这个版本读不了，请用更新的版本打开。`);
+      throw new Error(`设置文件 ${this.#path} 是更新版本的 Paraself 写下的，这个版本读不了，请用更新的版本打开。`);
     }
     const parsed = storedSettingsSchema.safeParse(stored);
     if (!parsed.success) {
@@ -169,7 +292,7 @@ export class SettingsRepository {
         await rename(this.#path, aside);
       } catch {
         // Not set aside, the next save would write over it.
-        throw new Error(`设置文件 ${this.#path} 读不出来，也没能把它移到一边，请把它移走后重新打开 Decision。`);
+        throw new Error(`设置文件 ${this.#path} 读不出来，也没能把它移到一边，请把它移走后重新打开 Paraself。`);
       }
       this.setAside = aside;
       return { ...DEFAULT_SETTINGS };
@@ -188,6 +311,7 @@ export class SettingsRepository {
         reviewRemindersEnabled: true,
         localCredentialsEnabled: false,
         captureClassifier: "rules",
+        accent: DEFAULT_ACCENT,
         ...added,
       };
     }
@@ -200,6 +324,7 @@ export class SettingsRepository {
         reviewRemindersEnabled: true,
         localCredentialsEnabled: false,
         captureClassifier: "rules",
+        accent: DEFAULT_ACCENT,
         ...added,
       };
     }
@@ -214,7 +339,7 @@ export class SettingsRepository {
     } catch (error) {
       if (isMissing(error)) return {};
       throw new Error(
-        `读不出设置文件 ${this.#addedPath}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Decision。`,
+        `读不出设置文件 ${this.#addedPath}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Paraself。`,
       );
     }
     try {

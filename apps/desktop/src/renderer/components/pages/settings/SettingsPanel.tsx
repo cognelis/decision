@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import {
+  ACCENT_PRESET_IDS,
+  ACCENT_PRESETS,
   THEME_PREFERENCES,
+  isAccentPreset,
+  type AccentPreference,
   type ThemePreference,
 } from "../../../../shared/appearance.js";
 import type {
@@ -23,26 +27,53 @@ const themeLabel: Record<ThemePreference, string> = {
   dark: "深色",
 };
 
+/** The card an action was taken in: its outcome is said there, under it, not in a corner of the page. */
+type SettingsSection = "appearance" | "reminders" | "credentials" | "storage";
+type SettingsAction = SettingsSection | "theme" | "accent" | "reveal" | "vault" | "index";
+
 export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
-  const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [messages, setMessages] = useState<Partial<Record<SettingsAction, { section: SettingsSection; text: string; error: boolean }>>>({});
+  const [busy, setBusy] = useState<Partial<Record<SettingsAction, boolean>>>({});
+  const pending = useRef(new Set<SettingsAction>());
+  const customAccent = !isAccentPreset(snapshot.accent);
+  const [customColor, setCustomColor] = useState(customAccent ? snapshot.accent : "#4d7c0f");
+  // The custom colour waiting for the picker to settle: a preset chosen meanwhile drops it; leaving the page saves it.
+  const pendingCustom = useRef<{ timer: ReturnType<typeof setTimeout>; color: AccentPreference } | null>(null);
+  const dropPendingCustom = (): void => {
+    if (pendingCustom.current !== null) clearTimeout(pendingCustom.current.timer);
+    pendingCustom.current = null;
+  };
+  useEffect(() => () => {
+    const pending = pendingCustom.current;
+    if (pending === null) return;
+    clearTimeout(pending.timer);
+    void api.setAccent(pending.color).catch(() => undefined);
+  }, [api]);
 
   const run = async <T,>(
+    section: SettingsSection,
     operation: () => Promise<T>,
     success: string | ((result: T) => string),
+    action: SettingsAction = section,
   ): Promise<void> => {
-    setBusy(true);
-    setMessage(null);
+    if (pending.current.has(action)) return;
+    pending.current.add(action);
+    setBusy((current) => ({ ...current, [action]: true }));
+    setMessages(({ [action]: _previous, ...rest }) => rest);
     try {
       // null is a choice cancelled (a folder not picked): nothing happened, so nothing is said.
       const result = await operation();
-      if (result !== null) setMessage(typeof success === "string" ? success : success(result));
+      if (result !== null) setMessages((current) => ({ ...current, [action]: { section, text: typeof success === "string" ? success : success(result), error: false } }));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
+      setMessages((current) => ({ ...current, [action]: { section, text: error instanceof Error ? error.message : String(error), error: true } }));
     } finally {
-      setBusy(false);
+      pending.current.delete(action);
+      setBusy(({ [action]: _finished, ...rest }) => rest);
     }
   };
+  const status = (section: SettingsSection) => Object.entries(messages).map(([action, message]) =>
+    message.section !== section ? null : <p key={action} className={message.error ? "settings-status error" : "settings-status"} role="status">{message.text}</p>,
+  );
 
   return (
     <section
@@ -80,9 +111,9 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
                 <button
                   key={theme}
                   aria-pressed={snapshot.theme === theme}
-                  disabled={busy}
+                  disabled={busy.theme}
                   onClick={(event) =>
-                    keepSwitchFocus(event.currentTarget, run(() => api.setTheme(theme), "主题已更新。"))
+                    keepSwitchFocus(event.currentTarget, run("appearance", () => api.setTheme(theme), "主题已更新。", "theme"))
                   }
                 >
                   {themeLabel[theme]}
@@ -90,6 +121,59 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
               ))}
             </div>
           </div>
+          <div className="general-setting-block appearance-setting-block accent-setting-block">
+            <div>
+              <strong>主题色</strong>
+              <p>只用在需要你处理的地方：待处理计数、当前的主要操作。浅色、深色各有一档配好对比度的色值；自定义的颜色会自动调深或调浅，保证文字看得清。</p>
+            </div>
+            <div className="accent-swatches" role="group" aria-label="主题色">
+              {ACCENT_PRESET_IDS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  className="accent-swatch"
+                  aria-pressed={snapshot.accent === id}
+                  disabled={busy.accent}
+                  style={{ "--swatch-light": ACCENT_PRESETS[id].light, "--swatch-dark": ACCENT_PRESETS[id].dark } as CSSProperties}
+                  onClick={(event) => {
+                    dropPendingCustom();
+                    keepSwitchFocus(event.currentTarget, run("appearance", () => api.setAccent(id), "主题色已更新。", "accent"));
+                  }}
+                >
+                  <i aria-hidden="true" />
+                  <span>{ACCENT_PRESETS[id].label}</span>
+                </button>
+              ))}
+              <label
+                className="accent-swatch accent-swatch-custom"
+                data-pressed={customAccent ? "true" : undefined}
+                style={{ "--swatch-light": customColor, "--swatch-dark": customColor } as CSSProperties}
+              >
+                {/* Saved once the colour stops changing: the picker reports every step of a drag. */}
+                <input
+                  type="color"
+                  aria-label="自定义主题色"
+                  disabled={busy.accent}
+                  value={customColor}
+                  onChange={(event) => {
+                    const color = event.currentTarget.value.toLowerCase() as AccentPreference;
+                    setCustomColor(color);
+                    dropPendingCustom();
+                    pendingCustom.current = {
+                      color,
+                      timer: setTimeout(() => {
+                        pendingCustom.current = null;
+                        void run("appearance", () => api.setAccent(color), "主题色已更新。", "accent");
+                      }, 250),
+                    };
+                  }}
+                />
+                <i aria-hidden="true" />
+                <span>自定义</span>
+              </label>
+            </div>
+          </div>
+          {status("appearance")}
         </section>
 
         <section
@@ -112,10 +196,11 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
             <label className="provider-switch">
               <input type="checkbox" role="switch" aria-label="复盘提醒"
                 checked={snapshot.reviewRemindersEnabled ?? true}
-                disabled={busy}
+                disabled={busy.reminders}
                 onChange={(event) => {
                   const enabled = event.currentTarget.checked;
                   keepSwitchFocus(event.currentTarget, run(
+                    "reminders",
                     () => api.setReviewRemindersEnabled(enabled),
                     enabled ? "已开启复盘提醒。" : "已关闭复盘提醒。",
                   ));
@@ -123,6 +208,7 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
               />
             </label>
           </div>
+          {status("reminders")}
         </section>
 
         <section className="settings-card general-card" aria-labelledby="credentials-title">
@@ -132,17 +218,18 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
           <div className="general-setting-block">
             <div>
               <strong>本地密钥模式</strong>
-              <p id="local-credentials-description">开启后，密钥以明文保存在本机应用目录，文件仅限当前用户读写，不再调用系统钥匙串。切换会迁移已有密钥，首次迁移可能需要系统密码；关闭后恢复系统加密。</p>
+              <p id="local-credentials-description">开启后，密钥经混淆保存在本机应用目录，文件里看不到原文，扫描工具也认不出；这不是加密，能读到这个文件和本应用的人可以还原。文件仅限当前用户读写，不再调用系统钥匙串。切换会迁移已有密钥，首次迁移可能需要系统密码；关闭后恢复系统加密。</p>
             </div>
             <label className="provider-switch">
               <input type="checkbox" role="switch" aria-label="本地密钥模式"
                 aria-describedby="local-credentials-description"
                 checked={snapshot.localCredentialsEnabled ?? false}
                 aria-checked={snapshot.localCredentialsEnabled ?? false}
-                disabled={busy}
+                disabled={busy.credentials}
                 onChange={(event) => {
                   const enabled = event.currentTarget.checked;
                   keepSwitchFocus(event.currentTarget, run(
+                    "credentials",
                     () => api.setLocalCredentialsEnabled(enabled),
                     enabled ? "已开启本地密钥模式。" : "已恢复系统加密。",
                   ));
@@ -150,6 +237,7 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
               />
             </label>
           </div>
+          {status("credentials")}
         </section>
 
         <section
@@ -174,15 +262,15 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
               <button
                 type="button"
                 className="secondary-button"
-                disabled={busy || snapshot.vaultPath === null}
+                disabled={busy.reveal || snapshot.vaultPath === null}
                 onClick={(event) =>
-                  keepSwitchFocus(event.currentTarget, run(async () => {
+                  keepSwitchFocus(event.currentTarget, run("storage", async () => {
                     // A path printed on screen is not a path you can reach;
                     // this is the one folder worth backing up by hand.
                     if (!(await api.revealVault())) {
                       throw new Error("没有找到这个仓库目录，它可能已被移动。");
                     }
-                  }, "已在文件管理器中显示仓库。"))
+                  }, "已在文件管理器中显示仓库。", "reveal"))
                 }
               >
                 在文件管理器中显示
@@ -190,9 +278,9 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
               <button
                 type="button"
                 className="secondary-button"
-                disabled={busy}
+                disabled={busy.vault}
                 onClick={(event) =>
-                  keepSwitchFocus(event.currentTarget, run(() => api.chooseVault(), "仓库已更新，重启后生效。"))
+                  keepSwitchFocus(event.currentTarget, run("storage", () => api.chooseVault(), "仓库已更新，重启后生效。", "vault"))
                 }
               >
                 更换仓库
@@ -213,26 +301,24 @@ export const SettingsPanel = ({ snapshot, api }: SettingsPanelProps) => {
             <button
               type="button"
               className="secondary-button"
-              disabled={busy}
+              disabled={busy.index}
               onClick={(event) =>
                 keepSwitchFocus(event.currentTarget, run(
+                  "storage",
                   () => api.rebuildIndex(),
                   (report) => report.diagnostics.length === 0
                     ? `已从 Markdown 重建决策索引，共 ${report.indexedCount} 条。`
                     : `已从 Markdown 重建决策索引，共 ${report.indexedCount} 条；${report.diagnostics.length} 处需要处理，见上方说明。`,
+                  "index",
                 ))
               }
             >
               重建决策索引
             </button>
           </div>
+          {status("storage")}
         </section>
       </div>
-      {message === null ? null : (
-        <p className="settings-message" role="status">
-          {message}
-        </p>
-      )}
     </section>
   );
 };

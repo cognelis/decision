@@ -25,6 +25,33 @@ const makeStore = async () => {
 };
 
 describe("DecisionStore", () => {
+  it.each(["captured", "skipped"] as const)("puts an old decision confirmed as %s first, also after reopening and rebuilding", async (status) => {
+    const { root, repository, index, store } = await makeStore();
+    const old = recordFixture({ id: "old-pending", created: "2025-01-01T00:00:00.000Z", status: "deferred_rationale", rationaleStatus: "deferred", rationaleOriginal: null });
+    const saved = await store.save(old);
+    for (let day = 1; day <= 13; day += 1) {
+      await store.save(recordFixture({ id: `newer-${day}`, created: `2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z` }));
+    }
+    expect(index.listRecent().some(({ id }) => id === old.id)).toBe(false);
+    const before = Date.now();
+    if (status === "captured") await store.completeDeferredRationale(old.id, { rationale: "补上当时遗漏的理由。" });
+    else await store.skipDeferredRationale(old.id);
+    expect(index.listRecent()[0]).toMatchObject({ id: old.id, created: old.created, rationaleStatus: status });
+    const confirmed = await repository.read(saved.note.path);
+    expect(Date.parse(confirmed.record.confirmedAt!)).toBeGreaterThanOrEqual(before);
+    expect(Date.parse(confirmed.record.confirmedAt!)).toBeLessThanOrEqual(Date.now());
+    // Recency does not change when it happened, the note's path, or calendar counts.
+    expect(index.countSince("2026-01-01T00:00:00.000Z")).toBe(13);
+    index.close();
+    const reopened = new SqliteIndex(join(root, "index.sqlite"));
+    try {
+      expect(reopened.listRecent()[0]?.id).toBe(old.id);
+      await new DecisionStore(repository, reopened).rebuildIndex();
+      expect(reopened.listRecent()[0]?.id).toBe(old.id);
+      expect((await repository.read(saved.note.path)).record.confirmedAt).toBe(confirmed.record.confirmedAt);
+    } finally { reopened.close(); }
+  });
+
   it("writes Markdown before updating the derived index", async () => {
     const { index, store } = await makeStore();
 
@@ -192,6 +219,23 @@ describe("DecisionStore", () => {
     expect(() => index.upsert(reread)).not.toThrow();
     expect(index.findDecisions(["dec-new"])).toHaveLength(1);
     expect(index.findDecisions(["dec-old"])).toHaveLength(0);
+    index.close();
+  });
+
+  it("moves what is bound to a note along when its deferred rationale, a skipped one or its applied principles are written (CS-3-F)", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-store-rebind-"));
+    const repository = new MarkdownRepository(root);
+    const index = new SqliteIndex(join(root, "index.sqlite"));
+    const moved: Array<[string, string, string]> = [];
+    const store = new DecisionStore(repository, index, undefined, async (id, from, to) => { moved.push([id, from, to]); return 0; });
+    const mk = (id: string) => recordFixture({ id, status: "deferred_rationale", rationaleStatus: "deferred", rationaleOriginal: null, reasonFactors: [] });
+    const a = await store.save(mk("dec-a"));
+    const b = await store.save(mk("dec-b"));
+    const c = await store.save(recordFixture({ id: "dec-c" }));
+    const done = await store.completeDeferredRationale("dec-a", { rationale: "因为团队熟悉" });
+    const skipped = await store.skipDeferredRationale("dec-b");
+    const applied = await store.updateAppliedPrinciples("dec-c", { appliedPrincipleIds: ["principle-1"] });
+    expect(moved).toEqual([["dec-a", a.note.contentHash, done.note.contentHash], ["dec-b", b.note.contentHash, skipped.note.contentHash], ["dec-c", c.note.contentHash, applied.note.contentHash]]);
     index.close();
   });
 

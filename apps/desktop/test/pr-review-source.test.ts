@@ -56,6 +56,18 @@ describe("source investigation", () => {
     expect(vi.mocked(source.readFileContent).mock.calls.every((call) => call[1].startsWith("src/module/") && call[1].endsWith(".ts"))).toBe(true);
   });
 
+  it("searches and reads a file holding U+FFFD as a character, and leaves out only binary content", async () => {
+    // This repository's own review service holds the character literally: every search scoped to it found nothing.
+    const source = client(["src/service.ts", "src/blob.ts"]);
+    vi.mocked(source.readFileContent).mockImplementation(async (_pr, path) => path === "src/blob.ts" ? "fitJson\0" : "const mark = \"\uFFFD\";\nfitJson(text);");
+    const found = await readReviewSource(source, pinned, { action: "search_code", query: "fitJson" }, signal());
+    expect(found.result).toMatchObject({ unreadFiles: 1, unread: [{ path: "src/blob.ts", reason: "二进制内容" }] });
+    expect(found.evidence.map((item) => item.path)).toEqual(["src/service.ts"]);
+    const read = await readReviewSource(source, pinned, { action: "read_file", path: "src/service.ts", startLine: 1, endLine: 2 }, signal());
+    expect(read.evidence[0]!.text).toContain("\uFFFD");
+    await expect(readReviewSource(source, pinned, { action: "read_file", path: "src/blob.ts", startLine: 1, endLine: 1 }, signal())).rejects.toThrow("二进制");
+  });
+
   it("reads old code and larger ranges, rejects traversal and propagates authorization failures", async () => {
     const source = client(["a.ts"], "one\ntwo\nthree\nfour");
     const read = await readReviewSource(source, pinned, { action: "read_file", path: "a.ts", side: "old", startLine: 2, endLine: 3 }, signal());
@@ -95,7 +107,7 @@ it("carries actual caller evidence into verification and lets the verifier read 
     expect(prompt.sourceEvidence).toEqual(expect.arrayContaining([expect.objectContaining({ path: "src/caller.ts", commit: pr.source.commit, text: expect.stringContaining("account.name") })]));
     if (!verify++) return { verdicts: [], reads: null, sourceReads: [{ action: "read_file", path: "src/account.ts", side: "old", startLine: 1, endLine: 3, query: null, offset: null }] };
     expect(prompt.sourceEvidence).toEqual(expect.arrayContaining([expect.objectContaining({ path: "src/account.ts", side: "old", text: "throw error;" })]));
-    return { verdicts: [{ id: 1, score: 95, reason: "旧版抛异常，新版返回空值，调用方没有防护。" }] };
+    return { verdicts: [{ id: 1, verdict: "confirmed", reason: "旧版抛异常，新版返回空值，调用方没有防护。" }] };
   }, { onCandidates: (items) => observed.push(items) });
   test.client.repositoryFiles = async () => ({ paths: ["src/account.ts", "src/caller.ts"], complete: true });
   vi.mocked(test.client.readFile).mockResolvedValue("const account = loadAccount(id);\nreturn account.name;");

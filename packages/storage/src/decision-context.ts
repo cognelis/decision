@@ -11,8 +11,11 @@ import { ObsidianVaultRepository, type ObsidianVaultNote } from "./obsidian-vaul
 import { DecisionScopeRepository } from "./decision-scope.js";
 import { DecisionRelationRepository } from "./decision-relation.js";
 import type { DecisionRelationRecord } from "@cognelis/decision-protocol";
+import type { SelectedAnswer } from "@cognelis/decision-core";
 
 export interface DecisionContextDocument {
+  /** The note's choice, with legacy option IDs resolved against that note's own options. */
+  answer?: SelectedAnswer;
   source: DecisionContextSource;
   kind: DecisionContextResult["kind"];
   id: string;
@@ -20,7 +23,20 @@ export interface DecisionContextDocument {
   project: string | null;
   status: string;
   created: string;
+  /**
+   * When an App decision was made, as its note's occurred_at says: its `created` is when the App wrote it, and decisions
+   * told of together were written within a second of each other (R17). Absent, `created` says when the record was made.
+   */
+  occurred?: string;
+  /**
+   * An App decision's created as its note has it: `created` is that read as a time and written again in UTC, which lists
+   * and ranking order by, and read so, 2026-02-30 was 2026-03-02 and 2026/10/30 a day (R17-REVIEW). Absent, `created` is
+   * as written.
+   */
+  createdAsWritten?: string;
   summary: string;
+  rationale?: string | null;
+  context?: string | null;
   appliesWhen: string | null;
   caution: string | null;
   tags: string[];
@@ -36,6 +52,11 @@ export interface DecisionContextDocument {
   scopeState?: "unrecorded" | "inline" | "current" | "stale" | "unavailable";
   scopeRevision?: number;
   outcomeState?: DecisionContextResult["outcomeState"];
+  /** A summarized note's `options_presented` and `constraints_revealed`: searched with its text, which most do not repeat. */
+  optionsPresented?: string[];
+  constraintsRevealed?: string[];
+  /** What was added to or rewritten in it (decision-amendments): searched with its text, never part of the note. */
+  amendedText?: string;
 }
 
 export interface DecisionContextSnapshot {
@@ -69,6 +90,9 @@ const ID_LINE = /^id:[ \t]*["']?([^"'\r\n]+?)["']?[ \t]*$/gmu;
 const identifier = z.string().trim().min(1).max(200);
 const references = z.union([identifier, z.array(identifier).max(50), z.null()])
   .optional().transform((value) => value == null ? [] : typeof value === "string" ? [value] : [...new Set(value)]);
+// Only searched: a value of another shape (edited by hand) is none, not a note set aside and gone from every search.
+const searchedTexts = z.unknown().optional().transform((value) =>
+  (Array.isArray(value) ? value : [value]).flatMap((item) => (typeof item === "string" && item.trim() !== "" ? [clipText(item.trim(), 1_000)] : [])).slice(0, 50));
 const legacySchema = z.object({
   id: identifier,
   created: z.string().min(1).max(100),
@@ -84,6 +108,8 @@ const legacySchema = z.object({
   superseded_by: references,
   applies_when: z.string().max(2_000).nullable().optional(),
   caution: z.string().max(2_000).nullable().optional(),
+  options_presented: searchedTexts,
+  constraints_revealed: searchedTexts,
 });
 
 /** Compatibility is read-only: legacy accepted decisions are never promoted to principles. */
@@ -110,7 +136,7 @@ export const parseDecisionContextNote = (
     const file = note.relativePath.split("/").at(-1)!.replace(/\.md$/iu, "");
     return {
       ...common,
-      kind: "historical_decision",
+      kind: "summarized_decision",
       id: value.id,
       title: clipText(file, 500),
       project: value.project ?? null,
@@ -124,10 +150,20 @@ export const parseDecisionContextNote = (
       supersededBy: value.superseded_by,
       client: value.source_client ?? null,
       sessionId: value.session_id ?? null,
+      optionsPresented: value.options_presented,
+      constraintsRevealed: value.constraints_revealed,
     };
   }
   if (source === "decisions") {
     const value = parseDecision(markdown);
+    const answer = {
+      ...value.selectedAnswer,
+      values: value.selectedAnswer.values.map((selected) => {
+        if (value.options.some((option) => option.label === selected)) return selected;
+        const matches = value.options.filter((option) => option.id === selected);
+        return matches.length === 1 ? matches[0]!.label : selected;
+      }),
+    };
     // Within the response's bounds, as the legacy source's schema already is: a note edited past them
     // is one this scan sets aside and counts, not one that fails every search whose page it is on.
     if (value.id.length > 200 || (value.supersedes?.length ?? 0) > 200 || (value.project?.length ?? 0) > 500) {
@@ -136,13 +172,18 @@ export const parseDecisionContextNote = (
     return {
       ...common,
       kind: "recorded_decision",
+      answer,
       id: value.id,
       // A 决策点 emptied in Obsidian, heading kept, is titled by its id rather than failing every search it is found in.
       title: clipText(value.question, 500) || value.id,
       project: value.project,
       status: value.status,
       created: value.created,
+      ...(value.occurredAt === null ? {} : { occurred: value.occurredAt }),
+      createdAsWritten: typeof properties.created === "string" ? properties.created : "",
       summary: value.selectedAnswer.values.join("；"),
+      rationale: value.rationaleStatus === "captured" ? [value.rationaleOriginal, ...value.reasonFactors].filter(Boolean).join("\n") || null : null,
+      context: value.context === null ? null : [value.context.taskBackground, value.context.decisionFraming, value.context.truncated ? "（原始背景不完整）" : null].filter(Boolean).join("\n"),
       appliesWhen: null,
       caution: null,
       // A tag only labels: an overlong one is shortened rather than the record set aside.
@@ -152,7 +193,7 @@ export const parseDecisionContextNote = (
       supersededBy: [],
       client: value.sourceClient,
       sessionId: null,
-      outcomeState: decisionOutcomeStateSchema.parse({ expectedOutcome: value.expectedOutcome ?? null, outcome: value.outcome, review: value.outcomeReview, reviewDueDate: value.reviewDueDate }),
+      outcomeState: decisionOutcomeStateSchema.parse({ expectedOutcome: value.expectedOutcome ?? null, outcome: value.outcome, review: value.outcomeReview, reviewDueDate: value.reviewDueDate, ...(value.reviewScheduleReasons?.length ? { reviewScheduleReasons: value.reviewScheduleReasons } : {}) }),
     };
   }
   const value = parseMethodology(markdown);

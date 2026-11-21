@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AnthropicMessagesAdapter,
 } from "../src/main/model/adapters/anthropic-messages-adapter.js";
+import { anthropicOutputSchema } from "../src/main/model/adapters/anthropic-output-schema.js";
 import {
   ModelProviderError,
   type HttpModelRequest,
@@ -116,6 +117,25 @@ const setup = (
 };
 
 describe("AnthropicMessagesAdapter", () => {
+  it.each(["invoke", "generate"] as const)("sends an Anthropic-compatible schema through %s and traces that exact schema", async (method) => {
+    const { adapter, requests } = setup();
+    const original = structuredClone(semanticOutputJsonSchema);
+    const result = method === "invoke" ? await adapter.invoke(input) : await adapter.generate({ ...methodologyRequest, outputSchema: semanticOutputJsonSchema });
+    const body = requests[0]!.body as { output_config: { format: { schema: { properties: Record<string, Record<string, unknown>> } } } };
+    const schema = body.output_config.format.schema;
+    expect(schema.properties.optionLabels).not.toHaveProperty("maxItems");
+    expect(schema.properties.optionLabels!.items).not.toHaveProperty("maxLength");
+    expect(schema.properties.question).not.toHaveProperty("maxLength");
+    expect(schema.properties.optionLabels).toHaveProperty("description", 'Constraints: {"maxItems":8}');
+    expect(result.traceInput.outputSchema).toEqual(schema);
+    expect(semanticOutputJsonSchema).toEqual(original);
+  });
+
+  it("still rejects too many options even though the API schema cannot enforce maxItems", async () => {
+    const { adapter } = setup(response({ content: [{ type: "text", text: JSON.stringify({ ...JSON.parse(visibleOutput), optionLabels: Array.from({ length: 9 }, (_, index) => `选项 ${index}`) }) }] }));
+    await expect(adapter.invoke(input)).rejects.toMatchObject({ code: "invalid_output" });
+  });
+
   it("keeps what a call cut off at max_tokens cost, and says why it stopped", async () => {
     const { adapter } = setup(
       response({
@@ -153,7 +173,7 @@ describe("AnthropicMessagesAdapter", () => {
       messages: [{ role: "user", content: methodologyRequest.userPrompt }],
       output_config: {
         format: {
-          schema: methodologyRequest.outputSchema,
+          schema: { ...methodologyRequest.outputSchema, additionalProperties: false },
         },
       },
     });
@@ -166,6 +186,8 @@ describe("AnthropicMessagesAdapter", () => {
 
     expect(requests).toHaveLength(1);
     expect(requests[0]).toEqual({
+      provider: profile.kind,
+      model: profile.model,
       url: "https://api.anthropic.com/v1/messages",
       headers: {
         "anthropic-version": "2023-06-01",
@@ -185,7 +207,7 @@ describe("AnthropicMessagesAdapter", () => {
         output_config: {
           format: {
             type: "json_schema",
-            schema: semanticOutputJsonSchema,
+            schema: anthropicOutputSchema(semanticOutputJsonSchema),
           },
         },
       },
@@ -209,7 +231,7 @@ describe("AnthropicMessagesAdapter", () => {
       traceInput: {
         systemPrompt: semanticSystemPrompt,
         userPrompt: buildSemanticUserPrompt(input),
-        outputSchema: semanticOutputJsonSchema,
+        outputSchema: anthropicOutputSchema(semanticOutputJsonSchema),
         clientSystemPromptVisibility: "visible",
       },
       usage: {
@@ -228,14 +250,8 @@ describe("AnthropicMessagesAdapter", () => {
     );
   });
 
+  // A refusal is the content refused, not output: model-content-refused.test.ts.
   it.each([
-    [
-      "refusal",
-      {
-        stop_reason: "refusal",
-        content: [{ type: "text", text: visibleOutput }],
-      },
-    ],
     ["missing text", { content: [] }],
     [
       "unsupported content",

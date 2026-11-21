@@ -14,7 +14,7 @@ import type {
 import { isComposing } from "../keyboard.js";
 import { useSearchHighlight } from "../use-search-highlight.js";
 import { ModalDialog } from "./ModalDialog.js";
-import { loadReviewHistory } from "./pages/pr-review/review-history.js";
+import { readReviewHistory, type ReviewHistoryEntry } from "./pages/pr-review/review-history.js";
 import { byRecency, conversationTitle, loadSessions } from "./pages/assistant/assistant-session.js";
 
 /**
@@ -24,6 +24,8 @@ import { byRecency, conversationTitle, loadSessions } from "./pages/assistant/as
  */
 export type QuickJumpApi = Pick<
   DecisionApi,
+  | "listPrReviewHistory"
+  | "savePrReviewHistory"
   | "listDecisions"
   | "listJournalEntries"
   | "searchObsidian"
@@ -185,8 +187,15 @@ export const QuickJumpDialog = ({
   vault = null,
 }: QuickJumpDialogProps) => {
   const offerPages = onOpenPage !== undefined;
-  // Kept in this window's storage, so read once per open rather than per keystroke.
-  const [reviews] = useState(() => (onOpenReview === undefined ? [] : loadReviewHistory().entries));
+  // Kept by the App: read once per open rather than per keystroke.
+  const [reviews, setReviews] = useState<ReviewHistoryEntry[]>([]);
+  const findsReviews = onOpenReview !== undefined;
+  useEffect(() => {
+    if (!findsReviews) return;
+    let gone = false;
+    void readReviewHistory(api, api === window.decision).then(({ entries }) => { if (!gone) setReviews(entries); });
+    return () => { gone = true; };
+  }, [api, findsReviews]);
   const [conversations] = useState(() => {
     if (onOpenConversation === undefined) return [];
     // Unreadable history is the assistant page's to report; here it only means no results.
@@ -496,6 +505,7 @@ export const QuickJumpDialog = ({
       onClose={onClose}
     >
       <div className="quick-jump">
+        <div className="quick-jump-search">
         <input
           ref={inputRef}
           type="search"
@@ -516,6 +526,7 @@ export const QuickJumpDialog = ({
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={handleKeyDown}
         />
+        </div>
         {unavailable.length === 0 ? null : (
           <p className="quick-jump-notice" role="status">
             {unavailable.map((kind) => GROUP_LABELS[kind]).join("、")}

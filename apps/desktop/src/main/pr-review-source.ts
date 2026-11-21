@@ -35,7 +35,8 @@ export async function readReviewSource(client: PrReviewClient, pr: PrDetails, in
     const text = side === "new" && args.endLine === undefined
       ? await client.readFile(pr, path, start, signal)
       : (await client.readFileContent(pr, path, side, signal)).split("\n").slice(start - 1, end).join("\n");
-    if (text.includes("\0") || text.includes("\uFFFD")) throw new Error("文件不是可读取的 UTF-8 源码。");
+    // A NUL byte says binary; U+FFFD is a character source may hold (this service's own file does), not another encoding.
+    if (text.includes("\0")) throw new Error("文件是二进制内容，不是可读取的源码。");
     const fitted = fitJson(text, Math.max(2, room - JSON.stringify({ path, side, commit, startLine: start }).length - 200));
     const excerpt: PrSourceEvidence = { path, side, commit, startLine: start, text: fitted, truncated: fitted !== text };
     return { evidence: [excerpt], result: { ...excerpt, requestedEndLine: end, nextLine: excerpt.truncated ? start + excerpt.text.split("\n").length - 1 : end + 1 } };
@@ -67,7 +68,7 @@ export async function readReviewSource(client: PrReviewClient, pr: PrDetails, in
       unread.push({ path, reason: error instanceof Error ? error.message.slice(0, 200) : "读取失败" });
       continue;
     }
-    if (text.includes("\0") || text.includes("\uFFFD")) { unread.push({ path, reason: "非 UTF-8 文本" }); continue; }
+    if (text.includes("\0")) { unread.push({ path, reason: "二进制内容" }); continue; }
     const lines = text.split("\n");
     const matches: PrSourceEvidence[] = [];
     for (let line = 0; line < lines.length; line++) {

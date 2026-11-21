@@ -47,15 +47,37 @@ export class DecisionStore {
   readonly #repository: MarkdownRepository;
   readonly #index: DecisionIndex;
   readonly #onIndexError: (error: Error) => void;
+  /** The scopes and relations bound to a decision's version, moved to the next by its review: how many stay stale. */
+  readonly #rebind: (id: string, from: string, to: string) => Promise<number>;
 
   constructor(
     repository: MarkdownRepository,
     index: DecisionIndex,
     onIndexError: (error: Error) => void = () => undefined,
+    rebind: (id: string, from: string, to: string) => Promise<number> = async () => -1,
   ) {
     this.#repository = repository;
     this.#index = index;
     this.#onIndexError = onIndexError;
+    this.#rebind = rebind;
+  }
+
+  /**
+   * A review written (outcome, expectation, verdict, next date) changes no choice: what was bound to the version it
+   * replaced follows it (IMP-128). `stale`: those left bound to an older one, -1 when they could not be told.
+   */
+  async #reviewed(note: ParsedStoredNote & { previousContentHash: string }): Promise<{ note: ParsedStoredNote; indexed: boolean; stale: number }> {
+    const { previousContentHash, ...written } = note;
+    let indexed = true;
+    try {
+      this.#upsert(written);
+    } catch (error) {
+      this.#onIndexError(error instanceof Error ? error : new Error(String(error)));
+      indexed = false;
+    }
+    // Not rebound, they read stale as before: under review, never taken as current by mistake.
+    const stale = previousContentHash === written.contentHash ? 0 : await this.#rebind(written.id, previousContentHash, written.contentHash).catch(() => -1);
+    return { note: written, indexed, stale };
   }
 
   async save(record: DecisionRecord, content?: string): Promise<SaveResult> {
@@ -241,28 +263,20 @@ export class DecisionStore {
     input: DeferredRationaleUpdate,
   ): Promise<SaveResult> {
     const note = await this.#repository.updateDeferredRationale(id, input);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return { note, indexed: false };
-    }
+    // The scope, relations and rewrites bound to the note as it was go on to the note as it is.
+    return this.#reviewed(note);
   }
 
   async skipDeferredRationale(id: string): Promise<SaveResult> {
     const note = await this.#repository.skipDeferredRationale(id);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return { note, indexed: false };
-    }
+    // The scope, relations and rewrites bound to the note as it was go on to the note as it is.
+    return this.#reviewed(note);
+  }
+
+  async trashDecision(id: string, expectedContentHash: string, trashItem: (path: string) => Promise<void>): Promise<SaveResult> {
+    const note = await this.#repository.trashDecision(id, expectedContentHash, trashItem);
+    try { this.#removePath(note.path); return { note, indexed: true }; }
+    catch (error) { this.#onIndexError(error instanceof Error ? error : new Error(String(error))); return { note, indexed: false }; }
   }
 
   async deleteDeferredRationale(id: string): Promise<SaveResult> {
@@ -278,15 +292,9 @@ export class DecisionStore {
     }
   }
 
-  async updateLifecycle(id: string, input: DecisionLifecycleUpdate, expectedContentHash: string): Promise<{ note: ParsedStoredNote; indexed: boolean }> {
+  async updateLifecycle(id: string, input: DecisionLifecycleUpdate, expectedContentHash: string): Promise<{ note: ParsedStoredNote; indexed: boolean; stale: number }> {
     const note = await this.#repository.updateLifecycle(id, input, expectedContentHash);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(error instanceof Error ? error : new Error(String(error)));
-      return { note, indexed: false };
-    }
+    return this.#reviewed(note);
   }
 
   async updateExpectedOutcome(
@@ -295,28 +303,12 @@ export class DecisionStore {
     basis?: string,
   ): Promise<SaveResult> {
     const note = await this.#repository.updateExpectedOutcome(id, expectedOutcome, basis);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return { note, indexed: false };
-    }
+    return this.#reviewed(note);
   }
 
   async updateOutcome(id: string, outcome: string, basis?: string): Promise<SaveResult> {
     const note = await this.#repository.updateOutcome(id, outcome, basis);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return { note, indexed: false };
-    }
+    return this.#reviewed(note);
   }
 
   async updateReviewDueDate(
@@ -324,15 +316,7 @@ export class DecisionStore {
     reviewDueDate: string | null,
   ): Promise<SaveResult> {
     const note = await this.#repository.updateReviewDueDate(id, reviewDueDate);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return { note, indexed: false };
-    }
+    return this.#reviewed(note);
   }
 
   async updateAppliedPrinciples(
@@ -340,15 +324,8 @@ export class DecisionStore {
     input: AppliedPrinciplesUpdate,
   ): Promise<SaveResult> {
     const note = await this.#repository.updateAppliedPrinciples(id, input);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return { note, indexed: false };
-    }
+    // The scope, relations and rewrites bound to the note as it was go on to the note as it is.
+    return this.#reviewed(note);
   }
 
   async updateOutcomeReview(
@@ -357,14 +334,6 @@ export class DecisionStore {
     basis?: string,
   ): Promise<SaveResult> {
     const note = await this.#repository.updateOutcomeReview(id, input, basis);
-    try {
-      this.#upsert(note);
-      return { note, indexed: true };
-    } catch (error) {
-      this.#onIndexError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return { note, indexed: false };
-    }
+    return this.#reviewed(note);
   }
 }

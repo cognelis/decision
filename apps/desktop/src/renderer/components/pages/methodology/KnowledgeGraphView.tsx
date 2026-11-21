@@ -1,3 +1,4 @@
+import { plainHeadline } from "../../question-title.js";
 import type {
   KnowledgeGraphSnapshot,
   OutcomeVerdict,
@@ -9,6 +10,7 @@ interface KnowledgeGraphViewProps {
   loading: boolean;
   error: string | null;
   mergeLoading: boolean;
+  onRetry?(): void;
   onOpenPrinciples(): void;
   onOpenPrinciple(id: string): void;
   onMergePrinciples(sourceId: string, targetId: string): void;
@@ -25,20 +27,21 @@ const verdictLabels: Record<OutcomeVerdict, string> = {
 };
 
 // Worded by the decisions behind it as well, as the methodology page and consult_decision_principles word it: adopted
-// at low confidence, a principle backed by none, or by three, read 单点证据.
-const confidenceLabel = ({
+// at low confidence, a principle backed by none, or by three, read 单点证据. Coloured by the same count: taken from
+// the confidence, a principle with one source read 单点证据 in the green of 多条印证.
+const confidenceFor = ({
   confidence,
   sourceDecisionIds: { length },
-}: KnowledgeGraphSnapshot["principles"][number]): string =>
+}: KnowledgeGraphSnapshot["principles"][number]): { label: string; tone: "ok" | "warn" | "neutral" } =>
   length === 0
-    ? "待验证"
+    ? { label: "待验证", tone: "neutral" }
     : length === 1
-      ? "单点证据"
+      ? { label: "单点证据", tone: "neutral" }
       : confidence === "high"
-        ? "稳定模式"
+        ? { label: "稳定模式", tone: "ok" }
         : confidence === "medium"
-          ? "多条印证"
-          : "低可信";
+          ? { label: "多条印证", tone: "ok" }
+          : { label: "低可信", tone: "warn" };
 
 const relationLabels = {
   duplicate: "确认重复",
@@ -53,6 +56,7 @@ export const KnowledgeGraphView = ({
   loading,
   error,
   mergeLoading,
+  onRetry,
   onOpenPrinciples,
   onOpenPrinciple,
   onMergePrinciples,
@@ -70,9 +74,14 @@ export const KnowledgeGraphView = ({
   }
   if (error !== null) {
     return (
-      <p className="methodology-message error-message" role="alert">
-        关系图谱暂时无法读取：{error}
-      </p>
+      <div className="load-failure" role="alert">
+        <span>关系图谱暂时无法读取：{error}</span>
+        {onRetry === undefined ? null : (
+          <button type="button" className="secondary-button" onClick={onRetry}>
+            重试
+          </button>
+        )}
+      </div>
     );
   }
   if (graph === null || graph.principles.length === 0) {
@@ -234,7 +243,10 @@ export const KnowledgeGraphView = ({
             <em>{visibleRelations.length} 组</em>
           </header>
           {visibleRelations.length === 0 ? (
-            <p>当前搜索和关系筛选下没有匹配项。</p>
+            // With no principle matching either, the one line below says it for both.
+            visiblePrinciples.length === 0 ? null : (
+              <p>当前搜索和关系筛选下没有匹配项。</p>
+            )
           ) : (
             <ol>
               {visibleRelations.map((relation) => {
@@ -278,10 +290,10 @@ export const KnowledgeGraphView = ({
       )}
 
       {visiblePrinciples.length === 0 ? (
-        <div className="methodology-empty compact knowledge-graph-no-results">
-          <strong>没有匹配的原则</strong>
+        <p className="methodology-inbox-state knowledge-graph-no-results">
+          <strong>没有匹配的原则或关系</strong>
           <span>换一个关键词，或清空搜索查看全部图谱。</span>
-        </div>
+        </p>
       ) : (
       <ol className="knowledge-graph-principles">
         {visiblePrinciples.map((principle) => {
@@ -299,8 +311,8 @@ export const KnowledgeGraphView = ({
                 <div>
                   <span>已采纳原则</span>
                   <div>
-                    <em className={`methodology-confidence ${principle.confidence}`}>
-                      {confidenceLabel(principle)}
+                    <em className={`methodology-confidence ${confidenceFor(principle).tone}`}>
+                      {confidenceFor(principle).label}
                     </em>
                     <button
                       type="button"
@@ -332,7 +344,7 @@ export const KnowledgeGraphView = ({
                     <li key={decision.id}>
                       <div className="knowledge-decision-node">
                         <span>来源决策</span>
-                        <strong>{decision.question}</strong>
+                        <strong className="question-clamp">{plainHeadline(decision.question)}</strong>
                         <p>选择：{decision.selectedAnswer}</p>
                       </div>
                       <span className="knowledge-edge" aria-hidden="true">→</span>

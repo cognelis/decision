@@ -1,0 +1,10 @@
+const { app } = require("electron");
+const { mkdtempSync, rmSync } = require("node:fs");
+const { tmpdir } = require("node:os");
+const { join } = require("node:path");
+const root = mkdtempSync(join(tmpdir(), "paraself-local-review-layout-"));
+app.setPath("userData", join(root, "user-data"));
+app.setPath("sessionData", join(root, "session-data"));
+process.env.PARASELF_LOCAL_REVIEW_WORKFLOW = "1";
+process.on("exit", () => rmSync(root, { recursive: true, force: true }));
+require("./check-surface-overflow.cjs");

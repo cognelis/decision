@@ -27,6 +27,21 @@ describe("ActivityPanel", () => {
     expect(api.listModelTraces).toHaveBeenCalledTimes(2);
   });
 
+  it("sums the misrecognized deletions of the last 30 days by band and signal", async () => {
+    const snapshot = rationaleSnapshot({ current: null, primarySurface: "activity" });
+    const { api } = apiFixture(snapshot);
+    vi.mocked(api.getMisrecognitionSummary).mockResolvedValue({ days: 30, total: 3, byMode: { transcript: 2, structured_tool: 1 }, byBand: { high: 2, medium: 1, unknown: 0 }, bySignal: { awaits_confirmation: 1, has_choice_prompt: 3 }, byDetector: { "rules-v5": 3 } });
+    await act(async () => { render(<ActivityPanel snapshot={snapshot} api={api} />); });
+    const card = screen.getByRole("region", { name: "识别错误" });
+    expect(card).toHaveTextContent("近 30 天");
+    expect(card).toHaveTextContent(/3\s*条删除标为识别错误/u);
+    expect(card).toHaveTextContent("对话识别 2 · 结构化提问 1");
+    expect(card).toHaveTextContent(/直接捕获\s*2/u); expect(card).toHaveTextContent(/候选\s*1/u);
+    // Most frequent signal first.
+    expect(card.textContent!.indexOf("has_choice_prompt")).toBeLessThan(card.textContent!.indexOf("awaits_confirmation"));
+    expect(card).toHaveTextContent("rules-v5");
+  });
+
   it("says the ratings could not be read, rather than that none were given", async () => {
     const snapshot = rationaleSnapshot({ current: null, primarySurface: "activity" });
     const { api } = apiFixture(snapshot);

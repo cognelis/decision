@@ -12,6 +12,10 @@ export const existingNote = (path: string): Promise<string | null> =>
   noteText(path).catch((error: NodeJS.ErrnoException) => (error.code === "ENOENT" ? null : Promise.reject(error)));
 
 const CHANGED_MEANWHILE = "这篇笔记刚在 Obsidian 里被改过，这次没有写入；请重新打开它再试。";
+
+/** Refused by replaceNote because the note changed between the read and the write: read again, it may be written. */
+export const noteChangedMeanwhile = (error: unknown): boolean =>
+  error instanceof Error && error.message === CHANGED_MEANWHILE;
 // Nothing read, yet a file is there: one the app could not read as a note (found by neither id nor fingerprint),
 // not one just saved in Obsidian, and not one to write over.
 const IN_THE_WAY = "这个位置已有一篇 App 读不出的笔记，这次没有写入；请在 Obsidian 里处理它后再试。";

@@ -1,0 +1,669 @@
+[
+  {
+    "id": "A-0",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "都不做",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-1",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "都先不做",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-2",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "一个都不做",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-3",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "三个都不做",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-4",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "None of them",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-5",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "Neither, leave it",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-6",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "都暂缓",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-7",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "都先放放",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "A-partial",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "中间那个不做，其它做",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "A-description",
+    "group": "ir2",
+    "assistantText": "A. 保留本地缓存 —— 最稳，改动小\nB. 使用远程服务 —— 共享数据\nC. 取消缓存 —— 请求增加\n\n你选哪个？",
+    "userText": "按最稳的那个来",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "A-unknown-description",
+    "group": "ir2",
+    "assistantText": "A. 第一种实现\nB. 第二种实现\n\n你选哪个？",
+    "userText": "用最省事的那个",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "medium"
+  },
+  {
+    "id": "B-0",
+    "group": "ir2",
+    "assistantText": "1. Add index\n2. Split table\n\nTests were not run — pick one and I'll proceed.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "B-1",
+    "group": "ir2",
+    "assistantText": "1. Add index\n2. Split table\n\nValidation: not performed — your call.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "medium"
+  },
+  {
+    "id": "B-2",
+    "group": "ir2",
+    "assistantText": "1. Add index\n2. Split table\n\nNo tests were executed – choose one and I'll proceed.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "B-3",
+    "group": "ir2",
+    "assistantText": "1. Add index\n2. Split table\n\nTests were not run - please confirm which one.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "B-4",
+    "group": "ir2",
+    "assistantText": "1. Add index\n2. Split table\n\nTests were not run: pick one.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "C-0",
+    "group": "ir2",
+    "assistantText": "1. Choose the database\n2. Choose the cache\n\nPlease decide each.",
+    "userText": "1 Postgres, 2 Redis",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "C-1",
+    "group": "ir2",
+    "assistantText": "1. Pick the database\n2. Pick the cache\n\nPlease decide each.",
+    "userText": "1 Postgres, 2 Redis",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "C-2",
+    "group": "ir2",
+    "assistantText": "1. Choose between Postgres and MySQL\n2. Choose between Redis and LRU\n\nPlease decide each.",
+    "userText": "1 Postgres, 2 Redis",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "C-3",
+    "group": "ir2",
+    "assistantText": "1. Choose among Postgres and MySQL\n2. Choose among Redis and LRU\n\nPlease decide each.",
+    "userText": "1 Postgres, 2 Redis",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "C-4",
+    "group": "ir2",
+    "assistantText": "1. Pick from Postgres and MySQL\n2. Pick from Redis and LRU\n\nPlease decide each.",
+    "userText": "1 Postgres, 2 Redis",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "D-0",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 用了就行",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "D-1",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 合了再说 3",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "D-2",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 跑了再看",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "D-3",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "2 删了",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "D-4",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 已经合了，3 做",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "D-5",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 已经合了",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "D-6",
+    "group": "ir2",
+    "assistantText": "1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 合了",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "E-0",
+    "group": "ir2",
+    "assistantText": "Which tasks are already complete?",
+    "userText": "1 and 2 are complete",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "E-1",
+    "group": "ir2",
+    "assistantText": "Which steps have already run?",
+    "userText": "1 and 2 are complete",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "E-2",
+    "group": "ir2",
+    "assistantText": "Which changes remain in the patch?",
+    "userText": "1 and 2 are complete",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "F-followup",
+    "group": "ir2",
+    "assistantText": "1. Preserve the old key\n2. Add the new key\n3. Remove the alias\n\nWhich steps should I take next?",
+    "userText": "Step 1 was completed yesterday; please proceed with step 3.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "G-negative-0",
+    "group": "ir2",
+    "assistantText": "A. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\n\nWhich option should I implement?",
+    "userText": "Can you explain cache invalidation? I am asking a separate question, not choosing a backend.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "G-negative-1",
+    "group": "ir2",
+    "assistantText": "A. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\n\nWhich option should I implement?",
+    "userText": "Before deciding, help me document the existing cache behavior.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "G-negative-2",
+    "group": "ir2",
+    "assistantText": "A. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\n\nWhich option should I implement?",
+    "userText": "New task: search the project for the word cache and count the matches.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "G-positive",
+    "group": "ir2",
+    "assistantText": "A. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\n\nWhich option should I implement?",
+    "userText": "I want the Redis option. Separately, can you summarize the PR?",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "G-positive-zh",
+    "group": "ir2",
+    "assistantText": "A. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\n\nWhich option should I implement?",
+    "userText": "我选 Redis，顺便帮我看看 PR 描述。",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "IR2-SK-005",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "先做 1 和 3，2 等幂等边界确认后再说。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "IR2-SK-006",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "这次只做 1，其他两项不动。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "IR2-SK-007",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "1、3 按这个范围实施；2 暂缓。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "IR2-SK-008",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "我批准 1 和 3，先别加重试。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "IR2-SK-012",
+    "group": "topic-shift",
+    "assistantText": "我检查了导入流程，发现失败重试会重复写入部分记录。可选处理是先加幂等键，或把失败批次转入隔离队列。前者变更较小，后者运维更清楚。你希望我按哪种方式处理？",
+    "userText": "先暂停这个，继续把 README 的拼写修掉。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "IR2-SK-013",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "好，这轮只加稳定幂等键，隔离队列先不做。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "IR2-SK-014",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "按你建议的范围改：只加幂等键。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "IR2-SK-015",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "可以，本轮先实现幂等键。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "IR2-SK-016",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "批准只加幂等键，其他留后续。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "IR2-SK-031",
+    "group": "status-history",
+    "assistantText": "历史清理任务仍未启用。候选改动是：\n1. 增加过期键清理任务\n2. 保留现有手动清理方式\n3. 仅补充清理指标\n我建议先加指标再观察一周。你可以明确选择本轮要实施的改动。",
+    "userText": "我决定先保留手动清理，暂时不改。",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "IR2-SK-036",
+    "group": "english-table-partial",
+    "assistantText": "I reviewed the rollout choices and kept the scope to three independent changes:\n| ID | Change | Risk |\n|---|---|---|\n| A | Add a health check before traffic switch | Low |\n| B | Enable automatic rollback | Medium; needs an alert threshold |\n| C | Keep the previous build available for one day | Low |\nThe health check and retained build can ship independently. Automatic rollback should wait until the threshold is agreed. Which items should I implement in this pass?",
+    "userText": "Do A plus C, and defer the automatic rollback.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "IR2-SK-041",
+    "group": "english-numbered-partial",
+    "assistantText": "For the parser cleanup, I found three independent edits:\n1. Preserve the existing escape handling\n2. Reject malformed byte sequences\n3. Add a focused diagnostic message\nThe first two affect behavior; the diagnostic is safe to ship separately. I recommend doing 2 and 3 while leaving escape semantics unchanged. Which numbered items do you approve for this patch?",
+    "userText": "Implement 2 and 3; keep 1 unchanged.",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "IR2-SK-044",
+    "group": "english-numbered-partial",
+    "assistantText": "For the parser cleanup, I found three independent edits:\n1. Preserve the existing escape handling\n2. Reject malformed byte sequences\n3. Add a focused diagnostic message\nThe first two affect behavior; the diagnostic is safe to ship separately. I recommend doing 2 and 3 while leaving escape semantics unchanged. Which numbered items do you approve for this patch?",
+    "userText": "Go ahead with items two and three; defer the escape change.",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "probe-5-C2",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 合了，3 做",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "probe-5-C3",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 改了，2 和 3 也改",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "probe-5-C5",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 做了吧",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "probe-5-C7",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 跑了一遍没问题，可以合",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "probe-5-C15",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 用了，2 删了",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "probe-5-C16",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 用了，2 删掉",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "probe-6-L2",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "2 删了吧",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "probe-6-L7",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 和 2 改了，3 不动",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "probe-6-L8",
+    "group": "review-probe",
+    "assistantText": "有三项可以做：\n\n1. 加索引\n2. 拆表\n3. 加缓存\n\n你想做哪些？",
+    "userText": "1 测了，没问题就合",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "probe-6-M1",
+    "group": "review-probe",
+    "assistantText": "Two options:\n\n1. Add an index\n2. Split the table\n\nTests were not run — let me know which to apply.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "probe-5-A19",
+    "group": "review-probe",
+    "assistantText": "Three things:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich of these should I do?",
+    "userText": "the cache one",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "probe-5-D5",
+    "group": "review-probe",
+    "assistantText": "A. Redis (v7)\nB. Redis (v6)\n\nWhich one?",
+    "userText": "v7",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "probe-5-S5",
+    "group": "review-probe",
+    "assistantText": "| | A add timeout | B drop the call |\n| --- | --- | --- |\n| risk | low | high |\n\nWhich one?",
+    "userText": "drop the call",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "none-status-0",
+    "group": "status-not-refusal",
+    "assistantText": "1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich tasks should I do?",
+    "userText": "None of them are complete.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "none-status-1",
+    "group": "status-not-refusal",
+    "assistantText": "1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich tasks should I do?",
+    "userText": "Neither check passed.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "none-status-2",
+    "group": "status-not-refusal",
+    "assistantText": "1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich tasks should I do?",
+    "userText": "None of the index checks passed.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "word-count",
+    "group": "cardinal-guard",
+    "assistantText": "1. Preserve the old key\n2. Add the new key\n3. Remove the alias\n\nWhich steps should I take next?",
+    "userText": "Changed one file and two tests.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "word-step-status",
+    "group": "cardinal-guard",
+    "assistantText": "1. Preserve the old key\n2. Add the new key\n3. Remove the alias\n\nWhich steps should I take next?",
+    "userText": "Step two failed; still waiting.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "approve-steps-zh",
+    "group": "approval-context",
+    "assistantText": "1. Choose the timeout limit\n2. Choose the retry policy\n3. Wire the client\n\n请逐项批准或暂缓。",
+    "userText": "1 和 3 做，2 暂缓",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "approval-mention-is-not-request",
+    "group": "approval-context",
+    "assistantText": "1. Choose the database\n2. Choose the cache\n\nNo approval is needed. Please answer each.",
+    "userText": "1 Postgres, 2 Redis",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "description-is-still-comparison",
+    "group": "commitment-guard",
+    "assistantText": "A. 保留本地缓存 —— 最稳，改动小\nB. 使用远程服务 —— 共享数据\nC. 取消缓存 —— 请求增加\n\n你选哪个？",
+    "userText": "按最稳的那个思路再比较一下",
+    "decision": false,
+    "expectedSelected": []
+  }
+]

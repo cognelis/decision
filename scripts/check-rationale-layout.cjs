@@ -16,6 +16,8 @@ if (
     "hover",
     "no-record",
     "alternatives-expanded",
+    "compact",
+    "wide",
   ].includes(interaction)
 ) {
   throw new Error(`Unsupported rationale layout interaction: ${interaction}`);
@@ -50,9 +52,12 @@ const measureRationaleLayout = async () => {
     throw new Error(`Unexpected rationale layout address: ${address}`);
   }
 
+  // The default window, the minimum one (one column either way) and a wide one (two columns).
+  const [width, height] =
+    interaction === "compact" ? [860, 620] : interaction === "wide" ? [1440, 900] : [1160, 760];
   window = new BrowserWindow({
-    width: 1160,
-    height: 760,
+    width,
+    height,
     show: false,
     frame: false,
     // Kept at this size on a smaller display (GitHub's macOS runner is 1024x768), which clamps a window otherwise.
@@ -107,10 +112,15 @@ const measureRationaleLayout = async () => {
   }
   if (interaction === "no-record") {
     await window.webContents.executeJavaScript(`
-      document.querySelector(".rationale-discard")?.click();
+      document.querySelector(".task-dismiss")?.click();
       new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve))
-      );
+      ).then(() => {
+        document.querySelector('[role="dialog"] .danger-button')?.click();
+        return new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+      });
     `);
   } else if (interaction === "hover") {
     window.webContents.sendInputEvent({
@@ -129,8 +139,8 @@ const measureRationaleLayout = async () => {
         const stage = document.querySelector(".desktop-stage");
         const workspace = document.querySelector(".decision-workspace");
         const card = document.querySelector(".decision-workspace-inner");
-        const actions = document.querySelector(".rationale-actions");
-        const discard = document.querySelector(".rationale-discard");
+        const actions = document.querySelector(".task-actions");
+        const discard = document.querySelector(".task-dismiss");
         const answerSummary = document.querySelector(
           ".decision-answer-summary"
         );
@@ -149,6 +159,11 @@ const measureRationaleLayout = async () => {
           ".decision-context-dialog-body"
         );
         const textarea = document.querySelector(".rationale-step textarea");
+        const lastField = document.querySelector("#rationale-expected");
+        const columns = document.querySelector(".rationale-columns");
+        const referenceColumn = document.querySelector(".rationale-reference-column");
+        const basis = document.querySelector(".rationale-basis");
+        const answerHeading = document.querySelector(".decision-answer-title");
         const principleSection = document.querySelector(
           ".rationale-principle-recall"
         );
@@ -160,7 +175,9 @@ const measureRationaleLayout = async () => {
           workspace === null || card === null || actions === null || discard === null ||
           answerSummary === null || selectedAnswer === null ||
           alternatives === null || toggle === null ||
-          textarea === null || principleSection === null || principleOptions.length !== 3
+          textarea === null || principleSection === null || principleOptions.length !== 3 ||
+          lastField === null || columns === null || referenceColumn === null ||
+          basis === null || answerHeading === null
         ) {
           if (Date.now() >= deadline) {
             reject(new Error("Desktop rationale layout did not render"));
@@ -182,15 +199,30 @@ const measureRationaleLayout = async () => {
             const principleOptionRects = principleOptions.map((option) =>
               option.getBoundingClientRect()
             );
-            resolve({
+            const metrics = {
               actionsBottom: actionsRect.bottom,
               actionsHeight: actionsRect.height,
               answerFontSize: Number.parseFloat(
                 getComputedStyle(selectedAnswer).fontSize
               ),
+              answerHeadingFontSize: Number.parseFloat(
+                getComputedStyle(answerHeading).fontSize
+              ),
+              columnsFitWidth: columns.scrollWidth <= columns.clientWidth + 1,
+              singleColumn:
+                basis.getBoundingClientRect().top >=
+                referenceColumn.getBoundingClientRect().bottom - 1,
               answerSummaryVisible: answerSummary !== null,
               answerSummaryFitsWidth:
                 answerSummary.scrollWidth <= answerSummary.clientWidth + 1,
+              answerNotesApart: (() => {
+                const note = document.querySelector("#decision-answer-note");
+                const followed = document.querySelector("#decision-answer-followed");
+                if (note === null || followed === null) return false;
+                const a = note.getBoundingClientRect();
+                const b = followed.getBoundingClientRect();
+                return a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top;
+              })(),
               alternativeOptionCount: alternativeOptions.length,
               alternativesVisible: alternatives !== null,
               appClientHeight: appShell.clientHeight,
@@ -241,6 +273,19 @@ const measureRationaleLayout = async () => {
               workspaceOverflowY: workspaceStyles.overflowY,
               workspaceScrollHeight: workspace.scrollHeight,
               workspaceScrollTop: workspace.scrollTop,
+            };
+            // Scrolled to its end, the last field must clear the action bar that stays in view.
+            columns.scrollTop = columns.scrollHeight;
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                const actionsAfter = actions.getBoundingClientRect();
+                resolve({
+                  ...metrics,
+                  actionsTop: actionsAfter.top,
+                  columnsBottomAfterScroll: columns.getBoundingClientRect().bottom,
+                  lastFieldBottomAfterScroll: lastField.getBoundingClientRect().bottom,
+                });
+              });
             });
           });
         });

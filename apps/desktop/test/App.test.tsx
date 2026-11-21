@@ -55,6 +55,21 @@ describe("App", () => {
     expect(api.submitRationale).toHaveBeenCalledWith({ candidateId: "candidate-1", status: "local_only", rationale: "当前项目约束", expectedOutcome: "验证业务效果" });
   });
 
+  it("lists the PRs whose comments a link read as decisions, each opening its discussion", async () => {
+    const { api } = apiFixture(rationaleSnapshot({ current: null, primarySurface: "dashboard" }));
+    vi.mocked(api.listPrCommentCandidates).mockResolvedValue({
+      prs: [{ connectionId: "00000000-0000-4000-8000-000000000011", reference: "PROJ/repo#12", title: "流水号配置", count: 2, latest: "2026-10-20T02:00:00Z" }],
+      links: [],
+    });
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    expect(await screen.findByText("PR 评论里像是决定的 · 2 条")).toBeVisible();
+    // A PR waiting is something to confirm: the card does not say there is nothing.
+    expect(screen.queryByText("目前没有需要确认的决策。")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "流水号配置" }));
+    expect(api.openSurface).toHaveBeenLastCalledWith("pr-review");
+  });
+
   it("retries a failed initial snapshot without reloading the window", async () => {
     const initial = rationaleSnapshot({
       current: null,
@@ -107,7 +122,8 @@ describe("App", () => {
         name: "待处理决策",
       }),
     ).toBeVisible();
-    expect(screen.getByText("待处理 1 / 2")).toBeVisible();
+    expect(screen.getByText("1 / 2")).toBeVisible();
+    expect(screen.getByText("1 / 2").parentElement).toHaveTextContent("1 / 2条待处理");
     expect(
       screen.queryByRole("heading", {
         name: "这是一个需要记录的决策吗？",
@@ -132,6 +148,35 @@ describe("App", () => {
     expect(api.closeCandidateReview).toHaveBeenCalledOnce();
     expect(api.confirmCandidate).not.toHaveBeenCalled();
     expect(api.ignoreCandidate).not.toHaveBeenCalled();
+  });
+
+  // A captured question is often an assistant's whole message, with lists and bold: as the page's title it was lines of
+  // large bold text, first literal **, then two lines cut short. The page is titled by its name; the question is the card's.
+  it("titles the page by its name and gives a long Markdown question whole as the card's first section", async () => {
+    const base = reviewCandidate();
+    const question = "- **已完成**：全局页头改版。\n- **进行中**：三个设计代理在画设计稿。\n- **下一步**：发布到画布，再逐页实现。";
+    const review = {
+      ...base,
+      event: { ...base.event, questions: [{ ...base.event.questions[0]!, question }] },
+    };
+    const { api } = apiFixture(
+      rationaleSnapshot({
+        current: null,
+        candidateReviewOpen: true,
+        candidateReviewProgress: { position: 1, total: 1 },
+        decisionCandidates: { current: review, count: 1 },
+      }),
+    );
+    render(<App api={api} />);
+
+    const page = await screen.findByRole("region", { name: "待处理决策" });
+    expect(within(page).getByRole("heading", { level: 1 })).toHaveTextContent(/^待处理$/u);
+    expect(within(page).getByRole("heading", { level: 1 })).toHaveAccessibleDescription(/已完成：全局页头改版。/u);
+    const full = within(page).getByRole("region", { name: "问题" });
+    // 稍后 sits with the other two, in the bar at the bottom, not up in the header.
+    expect(within(page).getByRole("button", { name: "稍后" }).closest("footer")).not.toBeNull();
+    expect(within(full).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(full).getByText("已完成").tagName).toBe("STRONG");
   });
 
   it("confirms or ignores the current review candidate", async () => {
@@ -184,6 +229,10 @@ describe("App", () => {
         name: "忽略",
       }),
     );
+    expect(second.api.ignoreCandidate).not.toHaveBeenCalled();
+    await user.click(
+      within(screen.getByRole("dialog", { name: "忽略这条？" })).getByRole("button", { name: "忽略" }),
+    );
     expect(second.api.ignoreCandidate).toHaveBeenCalledWith(
       secondCandidate.candidateId,
     );
@@ -215,6 +264,25 @@ describe("App", () => {
 
     await user.keyboard("{Control>}{Enter}{/Control}");
     expect(api.confirmCandidate).toHaveBeenCalledOnce();
+  });
+
+  it("does not confirm a candidate on a ⌘↩ held down since what came before it", async () => {
+    const candidate = reviewCandidate();
+    const { api } = apiFixture(
+      rationaleSnapshot({
+        current: null,
+        candidateReviewOpen: true,
+        candidateReviewProgress: { position: 1, total: 1 },
+        decisionCandidates: { current: candidate, count: 1 },
+      }),
+    );
+    render(<App api={api} />);
+    await screen.findByRole("button", { name: "记录并补充理由" });
+
+    // The rationale before it completed with ⌘↩, the key still down: the candidate next in review was taken in unread.
+    fireEvent.keyDown(window, { key: "Enter", metaKey: true, repeat: true });
+
+    expect(api.confirmCandidate).not.toHaveBeenCalled();
   });
 
   it("does not resubmit a candidate while its failed action is waiting to retry", async () => {
@@ -293,6 +361,195 @@ describe("App", () => {
 
     expect(api.confirmCandidate).toHaveBeenCalledTimes(1);
     finishConfirm?.();
+  });
+
+  it("does not let the second click of a double-click act on the next candidate, never read", async () => {
+    const named = (candidateId: string, question: string) => {
+      const base = reviewCandidate();
+      return { ...base, candidateId, event: { ...base.event, questions: [{ ...base.event.questions[0]!, question }] } };
+    };
+    const reviewing = (current: ReturnType<typeof named>, position: number) =>
+      rationaleSnapshot({
+        current: null,
+        candidateReviewOpen: true,
+        candidateReviewProgress: { position, total: 2 },
+        decisionCandidates: { current, count: 3 - position },
+      });
+    const { api, emit } = apiFixture(reviewing(named("candidate-a", "要不要拆分服务？"), 1));
+    vi.mocked(api.ignoreCandidate).mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      act(() => emit(reviewing(named("candidate-b", "缓存放在哪一层？"), 2)));
+    });
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    const ignore = await screen.findByRole("button", { name: "忽略" });
+    await user.click(ignore);
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "忽略" }));
+    await screen.findByRole("heading", { level: 1, description: "缓存放在哪一层？" });
+    await waitFor(() => expect(ignore).toBeEnabled());
+    // The main action first and 忽略 last, all in the very bar the next candidate is shown with.
+    const buttons = within(ignore.closest("footer")!).getAllByRole("button");
+    expect(buttons.map((button) => button.textContent?.replace(/(⌘|Ctrl\+).+|Esc/u, ""))).toEqual(["记录并补充理由", "记为偏好", "跳过", "稍后", "忽略"]);
+    expect(buttons.at(-1)).toBe(ignore);
+
+    // The footer stays where it was: the second click of a double-click lands on the next candidate's buttons.
+    fireEvent.click(ignore, { detail: 2 });
+    fireEvent.click(screen.getByRole("button", { name: "记录并补充理由" }), { detail: 2 });
+
+    expect(vi.mocked(api.ignoreCandidate).mock.calls).toEqual([["candidate-a"]]);
+    expect(api.confirmCandidate).not.toHaveBeenCalled();
+  });
+
+  it("skips to the next candidate with its button or ⌘L, and has nothing to skip to when alone", async () => {
+    const review = reviewCandidate();
+    const reviewing = (count: number) => rationaleSnapshot({
+      current: null,
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 1, total: count },
+      decisionCandidates: { current: review, count },
+    });
+    const { api, emit } = apiFixture(reviewing(2));
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    await user.click(await screen.findByRole("button", { name: "跳过" }));
+    await waitFor(() => expect(api.skipCandidate).toHaveBeenCalledTimes(1));
+    expect(api.skipCandidate).toHaveBeenCalledWith(review.candidateId);
+    act(() => emit(reviewing(2)));
+    await waitFor(() => expect(screen.getByRole("button", { name: "跳过" })).toBeEnabled());
+    fireEvent.keyDown(window, { key: "l", metaKey: true });
+    await waitFor(() => expect(api.skipCandidate).toHaveBeenCalledTimes(2));
+
+    act(() => emit(reviewing(1)));
+    await waitFor(() => expect(screen.getByRole("button", { name: "跳过" })).toBeDisabled());
+    fireEvent.keyDown(window, { key: "l", metaKey: true });
+    expect(api.skipCandidate).toHaveBeenCalledTimes(2);
+  });
+
+  it("records a candidate as a preference, and only then takes it off the queue", async () => {
+    const review = reviewCandidate();
+    const { api } = apiFixture(rationaleSnapshot({
+      current: null,
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 1, total: 1 },
+      decisionCandidates: { current: review, count: 1 },
+    }));
+    vi.mocked(api.createProactiveRecord).mockResolvedValue({ status: "created" } as never);
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    await user.click(await screen.findByRole("button", { name: "记为偏好" }));
+    const form = await screen.findByRole("dialog", { name: "主动记录" });
+    expect(api.ignoreCandidate).not.toHaveBeenCalled();
+    await user.click(within(form).getByRole("button", { name: /保存/u }));
+    await waitFor(() => expect(api.ignoreCandidate).toHaveBeenCalledWith(review.candidateId));
+    expect(api.createProactiveRecord).toHaveBeenCalledWith(expect.objectContaining({ kind: "preference" }));
+  });
+
+  it("shows what the assistant wrote as Markdown on 待处理 and the rationale panel, single line breaks kept", async () => {
+    const framing = "## 取舍\n\n- **性能**优先\n- 用 `sqlite`\n\n第一行\n第二行";
+    const candidate = <T extends { event: object }>(base: T): T => ({
+      ...base,
+      event: { ...base.event, context: { taskBackground: "背景", decisionFraming: framing, truncated: false } },
+    });
+    const review = candidate(reviewCandidate());
+    const view = render(<App api={apiFixture(rationaleSnapshot({
+      current: null,
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 1, total: 1 },
+      decisionCandidates: { current: review, count: 1 },
+    })).api} />);
+    const source = within(await screen.findByRole("region", { name: "原文" }));
+    expect(source.getByRole("heading", { name: "取舍" })).toBeVisible();
+    expect(source.getAllByRole("listitem")).toHaveLength(2);
+    expect(source.getByText("性能").tagName).toBe("STRONG");
+    expect(source.getByText("sqlite").tagName).toBe("CODE");
+    expect(source.queryByText(/\*\*|^##/u)).toBeNull();
+    view.unmount();
+
+    render(<App api={apiFixture(rationaleSnapshot({ current: candidate(contextualCandidate()) })).api} />);
+    const context = within(await screen.findByRole("region", { name: "决策上下文" }));
+    expect(context.getByText("性能").tagName).toBe("STRONG");
+    expect(context.getByText(/第一行/u).textContent).toBe("第一行\n第二行");
+  });
+
+  it("reads an option's Markdown, without taking its marks for the 已选 badge", async () => {
+    const base = reviewCandidate();
+    const question = base.event.questions[0]!;
+    const label = "用 `sqlite` *存储*";
+    const review = { ...base, event: { ...base.event, questions: [{
+      ...question,
+      options: [{ label, description: "- **快**\n- 本地" }, { label: "其它" }],
+      answer: { kind: "option" as const, values: [label] },
+    }] } };
+    render(<App api={apiFixture(rationaleSnapshot({
+      current: null,
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 1, total: 1 },
+      decisionCandidates: { current: review as never, count: 1 },
+    })).api} />);
+    const options = within(await screen.findByRole("list", { name: "相关选项" }));
+    expect(options.getByText("sqlite").tagName).toBe("CODE");
+    expect(options.getByText("存储").tagName).toBe("EM");
+    expect(options.getByText("快").tagName).toBe("STRONG");
+    expect(options.getByText("已选").closest("li")).toHaveClass("chosen");
+  });
+
+  it("asks before ignoring, by button or ⌘D: Esc keeps it, ⌘↩ ignores it, and a plain ↩ does not", async () => {
+    const review = reviewCandidate();
+    const { api } = apiFixture(rationaleSnapshot({
+      current: null,
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 1, total: 1 },
+      decisionCandidates: { current: review, count: 1 },
+    }));
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    await screen.findByRole("button", { name: "忽略" });
+
+    fireEvent.keyDown(window, { key: "d", metaKey: true });
+    const asked = await screen.findByRole("dialog", { name: "忽略这条？" });
+    expect(within(asked).getByRole("button", { name: "取消" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(api.ignoreCandidate).not.toHaveBeenCalled();
+    // Esc in the dialog answered the dialog: 稍后 did not go with it.
+    expect(api.closeCandidateReview).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "忽略" }));
+    await screen.findByRole("dialog", { name: "忽略这条？" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "取消" }), { key: "Enter", metaKey: true, repeat: true });
+    expect(api.ignoreCandidate).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByRole("button", { name: "取消" }), { key: "Enter", metaKey: true });
+    await waitFor(() => expect(api.ignoreCandidate).toHaveBeenCalledTimes(1));
+    expect(api.confirmCandidate).not.toHaveBeenCalled();
+  });
+
+  it("keeps a captured choice only on record as a 历史决定, what was not chosen with it, and only then lets the decision go", async () => {
+    const { api } = apiFixture(rationaleSnapshot({ current: contextualCandidate() }));
+    const record = vi.spyOn(api, "recordHistoricalDecision");
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    await user.click(await screen.findByRole("button", { name: "记为历史决定" }));
+    const form = within(await screen.findByRole("dialog", { name: "主动记录" }));
+    expect(form.getByLabelText("决定事项")).toHaveValue("选择本地服务协议");
+    expect(form.getByLabelText("当时背景")).toHaveValue("先规则后模型");
+    expect(api.submitRationale).not.toHaveBeenCalled();
+    await user.click(form.getByRole("button", { name: /保存/u }));
+    await waitFor(() => expect(api.submitRationale).toHaveBeenCalledWith(expect.objectContaining({ status: "not_recorded" })));
+    expect(record.mock.calls[0]![0]).toMatchObject({ title: "选择本地服务协议", sourceKind: "agent_capture", context: "先规则后模型" });
+    expect(record.mock.calls[0]![0].options).toHaveLength(1);
+    expect(api.createProactiveRecord).not.toHaveBeenCalled();
+  });
+
+  it("asks before not keeping a rationale, ⌘D from the text field and ⌘↩ to confirm", async () => {
+    const { api } = apiFixture(rationaleSnapshot());
+    render(<App api={api} />);
+    const textbox = await screen.findByRole("textbox", { name: "补充说明（可选）" });
+    fireEvent.keyDown(textbox, { key: "d", ctrlKey: true });
+    const asked = await screen.findByRole("dialog", { name: "不保留这条决策？" });
+    expect(api.submitRationale).not.toHaveBeenCalled();
+    fireEvent.keyDown(within(asked).getByRole("button", { name: "取消" }), { key: "Enter", metaKey: true });
+    await waitFor(() => expect(api.submitRationale).toHaveBeenCalledTimes(1));
+    expect(api.submitRationale).toHaveBeenCalledWith(expect.objectContaining({ status: "not_recorded" }));
   });
 
   it("shows captured context in a dialog without expanding the rationale surface", async () => {
@@ -558,7 +815,7 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "时间" })).toBeNull();
   });
 
-  it("discards in one click without recording the entered rationale", async () => {
+  it("discards once confirmed, without recording the entered rationale", async () => {
     const { api } = apiFixture(rationaleSnapshot());
     const user = userEvent.setup();
     render(<App api={api} />);
@@ -575,6 +832,7 @@ describe("App", () => {
     );
     await user.click(screen.getByRole("button", { name: "复用现有能力" }));
     await user.click(discard);
+    await user.click(within(screen.getByRole("dialog", { name: "不保留这条决策？" })).getByRole("button", { name: "不保留" }));
 
     expect(api.submitRationale).toHaveBeenCalledWith({
       candidateId: "candidate-1",
@@ -584,6 +842,33 @@ describe("App", () => {
     await user.click(discard);
     expect(api.submitRationale).toHaveBeenCalledOnce();
   });
+
+  it.each(["不保留", "仅本机保留", "跳过", "记录到知识库"])(
+    "does not let the second click of a double-click on %s act on the next capture, never read",
+    async (name) => {
+      const named = (candidateId: string, question: string) => {
+        const base = candidate();
+        const asked = { ...base.question, question };
+        return { ...base, candidateId, candidateKey: `${candidateId}-key`, question: asked, event: { ...base.event, questions: [asked] } };
+      };
+      const { api, emit } = apiFixture(rationaleSnapshot({ current: named("candidate-a", "要不要拆分服务？"), waitingCount: 1 }));
+      vi.mocked(api.submitRationale).mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        act(() => emit(rationaleSnapshot({ current: named("candidate-b", "缓存放在哪一层？") })));
+      });
+      const user = userEvent.setup();
+      render(<App api={api} />);
+      await user.click(await screen.findByRole("button", { name }));
+      if (name === "不保留") await user.click(within(screen.getByRole("dialog")).getByRole("button", { name }));
+      await screen.findByRole("heading", { level: 1, description: "缓存放在哪一层？" });
+      const next = screen.getByRole("button", { name });
+      await waitFor(() => expect(next).toBeEnabled());
+
+      fireEvent.click(next, { detail: 2 });
+
+      expect(vi.mocked(api.submitRationale).mock.calls.map(([submission]) => submission.candidateId)).toEqual(["candidate-a"]);
+    },
+  );
 
   it("completes the rationale with Cmd/Ctrl+Enter from anywhere in the surface", async () => {
     const { api } = apiFixture(rationaleSnapshot());
@@ -721,7 +1006,7 @@ describe("App", () => {
     const user = userEvent.setup();
     const rendered = render(<App api={first.api} />);
 
-    await user.click(await screen.findByRole("button", { name: "稍后处理" }));
+    await user.click(await screen.findByRole("button", { name: "跳过" }));
     expect(first.api.submitRationale).toHaveBeenCalledWith({
       candidateId: "candidate-1",
       status: "deferred",
@@ -737,12 +1022,42 @@ describe("App", () => {
     });
   });
 
+  it("puts the rationale off with ⌘L from the note being written, keeping what was written, and not on a key held down", async () => {
+    const { api } = apiFixture(rationaleSnapshot());
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    const later = await screen.findByRole("button", { name: "跳过" });
+    expect(later).toHaveAttribute("aria-keyshortcuts", "Meta+L Control+L");
+
+    // Held down since the decision before it, the key would put this one off unread; so would ⌘↩ record it.
+    fireEvent.keyDown(window, { key: "l", metaKey: true, repeat: true });
+    fireEvent.keyDown(window, { key: "Enter", metaKey: true, repeat: true });
+    expect(api.submitRationale).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText("预期结果（可选）"), "下周复查");
+    await user.keyboard("{Meta>}l{/Meta}");
+    expect(api.submitRationale).toHaveBeenCalledWith({
+      candidateId: "candidate-1",
+      status: "deferred",
+      expectedOutcome: "下周复查",
+    });
+  });
+
+  it("puts the rationale off with Ctrl+L as well", async () => {
+    const { api } = apiFixture(rationaleSnapshot());
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    await screen.findByRole("button", { name: "跳过" });
+    await user.keyboard("{Control>}l{/Control}");
+    expect(api.submitRationale).toHaveBeenCalledWith({ candidateId: "candidate-1", status: "deferred" });
+  });
+
   it("keeps an expected outcome already written when the rationale is put off", async () => {
     const { api } = apiFixture(rationaleSnapshot());
     const user = userEvent.setup();
     render(<App api={api} />);
     await user.type(await screen.findByLabelText("预期结果（可选）"), " 发布后错误率不升 ");
-    await user.click(screen.getByRole("button", { name: "稍后处理" }));
+    await user.click(screen.getByRole("button", { name: "跳过" }));
     expect(api.submitRationale).toHaveBeenCalledWith({
       candidateId: "candidate-1",
       status: "deferred",
@@ -762,7 +1077,7 @@ describe("App", () => {
     const panel = await screen.findByRole("region", { name: "待补充决策理由" });
     await user.type(within(panel).getByRole("textbox", { name: "补充说明（可选）" }), "本地回环够用");
     await user.click(within(panel).getByRole("button", { name: "简单直接" }));
-    await user.click(within(panel).getByRole("button", { name: "稍后处理" }));
+    await user.click(within(panel).getByRole("button", { name: "跳过" }));
 
     act(() => emit(rationaleSnapshot({
       current: null,
@@ -791,12 +1106,61 @@ describe("App", () => {
     const batch = within(screen.getByRole("dialog"));
     await user.click(batch.getByRole("checkbox", { name: "选择选择本地服务协议" }));
     await user.click(batch.getByRole("button", { name: "不保留" }));
-    await user.click(screen.getByRole("button", { name: "确认不保留（1 条）" }));
+    await user.click(screen.getByRole("button", { name: "不保留 1 条" }));
     expect(localStorage.getItem("decision.deferredRationaleDrafts.v1")).toBe("{}");
     localStorage.clear();
   });
 
-  it("gives the home page and the tray one 待办 total, the reviews named in it as the home page names them", async () => {
+  it("does not put a rationale off when what was written cannot be kept on this device", async () => {
+    localStorage.clear();
+    const { api } = apiFixture(rationaleSnapshot({ primarySurface: "dashboard" }));
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    const panel = await screen.findByRole("region", { name: "待补充决策理由" });
+    await user.type(within(panel).getByRole("textbox", { name: "补充说明（可选）" }), "本地回环够用");
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Storage is full", "QuotaExceededError");
+    });
+    try {
+      await user.click(within(panel).getByRole("button", { name: "跳过" }));
+    } finally {
+      setItem.mockRestore();
+    }
+    // The words written so far live only in this storage: put off without them, 补充理由 later opened blank.
+    expect(api.submitRationale).not.toHaveBeenCalled();
+    expect(within(panel).getByRole("alert")).toHaveTextContent("没有推迟");
+    expect(within(panel).getByRole("textbox", { name: "补充说明（可选）" })).toHaveValue("本地回环够用");
+
+    await user.click(within(panel).getByRole("button", { name: "跳过" }));
+    expect(api.submitRationale).toHaveBeenCalledWith({ candidateId: "candidate-1", status: "deferred" });
+    localStorage.clear();
+  });
+
+  // 稍后处理 could not keep the draft, so the reader recorded it instead, and that failed too: the alert said the old news.
+  it("says why 记录到知识库 failed, not what 稍后处理 could not do before it", async () => {
+    const { api } = apiFixture(rationaleSnapshot({ primarySurface: "dashboard" }));
+    const user = userEvent.setup();
+    render(<App api={api} />);
+    const panel = await screen.findByRole("region", { name: "待补充决策理由" });
+    await user.type(within(panel).getByRole("textbox", { name: "补充说明（可选）" }), "本地回环够用");
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Storage is full", "QuotaExceededError");
+    });
+    try {
+      await user.click(within(panel).getByRole("button", { name: "跳过" }));
+    } finally {
+      setItem.mockRestore();
+    }
+    expect(within(panel).getByRole("alert")).toHaveTextContent("没有推迟");
+
+    vi.mocked(api.submitRationale).mockRejectedValueOnce(new Error("知识库写入失败"));
+    await user.click(within(panel).getByRole("button", { name: /记录到知识库/u }));
+    await waitFor(() => expect(within(panel).getByRole("alert")).toHaveTextContent("知识库写入失败"));
+    expect(within(panel).getByRole("alert")).not.toHaveTextContent("没有推迟");
+    localStorage.clear();
+  });
+
+  it("gives the home page and the tray one 待处理 total, the reviews named in it as the home page names them", async () => {
     const snapshot = rationaleSnapshot({
       current: null,
       primarySurface: "dashboard",
@@ -805,7 +1169,7 @@ describe("App", () => {
       dashboard: { totalDecisions: 10, recorded7d: 3, reviewAttention: 2, recentDecisions: [] },
     });
     render(<App api={apiFixture(snapshot).api} />);
-    expect((await screen.findByText("项待办")).parentElement).toHaveTextContent("5项待办");
+    expect((await screen.findByText("项待处理")).parentElement).toHaveTextContent("5项待处理");
     const tray = { setTitle: vi.fn(), setToolTip: vi.fn(), setContextMenu: vi.fn() };
     configureTray({
       tray, image: { setTemplateImage: vi.fn() }, buildMenu: (template) => template,
@@ -813,8 +1177,8 @@ describe("App", () => {
       openDashboard: vi.fn(), openSettings: vi.fn(), quit: vi.fn(),
     });
 
-    // The tray said "3 项待办 · 2 条待复盘" of the moment the home page called 5 项待办, two of them 需复盘.
-    expect(tray.setToolTip).toHaveBeenCalledWith("Decision · 5 项待办，其中 2 条需复盘");
+    // The tray said "3 项待处理 · 2 条待复盘" of the moment the home page called 5 项待处理, two of them 需复盘.
+    expect(tray.setToolTip).toHaveBeenCalledWith("Paraself · 5 项待处理，其中 2 条需复盘");
     // The rationale asked for now and the two queued behind it are to do as well, on every surface.
     expect(pendingWorkTotal({ ...snapshot, current: candidate(), waitingCount: 2 })).toBe(8);
   });
@@ -867,10 +1231,10 @@ describe("App", () => {
       }),
     ).toBeVisible();
     expect(screen.getAllByText("待确认")).toHaveLength(2);
-    expect(screen.queryByRole("heading", { name: "开始使用 Decision" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "开始使用 Paraself" })).toBeNull();
     expect(screen.getByRole("button", { name: /^首页/u })).toHaveAttribute(
       "aria-description",
-      expect.stringContaining("4 项待办：待确认 3 · 待补理由 1 · 需复盘 0"),
+      expect.stringContaining("4 项待处理：待确认 3 · 待补理由 1 · 需复盘 0"),
     );
     expect(screen.getByText("待补理由")).toBeVisible();
     expect(screen.getByText("需复盘")).toBeVisible();
@@ -970,7 +1334,7 @@ describe("App", () => {
     render(<App api={api} />);
 
     const past = await screen.findByRole("region", { name: "以前也回答过这个问题" });
-    expect(api.listDecisions).toHaveBeenCalledWith({ query: "选择本地服务协议", limit: 50 });
+    expect(api.listDecisions).toHaveBeenCalledWith({ query: "选 择 本 地 服 务 协 议", limit: 50 });
     expect(within(past).getByText("2 次")).toBeVisible();
     // Worse, but a different answer; the same answer, but not reviewed yet.
     expect(within(past).queryByText(/上次同样选了/u)).toBeNull();
@@ -1014,6 +1378,34 @@ describe("App", () => {
     ).toBeVisible();
     // A single earlier answer: nothing left unlisted.
     expect(within(past).queryByText(/另有/u)).toBeNull();
+  });
+
+  it("takes an earlier answer written in another case as this very answer, as the retrospective does", async () => {
+    const { api } = apiFixture(rationaleSnapshot());
+    vi.mocked(api.listDecisions).mockResolvedValue([
+      {
+        id: "earlier-worse",
+        created: new Date(2026, 6, 12, 12).toISOString(),
+        sourceClient: "codex",
+        project: "decision",
+        question: "选择本地服务协议",
+        selectedAnswer: "loopback http",
+        rationaleStatus: "captured",
+        rationale: null,
+        context: null,
+        expectedOutcome: null,
+        outcome: "端口被代理占用。",
+        outcomeReview: { verdict: "worse", lesson: null, reviewedAt: new Date(2026, 6, 20, 12).toISOString() },
+        reviewDueDate: null,
+        appliedPrincipleIds: [],
+        appliedPrinciples: [],
+      },
+    ]);
+    render(<App api={api} />);
+
+    const past = await screen.findByRole("region", { name: "以前也回答过这个问题" });
+    expect(within(past).getByText("答案相同")).toBeVisible();
+    expect(within(past).getByText("上次同样选了「loopback http」，复盘结果低于预期。")).toBeVisible();
   });
 
   it("goes by date rather than the search's ranking, and warns only when the last review of this answer went worse", async () => {
@@ -1113,7 +1505,7 @@ describe("App", () => {
       appliedPrinciples: [],
     };
     vi.mocked(api.listDecisions).mockImplementation(async (query) =>
-      query.query === "选择缓存策略"
+      query.query === "选 择 缓 存 策 略"
         ? [
             // The record being completed is not its own history.
             recorded,
@@ -1209,7 +1601,7 @@ describe("App", () => {
     render(<App api={api} />);
 
     expect(await screen.findByText(/决策索引暂时读不出来/u)).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "开始使用 Decision" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "开始使用 Paraself" })).toBeNull();
   });
 
   it("guides a first run toward client setup", async () => {
@@ -1226,7 +1618,7 @@ describe("App", () => {
         decisionCandidates: { current: null, count: 0 },
         pendingRationales: [],
         integrationStatus: {
-          claudeCode: "not-installed",
+          "claude-code": "not-installed",
           codex: "not-installed",
         },
       }),
@@ -1235,7 +1627,7 @@ describe("App", () => {
     render(<App api={api} />);
 
     // Zeros and empty cards give way to how to begin.
-    expect(await screen.findByRole("heading", { name: "开始使用 Decision" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "开始使用 Paraself" })).toBeVisible();
     expect(screen.queryByRole("region", { name: "决策概览" })).toBeNull();
     const steps = screen.getByRole("list", { name: "开始使用的步骤" });
     expect(within(steps).getAllByRole("listitem")).toHaveLength(4);
@@ -1257,7 +1649,7 @@ describe("App", () => {
         dashboard: { totalDecisions: 0, recorded7d: 0, reviewAttention: 0, recentDecisions: [] },
         decisionCandidates: { current: null, count: 0 },
         pendingRationales: [],
-        integrationStatus: { claudeCode: "not-installed", codex: "installed" },
+        integrationStatus: { "claude-code": "not-installed", codex: "installed" },
       }),
     );
     render(<App api={api} />);
@@ -1267,6 +1659,33 @@ describe("App", () => {
     expect(within(steps).getByRole("button", { name: "管理接入" })).toBeVisible();
     // The next required step carries the accent.
     expect(within(steps).getByRole("button", { name: "主动记录" })).toHaveClass("primary-button");
+  });
+
+  it("fills the start progress by how many steps are done, from the left", async () => {
+    const { api } = apiFixture(
+      rationaleSnapshot({
+        current: null,
+        primarySurface: "dashboard",
+        dashboard: { totalDecisions: 0, recorded7d: 0, reviewAttention: 0, recentDecisions: [] },
+        decisionCandidates: { current: null, count: 0 },
+        pendingRationales: [],
+        integrationStatus: { "claude-code": "not-installed", codex: "not-installed" },
+      }),
+    );
+    // Only the optional last step is done: the bar still fills its first segment, not the last.
+    vi.mocked(api.listPrConnections).mockResolvedValue([{ id: "connection-1" }] as never);
+    render(<App api={api} />);
+
+    const progress = await screen.findByRole("progressbar", { name: "开始使用进度" });
+    await waitFor(() => expect(progress).toHaveAttribute("aria-valuenow", "1"));
+    expect(progress).toHaveTextContent("已完成 1 / 4");
+    expect(
+      [...progress.querySelectorAll("i")].map((segment) => segment.hasAttribute("data-done")),
+    ).toEqual([true, false, false, false]);
+    // The one solid button stays on the next step that has to be done.
+    const steps = screen.getByRole("list", { name: "开始使用的步骤" });
+    expect(within(steps).getByRole("button", { name: "前往接入" })).toHaveClass("primary-button");
+    expect(within(steps).getByRole("button", { name: "主动记录" })).toHaveClass("secondary-button");
   });
 
   it("completes a pending rationale with judgment factors only", async () => {
@@ -1369,7 +1788,7 @@ describe("App", () => {
     expect(screen.getByText("legacy-project")).toBeVisible();
     expect(screen.getByText("Codex")).toBeVisible();
     expect(screen.getByText("迁移完成前需要保留回滚能力。")).toBeVisible();
-    expect(screen.getByText("历史")).toBeVisible();
+    expect(screen.getByText("超过 30 天")).toBeVisible();
   });
 
   it("restores answer descriptions and alternatives in a deferred rationale", async () => {
@@ -1436,12 +1855,12 @@ describe("App", () => {
     await user.click(await screen.findByRole("button", { name: "不保留" }));
     expect(api.submitRationale).not.toHaveBeenCalled();
     expect(
-      screen.getByText("如果只是无需补充理由，也可以保留决策并结束这项待办。"),
+      screen.getByText("如果只是无需补充理由，也可以保留决策，不再为它补理由。"),
     ).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "取消不保留决策" }));
     expect(
-      screen.queryByText("如果只是无需补充理由，也可以保留决策并结束这项待办。"),
+      screen.queryByText("如果只是无需补充理由，也可以保留决策，不再为它补理由。"),
     ).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "不保留" }));
@@ -1477,7 +1896,7 @@ describe("App", () => {
     render(<App api={api} />);
 
     await user.click(await screen.findByRole("button", { name: "不保留" }));
-    await user.click(screen.getByRole("button", { name: "确认不保留" }));
+    await user.click(within(screen.getByRole("dialog", { name: "不保留这条决策？" })).getByRole("button", { name: "不保留" }));
 
     expect(api.submitRationale).toHaveBeenCalledWith({
       candidateId: "decision-pending",
@@ -1512,15 +1931,16 @@ describe("App", () => {
     render(<App api={api} />);
 
     await user.click(await screen.findByRole("button", { name: "不保留" }));
-    await user.click(screen.getByRole("button", { name: "确认不保留" }));
+    const confirmation = within(screen.getByRole("dialog", { name: "不保留这条决策？" }));
+    await user.click(confirmation.getByRole("button", { name: "不保留" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "暂时无法移除这条决策：write failed",
     );
     expect(
-      screen.getByText("如果只是无需补充理由，也可以保留决策并结束这项待办。"),
+      screen.getByText("如果只是无需补充理由，也可以保留决策，不再为它补理由。"),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "确认不保留" })).toBeEnabled();
+    expect(confirmation.getByRole("button", { name: "不保留" })).toBeEnabled();
   });
 
   it.each(["dashboard", "assistant", "settings"] as const)(
@@ -1592,8 +2012,10 @@ describe("App", () => {
         current: null,
         primarySurface: "clients",
         integrationStatus: {
-          claudeCode: "installed",
+          "claude-code": "installed",
           codex: "not-installed",
+          grok: "command-missing",
+          antigravity: "command-missing",
         },
       }),
     );
@@ -1614,21 +2036,24 @@ describe("App", () => {
     render(<App api={api} />);
 
     const page = await screen.findByRole("region", { name: "接入" });
-    expect(await within(page).findByText(/最近一次记录：.* · 缓存放在哪一层？/u)).toBeVisible();
-    expect(within(page).getByText("还没有记录到决策。")).toBeVisible();
+    expect(await within(page).findByText("缓存放在哪一层？")).toBeVisible();
+    expect(within(page).getByText(/^最近一次记录 ·/u)).toBeVisible();
+    // Codex: asked for its latest; Grok and Antigravity, not on this machine, folded away and not asked.
+    expect(within(page).getAllByText("还没有记录到决策。")).toHaveLength(1);
     expect(api.listDecisions).toHaveBeenCalledWith({ query: "", sourceClient: "codex", limit: 1 });
+    expect(api.listDecisions).not.toHaveBeenCalledWith({ query: "", sourceClient: "grok", limit: 1 });
     expect(
       within(page).getByRole("heading", { name: "Claude Code" }),
     ).toBeVisible();
     expect(within(page).getByRole("heading", { name: "Codex" })).toBeVisible();
     expect(within(page).getByText("已连接")).toBeVisible();
     expect(within(page).getByText("未连接")).toBeVisible();
-    expect(within(page).getAllByText("决策前核对")).toHaveLength(2);
-    expect(within(page).getAllByText("只读 · 不替你选择")).toHaveLength(2);
+    expect(within(page).getAllByText("决策前核对")).toHaveLength(4);
+    expect(within(page).getAllByText("只读 · 不替你选择")).toHaveLength(4);
     expect(within(page).getByText(/给出选项前读取相关原则/u)).toBeVisible();
 
-    await user.click(within(page).getByRole("button", { name: "安装或修复" }));
-    expect(api.installIntegrations).toHaveBeenCalledWith("apply");
+    await user.click(within(page).getByRole("button", { name: "全部修复" }));
+    expect(api.installIntegrations).toHaveBeenCalledWith("apply", ["claude-code", "codex"]);
     expect(await within(page).findByText("接入已安装或修复。")).toBeVisible();
 
     // One client connects while the other is not there to connect: said for each.
@@ -1641,10 +2066,11 @@ describe("App", () => {
       commands: [],
       restartRequired: true,
     });
-    await user.click(within(page).getByRole("button", { name: "安装或修复" }));
+    await user.click(within(page).getByRole("button", { name: "全部修复" }));
     // And that a client already running takes it up only once restarted.
     expect(await within(page).findByText(
-      "Claude Code 已接入；没有找到 codex 命令，跳过了 Codex。重启正在运行的 Claude Code 或 Codex 后生效。",
+      // Only the client connected now is to restart.
+      "Claude Code 已接入；没有找到 codex 命令，跳过了 Codex。重启正在运行的 Claude Code 后生效。",
     )).toBeVisible();
 
     // Taken out again, each client said for, and what stays behind with it.
@@ -1656,13 +2082,18 @@ describe("App", () => {
       ],
       commands: [],
       restartRequired: true,
-      note: "已发布到客户端的技能和工作流没有删除，客户端仍会加载它们；不需要的可以在 Decision 里逐个回滚发布。",
+      note: "已发布到客户端的技能和工作流没有删除，客户端仍会加载它们；不需要的可以在 Paraself 里逐个回滚发布。",
     });
-    await user.click(within(page).getByRole("button", { name: "断开" }));
+    await user.click(within(page).getByRole("button", { name: "断开全部" }));
+    // Asked first, focus on 取消: one click took the capture out of every connected client.
+    const confirm = within(screen.getByRole("dialog", { name: "断开所有已接入的工具？" }));
+    expect(confirm.getByRole("button", { name: "取消" })).toHaveFocus();
+    expect(api.removeIntegrations).not.toHaveBeenCalled();
+    await user.click(confirm.getByRole("button", { name: "断开" }));
     expect(api.removeIntegrations).toHaveBeenCalledOnce();
     expect(await within(page).findByText(
       "Claude Code 已断开；Codex 已断开（没有找到 codex 命令，没有删除它登记的 MCP 服务器）。重启正在运行的 Claude Code 或 Codex 后生效。" +
-        "已发布到客户端的技能和工作流没有删除，客户端仍会加载它们；不需要的可以在 Decision 里逐个回滚发布。",
+        "已发布到客户端的技能和工作流没有删除，客户端仍会加载它们；不需要的可以在 Paraself 里逐个回滚发布。",
     )).toBeVisible();
 
     // Nothing taken out: no restart to ask for, and a client not there at all is said to be skipped.
@@ -1675,10 +2106,14 @@ describe("App", () => {
       commands: [],
       restartRequired: true,
     });
-    await user.click(within(page).getByRole("button", { name: "断开" }));
-    expect(await within(page).findByText(
+    await user.click(within(page).getByRole("button", { name: "断开全部" }));
+    await user.click(within(screen.getByRole("dialog", { name: "断开所有已接入的工具？" })).getByRole("button", { name: "断开" }));
+    const notRemoved = await within(page).findByText(
       "Claude Code 没有断开：运行 claude mcp remove 没有成功（permission denied）；没有找到 codex 命令，跳过了 Codex。",
-    )).toBeVisible();
+    );
+    expect(notRemoved).toBeVisible();
+    // Said as a success's grey, a client still connected read as done.
+    expect(notRemoved).toHaveClass("error");
   });
 
   it("says when Claude Code's settings turn every hook off, and what Codex still asks once connected", async () => {
@@ -1686,7 +2121,7 @@ describe("App", () => {
       rationaleSnapshot({
         current: null,
         primarySurface: "clients",
-        integrationStatus: { claudeCode: "disabled", codex: "not-installed" },
+        integrationStatus: { "claude-code": "disabled", codex: "not-installed" },
       }),
     );
     vi.mocked(api.installIntegrations).mockResolvedValue({
@@ -1702,7 +2137,7 @@ describe("App", () => {
     const page = await screen.findByRole("region", { name: "接入" });
     expect(within(page).getByText("hook 已关闭")).toBeVisible();
     expect(within(page).getByText(/disableAllHooks/u)).toBeVisible();
-    await user.click(within(page).getByRole("button", { name: "安装或修复" }));
+    await user.click(within(page).getByRole("button", { name: "接入 Codex" }));
     expect(await within(page).findByText(
       "Codex 已接入（Codex 只运行你信任过的 hook：打开 Codex 时若提示 Hooks need review，确认信任后才会开始自动记录）。",
     )).toBeVisible();
@@ -1753,9 +2188,9 @@ describe("App", () => {
     await user.selectOptions(addDialog.getByLabelText("后端类型"), "openai");
     await user.type(addDialog.getByLabelText("模型"), "gpt-5-mini");
     await user.type(addDialog.getByLabelText("API 密钥"), "sk-private");
-    await user.selectOptions(addDialog.getByLabelText("代理连接方式"), "custom");
+    await user.selectOptions(addDialog.getByLabelText("网络代理"), "custom");
     await user.type(addDialog.getByLabelText("代理地址"), "http://127.0.0.1:7890");
-    await user.type(addDialog.getByLabelText("代理绕过主机"), "localhost");
+    expect(addDialog.queryByLabelText(/^不走代理的主机/u)).not.toBeInTheDocument();
     await user.click(
       addDialog.getByRole("button", {
         name: "保存后端",
@@ -1767,7 +2202,7 @@ describe("App", () => {
         profile: expect.objectContaining({
           kind: "openai",
           model: "gpt-5-mini",
-          proxy: { mode: "custom", url: "http://127.0.0.1:7890", noProxy: "localhost" },
+          proxy: { mode: "custom", url: "http://127.0.0.1:7890" },
         }),
         secret: "sk-private",
       }),
@@ -1789,6 +2224,8 @@ describe("App", () => {
     await user.click(save);
     const model = dialog.getByLabelText("模型");
     expect(dialog.getByRole("alert")).toHaveTextContent("请输入模型名称。");
+    // Under the field it is about: at the foot of the form it sat out of sight, and the save seemed to do nothing.
+    expect(model.closest(".form-field")).toContainElement(dialog.getByRole("alert"));
     expect(model).toHaveAttribute("aria-invalid", "true");
     expect(model).toHaveAccessibleDescription("请输入模型名称。");
     expect(model).toHaveFocus();
@@ -1932,7 +2369,7 @@ describe("App", () => {
     expect(editDialog.getByText("已安全保存，留空则不更换")).toBeVisible();
     await user.click(
       editDialog.getByRole("button", {
-        name: "取消编辑",
+        name: "取消",
       }),
     );
 
@@ -2054,10 +2491,10 @@ describe("App", () => {
     await user.click(await panel.findByRole("button", { name: "编辑 DeepSeek" }));
     const dialog = within(screen.getByRole("dialog", { name: "编辑 DeepSeek" }));
     await user.click(dialog.getByRole("button", { name: "填入 DeepSeek Flash 参考价格" }));
-    expect(dialog.getByLabelText("缓存命中输入单价")).toHaveValue("0.02");
+    expect(dialog.getByLabelText("空闲缓存命中输入单价")).toHaveValue("0.02");
     expect(dialog.getByLabelText("高峰输出单价")).toHaveValue("8");
-    await user.clear(dialog.getByLabelText("空闲价节假日"));
-    await user.type(dialog.getByLabelText("空闲价节假日"), "2026-10-01\n2026-10-02");
+    await user.clear(dialog.getByLabelText("全天按空闲价的节假日"));
+    await user.type(dialog.getByLabelText("全天按空闲价的节假日"), "2026-10-01\n2026-10-02");
     await user.click(dialog.getByRole("button", { name: "保存后端" }));
     expect(api.saveModelProviderProfile).toHaveBeenCalledWith({ profile: expect.objectContaining({ pricing: {
       currency: "¥", inputPerMillion: 1, cachedInputPerMillion: 0.02, outputPerMillion: 4,
@@ -2102,7 +2539,7 @@ describe("App", () => {
     await user.clear(dialog.getByLabelText("服务地址"));
     await user.type(dialog.getByLabelText("服务地址"), "https://api.deepseek.com");
     expect(dialog.getByText("地址换到了另一个站点，需要填写这个站点的 API 密钥")).toBeVisible();
-    await user.click(dialog.getByRole("button", { name: "取消编辑" }));
+    await user.click(dialog.getByRole("button", { name: "取消" }));
   });
 
   it("keeps focus on a backend's handle while the arrow keys move it", async () => {
@@ -2375,10 +2812,8 @@ describe("App", () => {
       screen.getByRole("dialog", { name: "配置 Codex CLI" }),
     );
     expect(cliDialog.getByText(/内容经本机客户端发送给 OpenAI 的模型服务/u)).toBeVisible();
-    const modelInput = cliDialog.getByLabelText("客户端模型");
-    expect(modelInput).toHaveAttribute("list");
-    const suggestions = document.getElementById(modelInput.getAttribute("list")!);
-    expect(suggestions?.querySelector("option")).toHaveAttribute("value", "gpt-test-candidate");
+    const candidates = (dialog: typeof cliDialog) => [...dialog.getByRole("combobox", { name: "选择候选模型" }).querySelectorAll("option")].map((option) => option.value).filter(Boolean);
+    expect(candidates(cliDialog)).toEqual(["gpt-test-candidate"]);
     expect(cliDialog.getByText(/候选来源：CLI 目录/u)).toBeVisible();
     const pathInput = cliDialog.getByLabelText("客户端路径");
     expect(pathInput).toHaveValue("/opt/homebrew/bin/codex");
@@ -2393,7 +2828,9 @@ describe("App", () => {
     await user.clear(pathInput);
     await user.type(pathInput, "/custom/bin/codex");
     await user.type(cliDialog.getByLabelText("客户端模型"), "gpt-5.6-terra");
-    await user.selectOptions(cliDialog.getByLabelText("代理连接方式"), "direct");
+    expect(cliDialog.queryByRole("option", { name: "仅本机 loopback 直连" })).not.toBeInTheDocument();
+    await user.selectOptions(cliDialog.getByLabelText("网络代理"), "custom");
+    await user.type(cliDialog.getByLabelText("代理地址"), "http://127.0.0.1:7890");
     await user.click(
       cliDialog.getByRole("button", {
         name: "保存客户端",
@@ -2404,24 +2841,24 @@ describe("App", () => {
         ...codex,
         executablePath: "/custom/bin/codex",
         model: "gpt-5.6-terra",
-        proxy: { mode: "direct" },
+        proxy: { mode: "custom", url: "http://127.0.0.1:7890" },
       },
     });
     await user.click(within(panel).getByRole("button", { name: "配置 Claude Code CLI" }));
     const claudeDialog = within(screen.getByRole("dialog", { name: "配置 Claude Code CLI" }));
     const claudeModel = claudeDialog.getByLabelText("客户端模型");
-    expect(document.getElementById(claudeModel.getAttribute("list")!)?.querySelector("option")).toHaveAttribute("value", "sonnet");
+    expect(candidates(claudeDialog)).toEqual(["sonnet"]);
     expect(claudeDialog.getByText(/候选来源：本机缓存/u)).toBeVisible();
     vi.mocked(api.listLocalModelClientStatuses).mockResolvedValue([{ kind: "claude-code-cli", authenticated: true, supported: true, availability: "available", checkedAt: "2026-07-30T00:00:00.000Z", modelsSource: "client", models: [{ id: "opus", label: "Opus" }] }]);
     await user.type(claudeModel, "custom-model");
     await user.click(claudeDialog.getByRole("button", { name: "刷新模型候选" }));
     expect(await claudeDialog.findByText(/候选来源：CLI 目录/u)).toBeVisible();
-    expect(document.getElementById(claudeModel.getAttribute("list")!)?.querySelector("option")).toHaveAttribute("value", "opus");
+    expect(candidates(claudeDialog)).toEqual(["opus"]);
     expect(claudeModel).toHaveValue("custom-model");
     vi.mocked(api.listLocalModelClientStatuses).mockResolvedValue([{ kind: "claude-code-cli", authenticated: true, supported: true, availability: "available", checkedAt: "2026-07-30T00:00:00.000Z", modelsSource: "server", models: [{ id: "claude-opus-test", label: "Opus" }] }]);
     await user.click(claudeDialog.getByRole("button", { name: "刷新模型候选" }));
     expect(await claudeDialog.findByText(/候选来源：服务端直查/u)).toBeVisible();
-    expect(document.getElementById(claudeModel.getAttribute("list")!)?.querySelector("option")).toHaveAttribute("value", "claude-opus-test");
+    expect(candidates(claudeDialog)).toEqual(["claude-opus-test"]);
     expect(claudeModel).toHaveValue("custom-model");
   });
 
@@ -2509,8 +2946,10 @@ describe("App", () => {
     expect(trace.getByRole("heading", { name: "模型调用记录" })).toBeVisible();
     expect(await trace.findByText("Qwen 本地模型")).toBeVisible();
     // Which feature made the call, beside the model.
-    expect(trace.getByText(/^语义识别 · /u)).toBeVisible();
-    expect(trace.getByText("54 tokens")).toBeVisible();
+    expect(trace.getByText("语义识别")).toBeVisible();
+    expect(trace.getByText("qwen3.5-2b-q4-k-m")).toBeVisible();
+    // The column says Tokens on screen; the cell says it to a screen reader as well.
+    expect(trace.getByText("54")).toHaveTextContent("54 tokens");
     expect(
       trace.getByRole("list", { name: "模型调用记录列表" }),
     ).toHaveAttribute("tabindex", "0");
@@ -2523,10 +2962,17 @@ describe("App", () => {
     expect(detailsDialog.getByText("模型输出")).toBeVisible();
     // In words, as the backend card says it, not as "provider_reported".
     expect(detailsDialog.getByText("Token 来源").nextElementSibling).toHaveTextContent(/^(服务商 Token 统计|本地 Token 计数|Token 估算|Token 统计未提供)$/u);
+    // Opened on its close button (no field to start on), settled before anything is asked over it.
+    await waitFor(() => expect(detailsDialog.getByRole("button", { name: "关闭Qwen 本地模型 调用详情" })).toHaveFocus());
 
     await user.click(
       detailsDialog.getByRole("button", { name: "删除这条记录" }),
     );
+    // Asked first, with focus on 取消: it used to delete at the first click.
+    const confirm = within(screen.getByRole("dialog", { name: "删除这条调用记录？" }));
+    expect(confirm.getByRole("button", { name: "取消" })).toHaveFocus();
+    expect(api.deleteModelTrace).not.toHaveBeenCalled();
+    await user.click(confirm.getByRole("button", { name: "删除" }));
     expect(api.deleteModelTrace).toHaveBeenCalledWith("trace-1");
 
     await user.click(
@@ -2575,7 +3021,7 @@ describe("App", () => {
     const panel = within(await screen.findByRole("region", { name: "模型调用记录" }));
     const list = await panel.findByRole("list", { name: "模型调用记录列表" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(2);
-    await user.click(panel.getByRole("checkbox", { name: "只看未成功（1）" }));
+    await user.click(panel.getByRole("checkbox", { name: "只看未成功 1" }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(1);
     expect(within(list).getByText("失败")).toBeVisible();
     expect(panel.getByText(/^1 次调用 · 未成功 1/u)).toBeVisible();
@@ -2599,7 +3045,9 @@ describe("App", () => {
     const panel = await screen.findByRole("region", {
       name: "模型调用记录",
     });
-    expect(await within(panel).findByText("Token 统计未提供")).toBeVisible();
+    const tokens = await within(panel).findByText("未提供");
+    expect(tokens).toBeVisible();
+    expect(tokens).toHaveTextContent("Token 统计未提供");
     expect(within(panel).queryByText("Token 不可用")).not.toBeInTheDocument();
   });
 
@@ -2629,13 +3077,14 @@ describe("App", () => {
     const panel = within(await screen.findByRole("region", { name: "模型调用记录" }));
     // The local call has no price: it counts in tokens, not in money.
     expect(await panel.findByText("2 次调用 · 未成功 1 · 250.1k tokens · 平均 1.0 秒 · ≈ ¥0.8000（1 次未计价）")).toBeVisible();
-    await user.selectOptions(panel.getByRole("combobox", { name: "按用途筛选" }), "retrieval-answer");
+    await user.click(within(panel.getByRole("group", { name: "按用途筛选" })).getByRole("button", { name: "问答 1" }));
     expect(panel.getByText("1 次调用 · 未成功 1 · 250.0k tokens · 平均 2.0 秒 · ≈ ¥0.8000")).toBeVisible();
 
     // Deleting the last of the kind chosen goes back to all of them, filter and all.
     vi.mocked(api.listModelTraces).mockResolvedValue([modelTraceFixture()]);
     await user.click(panel.getByRole("button", { name: "详情" }));
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "删除这条记录" }));
+    await user.click(within(screen.getByRole("dialog", { name: "删除这条调用记录？" })).getByRole("button", { name: "删除" }));
     expect(await panel.findByText("这条模型调用记录已删除。")).toBeVisible();
     expect(panel.queryByText("这一类下没有记录。")).toBeNull();
     expect(panel.getAllByRole("button", { name: "详情" })).toHaveLength(1);
@@ -2892,7 +3341,7 @@ describe("App focus through a capture", () => {
     const user = userEvent.setup();
     const { api, emit } = apiFixture(rationaleSnapshot({ waitingCount: 1 }));
     render(<App api={api} />);
-    await screen.findByRole("heading", { level: 1, name: "选择本地服务协议" });
+    await screen.findByRole("heading", { level: 1, name: "补充理由", description: "选择本地服务协议" });
     screen.getByRole("button", { name: "记录到知识库" }).focus();
     await user.keyboard("{Enter}");
 
@@ -2909,7 +3358,7 @@ describe("App focus through a capture", () => {
     })));
 
     // Left on the page, Tab started over at the sidebar and a screen reader said nothing of the new question.
-    expect(await screen.findByRole("heading", { level: 1, name: "选择草稿存放位置" })).toHaveFocus();
+    expect(await screen.findByRole("heading", { level: 1, name: "补充理由", description: "选择草稿存放位置" })).toHaveFocus();
   });
 
   it("gives focus back to the rationale when its save fails", async () => {
@@ -2940,6 +3389,35 @@ describe("App focus through a capture", () => {
     } finally {
       observer.disconnect();
     }
+  });
+
+  it("keeps the panel and what was written in sight while a recorded choice is written to Obsidian", async () => {
+    const user = userEvent.setup();
+    const { api, emit } = apiFixture(rationaleSnapshot({ waitingCount: 0 }));
+    render(<App api={api} />);
+    await user.type(await screen.findByRole("textbox", { name: "补充说明（可选）" }), "本机优先");
+    await user.click(screen.getByRole("button", { name: /记录到知识库/u }));
+
+    act(() => emit(rationaleSnapshot({ waitingCount: 0, current: { ...candidate(), status: "completed" as const } })));
+
+    // A page of its own for it was one line on an empty window, what had been written gone from it.
+    const region = await screen.findByRole("region", { name: "决策保存状态" });
+    expect(within(region).getByRole("status")).toHaveTextContent("正在写入 Obsidian…");
+    expect(within(region).getByRole("textbox", { name: "补充说明（可选）" })).toHaveValue("本机优先");
+    expect(within(region).getByRole("textbox", { name: "补充说明（可选）" })).toBeDisabled();
+    expect(within(region).getByRole("button", { name: /记录到知识库/u })).toBeDisabled();
+    expect(within(region).getByRole("button", { name: "跳过" })).toBeDisabled();
+  });
+
+  it("says what is under way by the action taken, not Obsidian for every one", async () => {
+    const user = userEvent.setup();
+    const { api, emit } = apiFixture(rationaleSnapshot({ waitingCount: 0 }));
+    render(<App api={api} />);
+    await user.click(await screen.findByRole("button", { name: "仅本机保留" }));
+
+    act(() => emit(rationaleSnapshot({ waitingCount: 0, current: { ...candidate(), status: "completed" as const } })));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("正在保存到本机…");
   });
 
   it("says a save that failed as an alert, with focus on its retry", async () => {

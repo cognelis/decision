@@ -1,0 +1,74 @@
+[
+  {
+    "id": "pr-01",
+    "title": "调整 API 路由的访问控制",
+    "case": "pr-01/case.json",
+    "labels": "pr-01/labels.json",
+    "class": "counterexample",
+    "case_sha256": "c9099212f0d7952c47dc9f08d109e165d1bea04a06e4c8ad2c34e304199d8bc8",
+    "label_sha256": "8783ac5790c938aa7ea683df5f7b30e6f1faa364fd145dbe8ab26985d07a6bfc"
+  },
+  {
+    "id": "pr-02",
+    "title": "统一 CSV 导入字段校验",
+    "case": "pr-02/case.json",
+    "labels": "pr-02/labels.json",
+    "class": "counterexample",
+    "case_sha256": "b6b8de54d9cba10c1d6a7763c0317d6f22dd4514967b0e69fd628712743816b6",
+    "label_sha256": "8783ac5790c938aa7ea683df5f7b30e6f1faa364fd145dbe8ab26985d07a6bfc"
+  },
+  {
+    "id": "pr-03",
+    "title": "移除缓存读取中的重复租约",
+    "case": "pr-03/case.json",
+    "labels": "pr-03/labels.json",
+    "class": "counterexample",
+    "case_sha256": "87ef9b9c3a2be6488583f8775983fa8e2d24519cffdef6247fba547591521334",
+    "label_sha256": "8783ac5790c938aa7ea683df5f7b30e6f1faa364fd145dbe8ab26985d07a6bfc"
+  },
+  {
+    "id": "pr-04",
+    "title": "简化 HTML 提示文本生成",
+    "case": "pr-04/case.json",
+    "labels": "pr-04/labels.json",
+    "class": "counterexample",
+    "case_sha256": "715f19deec19e2288d980dd4c491cb7d1edf21dc2dfedcf85011c96a32a75e40",
+    "label_sha256": "8783ac5790c938aa7ea683df5f7b30e6f1faa364fd145dbe8ab26985d07a6bfc"
+  },
+  {
+    "id": "pr-05",
+    "title": "修复偏移量分页边界",
+    "case": "pr-05/case.json",
+    "labels": "pr-05/labels.json",
+    "class": "defect",
+    "case_sha256": "d8237e71dc96564dc0cc82fefef4767a904b1bdc7cde123b276a4418ec63ff61",
+    "label_sha256": "b21c177be061cd8589341d8253b284849793b0897e3f2ec459ce156103f25603"
+  },
+  {
+    "id": "pr-06",
+    "title": "避免任务准备失败后遗留租约",
+    "case": "pr-06/case.json",
+    "labels": "pr-06/labels.json",
+    "class": "defect",
+    "case_sha256": "7661269ba341b4581d32014a49958d15471b5c8be4f0aa8789faa17842205f74",
+    "label_sha256": "5caadc78237eb755809fff7d5c707daab2a681c16918733ad875865147444cb6"
+  },
+  {
+    "id": "pr-07",
+    "title": "规范化压缩包内的输出文件名",
+    "case": "pr-07/case.json",
+    "labels": "pr-07/labels.json",
+    "class": "defect",
+    "case_sha256": "a7f525143275e9eeb7c878cb6fc3175baf13dae616ec1846f9eb27c4c8450bf8",
+    "label_sha256": "cc70a79fe2218bf303c90899bffa25e20196f441186025a5372ec3b23a8824ab"
+  },
+  {
+    "id": "pr-08",
+    "title": "更新缓存时保留最新写入",
+    "case": "pr-08/case.json",
+    "labels": "pr-08/labels.json",
+    "class": "defect",
+    "case_sha256": "42c4e98dfcf3cf53549ed4bced6ac8d66effc55cc349a13005222921b8f57869",
+    "label_sha256": "799817c2c380ea5ad0c9a769a964ba52dd2b5f556c71ecdc15d4224ad40e238e"
+  }
+]

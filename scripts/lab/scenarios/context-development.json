@@ -1,0 +1,835 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "context-baseline",
+      "description": "合成上下文完整链路；标签在基线前固定。短中文查询检查连接线噪声，需核对意图歧义。",
+      "beforeSeed": [
+        {
+          "id": "empty-vault",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "任何历史决策"
+          },
+          "expect": {
+            "status": "empty"
+          }
+        },
+        {
+          "id": "empty-principles",
+          "tool": "consult_decision_principles",
+          "args": {
+            "question": "数据库迁移如何回退？",
+            "project": "lab"
+          },
+          "expect": {
+            "status": "no_match",
+            "noMatchReason": "no_accepted_principles"
+          }
+        }
+      ],
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/HIST-RETRY-瞬时故障恢复.md",
+            "content": "---\nid: HIST-RETRY\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 瞬时故障恢复\n\n## 决策\n网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/HIST-PAY-支付幂等键.md",
+            "content": "---\nid: HIST-PAY\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"支付写操作采用幂等键与去重令牌，防止重复执行。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付幂等键\n\n## 决策\n支付写操作采用幂等键与去重令牌，防止重复执行。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/HIST-OLD-任务队列旧方案.md",
+            "content": "---\nid: HIST-OLD\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"任务队列采用内存数组，进程退出后不保留任务。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: \"HIST-NEW\"\n---\n# 任务队列旧方案\n\n## 决策\n任务队列采用内存数组，进程退出后不保留任务。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/HIST-NEW-任务队列持久化.md",
+            "content": "---\nid: HIST-NEW\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"任务队列改为 SQLite 持久化，崩溃重启后继续处理。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 任务队列持久化\n\n## 决策\n任务队列改为 SQLite 持久化，崩溃重启后继续处理。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/HIST-BACK-缓存后端.md",
+            "content": "---\nid: HIST-BACK\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"缓存使用 Redis，限定服务端订单模块。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\ndecision_scope: {\"projects\":[\"lab\"],\"layers\":[\"backend\"],\"paths\":[\"server/orders\"]}\n---\n# 缓存后端\n\n## 决策\n缓存使用 Redis，限定服务端订单模块。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/HIST-OTHER-缓存移动端.md",
+            "content": "---\nid: HIST-OTHER\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"缓存使用内存映射，限定另一个项目。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\ndecision_scope: {\"projects\":[\"mobile\"],\"layers\":[\"frontend\"]}\n---\n# 缓存移动端\n\n## 决策\n缓存使用内存映射，限定另一个项目。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/HIST-REPO-仓库身份限定.md",
+            "content": "---\nid: HIST-REPO\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"仓库身份限定的事件处理方案。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\ndecision_scope: {\"repositoryIds\":[\"repo:0000000000000000000000000000000000000000000000000000000000000000\"]}\n---\n# 仓库身份限定\n\n## 决策\n仓库身份限定的事件处理方案。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/HIST-NOISE-界面连接线.md",
+            "content": "---\nid: HIST-NOISE\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"连接线采用虚线绘制，用于流程图视觉效果。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 界面连接线\n\n## 决策\n连接线采用虚线绘制，用于流程图视觉效果。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/principles/PRINCIPLE-ROLLBACK.md",
+            "content": "---\ntype: \"decision-methodology\"\nversion: 1\nid: PRINCIPLE-ROLLBACK\ntitle: \"迁移前验证回退\"\norigin: \"decision_evidence\"\ncreated: \"2026-09-01T00:00:00.000Z\"\nupdated: \"2026-09-01T00:00:00.000Z\"\nstatus: \"accepted\"\nconfirmed_at: \"2026-09-01T00:00:00.000Z\"\nconfidence: \"low\"\nsource_decisions: [\"synthetic-evidence\"]\ngeneration_request: \"synthetic\"\ngeneration_profile: \"synthetic\"\ngeneration_provider: \"synthetic\"\ngeneration_model: \"synthetic\"\n---\n# 迁移前验证回退\n\n## 原则\n\n<!-- decision:methodology-principle-start -->\n数据库迁移之前先验证回退路径，确保失败时恢复旧数据。\n<!-- decision:methodology-principle-end -->\n\n## 适用条件\n\n<!-- decision:methodology-applies-start -->\n数据库结构迁移且旧数据必须保留。\n<!-- decision:methodology-applies-end -->\n\n## 注意事项\n\n<!-- decision:methodology-caution-start -->\n破坏性迁移必须先备份，无法恢复时停止。\n<!-- decision:methodology-caution-end -->\n\n## 证据摘要\n\n<!-- decision:methodology-evidence-start -->\n合成复盘：回退演练减少迁移失败损失。\n<!-- decision:methodology-evidence-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "db",
+            "tool": "record_decision_journal_entry",
+            "args": {
+              "kind": "decision",
+              "title": "数据库连接池",
+              "content": "数据库连接池限制为十条连接。",
+              "project": "lab",
+              "expectedOutcome": "数据库请求延迟降低一半。",
+              "rationale": "合成：避免连接耗尽。",
+              "occurredAt": "2026-09-01T00:00:00Z"
+            },
+            "expect": {
+              "equals": {
+                "record.status": "created"
+              }
+            }
+          },
+          {
+            "id": "dbnew",
+            "tool": "record_decision_journal_entry",
+            "args": {
+              "kind": "decision",
+              "title": "数据库连接池新方案",
+              "content": "数据库连接池改为二十条连接。",
+              "project": "lab",
+              "occurredAt": "2026-09-02T00:00:00Z"
+            },
+            "expect": {
+              "equals": {
+                "record.status": "created"
+              }
+            }
+          },
+          {
+            "id": "preference",
+            "tool": "record_decision_journal_entry",
+            "args": {
+              "kind": "preference",
+              "title": "迁移优先小步",
+              "content": "数据库迁移优先分批执行，减少一次变更范围。",
+              "project": "lab",
+              "knowledgeStatus": "active",
+              "appliesWhen": "数据库迁移且交付时间允许。",
+              "exceptions": "紧急安全修复可以例外。",
+              "strength": "default",
+              "evidenceMaturity": "self_declared"
+            },
+            "expect": {
+              "equals": {
+                "record.status": "created"
+              }
+            }
+          },
+          {
+            "id": "idea",
+            "tool": "record_decision_journal_entry",
+            "args": {
+              "kind": "idea",
+              "title": "迁移影子校验",
+              "content": "考虑数据库迁移时增加影子校验。",
+              "project": "lab",
+              "knowledgeStatus": "active",
+              "whyInteresting": "可能提前发现迁移中的数据丢失。",
+              "openQuestions": [
+                "是否会使迁移耗时翻倍？"
+              ]
+            },
+            "expect": {
+              "equals": {
+                "record.status": "created"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "synonym-retry",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "retry failed requests with exponential backoff and jitter"
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-RETRY"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "synonym-payment",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "avoid charging customers twice when the same operation is submitted again"
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-PAY"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "literal-retry",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "指数退避"
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-RETRY"
+            ],
+            "k": 3
+          }
+        },
+        {
+          "id": "old-replaced",
+          "tool": "search_decision_context",
+          "args": {
+            "recordId": "HIST-OLD",
+            "source": "summarize"
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-OLD"
+            ],
+            "mustFlag": [
+              {
+                "id": "HIST-OLD",
+                "path": "lifecycleState",
+                "equals": "superseded"
+              },
+              {
+                "id": "HIST-OLD",
+                "path": "current",
+                "equals": false
+              }
+            ],
+            "contains": [
+              "HIST-NEW",
+              "已被替代"
+            ]
+          }
+        },
+        {
+          "id": "project-scope",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "缓存",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-BACK"
+            ],
+            "mustExclude": [
+              "HIST-OTHER"
+            ],
+            "equals": {
+              "context.excludedByScope": 1
+            }
+          }
+        },
+        {
+          "id": "layer-scope",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "缓存",
+            "project": "lab",
+            "layer": "frontend"
+          },
+          "expect": {
+            "mustExclude": [
+              "HIST-BACK",
+              "HIST-OTHER"
+            ],
+            "equals": {
+              "context.excludedByScope": 2
+            }
+          }
+        },
+        {
+          "id": "file-partial",
+          "tool": "search_decision_context",
+          "args": {
+            "recordId": "HIST-BACK",
+            "source": "summarize",
+            "project": "lab",
+            "layer": "backend",
+            "files": [
+              "server/orders/a.ts",
+              "web/a.ts"
+            ]
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-BACK"
+            ],
+            "mustFlag": [
+              {
+                "id": "HIST-BACK",
+                "path": "applicability.status",
+                "equals": "needs_review"
+              }
+            ]
+          }
+        },
+        {
+          "id": "file-match",
+          "tool": "search_decision_context",
+          "args": {
+            "recordId": "HIST-BACK",
+            "source": "summarize",
+            "project": "lab",
+            "layer": "backend",
+            "files": [
+              "server/orders/a.ts"
+            ]
+          },
+          "expect": {
+            "mustFlag": [
+              {
+                "id": "HIST-BACK",
+                "path": "applicability.status",
+                "equals": "scope_match"
+              }
+            ]
+          }
+        },
+        {
+          "id": "repo-scope",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "仓库身份限定",
+            "repositoryPath": {
+              "$ref": "runtime.repositoryPath"
+            }
+          },
+          "expect": {
+            "mustExclude": [
+              "HIST-REPO"
+            ],
+            "equals": {
+              "context.excludedByScope": 1
+            }
+          }
+        },
+        {
+          "id": "show-outside",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "缓存",
+            "project": "lab",
+            "layer": "frontend",
+            "includeOutOfScope": true
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-BACK",
+              "HIST-OTHER"
+            ],
+            "mustFlag": [
+              {
+                "id": "HIST-BACK",
+                "path": "applicability.status",
+                "equals": "out_of_scope"
+              }
+            ]
+          }
+        },
+        {
+          "id": "short-chinese",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "连接"
+          },
+          "expect": {
+            "mustInclude": [
+              {
+                "$ref": "db.record.recordId"
+              }
+            ],
+            "mustExclude": [
+              "HIST-NOISE"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "specific-chinese",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "数据库连接池"
+          },
+          "expect": {
+            "mustInclude": [
+              {
+                "$ref": "db.record.recordId"
+              },
+              {
+                "$ref": "dbnew.record.recordId"
+              }
+            ],
+            "mustExclude": [
+              "HIST-NOISE"
+            ],
+            "k": 3
+          }
+        },
+        {
+          "id": "principle-related",
+          "tool": "consult_decision_principles",
+          "args": {
+            "question": "数据库结构迁移之前如何验证回退路径确保恢复旧数据？",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "PRINCIPLE-ROLLBACK"
+            ],
+            "status": "matched",
+            "contains": [
+              {
+                "$ref": "preference.record.recordId"
+              },
+              {
+                "$ref": "idea.record.recordId"
+              }
+            ],
+            "equals": {
+              "consultation.boundary.noPreferencePromoted": true
+            }
+          }
+        },
+        {
+          "id": "principle-unrelated",
+          "tool": "consult_decision_principles",
+          "args": {
+            "question": "咖啡豆应该选择什么烘焙温度？",
+            "project": "lab"
+          },
+          "expect": {
+            "status": "no_match",
+            "noMatchReason": "no_relevant_principles",
+            "mustExclude": [
+              "PRINCIPLE-ROLLBACK"
+            ]
+          }
+        },
+        {
+          "id": "signals-separated",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "迁移"
+          },
+          "expect": {
+            "mustInclude": [
+              "PRINCIPLE-ROLLBACK"
+            ],
+            "mustExclude": [
+              {
+                "$ref": "preference.record.recordId"
+              },
+              {
+                "$ref": "idea.record.recordId"
+              }
+            ]
+          }
+        },
+        {
+          "id": "db-read",
+          "tool": "search_decision_context",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "db.record.recordId"
+            }
+          },
+          "expect": {
+            "mustInclude": [
+              {
+                "$ref": "db.record.recordId"
+              }
+            ]
+          }
+        },
+        {
+          "id": "scope-write",
+          "tool": "record_decision_scope",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "db.record.recordId"
+            },
+            "expectedContentHash": {
+              "$ref": "db-read.context.results.0.sourceRef.contentHash"
+            },
+            "expectedRevision": 0,
+            "scope": {
+              "projects": [
+                "lab"
+              ],
+              "layers": [
+                "backend"
+              ],
+              "paths": [
+                "server/db"
+              ]
+            },
+            "changeReason": "合成用户明确限定为后端数据库模块。"
+          },
+          "expect": {
+            "equals": {
+              "scopeUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "scope-read-excluded",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "数据库连接池",
+            "project": "lab",
+            "layer": "frontend"
+          },
+          "expect": {
+            "mustExclude": [
+              {
+                "$ref": "db.record.recordId"
+              }
+            ],
+            "mustInclude": [
+              {
+                "$ref": "dbnew.record.recordId"
+              }
+            ],
+            "writeReadback": true
+          }
+        },
+        {
+          "id": "scope-read",
+          "tool": "search_decision_context",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "db.record.recordId"
+            },
+            "project": "lab",
+            "layer": "backend",
+            "files": [
+              "server/db/pool.ts"
+            ]
+          },
+          "expect": {
+            "mustFlag": [
+              {
+                "id": {
+                  "$ref": "db.record.recordId"
+                },
+                "path": "applicability.status",
+                "equals": "scope_match"
+              }
+            ],
+            "equals": {
+              "context.results.0.scopeRevision": 1
+            },
+            "writeReadback": true
+          }
+        },
+        {
+          "id": "outcome-write",
+          "tool": "record_decision_outcome",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "db.record.recordId"
+            },
+            "expectedContentHash": {
+              "$ref": "scope-read.context.results.0.sourceRef.contentHash"
+            },
+            "outcome": "合成观察：请求延迟反而增加两倍。",
+            "review": {
+              "verdict": "worse",
+              "lesson": "合成教训：连接池容量必须根据负载测量。"
+            }
+          },
+          "expect": {
+            "equals": {
+              "outcomeUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "outcome-read",
+          "tool": "search_decision_context",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "db.record.recordId"
+            },
+            "project": "lab",
+            "layer": "frontend"
+          },
+          "expect": {
+            "mustInclude": [
+              {
+                "$ref": "db.record.recordId"
+              }
+            ],
+            "mustFlag": [
+              {
+                "id": {
+                  "$ref": "db.record.recordId"
+                },
+                "path": "outcomeState.review.verdict",
+                "equals": "worse"
+              },
+              {
+                "id": {
+                  "$ref": "db.record.recordId"
+                },
+                "path": "scopeState",
+                "equals": "current"
+              },
+              {
+                "id": {
+                  "$ref": "db.record.recordId"
+                },
+                "path": "applicability.status",
+                "equals": "out_of_scope"
+              }
+            ],
+            "contains": [
+              "低于预期"
+            ],
+            "writeReadback": true
+          },
+          "labelNote": "R9-RT 按 IMP-128（总控裁定 B2 方案 B）更正：App 回填结果与复盘后，绑定回填前版本的范围随之改绑，仍为 current 并照常排除；原标签按旧设计要求 stale、不排除。"
+        },
+        {
+          "id": "scope-stale-no-exclude",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "数据库连接池",
+            "project": "lab",
+            "layer": "frontend"
+          },
+          "expect": {
+            "mustExclude": [
+              {
+                "$ref": "db.record.recordId"
+              }
+            ],
+            "writeReadback": true
+          },
+          "labelNote": "R9-RT 按 IMP-128（总控裁定 B2 方案 B）更正：App 回填结果与复盘后，绑定回填前版本的范围随之改绑，仍为 current 并照常排除；原标签按旧设计要求 stale、不排除。"
+        },
+        {
+          "id": "feedback-write",
+          "tool": "record_decision_context_feedback",
+          "args": {
+            "feedbackId": "9d10e137-cc97-46b9-b43b-4dc04a3a432b",
+            "expectedRevision": 0,
+            "reference": {
+              "source": "decisions",
+              "recordId": {
+                "$ref": "db.record.recordId"
+              },
+              "expectedContentHash": {
+                "$ref": "outcome-read.context.results.0.sourceRef.contentHash"
+              }
+            },
+            "task": "合成：前端视图修改",
+            "project": "lab",
+            "rating": "not_applicable",
+            "reason": "合成用户反馈：此次前端任务不适用。"
+          },
+          "expect": {
+            "equals": {
+              "feedbackUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "feedback-read",
+          "tool": "list_decision_context_feedback",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "db.record.recordId"
+            }
+          },
+          "expect": {
+            "equals": {
+              "feedback.ratings.not_applicable": 1,
+              "feedback.currentSourceRatings.not_applicable": 1
+            },
+            "writeReadback": true
+          }
+        },
+        {
+          "id": "feedback-ranking-unchanged",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "数据库连接池",
+            "project": "lab",
+            "layer": "backend"
+          },
+          "expect": {
+            "mustInclude": [
+              {
+                "$ref": "db.record.recordId"
+              }
+            ],
+            "writeReadback": true
+          },
+          "labelNote": "R9-RT 按 IMP-128（总控裁定 B2 方案 B）更正：App 回填结果与复盘后，绑定回填前版本的范围随之改绑，仍为 current 并照常排除；原标签按旧设计要求 stale、不排除。 改查 backend 层，让「反馈不改排序」这一步仍能看到这条记录。"
+        },
+        {
+          "id": "new-read",
+          "tool": "search_decision_context",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "dbnew.record.recordId"
+            }
+          },
+          "expect": {
+            "mustInclude": [
+              {
+                "$ref": "dbnew.record.recordId"
+              }
+            ]
+          }
+        },
+        {
+          "id": "relation-write",
+          "tool": "record_decision_relation",
+          "args": {
+            "first": {
+              "source": "decisions",
+              "recordId": {
+                "$ref": "db.record.recordId"
+              },
+              "contentHash": {
+                "$ref": "outcome-read.context.results.0.sourceRef.contentHash"
+              }
+            },
+            "second": {
+              "source": "decisions",
+              "recordId": {
+                "$ref": "dbnew.record.recordId"
+              },
+              "contentHash": {
+                "$ref": "new-read.context.results.0.sourceRef.contentHash"
+              }
+            },
+            "disposition": "supersedes",
+            "successor": "second",
+            "expectedRevision": 0,
+            "reason": "合成用户明确确认新连接池方案替代旧方案。"
+          },
+          "expect": {
+            "equals": {
+              "relationUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "relation-read",
+          "tool": "search_decision_context",
+          "args": {
+            "source": "decisions",
+            "recordId": {
+              "$ref": "db.record.recordId"
+            }
+          },
+          "expect": {
+            "mustFlag": [
+              {
+                "id": {
+                  "$ref": "db.record.recordId"
+                },
+                "path": "lifecycleState",
+                "equals": "superseded"
+              },
+              {
+                "id": {
+                  "$ref": "db.record.recordId"
+                },
+                "path": "current",
+                "equals": false
+              }
+            ],
+            "contains": [
+              {
+                "$ref": "dbnew.record.recordId"
+              }
+            ],
+            "writeReadback": true
+          }
+        },
+        {
+          "id": "relation-filter",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "数据库连接池",
+            "relation": "superseded"
+          },
+          "expect": {
+            "mustInclude": [
+              {
+                "$ref": "db.record.recordId"
+              }
+            ],
+            "mustExclude": [
+              {
+                "$ref": "dbnew.record.recordId"
+              }
+            ],
+            "writeReadback": true
+          }
+        },
+        {
+          "id": "long-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长长"
+          },
+          "expect": {
+            "isError": true,
+            "equals": {
+              "availability": "invalid_input"
+            }
+          }
+        },
+        {
+          "id": "corrupt-file",
+          "file": {
+            "path": "Decision Journal/summarize/broken.md",
+            "content": "---\nid: [\n---\n合成损坏笔记\n"
+          }
+        },
+        {
+          "id": "corrupt-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "指数退避"
+          },
+          "expect": {
+            "mustInclude": [
+              "HIST-RETRY"
+            ],
+            "equals": {
+              "context.coverage": "partial",
+              "context.sources.0.skipped": 1
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

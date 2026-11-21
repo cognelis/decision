@@ -1,8 +1,12 @@
+import { createLocalReviewPreview } from "../src/renderer/preview-local-review.js";
+import { createTodoPreview } from "../src/renderer/preview-todos.js";
+import { createHistoricalDecisionPreview } from "../src/renderer/preview-historical-decisions.js";
+import { createOrganizationPreview } from "../src/renderer/preview-organization.js";
 import { createEvidencePreviewApi } from "../src/renderer/evidence-preview-api.js";
 import { DecisionCandidateQueue, RationaleQueue } from "@cognelis/decision-core";
 import { describe, expect, it, vi } from "vitest";
 
-import { DESKTOP_PRIMARY_SURFACES } from "../src/shared/renderer-api.js";
+import { DESKTOP_PRIMARY_SURFACES, type ModelProviderTestResult } from "../src/shared/renderer-api.js";
 import { IPC_CHANNELS, registerDecisionIpc } from "../src/main/ipc.js";
 import {
   OBSIDIAN_SEARCH_METHOD_NAMES,
@@ -37,12 +41,20 @@ class FakeIpcMain {
 }
 
 const operations = (overrides: Record<string, unknown> = {}) => ({
+  ...createLocalReviewPreview(),
+  ...createTodoPreview(),
+  ...createHistoricalDecisionPreview(),
+  ...createOrganizationPreview(null),
   openSurface: vi.fn(),
   closePrimarySurface: vi.fn(),
   listDecisions: vi.fn(async () => []),
   listDecisionProjects: vi.fn(async () => []),
   createProactiveRecord: vi.fn(),
+  summarizeRecordContext: vi.fn(async () => ({ status: "unavailable" as const, reason: "没有启用本机模型。" })),
+  cancelRecordContextSummary: vi.fn(async () => undefined),
   listJournalEntries: vi.fn(async () => []),
+  listDecisionAmendments: vi.fn(async () => ({ records: [], unavailable: false })),
+  updateDecisionAmendment: vi.fn(),
   reviseJournalEntry: vi.fn(),
   getObsidianSearchStatus: vi.fn(async () => obsidianStatus),
   searchObsidian: vi.fn(async (input) => ({
@@ -78,6 +90,10 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
   listManualFormDrafts: vi.fn(async () => []),
   saveManualFormDraft: vi.fn(),
   deleteManualFormDraft: vi.fn(),
+  listPrompts: vi.fn(async () => []),
+  createPrompt: vi.fn(),
+  updatePrompt: vi.fn(),
+  deletePrompt: vi.fn(),
   generateMethodology: vi.fn(),
   createMethodologyMergeDraft: vi.fn(),
   createMethodologyRevisionDraft: vi.fn(),
@@ -142,13 +158,13 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
     strongMatches: 0,
     possibleMatches: 0,
     durationMs: 0,
-    byClient: { claudeCode: 0, codex: 0 },
+    byClient: { "claude-code": 0, codex: 0 },
     feedback: {
       total: 0,
       helpful: 0,
       notHelpful: 0,
       misleading: 0,
-      bySource: { claudeCode: 0, codex: 0, preview: 0 },
+      bySource: { "claude-code": 0, codex: 0, preview: 0 },
       byResult: {
         strong: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
         possible: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
@@ -208,18 +224,24 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
   closeCandidateReview: vi.fn(),
   confirmCandidate: vi.fn(),
   ignoreCandidate: vi.fn(),
+  skipCandidate: vi.fn(),
   retryCandidate: vi.fn(),
   chooseVault: vi.fn(async () => null),
   revealVault: vi.fn(async () => false),
   installIntegrations: vi.fn(),
   removeIntegrations: vi.fn(),
+  listCustomClients: vi.fn(async () => []),
+  saveCustomClient: vi.fn(async () => []),
+  deleteCustomClient: vi.fn(),
   rebuildIndex: vi.fn(),
   setTheme: vi.fn(),
+  setAccent: vi.fn(),
   listModelTraces: vi.fn(async () => []),
   deleteModelTrace: vi.fn(),
   deleteModelTraceRequest: vi.fn(),
   forgetAssistantTurns: vi.fn(async () => undefined),
   clearModelTraces: vi.fn(async () => 0),
+  setModelProxyUrl: vi.fn(async () => undefined),
   setModelTraceContentEnabled: vi.fn(),
   setLocalCredentialsEnabled: vi.fn(async () => undefined),
   setReviewRemindersEnabled: vi.fn(async () => undefined),
@@ -233,6 +255,7 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
   testModelProviderProfile: vi.fn(),
   checkAssistantSource: vi.fn(async () => ({ status: "matched" as const, content: "当前内容", truncated: false })),
   searchAssistantSources: vi.fn(async () => ({ sources: [], issues: [] })),
+  sendOnboarding: vi.fn(async () => { throw new Error("no onboarding in this fixture"); }),
   runAssistantTurn: vi.fn(async () => ({
     version: 1 as const,
     status: "unavailable" as const,
@@ -246,6 +269,20 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
   loadPrReview: vi.fn(),
   peekPrReview: vi.fn(),
   prefetchPrReviews: vi.fn(),
+  listPrReviewHistory: vi.fn(async () => ({ entries: [], unreadable: 0 })),
+  savePrReviewHistory: vi.fn(async () => ({ dropped: 0, logDropped: [], refused: [] })),
+  listPrReviewStatuses: vi.fn(async () => ({ statuses: [] })),
+  getPrDescription: vi.fn(),
+  updatePrDescription: vi.fn(),
+  listPrReceivedComments: vi.fn(),
+  respondToPrComment: vi.fn(),
+  readPrReviewOutcomes: vi.fn(async () => ({ changed: false })),
+  getReviewQuality: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "ok" as const, connections: [], quality: null })),
+  actOnReviewPromotion: vi.fn(async () => ({ ok: true, message: "这条提议不再列出。", jobId: null })),
+  reviewBenchmarkPage: vi.fn(async () => ({ ok: true, message: null, overview: null, run: null })),
+  updateReviewEscape: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "updated" as const, reason: null, escape: null })),
+  updateReviewRule: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "updated" as const, reason: null })),
+  getPrReviewSettings: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "ok" as const, connections: [], models: [], settings: [] })),
   loadPrReviewDiff: vi.fn(),
   getPrActionContext: vi.fn(),
   performPrAction: vi.fn(),
@@ -253,7 +290,10 @@ const operations = (overrides: Record<string, unknown> = {}) => ({
   publishPrGeneralComment: vi.fn(),
   reevaluatePrReviewFinding: vi.fn(),
   openReviewRulesDirectory: vi.fn(),
-  listPrDiscussion: vi.fn(async () => ({ comments: [], more: false })),
+  listPrDiscussion: vi.fn(async () => ({ comments: [], more: false, recognition: null })),
+  recognizePrDiscussion: vi.fn(async () => ({ comments: [], more: false, recognition: null })),
+  dismissPrCommentCandidate: vi.fn(async () => undefined),
+  listPrCommentCandidates: vi.fn(async () => ({ prs: [], links: [] })),
   openPrLink: vi.fn(),
   openPr: vi.fn(),
   loadPrReviewFile: vi.fn(),
@@ -324,7 +364,8 @@ describe("decision IPC", () => {
     // to nothing at runtime while every unit test stays green.
     const pushOnly = new Set<string>([
       IPC_CHANNELS.snapshotChanged,
-      IPC_CHANNELS.assistantProgress, IPC_CHANNELS.prReviewProgress,
+      IPC_CHANNELS.assistantProgress, IPC_CHANNELS.prReviewProgress, IPC_CHANNELS.prReviewHistoryChanged,
+      IPC_CHANNELS.localReviewNavigate,
     ]);
     const invocable = Object.values(IPC_CHANNELS).filter(
       (channel) => !pushOnly.has(channel),
@@ -337,6 +378,10 @@ describe("decision IPC", () => {
 
   it("exposes the complete renderer capability list", () => {
     expect(RENDERER_METHOD_NAMES).toEqual([
+      "listHistoricalDecisions", "getHistoricalDecision", "recordHistoricalDecision", "updateHistoricalDecision", "rebuildHistoricalDecisionIndex", "openHistoricalDecision",
+      "listTodoLists", "recordTodoList", "changeTodoItem", "updateTodoList", "moveTodoItem", "changeTodoItems", "moveTodoItemsToList", "deleteTodoItems", "deleteTodoList",
+      "getOrganization", "runOrganization", "controlOrganizationRun", "decideSuggestion", "adoptSuggestions", "saveSuggestionDraft", "undoSuggestion", "regenerateSuggestion", "setOrganizationSettings", "previewOrganizationForget", "forgetOrganizationSource", "getTodoAnnotations",
+      "getLocalReviewState", "chooseLocalReviewRepository", "startLocalReviewSession", "saveLocalReviewSettings", "clearLocalReviewDependencies", "loadLocalReviewFiles", "readLocalReviewFile", "saveLocalReviewAnnotation", "removeLocalReviewAnnotation", "submitLocalReview", "submitLocalReviewFromPr", "actOnLocalReview", "sendLocalReviewMessage", "executeLocalReviewPlan", "markLocalReviewRead", "actOnLocalReviewConversation", "onLocalReviewNavigate",
       "getSnapshot",
       "onSnapshot",
       "submitRationale",
@@ -345,6 +390,7 @@ describe("decision IPC", () => {
       "closeCandidateReview",
       "confirmCandidate",
       "ignoreCandidate",
+      "skipCandidate",
       "retryCandidate",
       "openSurface",
       "closePrimarySurface",
@@ -352,8 +398,15 @@ describe("decision IPC", () => {
       "listDecisionProjects",
       "listLocalDecisions",
       "resolveLocalDecision",
+      "previewDecisionDeletion",
+      "deleteDecision",
+      "getMisrecognitionSummary",
       "createProactiveRecord",
+      "summarizeRecordContext",
+      "cancelRecordContextSummary",
       "listJournalEntries",
+      "listDecisionAmendments",
+      "updateDecisionAmendment",
       "reviseJournalEntry",
       "getObsidianSearchStatus",
       "searchObsidian",
@@ -368,6 +421,20 @@ describe("decision IPC", () => {
       "loadPrReview",
       "peekPrReview",
       "prefetchPrReviews",
+      "listPrReviewHistory",
+      "savePrReviewHistory",
+      "listPrReviewStatuses",
+      "getPrDescription",
+      "updatePrDescription",
+      "listPrReceivedComments",
+      "respondToPrComment",
+      "readPrReviewOutcomes",
+      "getReviewQuality",
+      "updateReviewRule",
+      "updateReviewEscape",
+      "reviewBenchmarkPage",
+      "actOnReviewPromotion",
+      "getPrReviewSettings",
       "loadPrReviewDiff",
       "getPrActionContext",
       "performPrAction",
@@ -376,6 +443,9 @@ describe("decision IPC", () => {
       "reevaluatePrReviewFinding",
       "openReviewRulesDirectory",
       "listPrDiscussion",
+      "recognizePrDiscussion",
+      "dismissPrCommentCandidate",
+      "listPrCommentCandidates",
       "openPrLink",
       "openPr",
       "loadPrReviewFile",
@@ -383,7 +453,9 @@ describe("decision IPC", () => {
       "followUpPrReview",
       "cancelPrReview",
       "onPrReviewProgress",
+      "onPrReviewHistoryChanged",
       "runAssistantTurn",
+      "sendOnboarding",
       "listAssistantModels",
       "cancelAssistantTurn",
       "saveAssistantFeedback",
@@ -412,6 +484,10 @@ describe("decision IPC", () => {
       "listManualFormDrafts",
       "saveManualFormDraft",
       "deleteManualFormDraft",
+      "listPrompts",
+      "createPrompt",
+      "updatePrompt",
+      "deletePrompt",
       "generateMethodology",
       "createMethodologyMergeDraft",
       "createMethodologyRevisionDraft",
@@ -456,14 +532,19 @@ describe("decision IPC", () => {
       "revealVault",
       "installIntegrations",
       "removeIntegrations",
+      "listCustomClients",
+      "saveCustomClient",
+      "deleteCustomClient",
       "rebuildIndex",
       "setTheme",
+      "setAccent",
       "listModelTraces",
       "deleteModelTrace",
       "deleteModelTraceRequest",
       "forgetAssistantTurns",
       "clearModelTraces",
       "setModelTraceContentEnabled",
+      "setModelProxyUrl",
       "setReviewRemindersEnabled",
       "setLocalCredentialsEnabled",
       "setCaptureClassifier",
@@ -505,6 +586,22 @@ describe("decision IPC", () => {
     expect(open).toHaveBeenCalledTimes(1); expect(scope).toHaveBeenCalledTimes(1);
     open.mockResolvedValueOnce({ status: "opened", relativePath: "", noNoteWritten: true });
     await expect(ipcMain.invoke(IPC_CHANNELS.openDecisionSource, reference)).rejects.toThrow();
+  });
+
+  it("leaves a call that fails after the quit began unanswered rather than thrown, and answers one that succeeds", async () => {
+    const ipcMain = new FakeIpcMain();
+    let quitting = false;
+    const listDecisions = vi.fn(async (): Promise<unknown[]> => { throw new Error("database is not open"); });
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ listDecisions }), quitting: () => quitting });
+
+    await expect(ipcMain.invoke(IPC_CHANNELS.listDecisions, { query: "" })).rejects.toThrow("database is not open");
+    quitting = true;
+    let settled = false;
+    void Promise.resolve(ipcMain.invoke(IPC_CHANNELS.listDecisions, { query: "" })).then(() => { settled = true; }, () => { settled = true; });
+    for (let round = 0; round < 5; round += 1) await new Promise((resolve) => setImmediate(resolve));
+    expect(settled).toBe(false);
+    listDecisions.mockResolvedValueOnce([]);
+    await expect(ipcMain.invoke(IPC_CHANNELS.listDecisions, { query: "" })).resolves.toEqual([]);
   });
 
   it("validates the local credential switch at the IPC boundary", async () => {
@@ -618,6 +715,15 @@ describe("decision IPC", () => {
     expect(loadPrReviewFile).toHaveBeenCalledTimes(1);
     loadPrReviewDiff.mockResolvedValueOnce({ diff: "x".repeat(2 * 1024 * 1024 + 1) });
     await expect(ipcMain.invoke(IPC_CHANNELS.loadPrReviewDiff, input)).rejects.toThrow();
+  });
+  it("accepts only registered local review identities and literal relative paths", async () => {
+    const ipcMain = new FakeIpcMain(), readLocalReviewFile = vi.fn(async () => "source");
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ readLocalReviewFile }) });
+    const input = { repositoryId: "10000000-0000-4000-8000-000000000001", sessionId: "10000000-0000-4000-8000-000000000002", path: "src/a.ts", side: "new" };
+    await expect(ipcMain.invoke(IPC_CHANNELS.readLocalReviewFile, input)).resolves.toBe("source");
+    for (const invalid of [{ ...input, repositoryPath: "/tmp/repo" }, { ...input, path: "../secret" }, { ...input, path: "/tmp/secret" }, { ...input, path: ".git/config" }, { ...input, repositoryId: "not-an-id" }]) await expect(ipcMain.invoke(IPC_CHANNELS.readLocalReviewFile, invalid)).rejects.toThrow();
+    expect(readLocalReviewFile).toHaveBeenCalledTimes(1);
+    await expect(ipcMain.invoke(IPC_CHANNELS.chooseLocalReviewRepository, { path: "/tmp/repo" })).rejects.toThrow();
   });
 
   it("validates PR follow-up input and output across IPC", async () => {
@@ -1085,7 +1191,8 @@ describe("decision IPC", () => {
     await expect(
       ipcMain.invoke(IPC_CHANNELS.listDecisions, {
         query: "",
-        sourceClient: "unknown",
+        // Not a client's id in form: a client the registry may yet add is one.
+        sourceClient: "Unknown Client",
       }),
     ).rejects.toThrow();
     await expect(
@@ -1167,6 +1274,26 @@ describe("decision IPC", () => {
         principleIds: ["1", "2", "3", "4", "5", "6"],
       }),
     ).rejects.toThrow();
+  });
+
+  it("hands a context to summarize and its cancel on by the form's id, and refuses one malformed or answered out of shape", async () => {
+    const ipcMain = new FakeIpcMain();
+    const summarizeRecordContext = vi.fn(async () => ({ status: "summarized" as const, summary: "在做什么：给请求加超时。\n定了什么：超时由调用方传入。", model: "qwen3.5-2b-q4-k-m", clipped: false }));
+    const cancelRecordContextSummary = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ summarizeRecordContext, cancelRecordContextSummary }) });
+    const request = { requestId: "6f4a1f5e-8a7b-4c2d-9e10-1a2b3c4d5e6f", context: "PR：调整请求超时", title: "超时由谁决定？", choice: "调用方传入" };
+
+    await expect(ipcMain.invoke(IPC_CHANNELS.summarizeRecordContext, request)).resolves.toMatchObject({ status: "summarized", model: "qwen3.5-2b-q4-k-m" });
+    expect(summarizeRecordContext).toHaveBeenCalledWith(request);
+    await ipcMain.invoke(IPC_CHANNELS.cancelRecordContextSummary, request.requestId);
+    expect(cancelRecordContextSummary).toHaveBeenCalledWith(request.requestId);
+    // Nothing to summarize, or an id a cancel could not find again: refused before any model is asked.
+    await expect(ipcMain.invoke(IPC_CHANNELS.summarizeRecordContext, { ...request, context: "   " })).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.summarizeRecordContext, { ...request, requestId: "summary-1" })).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.cancelRecordContextSummary, "summary-1")).rejects.toThrow();
+    expect(summarizeRecordContext).toHaveBeenCalledOnce();
+    summarizeRecordContext.mockResolvedValueOnce({ status: "summarized", summary: "", model: "qwen", clipped: false });
+    await expect(ipcMain.invoke(IPC_CHANNELS.summarizeRecordContext, request)).rejects.toThrow();
   });
 
   it("validates proactive recording and journal revision inputs", async () => {
@@ -1877,13 +2004,13 @@ describe("decision IPC", () => {
       strongMatches: 0,
       possibleMatches: 0,
       durationMs: 4,
-      byClient: { claudeCode: 0, codex: 1 },
+      byClient: { "claude-code": 0, codex: 1 },
       feedback: {
         total: 0,
         helpful: 0,
         notHelpful: 0,
         misleading: 0,
-        bySource: { claudeCode: 0, codex: 0, preview: 0 },
+        bySource: { "claude-code": 0, codex: 0, preview: 0 },
         byResult: {
           strong: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
           possible: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
@@ -2316,6 +2443,66 @@ describe("decision IPC", () => {
       ok: false,
       errorCode: "output_limit",
     });
+  });
+
+  it("forwards every field a test result can carry", async () => {
+    // Required<> makes a field added to the type a compile error here until the fixture carries it, and the strict
+    // schema then has to take it: jev's reported cost was in the type but not the schema, so a passing test showed
+    // 「内容不符合要求：格式不符合要求」.
+    const everyField: Required<ModelProviderTestResult> = {
+      ok: false,
+      profileId: "jev",
+      latencyMs: 620,
+      requestId: "health-jev",
+      modelVersion: "typesafe/jev-1.14-20261014",
+      tokenSource: "provider_reported",
+      errorCode: "invalid_output",
+      availability: "unavailable",
+      providerRequestId: "gen-dec-1",
+      processExitCode: 1,
+      diagnosticExcerpt: "answer did not match the question",
+      costUsd: 0.000003,
+    };
+    const ipcMain = new FakeIpcMain();
+    registerDecisionIpc({
+      ipcMain,
+      queue: new RationaleQueue(),
+      operations: operations({ testModelProviderProfile: vi.fn(async () => everyField) }),
+    });
+
+    await expect(ipcMain.invoke(IPC_CHANNELS.testModelProviderProfile, "jev")).resolves.toEqual(everyField);
+  });
+
+  it("forwards a test result the trace takes: past the longest timeout, a long request id, a crash exit code", async () => {
+    // A test cut off at the longest timeout (120 s) takes a little longer in all, a provider's request id may run to
+    // 500 characters, and a CLI that crashed on Windows exits with 0xC0000005: refused here, the page said the
+    // input was over a limit instead of what happened.
+    for (const result of [
+      { latencyMs: 120_043, errorCode: "timeout" as const },
+      { latencyMs: 900, errorCode: "authentication_failed" as const, providerRequestId: `req_${"a".repeat(496)}` },
+      { latencyMs: 300, errorCode: "process_failed" as const, processExitCode: 3_221_225_477 },
+    ]) {
+      const ipcMain = new FakeIpcMain();
+      registerDecisionIpc({
+        ipcMain,
+        queue: new RationaleQueue(),
+        operations: operations({
+          testModelProviderProfile: vi.fn(async () => ({ ok: false, profileId: "slow-remote", requestId: "health-limits", ...result })),
+        }),
+      });
+
+      await expect(ipcMain.invoke(IPC_CHANNELS.testModelProviderProfile, "slow-remote")).resolves.toMatchObject(result);
+    }
+  });
+
+  it("forwards a test the provider's content moderation refused, with what it said", async () => {
+    // Refused here, the settings page said the main process failed rather than that the moderation turned the test down.
+    const result = { ok: false, profileId: "remote-openrouter", latencyMs: 412, requestId: "health-refused", errorCode: "content_refused" as const,
+      diagnosticExcerpt: "HTTP 403: {\"error\":{\"code\":403,\"message\":\"Your input was flagged for \\\"harassment\\\".\"}}" };
+    const ipcMain = new FakeIpcMain();
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ testModelProviderProfile: vi.fn(async () => result) }) });
+
+    await expect(ipcMain.invoke(IPC_CHANNELS.testModelProviderProfile, "remote-openrouter")).resolves.toEqual(result);
   });
 
   it("forwards the turns of a deleted conversation, and refuses anything but a list of ids", async () => {
@@ -2799,6 +2986,20 @@ describe("decision IPC", () => {
     expect(setTheme).toHaveBeenCalledOnce();
   });
 
+  it("takes a theme colour as a preset or a #rrggbb of the reader's own, and nothing else (IMP-140)", async () => {
+    const ipcMain = new FakeIpcMain();
+    const setAccent = vi.fn(async () => undefined);
+    registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ setAccent }) });
+
+    await ipcMain.invoke(IPC_CHANNELS.setAccent, "purple");
+    await ipcMain.invoke(IPC_CHANNELS.setAccent, "#4D7C0F");
+    await expect(ipcMain.invoke(IPC_CHANNELS.setAccent, "sepia")).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.setAccent, "#4d7c0")).rejects.toThrow();
+    await expect(ipcMain.invoke(IPC_CHANNELS.setAccent, "red; background: url(x)")).rejects.toThrow();
+
+    expect(setAccent.mock.calls).toEqual([["purple"], ["#4d7c0f"]]);
+  });
+
   it("says a disk full or a folder refused in words, naming the folder, never the temporary file", async () => {
     const ipcMain = new FakeIpcMain();
     const refusal = (code: string, path: string) => Object.assign(new Error(`${code}: refused, open '${path}'`), { code, path });
@@ -2817,4 +3018,47 @@ describe("decision IPC", () => {
     );
     await expect(ipcMain.invoke(IPC_CHANNELS.setTheme, "dark")).rejects.toThrow("other");
   });
+});
+
+
+it("accepts deletion only with an id, explicit storage and content hash, never a renderer path", async () => {
+  const ipcMain = new FakeIpcMain();
+  const preview = { id: "delete-id", storage: "vault", question: "合成问题", contentHash: "a".repeat(64), evidencePrinciples: 2, adoptedPrinciples: 1, relations: 3, batchId: "batch", captured: true, deferredHeld: false, selectedAnswer: "合成选择", project: "合成项目" };
+  const previewDecisionDeletion = vi.fn(async () => preview);
+  const deleteDecision = vi.fn(async () => ({ deleted: true, warnings: [] }));
+  registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ previewDecisionDeletion, deleteDecision }) });
+  const target = { id: "delete-id", storage: "vault" };
+  await expect(ipcMain.invoke(IPC_CHANNELS.previewDecisionDeletion, target)).resolves.toEqual(preview);
+  const request = { ...target, expectedContentHash: "a".repeat(64) };
+  await expect(ipcMain.invoke(IPC_CHANNELS.deleteDecision, request)).resolves.toEqual({ deleted: true, warnings: [] });
+  for (const input of [target, { ...request, expectedContentHash: "stale" }, { ...request, path: "/arbitrary/file.md" }, { ...request, storage: "unknown" }]) {
+    await expect(ipcMain.invoke(IPC_CHANNELS.deleteDecision, input)).rejects.toThrow();
+  }
+  expect(deleteDecision).toHaveBeenCalledTimes(1);
+  previewDecisionDeletion.mockResolvedValueOnce({ ...preview, relations: -1 });
+  await expect(ipcMain.invoke(IPC_CHANNELS.previewDecisionDeletion, target)).rejects.toThrow();
+  // 识别错误 is an explicit yes or no, passed on as given.
+  await expect(ipcMain.invoke(IPC_CHANNELS.deleteDecision, { ...request, misrecognized: true })).resolves.toEqual({ deleted: true, warnings: [] });
+  expect(deleteDecision).toHaveBeenLastCalledWith({ ...request, misrecognized: true });
+  await expect(ipcMain.invoke(IPC_CHANNELS.deleteDecision, { ...request, misrecognized: "yes" })).rejects.toThrow();
+  expect(deleteDecision).toHaveBeenCalledTimes(2);
+});
+
+it("returns the misrecognition summary only in its counted shape", async () => {
+  const ipcMain = new FakeIpcMain();
+  const summary = { days: 30, total: 2, byMode: { transcript: 2, structured_tool: 0 }, byBand: { high: 1, medium: 1, unknown: 0 }, bySignal: { has_choice_prompt: 2 }, byDetector: { "rules-v5": 2 } };
+  const getMisrecognitionSummary = vi.fn(async () => summary);
+  registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ getMisrecognitionSummary }) });
+  await expect(ipcMain.invoke(IPC_CHANNELS.getMisrecognitionSummary)).resolves.toEqual(summary);
+  getMisrecognitionSummary.mockResolvedValueOnce({ ...summary, question: "不该出现的正文" } as never);
+  await expect(ipcMain.invoke(IPC_CHANNELS.getMisrecognitionSummary)).rejects.toThrow();
+});
+
+it("validates global model proxy writes at the IPC boundary", async () => {
+  const ipcMain = new FakeIpcMain(); const setModelProxyUrl = vi.fn(async () => undefined);
+  registerDecisionIpc({ ipcMain, queue: new RationaleQueue(), operations: operations({ setModelProxyUrl }) });
+  await ipcMain.invoke(IPC_CHANNELS.setModelProxyUrl, "http://127.0.0.1:7890");
+  await ipcMain.invoke(IPC_CHANNELS.setModelProxyUrl, null);
+  for (const value of [undefined, false, {}, "", "invalid", "socks5://proxy.test:1080", "http://proxy.test/path"]) await expect(ipcMain.invoke(IPC_CHANNELS.setModelProxyUrl, value)).rejects.toThrow();
+  expect(setModelProxyUrl.mock.calls).toEqual([["http://127.0.0.1:7890"], [null]]);
 });

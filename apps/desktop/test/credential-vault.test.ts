@@ -3,6 +3,7 @@ import {
   readFile,
   readdir,
   stat,
+  writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -141,7 +142,10 @@ describe("local credential mode", () => {
     expect(encryption.encryptString).not.toHaveBeenCalled();
     expect(encryption.decryptString).not.toHaveBeenCalled();
     for (const name of await readdir(path)) {
-      expect((await readFile(join(path, name), "utf8")).startsWith("local:")).toBe(true);
+      const kept = await readFile(join(path, name), "utf8");
+      expect(kept.startsWith("local:x1:")).toBe(true);
+      // Out of sight: neither key reads in its file.
+      expect(kept).not.toMatch(/model-secret|pr-secret|updated-secret/u);
       expect((await stat(join(path, name))).mode & 0o777).toBe(0o600);
     }
     const persist = vi.fn(async () => undefined);
@@ -156,6 +160,19 @@ describe("local credential mode", () => {
       expect(await readFile(join(path, name), "utf8")).not.toContain("local:");
     }
     expect(await secured.delete("pr-one")).toBe(true);
+  });
+
+  it("reads a local key kept in the open before keys were obfuscated, and writes it over as it reads it", async () => {
+    const path = await mkdtemp(join(tmpdir(), "credentials-legacy-"));
+    const vault = new CredentialVault(path, codec(), true);
+    await vault.set("provider:one", "placeholder");
+    const [name] = (await readdir(path)).filter((entry) => entry.endsWith(".credential"));
+    await writeFile(join(path, name!), `local:${JSON.stringify("legacy-secret")}`, { mode: 0o600 });
+    expect(await vault.get("provider:one")).toBe("legacy-secret");
+    const kept = await readFile(join(path, name!), "utf8");
+    expect(kept.startsWith("local:x1:")).toBe(true);
+    expect(kept).not.toContain("legacy-secret");
+    expect(await new CredentialVault(path, codec(), true).get("provider:one")).toBe("legacy-secret");
   });
 
   it("says from its files where the keys are kept, for a start whose setting could not be read or was not saved", async () => {

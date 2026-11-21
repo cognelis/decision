@@ -37,7 +37,7 @@ const DISPOSITION_RETRY =
 
 /** A submission by what it says: read back from its journal or sent again, each is a new object saying the same. */
 const submissionText = (submission: RationaleSubmission): string =>
-  JSON.stringify(Object.entries(submission).sort(([left], [right]) => (left < right ? -1 : 1)));
+  JSON.stringify(Object.entries(submission).filter(([key]) => key !== "confirmedAt").sort(([left], [right]) => (left < right ? -1 : 1)));
 
 import type {
   AppHealth,
@@ -126,6 +126,7 @@ interface RationaleIndexLike {
     sourceClient: string;
     selectedAnswer: string;
     context: string | null;
+    filePath?: string;
   }>;
   hasDecision?(id: string): boolean;
 }
@@ -136,6 +137,8 @@ interface CaptureRuntimeOptions {
   store: DecisionStoreLike;
   localDecisions?: { save(record: ReturnType<typeof createDecisionRecord>, content?: string): void; resolve(id: string, state: "published" | "discarded"): void; has(id: string): boolean };
   index?: RationaleIndexLike;
+  /** Whether a note's answer is the recommendation its options marked; the index keeps no options. */
+  followOf?: (decision: { id: string; filePath?: string }) => "followed" | "not_followed" | null;
   idFactory: () => string;
   now?: () => Date;
 }
@@ -178,6 +181,7 @@ export class CaptureRuntime {
   readonly #store: DecisionStoreLike;
   readonly #localDecisions: CaptureRuntimeOptions["localDecisions"];
   readonly #index: RationaleIndexLike | undefined;
+  readonly #followOf: CaptureRuntimeOptions["followOf"];
   readonly #deferredRationales = new Map<
     string,
     RationaleCandidate
@@ -215,8 +219,12 @@ export class CaptureRuntime {
     this.#store = options.store;
     this.#localDecisions = options.localDecisions;
     this.#index = options.index;
+    this.#followOf = options.followOf;
     this.queue = new RationaleQueue(options.idFactory, {
       onDisposition: async (candidate, submission) => {
+        if (submission.status === "captured" || submission.status === "skipped") {
+          submission.confirmedAt ??= new Date().toISOString();
+        }
         this.#candidateOccurrenceKeys.set(
           candidate.candidateId,
           candidate.candidateKey,
@@ -858,6 +866,8 @@ export class CaptureRuntime {
           selectedAnswer: decision.selectedAnswer,
           contextSummary: decision.context,
           capturedQuestion: null,
+          // The index has no options: read from the note, so the home page can say it as the capture page does.
+          ...(this.#followOf?.(decision) === "followed" ? { followedRecommendation: true as const } : {}),
         });
       }
     } catch {
@@ -935,6 +945,7 @@ export class CaptureRuntime {
       }
       const submission: RationaleSubmission = {
         status: "captured",
+        confirmedAt: new Date().toISOString(),
         rationale: input.rationale,
         ...(input.reasonFactors === undefined
           ? {}
@@ -973,6 +984,7 @@ export class CaptureRuntime {
       }
       const submission: RationaleSubmission = {
         status: "skipped",
+        confirmedAt: new Date().toISOString(),
         ...this.#deferredKept.get(id),
       };
       await this.#spool.replaceDisposition(
@@ -1017,9 +1029,19 @@ export class CaptureRuntime {
     if (!result.indexed) this.reportIndexIssue("已转为本机记录，但索引清理失败，请重建索引。");
   }
 
+  /** Whether a deferred rationale is held here, its spool event and disposition with it, rather than only in the vault. */
+  holdsDeferredRationale(id: string): boolean {
+    return this.#deferredRationales.has(id);
+  }
+
   async discardDeferredRationale(id: string): Promise<void> {
     const local = this.#deferredRationales.get(id);
     if (local !== undefined) {
+      // Completed already, its note in Obsidian and only its receipt refused: not recorded now, it left the recovery
+      // queue alone and was said to be taken out of Obsidian, where the note stayed. Its save is finished first.
+      if (this.#notesWritten.has(id)) {
+        throw new Error(`「${local.question.question}」的理由已写入 Obsidian，只是本机恢复队列还没更新；请先在「补充理由」里再保存一次，之后仍不想保留，可在 Obsidian 中删掉这篇笔记。`);
+      }
       if (this.#spool.replaceDisposition === undefined) {
         throw new Error(
           "Local deferred rationale discard is unavailable",

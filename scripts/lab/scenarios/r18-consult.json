@@ -1,0 +1,126 @@
+{
+ "version": 1,
+ "synthetic": true,
+ "description": "R18 L2：consult 经守卫的确定性步骤。想法与偏好种子由 storage 包的 JournalEntryRepository（createJournalEntry、reviseJournalEntry、serializeJournalEntry）生成：先建 active，再修订为 archived，changeNote 按 L1 定稿写「归档记录：<原因>」或「归档记录」。断言按 main（7af5e85c）的行为写：已归档的不召回；候选的「已放下」断言等措辞定稿后另加。",
+ "scenarios": [
+  {
+   "id": "r18-consult-guarded",
+   "mechanism": "consult",
+   "description": "种子写入后，consult 经守卫放行：原则进 matches，有效偏好与 inbox 想法进 signals，已归档的两条不出现；无关问题 no_match。",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/principles/PRINCIPLE-ROLLBACK.md",
+      "content": "---\ntype: \"decision-methodology\"\nversion: 1\nid: PRINCIPLE-ROLLBACK\ntitle: \"迁移前验证回退\"\norigin: \"decision_evidence\"\ncreated: \"2026-09-01T00:00:00.000Z\"\nupdated: \"2026-09-01T00:00:00.000Z\"\nstatus: \"accepted\"\nconfirmed_at: \"2026-09-01T00:00:00.000Z\"\nconfidence: \"low\"\nsource_decisions: [\"synthetic-evidence\"]\ngeneration_request: \"synthetic\"\ngeneration_profile: \"synthetic\"\ngeneration_provider: \"synthetic\"\ngeneration_model: \"synthetic\"\n---\n# 迁移前验证回退\n\n## 原则\n\n<!-- decision:methodology-principle-start -->\n数据库迁移之前先验证回退路径，确保失败时恢复旧数据。\n<!-- decision:methodology-principle-end -->\n\n## 适用条件\n\n<!-- decision:methodology-applies-start -->\n数据库结构迁移且旧数据必须保留。\n<!-- decision:methodology-applies-end -->\n\n## 注意事项\n\n<!-- decision:methodology-caution-start -->\n破坏性迁移必须先备份，无法恢复时停止。\n<!-- decision:methodology-caution-end -->\n\n## 证据摘要\n\n<!-- decision:methodology-evidence-start -->\n合成复盘：回退演练减少迁移失败损失。\n<!-- decision:methodology-evidence-end -->\n"
+     },
+     {
+      "path": "Decision Journal/ideas/2026/09/迁移回退全部交给数据库快照-5e5e67dc4248.md",
+      "content": "---\ntype: decision-journal-entry\nversion: 1\nid: IDEA-R18-ARCHIVED\ntitle: 迁移回退全部交给数据库快照\nrecord_kind: idea\ncreated: 2026-09-10T08:00:00.000Z\nupdated: 2026-09-20T08:00:00.000Z\nrevision: 2\nknowledge_status: archived\nsource_kind: agent_capture\nsource_form: machine_summary\nproject: lab\noccurred_at: null\nsensitivity: private\ntags:\n  - synthetic\ncontent_fingerprint: 2a39b92ce946f89caaf417a540d7856a985dc45b47ac16856c6b36641ff7de88\napp_written: 804b3103539d1921531d795ac8e0d0d866d09cd9f844cd4fe71329a0eac89972\nidea_form: possibility\nincubate_until: null\n---\n\n# 迁移回退全部交给数据库快照\n\n## 想法\n\n<!-- decision:journal-content-start -->\n数据库迁移回退也许可以全部改用整库快照恢复。\n<!-- decision:journal-content-end -->\n\n## 为什么值得保留\n\n<!-- decision:journal-interest-start -->\n快照恢复不需要回退脚本。\n<!-- decision:journal-interest-end -->\n\n## 开放问题\n\n<!-- decision:journal-questions-start -->\n- 快照恢复会不会丢掉迁移之后的新数据？\n<!-- decision:journal-questions-end -->\n\n## 下一步验证\n\n<!-- decision:journal-next-test-start -->\n\n<!-- decision:journal-next-test-end -->\n\n## 背景\n\n<!-- decision:journal-context-start -->\n\n<!-- decision:journal-context-end -->\n\n## 为什么值得记录\n\n<!-- decision:journal-rationale-start -->\n\n<!-- decision:journal-rationale-end -->\n\n## 变更记录\n\n### v1 · 2026-09-10T08:00:00.000Z\n\n- 首次记录\n\n### v2 · 2026-09-20T08:00:00.000Z\n\n- 归档记录\n\n```decision-journal-history\n[\n  {\n    \"revision\": 2,\n    \"changedAt\": \"2026-09-20T08:00:00.000Z\",\n    \"changeNote\": \"归档记录\",\n    \"sourceKind\": \"app_manual\",\n    \"sourceForm\": \"user_original\",\n    \"previous\": {\n      \"kind\": \"idea\",\n      \"title\": \"迁移回退全部交给数据库快照\",\n      \"content\": \"数据库迁移回退也许可以全部改用整库快照恢复。\",\n      \"knowledgeStatus\": \"active\",\n      \"sourceKind\": \"agent_capture\",\n      \"sourceForm\": \"machine_summary\",\n      \"project\": \"lab\",\n      \"occurredAt\": null,\n      \"sensitivity\": \"private\",\n      \"context\": null,\n      \"rationale\": null,\n      \"tags\": [\n        \"synthetic\"\n      ],\n      \"languages\": [],\n      \"ideaForm\": \"possibility\",\n      \"whyInteresting\": \"快照恢复不需要回退脚本。\",\n      \"openQuestions\": [\n        \"快照恢复会不会丢掉迁移之后的新数据？\"\n      ],\n      \"nextTest\": null,\n      \"incubateUntil\": null\n    }\n  }\n]\n```\n"
+     },
+     {
+      "path": "Decision Journal/ideas/2026/09/迁移回退脚本自动生成-ae415eb9593a.md",
+      "content": "---\ntype: decision-journal-entry\nversion: 1\nid: IDEA-R18-INBOX\ntitle: 迁移回退脚本自动生成\nrecord_kind: idea\ncreated: 2026-09-10T08:00:00.000Z\nupdated: 2026-09-10T08:00:00.000Z\nrevision: 1\nknowledge_status: inbox\nsource_kind: agent_capture\nsource_form: machine_summary\nproject: lab\noccurred_at: null\nsensitivity: private\ntags:\n  - synthetic\ncontent_fingerprint: ebc68c4b9e7c848d6bbcc4b92e0ebcd0dbe148ea3ed3729c64aa146c259fd78c\napp_written: b085353b961fae4f544085d61f9922b9875fcf6bf868bf9afa8bebae38c448d6\nidea_form: possibility\nincubate_until: null\n---\n\n# 迁移回退脚本自动生成\n\n## 想法\n\n<!-- decision:journal-content-start -->\n数据库迁移的回退脚本也许可以由迁移定义自动生成。\n<!-- decision:journal-content-end -->\n\n## 为什么值得保留\n\n<!-- decision:journal-interest-start -->\n能减少手写回退脚本出错。\n<!-- decision:journal-interest-end -->\n\n## 开放问题\n\n<!-- decision:journal-questions-start -->\n- 不可逆的迁移怎么回退？\n<!-- decision:journal-questions-end -->\n\n## 下一步验证\n\n<!-- decision:journal-next-test-start -->\n\n<!-- decision:journal-next-test-end -->\n\n## 背景\n\n<!-- decision:journal-context-start -->\n\n<!-- decision:journal-context-end -->\n\n## 为什么值得记录\n\n<!-- decision:journal-rationale-start -->\n\n<!-- decision:journal-rationale-end -->\n\n## 变更记录\n\n### v1 · 2026-09-10T08:00:00.000Z\n\n- 首次记录\n\n```decision-journal-history\n[]\n```\n"
+     },
+     {
+      "path": "Decision Journal/preferences/迁移前先演练回退-d4c51862b497.md",
+      "content": "---\ntype: decision-journal-entry\nversion: 1\nid: PREF-R18-ACTIVE\ntitle: 迁移前先演练回退\nrecord_kind: preference\ncreated: 2026-09-10T08:00:00.000Z\nupdated: 2026-09-10T08:00:00.000Z\nrevision: 1\nknowledge_status: active\nsource_kind: agent_capture\nsource_form: machine_summary\nproject: lab\noccurred_at: null\nsensitivity: private\ntags:\n  - synthetic\ncontent_fingerprint: 28e857f686a7813c2cb3169caf046f0a1fb4a622e8277a33ae5b536431a47a27\napp_written: 6ac3e2021bc0b4b929a40c5908c3da983ac189a18467c70a0370580d350c224f\npreference_strength: default\nevidence_maturity: self_declared\n---\n\n# 迁移前先演练回退\n\n## 当前偏好\n\n<!-- decision:journal-content-start -->\n数据库迁移之前，先在预发环境演练一次回退。\n<!-- decision:journal-content-end -->\n\n## 适用条件\n\n<!-- decision:journal-applies-start -->\n结构迁移会改动已有数据时。\n<!-- decision:journal-applies-end -->\n\n## 例外与边界\n\n<!-- decision:journal-exceptions-start -->\n只新增空表的迁移可以跳过演练。\n<!-- decision:journal-exceptions-end -->\n\n## 背景\n\n<!-- decision:journal-context-start -->\n\n<!-- decision:journal-context-end -->\n\n## 为什么值得记录\n\n<!-- decision:journal-rationale-start -->\n\n<!-- decision:journal-rationale-end -->\n\n## 变更记录\n\n### v1 · 2026-09-10T08:00:00.000Z\n\n- 首次记录\n\n```decision-journal-history\n[]\n```\n"
+     },
+     {
+      "path": "Decision Journal/preferences/迁移回退手动核对清单-e7ed71764db7.md",
+      "content": "---\ntype: decision-journal-entry\nversion: 1\nid: PREF-R18-ARCHIVED\ntitle: 迁移回退手动核对清单\nrecord_kind: preference\ncreated: 2026-09-10T08:00:00.000Z\nupdated: 2026-09-20T08:00:00.000Z\nrevision: 2\nknowledge_status: archived\nsource_kind: agent_capture\nsource_form: machine_summary\nproject: lab\noccurred_at: null\nsensitivity: private\ntags:\n  - synthetic\ncontent_fingerprint: d184d9ba97ad015f7d028f016db7e334b1ef9e8d0f6d3b51024407456edb1858\napp_written: c2c1240a3822b09ca78a72dba0223280b5d67204e323f0bc1fcf756aa3b68ef9\npreference_strength: default\nevidence_maturity: self_declared\n---\n\n# 迁移回退手动核对清单\n\n## 当前偏好\n\n<!-- decision:journal-content-start -->\n数据库迁移回退之前，手动逐项核对回退清单。\n<!-- decision:journal-content-end -->\n\n## 适用条件\n\n<!-- decision:journal-applies-start -->\n每次数据库迁移回退时。\n<!-- decision:journal-applies-end -->\n\n## 例外与边界\n\n<!-- decision:journal-exceptions-start -->\n紧急回滚可以事后补核对。\n<!-- decision:journal-exceptions-end -->\n\n## 背景\n\n<!-- decision:journal-context-start -->\n\n<!-- decision:journal-context-end -->\n\n## 为什么值得记录\n\n<!-- decision:journal-rationale-start -->\n\n<!-- decision:journal-rationale-end -->\n\n## 变更记录\n\n### v1 · 2026-09-10T08:00:00.000Z\n\n- 首次记录\n\n### v2 · 2026-09-20T08:00:00.000Z\n\n- 归档记录：迁移工具已经自动校验回退，不再手动核对清单\n\n```decision-journal-history\n[\n  {\n    \"revision\": 2,\n    \"changedAt\": \"2026-09-20T08:00:00.000Z\",\n    \"changeNote\": \"归档记录：迁移工具已经自动校验回退，不再手动核对清单\",\n    \"sourceKind\": \"app_manual\",\n    \"sourceForm\": \"user_original\",\n    \"previous\": {\n      \"kind\": \"preference\",\n      \"title\": \"迁移回退手动核对清单\",\n      \"content\": \"数据库迁移回退之前，手动逐项核对回退清单。\",\n      \"knowledgeStatus\": \"active\",\n      \"sourceKind\": \"agent_capture\",\n      \"sourceForm\": \"machine_summary\",\n      \"project\": \"lab\",\n      \"occurredAt\": null,\n      \"sensitivity\": \"private\",\n      \"context\": null,\n      \"rationale\": null,\n      \"tags\": [\n        \"synthetic\"\n      ],\n      \"languages\": [],\n      \"appliesWhen\": \"每次数据库迁移回退时。\",\n      \"exceptions\": \"紧急回滚可以事后补核对。\",\n      \"strength\": \"default\",\n      \"evidenceMaturity\": \"self_declared\"\n    }\n  }\n]\n```\n"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "consult-related",
+     "tool": "consult_decision_principles",
+     "guarded": true,
+     "args": {
+      "question": "数据库迁移之前要不要先演练一次回退？",
+      "options": [
+       {
+        "label": "先在预发环境演练回退"
+       },
+       {
+        "label": "直接迁移"
+       }
+      ],
+      "project": "lab"
+     },
+     "expect": {
+      "status": "matched",
+      "isError": false,
+      "mustInclude": [
+       "PRINCIPLE-ROLLBACK"
+      ],
+      "mustSignal": [
+       "PREF-R18-ACTIVE",
+       "IDEA-R18-INBOX"
+      ],
+      "mustNotSignal": [
+       "PREF-R18-ARCHIVED",
+       "IDEA-R18-ARCHIVED"
+      ],
+      "mustFlag": [
+       {
+        "id": "PREF-R18-ACTIVE",
+        "path": "standing",
+        "includes": "偏好：当前立场"
+       },
+       {
+        "id": "PREF-R18-ACTIVE",
+        "path": "qualifier",
+        "includes": "例外：只新增空表的迁移可以跳过演练。"
+       },
+       {
+        "id": "IDEA-R18-INBOX",
+        "path": "standing",
+        "includes": "想法：尚未形成承诺"
+       },
+       {
+        "id": "IDEA-R18-INBOX",
+        "path": "qualifier",
+        "includes": "未决问题：不可逆的迁移怎么回退？"
+       },
+       {
+        "id": "PREF-R18-ACTIVE",
+        "path": "qualifier",
+        "includes": "归档记录",
+        "present": false
+       }
+      ],
+      "equals": {
+       "consultation.signalsIncomplete": null,
+       "consultation.signalsUnavailable": null,
+       "consultation.boundary.noPreferencePromoted": true
+      }
+     }
+    },
+    {
+     "id": "consult-unrelated",
+     "tool": "consult_decision_principles",
+     "guarded": true,
+     "args": {
+      "question": "登录页的按钮用蓝色还是绿色？",
+      "project": "lab"
+     },
+     "expect": {
+      "status": "no_match",
+      "noMatchReason": "no_relevant_principles",
+      "isError": false,
+      "mustExclude": [
+       "PRINCIPLE-ROLLBACK"
+      ],
+      "mustNotSignal": [
+       "PREF-R18-ACTIVE",
+       "PREF-R18-ARCHIVED",
+       "IDEA-R18-INBOX",
+       "IDEA-R18-ARCHIVED"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

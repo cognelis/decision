@@ -2,6 +2,7 @@ import type {
   ObsidianIndexedChunk,
   ObsidianIndexedNoteInput,
   ObsidianIndexedNoteMetadata,
+  ObsidianVaultNote,
   ObsidianVaultWalkEntry,
   UnchangedNote,
 } from "@cognelis/decision-storage";
@@ -19,6 +20,15 @@ import { buildObsidianMarkdownDocument } from "./markdown-chunker.js";
 interface VaultRepository {
   iterate(signal?: AbortSignal, unchanged?: UnchangedNote): AsyncIterable<ObsidianVaultWalkEntry>;
   resolveNotePath(relativePath: string): Promise<string>;
+  /** A note the walk itself would offer, read as the walk reads it; null for any other path. */
+  readVisibleNote?(relativePath: string, signal?: AbortSignal): Promise<ObsidianVaultNote | null>;
+}
+
+/** A note the index keeps, read now: its text as it is, with whether that is still what was indexed. */
+export interface ObsidianIndexedNoteRead {
+  note: ObsidianVaultNote;
+  title: string;
+  changedSinceIndexed: boolean;
 }
 
 interface SearchIndex {
@@ -733,6 +743,25 @@ export class ObsidianSearchService {
     await this.#enqueueSynchronization(true);
     this.#assertOpen();
     return this.status();
+  }
+
+  /**
+   * One note the index keeps, read from the Vault now: null for a path it does not keep (never indexed, excluded or
+   * hidden since, gone, a link), the walk's own checks made again at the read, so a guessed path reads nothing more
+   * than a search would have shown.
+   */
+  async readIndexedNote(relativePath: string): Promise<ObsidianIndexedNoteRead | null> {
+    this.#assertOpen();
+    return this.#trackOperation(this.#readIndexedNote(relativePath));
+  }
+
+  async #readIndexedNote(relativePath: string): Promise<ObsidianIndexedNoteRead | null> {
+    if (!isIndexableNotePath(relativePath) || this.#repository.readVisibleNote === undefined) return null;
+    const indexed = await this.#withIndexLock(() => this.#index.noteMetadataForPath(relativePath));
+    if (indexed === null) return null;
+    const note = await this.#repository.readVisibleNote(relativePath, this.#abort.signal);
+    this.#assertOpen();
+    return note === null ? null : { note, title: indexed.title, changedSinceIndexed: note.contentHash !== indexed.contentHash };
   }
 
   async openNote(relativePath: string): Promise<void> {

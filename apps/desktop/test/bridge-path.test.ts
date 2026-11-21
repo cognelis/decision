@@ -6,9 +6,9 @@ import { isTranslocated, prepareBridgeLauncher, resolveBridgeExecutablePath, squ
 
 describe("bridge executable path", () => {
   it("knows a bridge macOS put somewhere for this launch only, not to give to the clients", () => {
-    const resourcesPath = "/private/var/folders/xy/T/AppTranslocation/0A1B2C3D/d/Decision.app/Contents/Resources";
+    const resourcesPath = "/private/var/folders/xy/T/AppTranslocation/0A1B2C3D/d/Paraself.app/Contents/Resources";
     expect(isTranslocated(resolveBridgeExecutablePath({ packaged: true, platform: "darwin", resourcesPath, appPath: "/unused" }))).toBe(true);
-    expect(isTranslocated("/Applications/Decision.app/Contents/Resources/bridge/decision-bridge")).toBe(false);
+    expect(isTranslocated("/Applications/Paraself.app/Contents/Resources/bridge/paraself-bridge")).toBe(false);
   });
 
   it("selects a cmd wrapper in a packaged Windows application", () => {
@@ -17,11 +17,11 @@ describe("bridge executable path", () => {
         packaged: true,
         platform: "win32",
         resourcesPath:
-          "C:\\Users\\Ada\\AppData\\Local\\Decision\\resources",
+          "C:\\Users\\Ada\\AppData\\Local\\Paraself\\resources",
         appPath: "C:\\source\\decision",
       }),
     ).toBe(
-      "C:\\Users\\Ada\\AppData\\Local\\Decision\\resources\\bridge\\decision-bridge.cmd",
+      "C:\\Users\\Ada\\AppData\\Local\\Paraself\\resources\\bridge\\paraself-bridge.cmd",
     );
   });
 
@@ -30,11 +30,11 @@ describe("bridge executable path", () => {
       resolveBridgeExecutablePath({
         packaged: true,
         platform: "darwin",
-        resourcesPath: "/Applications/Decision.app/Contents/Resources",
+        resourcesPath: "/Applications/Paraself.app/Contents/Resources",
         appPath: "/source/decision",
       }),
     ).toBe(
-      "/Applications/Decision.app/Contents/Resources/bridge/decision-bridge",
+      "/Applications/Paraself.app/Contents/Resources/bridge/paraself-bridge",
     );
   });
 
@@ -51,10 +51,10 @@ describe("bridge executable path", () => {
 });
 
 describe("Windows install launcher", () => {
-  const install = "C:\\Users\\Ada\\AppData\\Local\\Decision";
+  const install = "C:\\Users\\Ada\\AppData\\Local\\Paraself";
   const running = (version: string) => ({
     platform: "win32" as const,
-    execPath: `${install}\\app-${version}\\Decision.exe`,
+    execPath: `${install}\\app-${version}\\Paraself.exe`,
     resourcesPath: `${install}\\app-${version}\\resources`,
     exists: (path: string) => path === `${install}\\Update.exe`,
   });
@@ -62,12 +62,12 @@ describe("Windows install launcher", () => {
   it("keeps a launcher at the install root that hands on to the version now running", () => {
     // Squirrel removes the old app-<version> folder after an update: a hook naming its bridge failed every turn.
     expect(squirrelBridgeLauncher(running("1.2.0"))).toEqual({
-      path: `${install}\\decision-bridge.cmd`,
-      content: '@echo off\r\n"%~dp0app-1.2.0\\resources\\bridge\\decision-bridge.cmd" %*\r\n',
+      path: `${install}\\paraself-bridge.cmd`,
+      content: '@echo off\r\n"%~dp0app-1.2.0\\resources\\bridge\\paraself-bridge.cmd" %*\r\n',
     });
     // A portable copy (no Update.exe beside it), a run from another folder, or not Windows: none.
     expect(squirrelBridgeLauncher({ ...running("1.2.0"), exists: () => false })).toBeNull();
-    expect(squirrelBridgeLauncher({ ...running("1.2.0"), execPath: "C:\\Tools\\Decision\\Decision.exe", resourcesPath: "C:\\Tools\\Decision\\resources" })).toBeNull();
+    expect(squirrelBridgeLauncher({ ...running("1.2.0"), execPath: "C:\\Tools\\Paraself\\Paraself.exe", resourcesPath: "C:\\Tools\\Paraself\\resources" })).toBeNull();
     expect(squirrelBridgeLauncher({ ...running("1.2.0"), platform: "darwin" })).toBeNull();
   });
 
@@ -108,7 +108,7 @@ describe("Windows install launcher", () => {
 
 describe("Windows bridge wrappers", () => {
   it.each([
-    ["decision-bridge.cmd", "decision-bridge.cmd"],
+    ["paraself-bridge.cmd", "paraself-bridge.cmd"],
   ])("%s invokes the shared bridge implementation", async (name, marker) => {
     const source = await readFile(
       new URL(`../../bridge/resources/${name}`, import.meta.url),
@@ -116,13 +116,13 @@ describe("Windows bridge wrappers", () => {
     );
 
     expect(source).toContain("ELECTRON_RUN_AS_NODE=1");
-    expect(source).toContain(`DECISION_BRIDGE_PATH=%bridge_directory%${marker}`);
+    expect(source).toContain(`PARASELF_BRIDGE_PATH=%bridge_directory%${marker}`);
     // Installed by Squirrel, `install` writes the install root's launcher, found beside Update.exe, never a path
     // taken from the environment (which anyone could set to choose what every hook runs).
-    expect(source).toContain('for %%I in ("%bridge_directory%..\\..\\..") do if exist "%%~fI\\Update.exe" if exist "%%~fI\\decision-bridge.cmd" set "DECISION_BRIDGE_PATH=%%~fI\\decision-bridge.cmd"');
-    expect(source).not.toContain("if not defined DECISION_BRIDGE_PATH");
-    expect(source).toContain("..\\..\\Decision.exe");
-    expect(source).toContain("decision-bridge.mjs");
+    expect(source).toContain('for %%I in ("%bridge_directory%..\\..\\..") do if exist "%%~fI\\Update.exe" if exist "%%~fI\\paraself-bridge.cmd" set "PARASELF_BRIDGE_PATH=%%~fI\\paraself-bridge.cmd"');
+    expect(source).not.toContain("if not defined PARASELF_BRIDGE_PATH");
+    expect(source).toContain("..\\..\\Paraself.exe");
+    expect(source).toContain("paraself-bridge.mjs");
     expect(source).toContain("%*");
   });
 });

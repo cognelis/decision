@@ -15,20 +15,20 @@ describe("release artifact contract", () => {
   it("uses the Forge ZIP name and accepts a matching release tag", () => {
     expect(
       releaseArtifactName({
-        productName: "Decision",
+        productName: "Paraself",
         version: "0.1.0",
         platform: "darwin",
         arch: "arm64",
       }),
-    ).toBe("Decision-darwin-arm64-0.1.0.zip");
+    ).toBe("Paraself-darwin-arm64-0.1.0.zip");
     expect(
       releaseArtifactName({
-        productName: "Decision",
+        productName: "Paraself",
         version: "0.1.0",
         platform: "win32",
         arch: "x64",
       }),
-    ).toBe("Decision-0.1.0-win-x64-Setup.exe");
+    ).toBe("Paraself-0.1.0-win-x64-Setup.exe");
     expect(
       validateReleaseVersion({
         version: "0.1.0",
@@ -53,11 +53,11 @@ describe("release artifact contract", () => {
   it("creates deterministic, redacted checksum and update metadata", () => {
     const sha256 = "a".repeat(64);
     const documents = createReleaseDocuments({
-      productName: "Decision",
+      productName: "Paraself",
       version: "0.1.0",
       platform: "darwin",
       arch: "arm64",
-      artifactName: "Decision-darwin-arm64-0.1.0.zip",
+      artifactName: "Paraself-darwin-arm64-0.1.0.zip",
       bytes: 123_456,
       sha256,
       signature: "ad-hoc",
@@ -65,16 +65,16 @@ describe("release artifact contract", () => {
     });
 
     expect(documents.checksum).toBe(
-      `${sha256}  Decision-darwin-arm64-0.1.0.zip\n`,
+      `${sha256}  Paraself-darwin-arm64-0.1.0.zip\n`,
     );
     expect(documents.manifest).toEqual({
       schemaVersion: 2,
-      product: "Decision",
+      product: "Paraself",
       version: "0.1.0",
       platform: "darwin",
       arch: "arm64",
       artifact: {
-        name: "Decision-darwin-arm64-0.1.0.zip",
+        name: "Paraself-darwin-arm64-0.1.0.zip",
         bytes: 123_456,
         sha256,
       },
@@ -90,11 +90,11 @@ describe("release artifact contract", () => {
   it("rejects malformed checksum input", () => {
     expect(() =>
       createReleaseDocuments({
-        productName: "Decision",
+        productName: "Paraself",
         version: "0.1.0",
         platform: "darwin",
         arch: "arm64",
-        artifactName: "Decision-darwin-arm64-0.1.0.zip",
+        artifactName: "Paraself-darwin-arm64-0.1.0.zip",
         bytes: 0,
         sha256: "not-a-digest",
         signature: "ad-hoc",
@@ -105,9 +105,9 @@ describe("release artifact contract", () => {
 
   it("validates target-specific signature states and source commits", () => {
     const base = {
-      productName: "Decision",
+      productName: "Paraself",
       version: "0.1.0",
-      artifactName: "Decision-0.1.0-win-x64-Setup.exe",
+      artifactName: "Paraself-0.1.0-win-x64-Setup.exe",
       bytes: 1,
       sha256: "a".repeat(64),
       sourceCommit: "b".repeat(40),
@@ -149,29 +149,29 @@ describe("release artifact contract", () => {
   it("binds verification to exactly one safe App inside the ZIP", () => {
     expect(
       validateArchiveEntries([
-        "Decision.app/",
-        "Decision.app/Contents/Info.plist",
-        "Decision.app/Contents/MacOS/Decision",
+        "Paraself.app/",
+        "Paraself.app/Contents/Info.plist",
+        "Paraself.app/Contents/MacOS/Paraself",
       ]),
-    ).toBe("Decision.app");
+    ).toBe("Paraself.app");
     expect(() =>
       validateArchiveEntries([
-        "Decision.app/Contents/Info.plist",
+        "Paraself.app/Contents/Info.plist",
         "Other.app/Contents/Info.plist",
       ]),
     ).toThrow(/exactly one App/u);
     expect(() =>
       validateArchiveEntries([
-        "Decision.app/Contents/Info.plist",
+        "Paraself.app/Contents/Info.plist",
         "../outside.txt",
       ]),
     ).toThrow(/unsafe ZIP entry/u);
     expect(() =>
       validateArchiveEntries([
-        "Decision.app/Contents/Info.plist",
+        "Paraself.app/Contents/Info.plist",
         "release-notes.txt",
       ]),
-    ).toThrow(/outside Decision\.app/u);
+    ).toThrow(/outside Paraself\.app/u);
   });
 
   it("rejects embedded model/database payloads and update metadata", () => {

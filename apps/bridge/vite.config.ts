@@ -9,8 +9,8 @@ import { defineConfig } from "vite";
 const outputDirectory = "dist/bridge";
 
 export const bridgeWrapperNames = [
-  "decision-bridge",
-  "decision-bridge.cmd",
+  "paraself-bridge",
+  "paraself-bridge.cmd",
 ] as const;
 
 export default defineConfig({
@@ -25,7 +25,7 @@ export default defineConfig({
     lib: {
       entry: "apps/bridge/src/cli.ts",
       formats: ["es"],
-      fileName: () => "decision-bridge.mjs",
+      fileName: () => "paraself-bridge.mjs",
     },
     rollupOptions: {
       preserveEntrySignatures: "strict",
@@ -38,7 +38,7 @@ export default defineConfig({
   },
   plugins: [
     {
-      name: "decision-bridge-wrappers",
+      name: "paraself-bridge-wrappers",
       closeBundle: async () => {
         await mkdir(outputDirectory, { recursive: true });
         await Promise.all(

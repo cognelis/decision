@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { clientNamesOr, knownClients } from "../client-labels.js";
 
 import type {
   AppSnapshot,
@@ -50,13 +51,12 @@ export const DashboardGettingStarted = ({
     };
   }, [api]);
 
-  const clients = [
-    integrationStatus.claudeCode === "installed" ? "Claude Code" : null,
-    integrationStatus.codex === "installed" ? "Codex" : null,
-  ].filter((name) => name !== null);
+  const clients = knownClients()
+    .filter((client) => integrationStatus[client.id] === "installed")
+    .map((client) => client.name);
   const steps = [
     {
-      title: "接入 Claude Code 或 Codex",
+      title: `接入 ${clientNamesOr()}`,
       body: "安装 Hook 后，对话里做出的选择会自动成为待确认的候选，结束时弹出理由面板。",
       optional: false,
       done: clients.length > 0,
@@ -84,7 +84,7 @@ export const DashboardGettingStarted = ({
     },
     {
       title: "连接代码平台",
-      body: "接入 GitHub、GitLab 或 Bitbucket，在“评审”里结合历史决策审 PR。",
+      body: "接入 GitHub、GitLab 或 Bitbucket，在“评审”里结合过往决策审 PR。",
       optional: true,
       done: connections > 0,
       doneText: `已连接 ${connections} 个平台`,
@@ -101,12 +101,14 @@ export const DashboardGettingStarted = ({
       className="dashboard-start"
       aria-labelledby="dashboard-start-title"
     >
-      <div className="dashboard-start-intro">
-        <h2 id="dashboard-start-title">开始使用 Decision</h2>
-        <p>
-          Decision
-          从你和 AI 编程助手的对话里捕获做过的选择，帮你补上理由，到期回看结果，再把经验沉淀成可复用的原则。先完成下面两步，第一条决策就会出现在这里。
-        </p>
+      <header className="dashboard-start-intro">
+        <div>
+          <h2 id="dashboard-start-title">开始使用 Paraself</h2>
+          <p>
+            Paraself
+            从你和 AI 编程助手的对话里捕获做过的选择，帮你补上理由，到期回看结果，再把经验沉淀成可复用的原则。先完成下面两步，第一条决策就会出现在这里。
+          </p>
+        </div>
         <div
           className="dashboard-start-progress"
           role="progressbar"
@@ -116,14 +118,22 @@ export const DashboardGettingStarted = ({
           aria-valuenow={doneCount}
           aria-valuetext={`已完成 ${doneCount} / ${steps.length}`}
         >
-          {steps.map((step) => (
-            <span key={step.title} data-done={step.done || undefined} />
-          ))}
+          {/* Filled by how many are done, left to right; which ones are done, each row's tick says. */}
+          <span aria-hidden="true">
+            {steps.map((step, index) => (
+              <i key={step.title} data-done={index < doneCount || undefined} />
+            ))}
+          </span>
+          已完成 {doneCount} / {steps.length}
         </div>
-      </div>
+      </header>
       <ol className="dashboard-start-steps" aria-label="开始使用的步骤">
         {steps.map((step, index) => (
-          <li key={step.title} data-done={step.done || undefined}>
+          <li
+            key={step.title}
+            data-done={step.done || undefined}
+            data-next={index === next || undefined}
+          >
             <span className="dashboard-start-marker">
               {step.done ? (
                 <>

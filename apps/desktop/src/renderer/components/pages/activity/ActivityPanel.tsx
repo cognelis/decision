@@ -5,6 +5,7 @@ import type {
   AppSnapshot,
   DecisionApi,
 } from "../../../../shared/renderer-api.js";
+import type { MisrecognitionSummary } from "../../../../shared/decision-deletion.js";
 import { ModelTracePanel } from "../../ModelTracePanel.js";
 import { DesktopPageHeader } from "../DesktopPageHeader.js";
 import { SettingsSubnav } from "../SettingsSubnav.js";
@@ -23,6 +24,15 @@ export const ActivityPanel = ({ snapshot, api }: ActivityPanelProps) => {
   );
   // Not read this time (the read failed), as opposed to none given: told as none, the zeros said nothing was rated.
   const [unread, setUnread] = useState(false);
+
+  // Decisions deleted as 识别错误: read with the page, as the ratings are.
+  const [misrecognized, setMisrecognized] = useState<MisrecognitionSummary | null>(null);
+  useEffect(() => {
+    let active = true;
+    void api.getMisrecognitionSummary().then((summary) => { if (active) setMisrecognized(summary); }, () => undefined);
+    return () => { active = false; };
+  }, [api]);
+  const ranked = (counts: Record<string, number>) => Object.entries(counts).sort(([a, x], [b, y]) => y - x || a.localeCompare(b));
 
   useEffect(() => {
     let active = true;
@@ -54,50 +64,19 @@ export const ActivityPanel = ({ snapshot, api }: ActivityPanelProps) => {
     />
     <SettingsSubnav active="activity" api={api} />
     <div className="desktop-page-scroll activity-page-content">
-      {/* The two small summaries share a row, every figure as wide as the next. */}
+      {/* The two small summaries share a row, one as wide as the other. */}
       <div className="activity-summary-row">
-      <section
-        className="settings-card activity-recognition-card"
-        aria-labelledby="activity-feedback-title"
-      >
-        <header className="settings-card-header">
-          <div>
-            <span>累计</span>
-            <h2 id="activity-feedback-title">问答评分</h2>
-          </div>
-        </header>
-        <dl className="activity-recognition-metrics activity-feedback-metrics">
-          <div>
-            <dt>有用</dt>
-            <dd>{unread || feedback?.unavailable === true ? "—" : feedback?.helpful ?? 0}</dd>
-          </div>
-          <div>
-            <dt>没用</dt>
-            <dd>{unread || feedback?.unavailable === true ? "—" : feedback?.notHelpful ?? 0}</dd>
-          </div>
-        </dl>
-        <p className="activity-feedback-note">
-          {unread
-            ? "评分记录这次没能读取，请稍后重新打开这一页。"
-            : feedback?.unavailable === true
-            ? "评分记录读不出来：可能已损坏，或是更新版本的 Decision 写下的。原文件保持不动，新的评分在它能读取之前也存不进去。"
-            : feedback === null || feedback.helpful + feedback.notHelpful === 0
-              ? "还没有评分。在问答页给回答打分后，这里会积累出可以回看的样本。"
-              : "评分只记问题、引用路径和可选说明，不记回答正文。"}
-        </p>
-      </section>
-
       <section
         className="settings-card activity-recognition-card"
         aria-labelledby="activity-recognition-title"
       >
         <header className="settings-card-header">
           <div>
-            <span>近 7 天</span>
             <h2 id="activity-recognition-title">识别概览</h2>
           </div>
+          <span>近 7 天</span>
         </header>
-        <dl className="activity-recognition-metrics">
+        <dl className="activity-figures">
           <div>
             <dt>处理轮次</dt>
             <dd>{snapshot.semanticRecognition.processed7d}</dd>
@@ -116,7 +95,67 @@ export const ActivityPanel = ({ snapshot, api }: ActivityPanelProps) => {
           </div>
         </dl>
       </section>
+
+      <section
+        className="settings-card activity-feedback-card"
+        aria-labelledby="activity-feedback-title"
+      >
+        <header className="settings-card-header">
+          <div>
+            <h2 id="activity-feedback-title">问答评分</h2>
+          </div>
+          <span>累计</span>
+        </header>
+        <dl className="activity-figures">
+          <div>
+            <dt>有用</dt>
+            <dd>{unread || feedback?.unavailable === true ? "—" : feedback?.helpful ?? 0}</dd>
+          </div>
+          <div>
+            <dt>没用</dt>
+            <dd>{unread || feedback?.unavailable === true ? "—" : feedback?.notHelpful ?? 0}</dd>
+          </div>
+        </dl>
+        <p className="activity-feedback-note">
+          {unread
+            ? "评分记录这次没能读取，请稍后重新打开这一页。"
+            : feedback?.unavailable === true
+            ? "评分记录读不出来：可能已损坏，或是更新版本的 Paraself 写下的。原文件保持不动，新的评分在它能读取之前也存不进去。"
+            : feedback === null || feedback.helpful + feedback.notHelpful === 0
+              ? "还没有评分。在问答页给回答打分后，这里会积累出可以回看的样本。"
+              : "评分只记问题、引用路径和可选说明，不记回答正文。"}
+        </p>
+      </section>
       </div>
+
+      <section className="settings-card activity-misrecognition-card" aria-labelledby="activity-misrecognition-title">
+        <header className="settings-card-header">
+          <div>
+            <h2 id="activity-misrecognition-title">识别错误</h2>
+          </div>
+          <span>近 {misrecognized?.days ?? 30} 天</span>
+        </header>
+        {misrecognized === null || misrecognized.unavailable === true ? (
+          <p className="activity-feedback-note">识别错误回执这次没能读取，请稍后重新打开这一页。</p>
+        ) : misrecognized.total === 0 ? (
+          <p className="activity-feedback-note">没有标为识别错误的删除。删除自动识别的决策时选「识别错误，删除」，这里会按档位和信号汇总。</p>
+        ) : <>
+          <div className="activity-misrecognition-body">
+            <p className="activity-misrecognition-total"><strong>{misrecognized.total}</strong> 条删除标为识别错误</p>
+            <dl className="activity-misrecognition-lines">
+              <dt>来源</dt>
+              <dd>对话识别 {misrecognized.byMode.transcript} · 结构化提问 {misrecognized.byMode.structured_tool}</dd>
+              <dt>档位</dt>
+              <dd>直接捕获 {misrecognized.byBand.high} · 候选 {misrecognized.byBand.medium}{misrecognized.byBand.unknown ? ` · 无档位 ${misrecognized.byBand.unknown}` : ""}</dd>
+              <dt>信号</dt>
+              <dd>{ranked(misrecognized.bySignal).map(([signal, count]) => `${signal} ${count}`).join(" · ") || "无"}</dd>
+              <dt>规则版本</dt>
+              <dd>{ranked(misrecognized.byDetector).map(([version, count]) => `${version === "unknown" ? "无" : version} ${count}`).join(" · ")}</dd>
+            </dl>
+          </div>
+          <p className="activity-feedback-note">回执只记规则版本、档位、分数、信号、来源、选项数和时间，不记问题、选项、回答或项目。</p>
+        </>}
+      </section>
 
       <ModelTracePanel
         api={api}

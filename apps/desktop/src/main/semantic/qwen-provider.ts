@@ -29,6 +29,13 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 5_000;
 
+/**
+ * A classification runs in the background with nobody waiting on it. The 4B model's p99 on this hardware was 7.7 s
+ * (296 calls, median load average 44) and 21 s under a full team's load: at the profile's default five seconds, nearly
+ * half of a run timed out and was read by the rules alone. Twice the quiet p99; loading the model is not timed here.
+ */
+export const QWEN_MIN_CLASSIFICATION_TIMEOUT_MS = 15_000;
+
 const QWEN_MAX_OUTPUT_TOKENS = 512;
 const QWEN_MAX_STRUCTURED_OUTPUT_TOKENS = 1_024;
 
@@ -414,7 +421,7 @@ export class QwenModelProvider implements SemanticClassifier {
         resources.grammar,
         userPrompt,
         QWEN_MAX_OUTPUT_TOKENS,
-        this.#timeoutMs,
+        Math.max(this.#timeoutMs, QWEN_MIN_CLASSIFICATION_TIMEOUT_MS),
         controller,
         signal,
       );

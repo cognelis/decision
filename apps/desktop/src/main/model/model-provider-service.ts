@@ -1,4 +1,5 @@
 import {
+  OPENROUTER_DECISIONS_URL,
   redactedModelProviderProfileSchema,
   type ModelProviderProfile,
   type RedactedModelProviderProfile,
@@ -11,6 +12,7 @@ import type {
 } from "../../shared/renderer-api.js";
 import { CredentialVaultError } from "./credential-vault.js";
 import { ModelProviderError } from "./http-model-transport.js";
+import { MINIMUM_DECISIONS_KEY_CHARS } from "./openrouter-decision-client.js";
 
 interface ProviderProfileRepositoryLike {
   load(): Promise<ModelProviderProfile[]>;
@@ -40,10 +42,12 @@ export interface ModelProviderServiceOptions {
   ): Promise<ModelProviderTestResult>;
 }
 
+/** The backends whose key is kept in the CredentialVault, under the "密钥存储" setting. */
 const remoteKinds = new Set<ModelProviderProfile["kind"]>([
   "openai",
   "anthropic",
   "openai-compatible",
+  "openrouter-decisions",
 ]);
 
 const SWITCHES = new Set(["enabled", "fallbackOnFailure", "credentialRef", "credentialConfigured"]);
@@ -110,14 +114,30 @@ export class ModelProviderService {
       );
     }
 
+    // A decisions service's key is far longer: one this short is a mistake, and too short to be told apart from a record's text.
+    if (
+      redacted.kind === "openrouter-decisions" &&
+      input.secret !== undefined &&
+      input.secret.trim().length < MINIMUM_DECISIONS_KEY_CHARS
+    ) {
+      throw new ModelProviderError(
+        "credential_unavailable",
+        `API 密钥格式不对：至少 ${MINIMUM_DECISIONS_KEY_CHARS} 个字符，请检查是否复制完整。`,
+      );
+    }
+
     // A key given for one service goes to no other: moved to another address (a preset, a relay's URL) with
     // the key left blank, every request carried the old service's key to the new host.
-    const origin = (url: string | undefined): string | null => (url === undefined ? null : new URL(url).origin);
+    // A judge with no address of its own is OpenRouter's (IMP-179): another path there is the same site, not a move.
+    const origin = (profile: { kind: string; baseUrl?: string | undefined }): string | null => {
+      const url = profile.baseUrl ?? (profile.kind === "openrouter-decisions" ? OPENROUTER_DECISIONS_URL : undefined);
+      return url === undefined ? null : new URL(url).origin;
+    };
     if (
       remote &&
       input.secret === undefined &&
       existing?.credentialRef !== undefined &&
-      origin(existing.baseUrl) !== origin(redacted.baseUrl)
+      origin(existing) !== origin(redacted)
     ) {
       throw new ModelProviderError(
         "credential_unavailable",

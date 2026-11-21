@@ -1,0 +1,1009 @@
+[
+  {
+    "id": "R7IR-001",
+    "group": "no-commitment",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Option B needs a restart window",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-002",
+    "group": "no-commitment",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is slower than A in CI",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-003",
+    "group": "no-commitment",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "C needs a config change later anyway",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-004",
+    "group": "no-commitment",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B isn't great either",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-005",
+    "group": "no-commitment",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 慢不少",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-006",
+    "group": "no-commitment",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "1 不太好，会掩盖真实失败",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-007",
+    "group": "no-commitment",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "3 以后还得改配置",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-008",
+    "group": "no-commitment",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 的风险比 1 低",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-009",
+    "group": "unrecognised-shape",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is not what I'd call clean, honestly",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-010",
+    "group": "unrecognised-shape",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 要停机窗口",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-011",
+    "group": "unrecognised-shape",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "现在大部分用例都 mock 了客户端",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-012",
+    "group": "no-commitment",
+    "assistantText": "| ID | Change | Notes |\n|---|---|---|\n| 1 | Add unit tests for the parser | small |\n| 2 | Add structured request logging | medium |\n| 3 | Redesign the settings UI | large |\n\nWhich of these should I do?",
+    "userText": "The UI redesign is too big right now",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-013",
+    "group": "state-no-commitment",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "The client is mocked in most suites",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-014",
+    "group": "state-no-commitment",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "We have 2 retries configured in staging",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-015",
+    "group": "state-no-commitment",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "测试环境开着重试",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-016",
+    "group": "read-alone",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Check B",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-017",
+    "group": "read-alone",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "看看 2 吧",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R7IR-018",
+    "group": "preference-take",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "I think B is better",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R7IR-019",
+    "group": "preference-take",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R7IR-020",
+    "group": "preference-take",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R7IR-021",
+    "group": "preference-take",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B makes sense",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R7IR-022",
+    "group": "preference-take",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B sounds right",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R7IR-023",
+    "group": "preference-take",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "我觉得 2 更好",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-024",
+    "group": "preference-take",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 好",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-025",
+    "group": "preference-take",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 更合适",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-026",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "I think B is better, but I haven't decided yet",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-027",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "I think B is better. Not deciding today.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-028",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A, but I'm not approving either yet",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-029",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A; no decision yet",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-030",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "I prefer B, though I haven't made up my mind",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-031",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "我觉得 2 更好，但还没决定",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-032",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 好，不过先不批",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-033",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 好，还要再看看",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-034",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B please",
+    "decision": true
+  },
+  {
+    "id": "R7IR-035",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Honestly B",
+    "decision": true
+  },
+  {
+    "id": "R7IR-036",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "I'd rather mock it",
+    "decision": true
+  },
+  {
+    "id": "R7IR-037",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Retries hide failures; mock instead",
+    "decision": true
+  },
+  {
+    "id": "R7IR-038",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Timeout bump is enough",
+    "decision": true
+  },
+  {
+    "id": "R7IR-039",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Retry wrapper please",
+    "decision": true
+  },
+  {
+    "id": "R7IR-040",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B works",
+    "decision": true
+  },
+  {
+    "id": "R7IR-041",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Not A, B",
+    "decision": true
+  },
+  {
+    "id": "R7IR-042",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is cleaner, go with that",
+    "decision": true
+  },
+  {
+    "id": "R7IR-043",
+    "group": "commitment-keeps-high",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "mock 那个",
+    "decision": true
+  },
+  {
+    "id": "R7IR-044",
+    "group": "commitment-keeps-high",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2，mock 更干净",
+    "decision": true
+  },
+  {
+    "id": "R7IR-045",
+    "group": "commitment-keeps-high",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 更干净，就它了",
+    "decision": true
+  },
+  {
+    "id": "R7IR-046",
+    "group": "commitment-keeps-high",
+    "assistantText": "| ID | Change | Notes |\n|---|---|---|\n| 1 | Add unit tests for the parser | small |\n| 2 | Add structured request logging | medium |\n| 3 | Redesign the settings UI | large |\n\nWhich of these should I do?",
+    "userText": "Tests and logging are fine, leave the UI alone.",
+    "decision": true
+  },
+  {
+    "id": "R7IR-047",
+    "group": "hands-over",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nLet me know which you'd like.",
+    "userText": "1 and 3. Where is legacyAuth still imported?",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R7IR-048",
+    "group": "hands-over",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nLet me know which you'd like.",
+    "userText": "1 and 2 are fine, skip 3",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-049",
+    "group": "hands-over",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nReply with the numbers you want and I'll apply them.",
+    "userText": "1 and 3. Where is legacyAuth still imported?",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R7IR-050",
+    "group": "hands-over",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nReply with the numbers you want and I'll apply them.",
+    "userText": "1 and 2 are fine, skip 3",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-051",
+    "group": "hands-over",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nUp to you.",
+    "userText": "1 and 3. Where is legacyAuth still imported?",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R7IR-052",
+    "group": "hands-over",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nUp to you.",
+    "userText": "1 and 2 are fine, skip 3",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-053",
+    "group": "hands-over",
+    "assistantText": "发现三处可以清理：\n\n1. 删除没用的 legacyAuth 导出\n2. 把 loader 里的 cfg 改名为 config\n3. 删掉过期的 0042 迁移\n\n你来定。",
+    "userText": "1 和 3，legacyAuth 还有哪里在引用？",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R7IR-054",
+    "group": "hands-over",
+    "assistantText": "发现三处可以清理：\n\n1. 删除没用的 legacyAuth 导出\n2. 把 loader 里的 cfg 改名为 config\n3. 删掉过期的 0042 迁移\n\n你来定。",
+    "userText": "1、2 可以，3 先不动",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-055",
+    "group": "hands-over",
+    "assistantText": "发现三处可以清理：\n\n1. 删除没用的 legacyAuth 导出\n2. 把 loader 里的 cfg 改名为 config\n3. 删掉过期的 0042 迁移\n\n回复编号即可，我来改。",
+    "userText": "1 和 3，legacyAuth 还有哪里在引用？",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R7IR-056",
+    "group": "hands-over",
+    "assistantText": "发现三处可以清理：\n\n1. 删除没用的 legacyAuth 导出\n2. 把 loader 里的 cfg 改名为 config\n3. 删掉过期的 0042 迁移\n\n回复编号即可，我来改。",
+    "userText": "1、2 可以，3 先不动",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-057",
+    "group": "no-request",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nLet me know if you have any questions.",
+    "userText": "1 and 3",
+    "decision": false
+  },
+  {
+    "id": "R7IR-058",
+    "group": "no-request",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nI'll go ahead with item 1 for now.",
+    "userText": "1 and 3",
+    "decision": false
+  },
+  {
+    "id": "R7IR-059",
+    "group": "no-request",
+    "assistantText": "Found three cleanup items:\n\n1. Remove the unused `legacyAuth` export\n2. Rename `cfg` to `config` in the loader\n3. Delete the stale migration 0042\n\nThese are all low risk.",
+    "userText": "1 and 3",
+    "decision": false
+  },
+  {
+    "id": "R7IR-060",
+    "group": "no-request",
+    "assistantText": "发现三处可以清理：\n\n1. 删除没用的 legacyAuth 导出\n2. 把 loader 里的 cfg 改名为 config\n3. 删掉过期的 0042 迁移\n\n这几项风险都很低。",
+    "userText": "1 和 3",
+    "decision": false
+  },
+  {
+    "id": "R7IR-061",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nThe two files share the same helper, so the change is small.",
+    "userText": "Yes, do it",
+    "decision": true,
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R7IR-062",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nThe two files share the same helper, so the change is small.",
+    "userText": "No",
+    "decision": true,
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R7IR-063",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nNo other modules call this helper.",
+    "userText": "Yes, do it",
+    "decision": true,
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R7IR-064",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nNo other modules call this helper.",
+    "userText": "No",
+    "decision": true,
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R7IR-065",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nI'll go ahead and start on download.ts.",
+    "userText": "Yes, do it",
+    "decision": false
+  },
+  {
+    "id": "R7IR-066",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nCan you also share the CI logs?",
+    "userText": "Yes, do it",
+    "decision": false
+  },
+  {
+    "id": "R7IR-067",
+    "group": "ir2-keeps-high",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "1 和 3 落地，2 先放着",
+    "decision": true
+  },
+  {
+    "id": "R7IR-068",
+    "group": "ir2-keeps-high",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "1、3 一起改掉，2 不动",
+    "decision": true
+  },
+  {
+    "id": "R7IR-069",
+    "group": "ir2-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Try A and C together.",
+    "decision": true
+  },
+  {
+    "id": "R7IR-070",
+    "group": "ir2-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Fold A and B into the patch; C is already covered by the existing retries.",
+    "decision": true
+  },
+  {
+    "id": "R7IR-071",
+    "group": "ir2-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Option B is the sensible one here.",
+    "decision": true
+  },
+  {
+    "id": "R7IR-072",
+    "group": "ir2-keeps-baseline",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Wire up B. Which env var does it read?",
+    "decision": true,
+    "expectedBand": "low"
+  },
+  {
+    "id": "R7IR-073",
+    "group": "ir2-keeps-baseline",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "I would put B at the top because it avoids a rewrite.",
+    "decision": true,
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R7IR-074",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nNo answer is needed now.",
+    "userText": "Yes, do it",
+    "decision": false
+  },
+  {
+    "id": "R7IR-075",
+    "group": "question-then-remark",
+    "assistantText": "I updated the retry logic in `upload.ts` and the tests pass locally.\n\nShould I also apply the same change to `download.ts`?\n\nThe team chose this approach last week; nothing remains for you to decide.",
+    "userText": "Yes, do it",
+    "decision": false
+  },
+  {
+    "id": "R7IR-076",
+    "group": "refuse-all",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "都不选",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-077",
+    "group": "refuse-all",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "一个都不选",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-078",
+    "group": "refuse-all",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Neither",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-079",
+    "group": "not-handing-over",
+    "assistantText": "I made three changes:\n\n1. Added a retry wrapper around the upload call\n2. Fixed the flaky assertion in upload.test.ts\n3. Updated the README\n\nLet me know if you want any of these reverted.",
+    "userText": "2",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-080",
+    "group": "not-handing-over",
+    "assistantText": "I made three changes:\n\n1. Added a retry wrapper around the upload call\n2. Fixed the flaky assertion in upload.test.ts\n3. Updated the README\n\nReply with the numbers of any failing tests and I'll look.",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-081",
+    "group": "not-handing-over",
+    "assistantText": "I made three changes:\n\n1. Added a retry wrapper around the upload call\n2. Fixed the flaky assertion in upload.test.ts\n3. Updated the README\n\nTell me which tests still fail and I'll fix them.",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-082",
+    "group": "not-handing-over",
+    "assistantText": "To roll this out:\n\n1. Run the migration\n2. Restart the workers\n3. Watch the error rate for 10 minutes\n\nLet me know how you'd like to proceed.",
+    "userText": "go ahead",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-083",
+    "group": "not-handing-over",
+    "assistantText": "To roll this out:\n\n1. Run the migration\n2. Restart the workers\n3. Watch the error rate for 10 minutes\n\nThe retry count is up to you; I left it at 3.",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-084",
+    "group": "not-handing-over",
+    "assistantText": "To roll this out:\n\n1. Run the migration\n2. Restart the workers\n3. Watch the error rate for 10 minutes\n\nWhether to wait longer is up to you.",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-085",
+    "group": "not-handing-over",
+    "assistantText": "已经改了三处：\n\n1. 上传加了重试\n2. 修了 upload.test.ts 的断言\n3. 更新了 README\n\n我看你日志里还有个超时，顺手修了。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-086",
+    "group": "not-handing-over",
+    "assistantText": "已经改了三处：\n\n1. 上传加了重试\n2. 修了 upload.test.ts 的断言\n3. 更新了 README\n\n看你之前提到的那个 bug 也一起修了。",
+    "userText": "2",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-087",
+    "group": "not-handing-over",
+    "assistantText": "已经改了三处：\n\n1. 上传加了重试\n2. 修了 upload.test.ts 的断言\n3. 更新了 README\n\n你挑的那个库版本太老，我升了一级。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-088",
+    "group": "not-handing-over",
+    "assistantText": "已经改了三处：\n\n1. 上传加了重试\n2. 修了 upload.test.ts 的断言\n3. 更新了 README\n\n上次听你的把超时改成了 60s。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-089",
+    "group": "assistant-settles",
+    "assistantText": "Should I apply the patch to main as well?\n\nI'll hold off for now.",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-090",
+    "group": "assistant-settles",
+    "assistantText": "Should I apply the patch to main as well?\n\nProbably not worth it, the release is tomorrow.",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-091",
+    "group": "assistant-settles",
+    "assistantText": "Which should we pick, A or B?\n\nI will take A for now and leave a note.",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-092",
+    "group": "assistant-settles",
+    "assistantText": "要我把补丁也应用到 main 吗？\n\n算了，main 上已经有了。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-093",
+    "group": "assistant-settles",
+    "assistantText": "要我把补丁也应用到 main 吗？\n\n我先按不应用处理。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-094",
+    "group": "assistant-settles",
+    "assistantText": "要我把补丁也应用到 main 吗？\n\n我就先不动 main 了。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-095",
+    "group": "not-a-preference",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 不比 1 好",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-096",
+    "group": "not-a-preference",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 并不比 1 好",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-097",
+    "group": "not-a-preference",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 不见得比 1 好",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-098",
+    "group": "not-a-preference",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 未必比 1 好",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-099",
+    "group": "not-a-preference",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 哪比 1 好",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-100",
+    "group": "not-a-preference",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A, right?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-101",
+    "group": "not-a-preference",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A, no?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-102",
+    "group": "not-a-preference",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A, isn't it?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-103",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A; let's measure first",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-104",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A. Let's try it first.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-105",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A; measure before we commit",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-106",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "I think B is better, let's measure first",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-107",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A, I'll confirm with the team",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-108",
+    "group": "preference-reserved",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "B is better than A, pending the benchmark",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-109",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 好，先压测一下",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-110",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 好，等压测结果",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-111",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 好，我再确认下",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-112",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 比 1 好，跟运维对一下再定",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-113",
+    "group": "preference-reserved",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "2 更好，先压测",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R7IR-114",
+    "group": "commitment-keeps-high",
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "用 2，先压测一下再上线",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R7IR-115",
+    "group": "commitment-keeps-high",
+    "assistantText": "Here are three ways to handle the flaky upload test:\n\nA. Add a retry wrapper around the upload call\nB. Mock the storage client in tests\nC. Increase the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Go with B, let's measure first and then ship",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R7IR-116",
+    "group": "quoted-remark",
+    "assistantText": "Two options for the cache:\n\n1. Keep the LRU\n2. Move to Redis\n\nWhich option should we choose?\n\nThe old runbook ends with “Let me know which you'd like.”",
+    "userText": "ok",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-117",
+    "group": "quoted-remark",
+    "assistantText": "缓存有两个方案：\n\n1. 保留 LRU\n2. 换成 Redis\n\n选哪个？\n\n模板最后一句是「你来定」。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none"
+  },
+  {
+    "id": "R7IR-118",
+    "group": "assistant-continues",
+    "assistantText": "Should I cache the token in memory or in Redis? I'll go ahead with the in-memory cache for now.",
+    "userText": "thanks",
+    "decision": false
+  },
+  {
+    "id": "R7IR-119",
+    "group": "assistant-continues",
+    "assistantText": "Should I cache the token in memory or in Redis? I'll go ahead with the in-memory cache for now.",
+    "userText": "ok",
+    "decision": false
+  },
+  {
+    "id": "R7IR-120",
+    "group": "assistant-continues",
+    "assistantText": "Should I cache the token in memory or in Redis? I'll go ahead with the in-memory cache for now.",
+    "userText": "Redis",
+    "decision": false
+  }
+]

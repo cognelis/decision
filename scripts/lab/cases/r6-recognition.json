@@ -1,0 +1,1303 @@
+[
+  {
+    "id": "R6IR-001",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2、3 都慢",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-002",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 和 3 都慢",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-003",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 的坑多",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-004",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来用 2 的话坑多",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-005",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2、3 都不太行",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-006",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来就 2 吧",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-007",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "比较下来就 2 吧",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-008",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来就选 2 吧",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-009",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2、3 吧",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-010",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2、3 都做",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-011",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来用 2 的方案",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-012",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 吧",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-013",
+    "group": "anything-but-description",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "Anything but option 2 is risky; I'm only comparing these options.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-014",
+    "group": "anything-but-description",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "Option 2 is anything but safe; let's inspect the tradeoffs first.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-015",
+    "group": "anything-but-description",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "Anything but 2 is risky.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-016",
+    "group": "anything-but-description",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "Option 2 is anything but simple.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-017",
+    "group": "anything-but-decision",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "Anything but 2.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-018",
+    "group": "anything-but-decision",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "Do anything but 2.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-019",
+    "group": "works-for-me-noncommitment",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Option 2 works for me in the current system; don't change anything.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-020",
+    "group": "works-for-me-noncommitment",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Option 2 works for me? I'm asking, not approving.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-021",
+    "group": "works-for-me-noncommitment",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Option 2 worked for me last week; today I only want to compare costs.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-022",
+    "group": "works-for-me-noncommitment",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Does option 2 work for you?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-023",
+    "group": "works-for-me-noncommitment",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Option 2 already works for me locally, no changes needed.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-024",
+    "group": "works-for-me-decision",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Option 2 works for me.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-025",
+    "group": "works-for-me-decision",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "2 works for me, go ahead.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-026",
+    "group": "works-for-me-decision",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Option 2 works for me, but implement option 1 for this patch.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-027",
+    "group": "background-explain",
+    "assistantText": "Which retry change should I make?\n\n1. Add retry handling\n2. Increase timeout\n\nBackground: Explain why the alert was delayed?",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-028",
+    "group": "background-explain",
+    "assistantText": "Which retry change should I make?\n\n1. Add retry handling\n2. Increase timeout\n\nBackground: Explain the timeout history.",
+    "userText": "2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-029",
+    "group": "background-explain",
+    "assistantText": "哪个重试改动？\n\n1. 增加重试\n2. 延长超时\n\n背景：解释一下告警为什么延迟？",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-030",
+    "group": "new-task-explain",
+    "assistantText": "Which retry change should I make?\n\n1. Add retry handling\n2. Increase timeout\n\nExplain why the alert was delayed?",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-031",
+    "group": "temporal-refusal",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "今天不批准任何一个",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R6IR-032",
+    "group": "temporal-refusal",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "今天一个都不批准",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R6IR-033",
+    "group": "temporal-refusal",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "本次不批准任何一项",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R6IR-034",
+    "group": "temporal-refusal",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "今天不批准任何一个，明天再说",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-035",
+    "group": "temporal-refusal",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "今天不批准任何一个吗？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-036",
+    "group": "current-state",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "现在线上用的是 Redis",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-037",
+    "group": "current-state",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "目前生产环境用 Redis",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-038",
+    "group": "current-state",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "线上现在跑的是 Redis",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-039",
+    "group": "current-state",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "目前用的是本地 LRU，还没换",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-040",
+    "group": "current-state",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "We currently use Redis in production.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-041",
+    "group": "current-state-decision",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "现在就用 Redis",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-042",
+    "group": "current-state-decision",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "目前先用 Redis",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-043",
+    "group": "current-state-decision",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "现在用 Redis 吧",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-044",
+    "group": "current-state-decision",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "目前用的是本地 LRU，换成 Redis",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-045",
+    "group": "current-state-decision",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "现在线上用的是 Redis，就继续用 Redis",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-046",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来按 2 的来",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-047",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 和 3",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-048",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 和 3 吧",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-049",
+    "group": "read-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2，因为更稳",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-050",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 和 3 都慢",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-051",
+    "group": "anything-but-decision",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "Anything but 2 is fine.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-052",
+    "group": "works-for-me-noncommitment",
+    "assistantText": "1. Keep REST\n2. Switch to gRPC\nWhich approach should I use?",
+    "userText": "Option 2 works for me in staging.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-053",
+    "group": "temporal-refusal",
+    "assistantText": "1. Add retry handling\n2. Increase timeout\n3. Add request logging\nWhich changes should I implement?",
+    "userText": "今天不批准",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R6IR-054",
+    "group": "current-state-decision",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "目前先用 Redis，之后再决定",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-055",
+    "group": "current-state",
+    "assistantText": "存储方案你选哪个？\n\n1. Redis\n2. 本地 LRU\n3. Memcached",
+    "userText": "当前生产使用 Redis",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-056",
+    "group": "v5m-progress-history",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "缓存那边上周已经接好了，接口这周还在改",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-057",
+    "group": "v5m-progress-history",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "异步接口迁移跑到一半，剩下的明天继续",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-058",
+    "group": "v5m-progress-history",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "The cache landed last sprint, the async work is halfway done",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-059",
+    "group": "v5m-en-read",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Check option 2 against the current load numbers.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-060",
+    "group": "v5m-en-read",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Look into option 3 and tell me what breaks.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-061",
+    "group": "v5m-en-read",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Walk me through option 2's failure modes.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-062",
+    "group": "v5m-en-read",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "First list the callers affected by option 3.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-063",
+    "group": "v5m-en-count",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Since the deploy, the cache hit rate is around 80%.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-064",
+    "group": "v5m-en-count",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "After the rollout we're seeing 2 timeouts an hour.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-065",
+    "group": "v5m-zh-investigate",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "排查一下 2 为什么不生效",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-066",
+    "group": "v5m-zh-investigate",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "调查下 3 不行的原因",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-067",
+    "group": "v5m-zh-investigate",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "核实一下 2 不会影响旧客户端",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-068",
+    "group": "v5m-zh-look",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "去看看 2 受影响的调用方",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-069",
+    "group": "v5m-zh-look",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "先去看看改成异步接口会影响哪些调用方",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-070",
+    "group": "v5m-en-show-first",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Show me the data first, then option 2's numbers.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-071",
+    "group": "v5m-en-show-first",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Pull the latency data for option 3 first, then we'll talk.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-072",
+    "group": "v5m-en-count-progress",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "3 of 5 services are migrated so far.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-073",
+    "group": "v5m-en-count-progress",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "2 out of 3 hosts have the cache enabled.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-074",
+    "group": "v5m-keep",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Check option 2, then implement it.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-075",
+    "group": "v5m-keep",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Go with 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-076",
+    "group": "v5m-keep",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "排查完了用 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-077",
+    "group": "v5m-keep",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 吧，缓存上周已经接好了",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-078",
+    "group": "v5m-itemwise",
+    "assistantText": "1. 增加超时\n2. 增加重试\n3. 增加日志\n\n这三项请逐项给个意见。",
+    "userText": "1 和 3 可以，2 不要",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-079",
+    "group": "v5m-itemwise",
+    "assistantText": "1. 增加超时\n2. 增加重试\n3. 增加日志\n\n每一项你表个态。",
+    "userText": "1 做，2、3 不做",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-080",
+    "group": "v5m-itemwise",
+    "assistantText": "1. Add timeout\n2. Add retry\n3. Add logging\n\nPlease sign off on each item.",
+    "userText": "1 and 3, skip 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-081",
+    "group": "v5m-itemwise",
+    "assistantText": "1. Add timeout\n2. Add retry\n3. Add logging\n\nGo/no-go on each of these?",
+    "userText": "Go on 1 and 2, no-go on 3",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-082",
+    "group": "en-partial-keep-high",
+    "assistantText": "| ID | Change | Notes |\n|---|---|---|\n| A | Add unit tests for the parser | small |\n| B | Add structured request logging | medium |\n| C | Redesign the settings UI | large |\n\nWhich of these should I do?",
+    "userText": "Tests and logging are fine, leave the UI alone.",
+    "decision": true
+  },
+  {
+    "id": "R6IR-083",
+    "group": "en-partial-keep-high",
+    "assistantText": "| ID | Change | Notes |\n|---|---|---|\n| A | Add unit tests for the parser | small |\n| B | Add structured request logging | medium |\n| C | Redesign the settings UI | large |\n\nWhich of these should I do?",
+    "userText": "Unit tests yes, the UI redesign no.",
+    "decision": true
+  },
+  {
+    "id": "R6IR-084",
+    "group": "en-partial-keep-high",
+    "assistantText": "| ID | Change | Notes |\n|---|---|---|\n| A | Add unit tests for the parser | small |\n| B | Add structured request logging | medium |\n| C | Redesign the settings UI | large |\n\nWhich of these should I do?",
+    "userText": "Go ahead with the parser tests; hold the UI work.",
+    "decision": true
+  },
+  {
+    "id": "R6IR-085",
+    "group": "en-partial-keep-high",
+    "assistantText": "Proposed steps:\n\n1. Add regression tests for the importer\n2. Turn on debug logging in staging\n3. Polish the onboarding UI copy\n\nWhich steps should I execute?",
+    "userText": "Ship the importer tests and the logging; skip the UI copy for now.",
+    "decision": true
+  },
+  {
+    "id": "R6IR-086",
+    "group": "en-partial-keep-high",
+    "assistantText": "Proposed steps:\n\n1. Add regression tests for the importer\n2. Turn on debug logging in staging\n3. Polish the onboarding UI copy\n\nWhich steps should I execute?",
+    "userText": "Execute the regression tests step, not the UI one.",
+    "decision": true
+  },
+  {
+    "id": "R6IR-087",
+    "group": "en-partial-keep-high",
+    "assistantText": "Proposed steps:\n\n1. Add regression tests for the importer\n2. Turn on debug logging in staging\n3. Polish the onboarding UI copy\n\nWhich steps should I execute?",
+    "userText": "Only the logging change, please.",
+    "decision": true
+  },
+  {
+    "id": "R6IR-088",
+    "group": "en-choice-keep-high",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Go with the cache. What's the Redis host for staging?",
+    "decision": true
+  },
+  {
+    "id": "R6IR-089",
+    "group": "en-choice-keep-high",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Let's do the async move; which branch should I base it on?",
+    "decision": true
+  },
+  {
+    "id": "R6IR-090",
+    "group": "en-choice-keep-high",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Choose option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-091",
+    "group": "en-choice-keep-high",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Select option 3 now.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R6IR-092",
+    "group": "en-choice-keep-high",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "I prefer option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-093",
+    "group": "en-choice-keep-high",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Option 2 is selected.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-094",
+    "group": "mention-only",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Option 2 needs a restart window.",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-095",
+    "group": "mention-only",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 要停机窗口",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-096",
+    "group": "mention-only",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "缓存那块要和运维对一下容量",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-097",
+    "group": "decision-deferred",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 更稳，但还要再压测一次",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-098",
+    "group": "decision-deferred",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 和 3 都慢，先比成本，暂不决定",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-099",
+    "group": "decision-deferred",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "选 2 的坑更多，先别选",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-100",
+    "group": "decision-deferred",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 更稳，但我没批准。再等等。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-101",
+    "group": "decision-deferred",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "不要把我说的 2 当作批准",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-102",
+    "group": "decision-deferred",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "I am not choosing option 1 yet",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-103",
+    "group": "decision-deferred",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "1 先做，其余暂不决定",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ],
+    "expectedBand": "high"
+  },
+  {
+    "id": "R6IR-104",
+    "group": "decision-deferred",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 更稳，就用 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-105",
+    "group": "current-state-clause",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "We currently use the sync API. For this migration, choose option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-106",
+    "group": "current-state-clause",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "现在生产用的是旧接口；这次新服务决定选 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-107",
+    "group": "current-state-clause",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "当前就是 2，记录一下现状，没有新选择",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-108",
+    "group": "current-state-clause",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Our current production setup is the sync API",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-109",
+    "group": "read-only-mapping",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "I only asked to compare option 1; do not approve any option",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-110",
+    "group": "read-only-mapping",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "请只读审查；我批准 2，按计划上线",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-111",
+    "group": "deictic",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 风险低一些，采用它",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-112",
+    "group": "conditional-no-take",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "如果要合并的话 2 更合适",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-113",
+    "group": "conditional-no-take",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "要是上线 2，告警要重配",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-114",
+    "group": "conditional-no-take",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "合并 2 的风险在于锁",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-115",
+    "group": "conditional-no-take",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "2 is better on paper, but riskier",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-116",
+    "group": "conditional-no-take",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "2 is better for reads, 1 for writes",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-117",
+    "group": "conditional-no-take",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "I'd go 2 if we had time",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-118",
+    "group": "conditional-no-take",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "If I prefer option 2, what would the migration look like?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-119",
+    "group": "current-state-clause",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "目前就还是 2，先照旧观察",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-120",
+    "group": "label-verb",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should I choose?",
+    "userText": "Switch to option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-121",
+    "group": "no-option-new-acts",
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "先不管这个，帮我看下 README 再决定",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-122",
+    "group": "evaluation-no-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 is definitely slower",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-123",
+    "group": "evaluation-no-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 definitely needs more work",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-124",
+    "group": "evaluation-no-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 wins on latency",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-125",
+    "group": "evaluation-no-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 needs better docs",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-126",
+    "group": "evaluation-no-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "better test 2 first",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-127",
+    "group": "evaluation-no-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "so 2 is faster",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-128",
+    "group": "evaluation-no-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "go 2 weeks without it",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-129",
+    "group": "evaluation-no-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "改用 2 的成本高",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-130",
+    "group": "evaluation-no-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "就还是 1 的问题是慢",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-131",
+    "group": "evaluation-no-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "首选 2 的理由是快",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-132",
+    "group": "evaluation-no-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "2 更合适的场景是读多",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-133",
+    "group": "evaluation-no-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "2 好一些的地方是零依赖",
+    "decision": null,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R6IR-134",
+    "group": "current-state",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "目前就 2",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IR-135",
+    "group": "preference-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "Definitely 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-136",
+    "group": "preference-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 is better",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-137",
+    "group": "preference-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 wins",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-138",
+    "group": "preference-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "I'd go 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-139",
+    "group": "preference-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 is faster, so 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-140",
+    "group": "preference-take",
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "Go 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-141",
+    "group": "preference-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "2 更合适",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-142",
+    "group": "preference-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "首选 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-143",
+    "group": "preference-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "目前就用 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R6IR-144",
+    "group": "preference-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "就还是 1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R6IR-145",
+    "group": "preference-take",
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "改用 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  }
+]

@@ -10,11 +10,11 @@ export const captureModeSchema = z.enum([
   "structured_tool",
   "transcript",
 ]);
-export const sourceClientSchema = z.enum([
-  "claude-code",
-  "codex",
-  "test",
-]);
+/**
+ * A client's id, as its entry in the clients' registry names it: the built-in ones (claude-code, codex, grok,
+ * antigravity), `test`, and one a reader adds. An older version, which knew only its own two, reads none of the others.
+ */
+export const sourceClientSchema = z.string().regex(/^[a-z][a-z0-9-]{1,39}$/u);
 
 export const capturedOptionSchema = z
   .object({
@@ -24,17 +24,26 @@ export const capturedOptionSchema = z
   })
   .strict();
 
+/**
+ * The reader's own words when the options were read off a written reply
+ * ("Let's go with Zustand, the team is small" → preset "Zustand"). A native
+ * option picker has none: the pick is all there was.
+ */
+const replySchema = humanText(2_000).optional();
+
 export const capturedAnswerSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("preset"),
       values: z.array(humanText(2_000)).length(1),
+      reply: replySchema,
     })
     .strict(),
   z
     .object({
       kind: z.literal("multiple"),
       values: z.array(humanText(2_000)).min(1).max(8),
+      reply: replySchema,
     })
     .strict(),
   z

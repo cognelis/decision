@@ -155,6 +155,27 @@ describe("ProviderProfileRepository", () => {
     await expect(new ProviderProfileRepository(path).load()).resolves.toEqual(profiles);
   });
 
+  // R15-JEVSET: the profiles a build before the decisions backend wrote still load, and one is saved beside them.
+  it("reads a file written before the decisions backend and keeps it whole when one is added", async () => {
+    const root = await mkdtemp(join(tmpdir(), "provider-legacy-"));
+    const path = join(root, "profiles.json");
+    const builtIns = await new ProviderProfileRepository(path).load();
+    const remote = {
+      version: 1, profileId: "remote-openai", kind: "openai", label: "OpenAI", enabled: true, priority: 40,
+      model: "gpt-test", timeoutMs: 30_000, baseUrl: "https://api.openai.com/v1", apiProtocol: "responses", credentialRef: "remote-openai-key",
+    };
+    await writeFile(path, JSON.stringify({ version: 1, profiles: [...builtIns, remote] }), "utf8");
+    const repository = new ProviderProfileRepository(path);
+    await expect(repository.load()).resolves.toEqual([...builtIns, remote]);
+    const jev = {
+      version: 1 as const, profileId: "remote-jev", kind: "openrouter-decisions" as const, label: "jev", enabled: true, priority: 50,
+      model: "typesafe/jev-1.14", timeoutMs: 30_000, credentialRef: "provider:jev",
+    };
+    await repository.save(jev);
+    expect(repository.setAside).toBeNull();
+    await expect(new ProviderProfileRepository(path).load()).resolves.toEqual([...builtIns, remote, jev]);
+  });
+
   it("reads a file a later build wrote, without the fields this one does not know", async () => {
     const root = await mkdtemp(join(tmpdir(), "provider-later-"));
     const path = join(root, "profiles.json");

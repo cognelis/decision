@@ -22,6 +22,12 @@ const MANIFESTS: ReadonlyArray<readonly [string, readonly string[]]> = [
   ["package.json", ["javascript", "typescript"]],
 ];
 
+/**
+ * Every language the root's names can show (the manifests, a .csproj or .sln, an Xcode project): of these alone does
+ * finding none say the code is not in it. No manifest names Shell or SQL.
+ */
+export const MANIFEST_LANGUAGES: readonly string[] = [...new Set([...MANIFESTS.flatMap(([, languages]) => languages), "csharp"])];
+
 // A manifest on a stalled network mount or one iCloud keeps in the cloud is not waited for past this: the
 // consultation is not held up by the languages, which are then not known.
 const DETECTION_TIMEOUT_MS = 1_000;
@@ -46,7 +52,10 @@ const detect = async (directory: string): Promise<string[]> => {
     if (names.has(file)) for (const language of languages) found.add(language);
   }
   if ([...names].some((name) => name.endsWith(".csproj") || name.endsWith(".sln"))) found.add("csharp");
-  return [...found].slice(0, 8);
+  // An iOS or macOS app without a Package.swift: read by its fastlane Gemfile alone, it was Ruby, and Swift left out.
+  if ([...names].some((name) => name.endsWith(".xcodeproj") || name.endsWith(".xcworkspace"))) found.add("swift");
+  // All of them: one cut off here would be said to have no manifest, and every preference kept for it left out.
+  return [...found];
 };
 
 /**

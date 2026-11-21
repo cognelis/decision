@@ -99,7 +99,8 @@ const measureDashboardLayout = async () => {
             requestAnimationFrame(() => requestAnimationFrame(() => {
               const dialogRect = dialog.getBoundingClientRect();
               const editorRect = textarea.getBoundingClientRect();
-              const actions = dialog.querySelector(".rationale-workspace-actions").getBoundingClientRect();
+              // The dialog's own footer: what ends the dialog stays in sight under a body that scrolls.
+              const actions = dialog.querySelector(".modal-dialog-footer").getBoundingClientRect();
               const composer = dialog.querySelector(".rationale-composer");
               resolve({
                 rationaleActionsVisible: actions.bottom <= innerHeight && actions.top >= dialogRect.top,
@@ -132,7 +133,6 @@ const measureDashboardLayout = async () => {
       const measure = () => {
         const appShell = document.querySelector(".desktop-app");
         const sidebar = document.querySelector(".desktop-sidebar");
-        const brandIcon = document.querySelector(".desktop-brand-icon");
         const stage = document.querySelector(".desktop-stage");
         const header = document.querySelector(".desktop-view-header");
         const heading = header?.querySelector("h1");
@@ -155,7 +155,7 @@ const measureDashboardLayout = async () => {
         const rationaleDescription = document.querySelector(
           ".dashboard-rationale-description"
         );
-        const historyBadge = document.querySelector(".dashboard-history-badge");
+        const staleBadge = document.querySelector(".dashboard-stale-badge");
         const recentList = document.querySelector(".recent-decision-list");
         const recentCard = recentList?.closest(".dashboard-recent-card");
         const summary = document.querySelector(".dashboard-summary");
@@ -166,12 +166,12 @@ const measureDashboardLayout = async () => {
           ...document.querySelectorAll(".dashboard-card-header"),
         ];
         if (
-          appShell === null || sidebar === null || brandIcon === null || stage === null ||
+          appShell === null || sidebar === null || stage === null ||
           header === null || heading === null || scroll === null ||
           startButton === undefined || rationaleButton === undefined ||
           discardButton === undefined || rationaleList === null ||
           rationaleRows.length < 3 || rationaleContext === null ||
-          rationaleDescription === null || historyBadge === null ||
+          rationaleDescription === null || staleBadge === null ||
           recentList === null ||
           recentCard === null ||
           summary === null ||
@@ -196,7 +196,6 @@ const measureDashboardLayout = async () => {
           const scrollStyles = getComputedStyle(scroll);
           const summaryBounds = summary.getBoundingClientRect();
           const recentListStyles = getComputedStyle(recentList);
-          const brandIconStyles = getComputedStyle(brandIcon);
           const recentListScrollbarStyles = getComputedStyle(
             recentList,
             "::-webkit-scrollbar",
@@ -216,9 +215,6 @@ const measureDashboardLayout = async () => {
             resolve({
               appClientHeight: appShell.clientHeight,
               appScrollHeight: appShell.scrollHeight,
-              brandIconBorderRadius: Number.parseFloat(
-                brandIconStyles.borderTopLeftRadius,
-              ),
               cardHeaderHeights: cardHeaders.map(
                 (cardHeader) => cardHeader.getBoundingClientRect().height,
               ),
@@ -237,7 +233,7 @@ const measureDashboardLayout = async () => {
               heading: heading.textContent?.trim() ?? "",
               headingVisible:
                 headingBounds.width > 1 && headingBounds.height > 1,
-              historyBadge: historyBadge.textContent?.trim() ?? "",
+              staleBadge: staleBadge.textContent?.trim() ?? "",
               navigationLabels: Array.from(
                 document.querySelectorAll(".desktop-nav-item > span"),
                 (node) => node.textContent,

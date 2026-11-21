@@ -69,7 +69,7 @@ interface PublicationSnapshot {
   inspection: TargetInspection;
   /** Where the latest version was written, when that is somewhere else (see PublicationVersion.path). */
   recorded: TargetInspection | null;
-  /** Decision's own copy of the next version, written by a publication cut short before its record was. */
+  /** Paraself's own copy of the next version, written by a publication cut short before its record was. */
   interrupted: boolean;
   status: PracticePublicationStatus;
 }
@@ -347,7 +347,7 @@ export class PracticePublicationService {
     const backupPath = this.#backupPath(key, version);
     const leftover = await readFile(backupPath).catch((error: unknown) => (isMissing(error) ? null : Promise.reject(error)));
     // Cut short before its record was written, a publication of this version left what it replaced backed up: the
-    // version's backup still, not to be written over with Decision's own text now in the client (the reader's own
+    // version's backup still, not to be written over with Paraself's own text now in the client (the reader's own
     // skill was lost so, and rollback brought back the interrupted copy). Any other backup found there is set aside.
     let wroteBackup = false;
     if (!snapshot.interrupted) {
@@ -526,8 +526,8 @@ export class PracticePublicationService {
       !(await sameFile(recordedPath, inspection.path))
       ? await this.#inspect(recordedPath)
       : null;
-    // Decision's own text of the next version, with no record of it: a publication cut short (a quit) between
-    // writing the client's copy and its record. Called 非 Decision 管理的同名技能 and confirmed over, the reader's
+    // Paraself's own text of the next version, with no record of it: a publication cut short (a quit) between
+    // writing the client's copy and its record. Called 非 Paraself 管理的同名技能 and confirmed over, the reader's
     // skill it had backed up was written over with that copy.
     const identity = inspection.content === null ? null : publishedPracticeIdentity(inspection.content.toString("utf8"));
     const pending = identity === null ? null : await this.#pending(historyKey(assetId, target));
@@ -547,7 +547,7 @@ export class PracticePublicationService {
     } else if (latest !== null && recorded !== null) {
       status = movedStatus(target, latest, recorded, inspection);
     } else if (interrupted) {
-      status = statusFor(target, "update_available", latest, "上次发布在记下之前中断了，客户端里已是 Decision 写入的内容；重新发布即可补全，原有内容仍可回滚恢复", { canRollback: false });
+      status = statusFor(target, "update_available", latest, "上次发布在记下之前中断了，客户端里已是 Paraself 写入的内容；重新发布即可补全，原有内容仍可回滚恢复", { canRollback: false });
     } else if (latest === null) {
       status =
         inspection.state === "file"
@@ -555,7 +555,7 @@ export class PracticePublicationService {
               target,
               "occupied",
               null,
-              "存在非 Decision 管理的同名技能，覆盖前需要确认",
+              "存在非 Paraself 管理的同名技能，覆盖前需要确认",
             )
           : statusFor(target, "not_published", null, "尚未发布到此客户端");
     } else if (inspection.state === "missing") {

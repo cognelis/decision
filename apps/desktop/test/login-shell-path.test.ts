@@ -49,6 +49,7 @@ describe("loginShellPath", () => {
     const path = await loginShellPath({ PATH: LAUNCHD_PATH }, async () => { throw new Error("timed out"); });
     expect(path.startsWith(LAUNCHD_PATH)).toBe(true);
     // Homebrew's prefix on Apple silicon among them: without it a Mac whose shell was slow found no client.
-    expect(path.split(":")).toEqual(expect.arrayContaining([join(homedir(), ".local", "bin"), "/opt/homebrew/bin", "/usr/local/bin"]));
+    // Grok's own installer puts it in ~/.grok/bin, and agy's in ~/.local/bin.
+    expect(path.split(":")).toEqual(expect.arrayContaining([join(homedir(), ".local", "bin"), join(homedir(), ".grok", "bin"), "/opt/homebrew/bin", "/usr/local/bin"]));
   });
 });

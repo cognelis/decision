@@ -1,0 +1,152 @@
+[
+  {
+    "id": "ww-handback-zh-4",
+    "category": "delegation",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "我倾向 2，但由你定",
+    "expectedIds": [],
+    "source": "r14-pick-wrongwrite"
+  },
+  {
+    "id": "ww-wb-pick-c-negated-name-asks-explanation",
+    "category": "negation",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "I haven't picked A; I want to understand why B has lower latency before making a decision.",
+    "expectedIds": [],
+    "source": "r14-pick-wrongwrite"
+  },
+  {
+    "id": "ww-wb-pick-quoted-option-mention-not-chosen",
+    "category": "quotation",
+    "assistantText": "A. Keep PostgreSQL.\nB. Migrate to MySQL.\nC. Use SQLite.\n\nWhich database should we use?",
+    "userText": "The old ticket says “choose B,” but that quote is only background. No database has been selected; explain the migration risks.",
+    "expectedIds": [],
+    "source": "r14-pick-wrongwrite"
+  },
+  {
+    "id": "ww-wb-pick-e-approve-direction-not-implementation",
+    "category": "direction",
+    "assistantText": "A. Add idempotency keys.\nB. Add retries with backoff.\nC. Keep the current behavior.\n\nWhich implementation should we approve?",
+    "userText": "The idempotency-key idea is approved as a direction; I have not picked an implementation to ship yet.",
+    "expectedIds": [],
+    "source": "r14-pick-wrongwrite"
+  },
+  {
+    "id": "choice-not-time",
+    "category": "true-choice",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "我选 2，部署时间由你定。",
+    "expectedIds": [
+      "2"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "reject-a-choose-b",
+    "category": "true-choice",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "Do not use A. Use B for this release.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "quote-and-adopt",
+    "category": "true-choice",
+    "assistantText": "A. Keep PostgreSQL.\nB. Migrate to MySQL.\nC. Use SQLite.\n\nWhich database should we use?",
+    "userText": "The old ticket says “choose B.” I now agree: choose B for this release.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "direction-and-choice",
+    "category": "true-choice",
+    "assistantText": "A. Add idempotency keys.\nB. Add retries with backoff.\nC. Keep the current behavior.\n\nWhich implementation should we approve?",
+    "userText": "The direction is approved; for this implementation use B.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "bare-b",
+    "category": "true-choice",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "B",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "label-b",
+    "category": "true-choice",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "Use a Redis cache.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "choose-now-review-later",
+    "category": "true-choice",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "Use B now; we can review the metrics tomorrow.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "reviewer-unpicked",
+    "category": "true-choice",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "I have not picked a reviewer; choose B for the implementation.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "vote-b",
+    "category": "true-choice",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "I vote B.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "answer-is-two",
+    "category": "true-choice",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "我的答案是 2。",
+    "expectedIds": [
+      "2"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "favour-b",
+    "category": "true-choice",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "B should be the default.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "no-approval",
+    "category": "true-rejection",
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "None of these options.",
+    "expectedIds": [],
+    "mustCapture": true
+  }
+]

@@ -1,4 +1,5 @@
 export {
+  DECISION_NOTE_TEMPLATE,
   MarkdownRepository,
   DecisionLifecycleWriteError,
   evictedNote,
@@ -27,6 +28,7 @@ export type {
 
 export { DecisionContextRepository, mayBeSetAside, parseDecisionContextNote } from "./decision-context.js";
 export { DecisionScopeRepository } from "./decision-scope.js";
+export { amendmentKey, DecisionAmendmentRepository, type AmendableRecord, type StoredAmendment } from "./decision-amendment.js";
 export { DecisionRelationRepository } from "./decision-relation.js";
 export type { StoredDecisionScope } from "./decision-scope.js";
 export type { DecisionContextDocument, DecisionContextSnapshot } from "./decision-context.js";
@@ -36,6 +38,7 @@ export type { DecisionQuery, IndexedDecision } from "./sqlite-index.js";
 
 export {
   JournalEntryRepository,
+  selectJournalEntries,
   journalEntryFingerprint,
   journalEntryGone,
   parseJournalEntry,
@@ -58,7 +61,7 @@ export type {
   SemanticVectorRecord,
 } from "./semantic-vector-index.js";
 
-export { foldedText, searchTokens } from "./search-text.js";
+export { foldedText, searchedContext, searchTokens } from "./search-text.js";
 
 export {
   isIndexableNotePath,
@@ -100,6 +103,7 @@ export type {
 } from "./obsidian-vault.js";
 
 export {
+  METHODOLOGY_NOTE_TEMPLATE,
   MethodologyRepository,
   parseMethodology,
   serializeMethodology,
@@ -149,7 +153,24 @@ export {
   matchReviewRules,
   MAX_MATCHED_REVIEW_RULES,
   parseReviewRule,
+  REVIEW_RULE_ENFORCEMENTS,
 } from "./review-rules.js";
-export type { ReviewRule, ReviewRuleTarget } from "./review-rules.js";
+export type { ReviewRule, ReviewRuleEnforcement, ReviewRuleTarget } from "./review-rules.js";
 
 export { LocalDecisionStore } from "./local-decisions.js";
+
+export { TodoListRepository, TODO_FOLDER, asKeptTodoList, parseTodoList, serializeTodoList, withoutLegacyHistory } from "./todo-list.js";
+export type { StoredTodoList, TodoLegacyMigration, TodoListScan, TodoListUpdate } from "./todo-list.js";
+export { TodoHistoryStore } from "./todo-history.js";
+export type { TodoHistory } from "./todo-history.js";
+export { ExperienceRepository, EXPERIENCE_FOLDER, experienceNoteHash, parseExperience, serializeExperience, type ExperienceRecord, type ExperienceScan, type ExperienceWrite, type StoredExperience } from "./experience.js";
+export { canonical } from "./note-rewrite.js";
+export {
+  asKeptHistoricalDecision,
+  HISTORICAL_DECISION_FOLDER,
+  HistoricalDecisionRepository,
+  parseHistoricalDecision,
+  serializeHistoricalDecision,
+} from "./historical-decision.js";
+export type { HistoricalDecisionScan, StoredHistoricalDecision } from "./historical-decision.js";
+export { HistoricalDecisionIndex } from "./historical-decision-index.js";

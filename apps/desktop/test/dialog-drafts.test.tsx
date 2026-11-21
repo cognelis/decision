@@ -39,7 +39,7 @@ it("keeps a model backend being added open on Escape once something is typed, an
   expect(screen.getByRole("dialog", { name: "添加模型后端" })).toBeInTheDocument();
   expect(dialog.getByLabelText("API 密钥")).toHaveValue("sk-private");
 
-  await user.click(dialog.getByRole("button", { name: "取消添加" }));
+  await user.click(dialog.getByRole("button", { name: "取消" }));
   expect(screen.queryByRole("dialog", { name: "添加模型后端" })).toBeNull();
 });
 

@@ -1,6 +1,10 @@
 import type { OutcomeVerdict } from "@cognelis/decision-core";
 
+import type { AmendmentState } from "@cognelis/decision-protocol";
+
 import type { DecisionLibraryItem } from "../../../../shared/renderer-api.js";
+import { localDay } from "../todos/todo-dates.js";
+import { historyDayLabel } from "../todos/todo-text.js";
 
 /**
  * done: finished. attention: the next step is the reader's and it is due —
@@ -94,12 +98,22 @@ export const decisionLifecycleSteps = (
   ];
 };
 
+/** 修订: how many rewrites of its own words the decision has had, and when the last was. */
+export const revisionStep = (state: AmendmentState, today: string): DecisionLifecycleStep | null => {
+  const rewrites = state.history.filter((item) => item.action === "revise");
+  const last = rewrites.at(-1);
+  return last === undefined ? null : { label: "修订", value: `${rewrites.length} 次 · ${historyDayLabel(localDay(new Date(last.at)), today).replace(/ /gu, "")}`, state: "done" };
+};
+
 export const DecisionLifecycle = ({
   decision,
   distilledCount,
+  revisions = null,
 }: {
   decision: DecisionLibraryItem;
   distilledCount: number;
+  /** What was rewritten of the decision's own words; its row goes to where they are listed. */
+  revisions?: { state: AmendmentState; onOpen(): void } | null;
 }) => (
   <section className="decision-lifecycle" aria-labelledby="decision-lifecycle-title">
     <h4 id="decision-lifecycle-title">进度</h4>
@@ -119,6 +133,16 @@ export const DecisionLifecycle = ({
           <small>{step.value}</small>
         </li>
       ))}
+      {(() => {
+        const step = revisions === null ? null : revisionStep(revisions.state, localCalendarDate(new Date()));
+        return step === null || revisions === null ? null : (
+          <li key="revisions" className="done">
+            <i aria-hidden="true" />
+            <span>{step.label}</span>
+            <button type="button" className="text-button" onClick={revisions.onOpen}>{step.value}</button>
+          </li>
+        );
+      })()}
     </ol>
   </section>
 );

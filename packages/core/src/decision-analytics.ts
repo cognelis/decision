@@ -90,6 +90,8 @@ export interface DecisionRetrospectivePeriod {
   expectationMissing: number;
   reviews: number;
   previousReviews: number;
+  /** Single picks on questions where the agent marked one option as recommended. */
+  recommendation: { offered: number; followed: number };
   /** Worst verdicts first; capped, `reviews` holds the full count. */
   lessons: DecisionRetrospectiveLesson[];
   repeats: DecisionRetrospectiveRepeat[];

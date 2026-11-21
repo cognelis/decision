@@ -1,3 +1,4 @@
+import { BUILT_IN_CLIENTS } from "@cognelis/decision-integrations";
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { delimiter, join } from "node:path";
@@ -12,10 +13,10 @@ const variableFromShellOutput = (output: string, name: string): string | undefin
 export const pathFromShellOutput = (output: string): string | undefined =>
   variableFromShellOutput(output, "PATH");
 
-/** Where Claude Code and Codex keep their settings, when the reader's shell moves them. */
-const CLIENT_HOMES = ["CLAUDE_CONFIG_DIR", "CODEX_HOME"] as const;
+/** Where the clients keep their settings, when the reader's shell moves them (CLAUDE_CONFIG_DIR, CODEX_HOME, GROK_HOME). */
+export const CLIENT_HOMES: readonly string[] = BUILT_IN_CLIENTS.flatMap((client) => client.configDir.env ?? []);
 
-export type LoginShellEnvironment = { PATH: string } & Partial<Record<(typeof CLIENT_HOMES)[number], string>>;
+export type LoginShellEnvironment = { PATH: string } & Partial<Record<string, string>>;
 
 const runShell = (shell: string, args: string[]): Promise<string> =>
   new Promise((resolve) => {
@@ -60,6 +61,8 @@ export const loginShellEnvironment = async (
       ...(login ?? "").split(delimiter),
       ...(environment.PATH ?? "").split(delimiter),
       join(homedir(), ".local", "bin"),
+      // Where Grok's installer puts it, added to the shell's files only: a shell slow to answer left it out.
+      join(homedir(), ".grok", "bin"),
       ...KNOWN_INSTALL_FOLDERS,
     ].filter((entry) => entry.length > 0))].join(delimiter),
     ...homes,

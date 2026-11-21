@@ -70,11 +70,11 @@ describe("native GitHub release workflow", () => {
       "Remove-Item -LiteralPath $squirrelLog -Force",
     );
     const beginPayloadSmoke = windowsSmoke.indexOf(
-      "$env:DECISION_SMOKE_PACKAGE_ROOT = $packageRoot",
+      "$env:PARASELF_SMOKE_PACKAGE_ROOT = $packageRoot",
     );
     expect(removeRuntimeLog).toBeGreaterThan(stopInstalledApp);
     expect(removeRuntimeLog).toBeLessThan(beginPayloadSmoke);
-    expect(windowsSmoke).toContain("DECISION_SMOKE_PACKAGE_ROOT");
+    expect(windowsSmoke).toContain("PARASELF_SMOKE_PACKAGE_ROOT");
     expect(windowsSmoke).toContain('ArgumentList "--uninstall", "-s"');
     // The install root's launcher, run as the hooks run it, and giving out its own path: cmd's handling of it is
     // seen on a real Windows install, not only its text in a unit test.
@@ -108,8 +108,8 @@ describe("native GitHub release workflow", () => {
   it("documents unsigned first-run warnings without weakening security", () => {
     const notes = read(notesPath);
 
-    expect(notes).toContain("Decision-<version>-win-x64-Setup.exe");
-    expect(notes).toContain("Decision-darwin-arm64-<version>.zip");
+    expect(notes).toContain("Paraself-<version>-win-x64-Setup.exe");
+    expect(notes).toContain("Paraself-darwin-arm64-<version>.zip");
     expect(notes).toMatch(/Windows[\s\S]*unsigned/iu);
     expect(notes).toMatch(/SmartScreen/iu);
     expect(notes).toMatch(/macOS[\s\S]*ad-hoc/iu);

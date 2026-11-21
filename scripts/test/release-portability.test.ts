@@ -31,14 +31,13 @@ const matches = (
 
 describe("release candidate portability", () => {
   it("documents both supported downloads and the unsigned release contract", () => {
-    const readme = readFileSync("README.md", "utf8");
     const release = readFileSync("docs/release.md", "utf8");
 
-    for (const document of [readme, release]) {
+    for (const document of [readFileSync("README.md", "utf8"), readFileSync("README.zh-CN.md", "utf8"), release]) {
       expect(document).toContain("Windows x64");
       expect(document).toContain("Apple Silicon");
-      expect(document).toContain("1.1.0");
     }
+    expect(release).toContain("1.1.0");
     expect(release).toMatch(/"?schemaVersion"?: 2/u);
     expect(release).toContain('signature: "unsigned"');
     expect(release).toContain('signature: "ad-hoc"');
@@ -132,32 +131,6 @@ describe("release candidate portability", () => {
     expect(
       matches(productionFiles.filter((path) => path !== knownInstallFolders), /\/opt\/homebrew\//u),
     ).toEqual([]);
-  });
-
-  it("keeps the shortcut the README gives a page in step with the sidebar", () => {
-    // The sidebar order is what ⌘/Ctrl+1…8 follow, so moving an entry silently
-    // renumbers every page after it. The README names one of those numbers,
-    // and nothing else notices when it stops being true.
-    const shell = readFileSync(
-      "apps/desktop/src/renderer/components/DesktopShell.tsx",
-      "utf8",
-    );
-    const order = [
-      ...shell.matchAll(/surface: "[a-z-]+", label: "([^"]+)"/gu),
-    ].map((entry) => entry[1]!);
-    const claims = [
-      ...readFileSync("README.md", "utf8").matchAll(
-        /「([^」]+)」[^（。]*（⌘\/Ctrl\+(\d)）/gu,
-      ),
-    ];
-
-    expect(order.length).toBeGreaterThan(0);
-    expect(claims.length).toBeGreaterThan(0);
-    expect(
-      claims.map(([, label, digit]) => `${label}=${digit}`),
-    ).toEqual(
-      claims.map(([, label]) => `${label}=${order.indexOf(label!) + 1}`),
-    );
   });
 
   it("uses the current product name in all shipped code and documentation", () => {

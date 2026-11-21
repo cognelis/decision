@@ -17,6 +17,8 @@ const RENDERER_ONLY = new Set([
   "onSnapshot",
   "onAssistantProgress",
   "onPrReviewProgress",
+  "onPrReviewHistoryChanged",
+  "onLocalReviewNavigate",
   // Served by the rationale queue rather than the operations object.
   "submitRationale",
   "retryPersistence",

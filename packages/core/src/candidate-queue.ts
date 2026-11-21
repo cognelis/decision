@@ -50,6 +50,16 @@ export class DecisionCandidateQueue {
   readonly #subscribers = new Set<
     (snapshot: CandidateQueueSnapshot) => void
   >();
+  /** When each was last skipped: those skipped wait behind the rest, the longest skipped first. */
+  readonly #skippedAt = new Map<string, number>();
+  readonly #inTurn = (
+    left: CapturedDecisionCandidate,
+    right: CapturedDecisionCandidate,
+  ): number =>
+    (this.#skippedAt.get(left.candidateId) ?? 0) -
+      (this.#skippedAt.get(right.candidateId) ?? 0) ||
+    compareCandidates(left, right);
+  #skips = 0;
   #current: CapturedDecisionCandidate | null = null;
   #action: CandidateAction | null = null;
   #persistenceFailed = false;
@@ -99,7 +109,7 @@ export class DecisionCandidateQueue {
     } else {
       this.#waiting.push(candidate);
     }
-    this.#waiting.sort(compareCandidates);
+    this.#waiting.sort(this.#inTurn);
     this.#prune();
     this.#publish();
     return true;
@@ -111,6 +121,24 @@ export class DecisionCandidateQueue {
 
   ignore(candidateId: string): Promise<void> {
     return this.#begin("ignore", candidateId);
+  }
+
+  /** Puts the current one behind the rest, unanswered and still waiting. Alone, it stays where it is. */
+  skip(candidateId: string): void {
+    if (this.#current?.candidateId !== candidateId) {
+      throw new Error("Input does not target the current decision candidate");
+    }
+    if (this.#action !== null) {
+      throw new Error("The current decision candidate is already saving");
+    }
+    if (this.#waiting.length === 0) return;
+    this.#skips += 1;
+    this.#skippedAt.set(candidateId, this.#skips);
+    this.#waiting.push(this.#current);
+    this.#current = null;
+    this.#waiting.sort(this.#inTurn);
+    this.#advance();
+    this.#publish();
   }
 
   retryCurrentPersistence(): Promise<void> {
@@ -127,6 +155,12 @@ export class DecisionCandidateQueue {
     }
     this.#persistenceFailed = false;
     return this.#persist();
+  }
+
+  /** 整理读取全部候选，不改变排队顺序或确认任何选择。 */
+  list(): CapturedDecisionCandidate[] {
+    this.#prune();
+    return structuredClone([...(this.#current === null ? [] : [this.#current]), ...this.#waiting]);
   }
 
   snapshot(): CandidateQueueSnapshot {

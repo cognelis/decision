@@ -1,4 +1,4 @@
-import { proxyPrivateValues } from "../provider-network.js";
+import { ModelNetworkPolicy, proxyPrivateValues } from "../provider-network.js";
 import {
   execFile,
   spawn,
@@ -8,12 +8,16 @@ import {
 import { isAbsolute } from "node:path";
 
 import { commandInvocation } from "@cognelis/decision-integrations";
-import type {
-  ModelInvocationErrorCode,
-  ModelInvocationInput,
+import {
+  clipText,
+  type ModelInvocationErrorCode,
+  type ModelInvocationInput,
 } from "@cognelis/decision-protocol";
+import { describedError } from "../http-model-transport.js";
 
 export interface ManagedProcessRequest {
+  provider?: string;
+  model?: string | undefined;
   executable: string;
   args: string[];
   stdin: string;
@@ -21,8 +25,12 @@ export interface ManagedProcessRequest {
   timeoutMs: number;
   maximumStdoutBytes: number;
   maximumStderrBytes: number;
+  /** Optional combined cap for tools whose stdout and stderr share one log. */
+  maximumOutputBytes?: number;
   environment: NodeJS.ProcessEnv;
   signal?: AbortSignal;
+  /** Tool commands may report test failures as data; model clients keep the default rejection. */
+  acceptNonzeroExit?: boolean;
   cleanup?: () => Promise<void> | void;
   /** Bounded control-protocol exchange; completing closes stdin without starting a model turn. */
   conversation?: (stdout: string) => { input?: string; complete?: boolean };
@@ -67,6 +75,7 @@ export type SpawnProcess = (
 ) => ChildProcessWithoutNullStreams;
 
 export interface ManagedChildProcessRunnerOptions {
+  modelNetworkPolicy?: "required";
   spawnProcess?: SpawnProcess;
   killProcessGroup?: (
     pid: number,
@@ -92,7 +101,8 @@ const validateRequest = (
     ) ||
     !validLimit(request.timeoutMs) ||
     !validLimit(request.maximumStdoutBytes) ||
-    !validLimit(request.maximumStderrBytes)
+    !validLimit(request.maximumStderrBytes) ||
+    (request.maximumOutputBytes !== undefined && !validLimit(request.maximumOutputBytes))
   ) {
     throw new ManagedProcessError(
       "invalid_configuration",
@@ -110,19 +120,39 @@ const replaceAll = (
     : value.split(search).join("[redacted]");
 
 /**
+ * A reason a client reported, as a diagnostic keeps it. Claude Code reports an API error as "API Error: " and the
+ * SDK's message, which carries the whole response body, and Codex as "unexpected status …: " and the body, where a
+ * moderation refusal names the flagged input: the body is kept down to what its error calls itself, as the HTTP
+ * transport keeps it, and one that is not JSON to the text before it. A reason with no body is kept to 300
+ * characters. Cleaned before it is cut, as describedError says why.
+ */
+const describedReason = (reason: string, clean: (value: string) => string): string => {
+  const start = reason.indexOf("{");
+  if (start < 0) return clipText(clean(reason), 300);
+  const lead = clipText(clean(reason.slice(0, start)).trim(), 300);
+  let said: string | undefined;
+  try {
+    said = describedError(JSON.parse(reason.slice(start, reason.lastIndexOf("}") + 1)), clean);
+  } catch {
+    said = `(${reason.length - start} characters that are not JSON)`;
+  }
+  return [lead, said].filter((part) => part !== undefined && part.length > 0).join(" ");
+};
+
+/**
  * Why a client says it failed, where it says so on stdout rather than stderr: Claude Code's result
  * marked is_error ("Credit balance is too low"), or a Codex event of type error or turn.failed. Only
  * these: anything else on stdout may be the model's answer, which a diagnostic must not hold.
  */
-const reportedFailure = (stdout: string): string | null => {
+const reportedFailure = (stdout: string, clean: (value: string) => string): string | null => {
   const reasonOf = (value: unknown): string | null => {
     if (value === null || typeof value !== "object") return null;
     const event = value as Record<string, unknown>;
-    if (event.is_error === true && typeof event.result === "string") return event.result;
-    if (event.type === "error" && typeof event.message === "string") return event.message;
+    if (event.is_error === true && typeof event.result === "string") return describedReason(event.result, clean);
+    if (event.type === "error" && typeof event.message === "string") return describedReason(event.message, clean);
     const error = event.error as Record<string, unknown> | undefined;
     if ((event.type === "turn.failed" || event.type === "error") && typeof error?.message === "string") return JSON.stringify({
-      message: error.message,
+      message: describedReason(error.message, clean),
       ...(typeof error.code === "string" && /^[a-z_]{1,80}$/u.test(error.code) ? { code: error.code } : {}),
       ...(typeof event.status === "number" && Number.isInteger(event.status) && event.status >= 100 && event.status <= 599 ? { status: event.status } : {}),
     });
@@ -158,6 +188,7 @@ const sanitize = (
       "[redacted]",
     );
   const privateValues = [
+    ...Object.entries(request.environment).filter(([name]) => /KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH/iu.test(name)).map(([, value]) => value),
     ...proxyPrivateValues(request.environment),
     request.stdin,
     request.cwd,
@@ -187,6 +218,7 @@ export const stopManagedProcesses = (): void => {
 };
 
 export class ManagedChildProcessRunner {
+  readonly #modelNetworkPolicy: "required" | undefined;
   readonly #spawnProcess: SpawnProcess;
   readonly #killProcessGroup: (
     pid: number,
@@ -199,6 +231,7 @@ export class ManagedChildProcessRunner {
     options: ManagedChildProcessRunnerOptions = {},
   ) {
     this.#platform = options.platform ?? process.platform;
+    this.#modelNetworkPolicy = options.modelNetworkPolicy;
     this.#spawnProcess =
       options.spawnProcess ?? (spawn as SpawnProcess);
     this.#killProcessGroup =
@@ -215,16 +248,35 @@ export class ManagedChildProcessRunner {
   async run(
     request: ManagedProcessRequest,
   ): Promise<ManagedProcessResult> {
+    let route = "blocked", result = "blocked", errorCode: string | undefined;
     try {
       validateRequest(request);
+      if (this.#modelNetworkPolicy === "required") {
+        try {
+          const proxy = new ModelNetworkPolicy(request.environment).cliEnvironment();
+          const environment = Object.fromEntries(Object.entries(request.environment).filter(([name]) => !/proxy/iu.test(name)));
+          request = { ...request, environment: { ...environment, ...proxy } };
+          route = "proxy"; result = "failed";
+        } catch {
+          throw new ManagedProcessError("invalid_configuration", "CLI model network policy requires a valid MODEL_PROXY_URL; DIRECT and bypass rules are forbidden");
+        }
+      }
       if (request.signal?.aborted === true) {
         throw new ManagedProcessError(
           "cancelled",
           "Managed model process was cancelled",
         );
       }
-      return await this.#runValidated(request);
+      const output = await this.#runValidated(request);
+      result = "succeeded";
+      return output;
+    } catch (error) {
+      errorCode = error instanceof ManagedProcessError ? error.code : "process_failed";
+      throw error;
     } finally {
+      if (this.#modelNetworkPolicy === "required") {
+        try { console.info("model-network", JSON.stringify({ provider: sanitize(request.provider ?? "cli", request), model: sanitize(request.model ?? "catalog", request), policy: "required", route, result, ...(errorCode === undefined ? {} : { errorCode }) })); } catch {}
+      }
       await request.cleanup?.();
     }
   }
@@ -275,6 +327,7 @@ export class ManagedChildProcessRunner {
       let stderrBytes = 0;
       let terminalError: ManagedProcessError | undefined;
       let finished = false;
+      let parentClosed = false;
       let conversationComplete = false;
       let forceKillTimer: NodeJS.Timeout | undefined;
       let forceFinishTimer: NodeJS.Timeout | undefined;
@@ -335,6 +388,10 @@ export class ManagedChildProcessRunner {
           } catch {
             child.kill("SIGKILL");
           }
+          if (parentClosed) {
+            finishError(error);
+            return;
+          }
           forceFinishTimer = setTimeout(
             () => finishError(error),
             500,
@@ -377,6 +434,10 @@ export class ManagedChildProcessRunner {
             return;
           }
         }
+        if (request.maximumOutputBytes !== undefined && stdoutBytes + stderrBytes > request.maximumOutputBytes) {
+          terminate(new ManagedProcessError("response_too_large", "Managed process output exceeded the combined limit"));
+          return;
+        }
         target.push(buffer);
         if (stream === "stdout" && request.conversation && !conversationComplete && !terminalError) {
           try {
@@ -412,16 +473,22 @@ export class ManagedChildProcessRunner {
         );
       });
       child.once("close", (exitCode) => {
+        parentClosed = true;
         if (finished) {
           return;
         }
         if (terminalError !== undefined) {
-          finishError(terminalError);
+          // close only describes the parent. A child can close stdio and ignore TERM;
+          // retain the group KILL timer and delay cleanup/settlement until it fires.
           return;
+        }
+        // A successful CLI must not leave background writers in its process group.
+        if (this.#platform !== "win32" && child.pid) {
+          try { this.#killProcessGroup(child.pid, "SIGKILL"); } catch {}
         }
         const code = exitCode ?? -1;
         // A control-only client may exit nonzero on EOF because no user turn was supplied.
-        if (code !== 0 && !conversationComplete) {
+        if (code !== 0 && !conversationComplete && !(request.acceptNonzeroExit && exitCode !== null)) {
           finishError(
             new ManagedProcessError(
               "process_failed",
@@ -430,7 +497,7 @@ export class ManagedChildProcessRunner {
                 processExitCode: code,
                 diagnosticExcerpt: sanitize(
                   [
-                    reportedFailure(Buffer.concat(stdout, stdoutBytes).toString("utf8")),
+                    reportedFailure(Buffer.concat(stdout, stdoutBytes).toString("utf8"), (value) => sanitize(value, request)),
                     Buffer.concat(stderr, stderrBytes).toString("utf8").trim(),
                   ]
                     .filter((part): part is string => part !== null && part.length > 0)

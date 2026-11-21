@@ -1,0 +1,6 @@
+[
+  {"id":"R5IRWF-001","group":"explicit-rejection-not-deferral","assistantText":"1. Add retry handling\n2. Increase the timeout\nWhich changes should I make?","userText":"Neither; today not approved. I reject both options outright.","decision":true,"expectedSelected":[]},
+  {"id":"R5IRWF-002","group":"explicit-rejection-not-deferral","assistantText":"1. Add retry handling\n2. Increase the timeout\nWhich changes should I make?","userText":"None of these. This time not approved; reject all of them.","decision":true,"expectedSelected":[]},
+  {"id":"R5IRWF-003","group":"explicit-rejection-not-deferral","assistantText":"1. Add retry handling\n2. Increase the timeout\nWhich changes should I make?","userText":"都不做；今天不批准，全部否决。","decision":true,"expectedSelected":[]},
+  {"id":"R5IRWF-004","group":"explicit-rejection-not-deferral","assistantText":"1. Add retry handling\n2. Increase the timeout\nWhich changes should I make?","userText":"Neither option is accepted; the decision is a final rejection, not a postponement.","decision":true,"expectedSelected":[]}
+]

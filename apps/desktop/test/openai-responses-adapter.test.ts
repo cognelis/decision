@@ -190,6 +190,8 @@ describe("OpenAIResponsesAdapter", () => {
 
     expect(requests).toHaveLength(1);
     expect(requests[0]).toEqual({
+      provider: profile.kind,
+      model: profile.model,
       url: "https://api.openai.com/v1/responses",
       headers: {
         authorization: "Bearer sk-super-private",

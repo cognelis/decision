@@ -91,6 +91,97 @@ describe("routeSemanticDecision", () => {
     });
   });
 
+  it.each([
+    ["high", "medium"],
+    ["medium", "medium"],
+    ["low", "low"],
+  ] as const)(
+    "holds a rule %s at %s when the model was asked and ran out of time",
+    (ruleBand, expected) => {
+      expect(
+        routeSemanticDecision({
+          ruleBand,
+          modelBand: "unavailable",
+          answerRelation: null,
+          modelTimedOut: true,
+        }),
+      ).toMatchObject({
+        finalBand: expected,
+        detectorVersion: "rules-v10",
+        signals: ["semantic_timeout"],
+      });
+    },
+  );
+
+  it("keeps the rules' high when the model reads the reply as an answer yet sees no decision asked", () => {
+    // R8 holdout v5: a partial approval, `answers` from the model with intent `none`, was pulled to medium.
+    const input = { ruleBand: "high" as const, modelBand: "low" as const, answerRelation: "answers" as const, modelIntent: "none" as const, ruleSignals: ["has_choice_prompt", "answer_partially_approves"], userText: "1 和 2 做，3 先不做" };
+    expect(routeSemanticDecision(input)).toMatchObject({ finalBand: "high", signals: ["semantic_intent_contradiction"] });
+    expect(routeSemanticDecision({ ...input, answerRelation: "mixed", modelIntent: "information_request" }).finalBand).toBe("high");
+    // Naming an option is what evaluations and mentions do too: not enough to overrule the model.
+    expect(routeSemanticDecision({ ...input, ruleSignals: ["has_choice_prompt", "answer_matches_option"] }).finalBand).toBe("medium");
+    // A model that says decision and not answered is no contradiction.
+    expect(routeSemanticDecision({ ...input, answerRelation: "uncertain", modelIntent: "decision" }).finalBand).toBe("medium");
+    expect(routeSemanticDecision({ ...input, ruleBand: "medium" }).finalBand).toBe("medium");
+    // R8-SEM2 F03 (synthetic model output): an approval word with the decision held back is not a commitment.
+    for (const userText of ["可以，不过我还没决定合不合，等 QA 的结果。", "Sounds good, but I haven't decided yet.", "行，先压测一下再确认。"]) {
+      expect(routeSemanticDecision({ ...input, ruleSignals: ["has_choice_prompt", "answer_is_explicit_approval"], userText }).finalBand).toBe("medium");
+    }
+    // Putting one item off is part of a partial approval, not the decision held back.
+    expect(routeSemanticDecision({ ...input, userText: "1 和 2 做，3 以后再说" }).finalBand).toBe("high");
+    // Without the reply to read, the rules' reading is not taken over the model.
+    const { userText: _reply, ...unread } = input;
+    expect(routeSemanticDecision(unread).finalBand).toBe("medium");
+  });
+
+  it("leaves a reply the rules were unsure of for the reader, whatever the model says of it", () => {
+    expect(
+      routeSemanticDecision({ ruleBand: "medium", modelBand: "low", answerRelation: "uncertain", modelIntent: "none", ruleSignals: ["answer_relation_uncertain"] }).finalBand,
+    ).toBe("medium");
+  });
+
+  it("lets the model lift a request to see something first, which may come with the go-ahead", () => {
+    // R8-SEM2 T08: "Show me the SQL first, then go ahead and apply it" read by the rules as a request alone.
+    expect(
+      routeSemanticDecision({ ruleBand: "low", modelBand: "high", answerRelation: "answers", ruleSignals: ["has_choice_prompt", "answer_only_requests_information"], modelIntent: "approval" }).finalBand,
+    ).toBe("medium");
+  });
+
+  it.each([
+    "answer_defers_decision",
+    "answer_describes_current_state",
+  ])("does not let the model alone lift a reply the rules read as taking no option (%s)", (signal) => {
+    expect(
+      routeSemanticDecision({
+        ruleBand: "low",
+        modelBand: "high",
+        answerRelation: "answers",
+        ruleSignals: ["has_choice_prompt", signal],
+        modelIntent: "decision",
+      }),
+    ).toMatchObject({ finalBand: "low", signals: ["rule_read_no_answer"] });
+  });
+
+  it("still lifts a rule low the rules could not read, and an evaluation that may be a preference", () => {
+    for (const ruleSignals of [[], ["has_choice_prompt", "answer_only_evaluates"]]) {
+      expect(
+        routeSemanticDecision({ ruleBand: "low", modelBand: "high", answerRelation: "answers", ruleSignals, modelIntent: "decision" }).finalBand,
+      ).toBe("medium");
+    }
+  });
+
+  it("keeps a completed-status veto over a timed-out model", () => {
+    expect(
+      routeSemanticDecision({
+        ruleBand: "high",
+        modelBand: "unavailable",
+        answerRelation: null,
+        ruleSignals: ["answer_is_status_update"],
+        modelTimedOut: true,
+      }).finalBand,
+    ).toBe("low");
+  });
+
   it("caps a high recovered pair at medium after fifteen minutes", () => {
     expect(
       routeSemanticDecision({
@@ -201,4 +292,23 @@ describe("validateSemanticClassification", () => {
       );
     },
   );
+});
+
+describe('RSI-016: grounded semantic selection', () => {
+  const source = { ...pair, assistantText: 'A. SQLite\nB. PostgreSQL\n\nWhich one?', userText: 'B' };
+  it('remaps selected positions after invalid option labels are removed', () => {
+    const result = validateSemanticClassification(source, classification({ optionLabels: ['invented', 'PostgreSQL'], selectedOptionIndices: [2] }));
+    expect(result.optionLabels).toEqual(['PostgreSQL']);
+    expect(result.selectedOptionIndices).toEqual([1]);
+    expect(result.selectionValid).toBe(true);
+  });
+  it.each([
+    { optionLabels: ['invented', 'PostgreSQL'], selectedOptionIndices: [1] },
+    { optionLabels: ['SQLite', 'PostgreSQL'], selectedOptionIndices: [3] },
+    { optionLabels: ['PostgreSQL', 'PostgreSQL'], selectedOptionIndices: [2] },
+  ])('does not convert ungrounded or ambiguous model selections into a real option', (output) => {
+    const result = validateSemanticClassification(source, classification(output));
+    expect(result.selectionValid).toBe(false);
+    expect(result.selectedOptionIndices).toEqual([]);
+  });
 });

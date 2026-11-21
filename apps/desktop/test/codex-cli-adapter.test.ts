@@ -37,6 +37,7 @@ const fixturePath = fileURLToPath(
 );
 
 const profile: ModelProviderProfile = {
+  proxy: { mode: "custom", url: "http://127.0.0.1:7890" },
   version: 1,
   profileId: "builtin-codex",
   kind: "codex-cli",
@@ -100,6 +101,7 @@ const setup = (
       profile: { ...profile, ...(proxy === undefined ? {} : { proxy }) },
       runner: { run },
       environment: {
+        MODEL_PROXY_URL: "http://127.0.0.1:7890",
         HOME: "/Users/demo",
         USER: "demo",
         PATH: "/usr/bin:/bin",
@@ -127,36 +129,16 @@ describe("CodexCliAdapter", () => {
   });
 
   it("passes the configured proxy to semantic and structured CLI child requests", async () => {
-    const { adapter, requests } = setup(success, { mode: "custom", url: "http://127.0.0.1:7890", noProxy: "localhost" });
+    const { adapter, requests } = setup(success, { mode: "custom", url: "http://127.0.0.1:7890" });
     await adapter.invoke(input); await adapter.generate(methodologyRequest);
     expect(requests).toHaveLength(2);
-    for (const request of requests) expect(request.environment).toMatchObject({ HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", NO_PROXY: "localhost", no_proxy: "localhost", DECISION_PROVIDER_CHILD: "1" });
+    for (const request of requests) expect(request.environment).toMatchObject({ HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", NO_PROXY: "", no_proxy: "", PARASELF_PROVIDER_CHILD: "1" });
   });
 
-  it.runIf(
-    process.env.DECISION_CODEX_EXECUTABLE !== undefined,
-  )(
-    "invokes the installed Codex with the production semantic contract",
-    async () => {
-      const adapter = new CodexCliAdapter({
-        profile: {
-          ...profile,
-          executablePath:
-            process.env.DECISION_CODEX_EXECUTABLE!,
-        },
-        environment: process.env,
-      });
-
-      await expect(adapter.invoke(input)).resolves.toMatchObject({
-        classification: {
-          provider: "codex-cli",
-          decisionIntent: "decision",
-          answerRelation: "answers",
-        },
-      });
-    },
-    60_000,
-  );
+  it("blocks the default CLI runner before a model process starts", async () => {
+    const adapter = new CodexCliAdapter({ profile: { ...profile, proxy: { mode: "environment" }, executablePath: process.execPath }, environment: {} });
+    await expect(adapter.invoke(input)).rejects.toMatchObject({ code: "invalid_configuration" });
+  });
 
   it("uses the isolated no-tool command for generic structured generation", async () => {
     const structuredOutput = JSON.stringify({ title: "可逆优先" });
@@ -191,6 +173,8 @@ describe("CodexCliAdapter", () => {
     );
     expect(requests[0]?.args).toContain("--output-schema");
     expect(requests[0]?.args).toContain("read-only");
+    // Without these Codex re-syncs its remote plugins and Apps on every call, about 10 MB each.
+    expect(requests[0]?.args.join(" ")).toContain("-c features.plugins=false -c features.respect_system_proxy=false -c features.system_proxy_fallback=false -c features.apps=false");
   });
 
   it("retains the actual strict request on failures without exposing its body in generic error serialization", async () => {
@@ -247,6 +231,7 @@ describe("CodexCliAdapter", () => {
       profile,
       runner: { run },
       environment: {
+        MODEL_PROXY_URL: "http://127.0.0.1:7890",
         HOME: "/Users/demo",
         USER: "demo",
         PATH: "/usr/bin:/bin",
@@ -281,6 +266,14 @@ describe("CodexCliAdapter", () => {
       "-c",
       "features.shell_tool=false",
       "-c",
+      "features.plugins=false",
+      "-c",
+      "features.respect_system_proxy=false",
+      "-c",
+      "features.system_proxy_fallback=false",
+      "-c",
+      "features.apps=false",
+      "-c",
       "tools.web_search=false",
       "-c",
       "apps._default.enabled=false",
@@ -299,11 +292,15 @@ describe("CodexCliAdapter", () => {
     );
     expect(request.cwd).toBe(disposableDirectory);
     expect(request.environment).toEqual({
+      MODEL_PROXY_URL: "http://127.0.0.1:7890",
+      HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", ALL_PROXY: "http://127.0.0.1:7890",
+      http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", all_proxy: "http://127.0.0.1:7890", NO_PROXY: "", no_proxy: "",
       HOME: "/Users/demo",
       USER: "demo",
       PATH: "/usr/bin:/bin",
       CODEX_HOME: "/Users/demo/.codex",
       VOLTA_HOME: "/Users/demo/.volta",
+      PARASELF_PROVIDER_CHILD: "1",
       DECISION_PROVIDER_CHILD: "1",
     });
     expect(schemaMode).toBe(0o600);

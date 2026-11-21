@@ -17,6 +17,7 @@ import {
   ObsidianSearchService,
   type ObsidianSearchServiceOptions,
 } from "../src/main/obsidian-search/obsidian-search-service.js";
+import { readObsidianNote, searchObsidianNotes } from "../src/main/obsidian-search/obsidian-note-tools.js";
 
 const roots: string[] = [];
 const services: ObsidianSearchService[] = [];
@@ -1143,6 +1144,26 @@ describe("ObsidianSearchService synchronization", () => {
 });
 
 describe("ObsidianSearchService retrieval", () => {
+  it("shows nothing of a note excluded in Obsidian after it was indexed, by an expression or a plain path", async () => {
+    const { vault, service } = await createRealService();
+    await writeNote(vault, "private/secret.md", "synthetic private note\n");
+    await writeNote(vault, "archive/old.md", "synthetic archived note\n");
+    await writeNote(vault, "notes/kept.md", "synthetic kept note\n");
+    await service.rebuild();
+    expect((await searchObsidianNotes(service, { query: "synthetic" })).results).toHaveLength(3);
+
+    await writeNote(vault, ".obsidian/app.json", JSON.stringify({ userIgnoreFilters: ["/^private\\//", "archive/"] }));
+
+    // Still in the index until the next sync: neither its snippet nor its text is given from there.
+    const search = await searchObsidianNotes(service, { query: "synthetic" });
+    expect(search.results.map((result) => result.path)).toEqual(["notes/kept.md"]);
+    expect(JSON.stringify(search)).not.toMatch(/private note|archived note/u);
+    for (const path of ["private/secret.md", "archive/old.md"]) {
+      expect(await readObsidianNote(service, { path }), path).toMatchObject({ status: "not_available", note: null });
+    }
+    expect(await readObsidianNote(service, { path: "notes/kept.md" })).toMatchObject({ status: "ok" });
+  });
+
   it("recalls semantic-only notes, keeps an exact title first, excludes weak vectors, and collapses chunks", async () => {
     const { index, service } = await createRealService();
     index.replaceNote(storedNote("exact.md", "上线风险", "exact keyword body", { vector: unit([0.8, 0.6, 0]) }));

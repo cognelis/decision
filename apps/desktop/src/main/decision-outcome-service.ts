@@ -1,4 +1,4 @@
-import { decisionOutcomeUpdateSchema, type DecisionContextResult, type DecisionOutcomeUpdate, type DecisionOutcomeUpdateResult } from "@cognelis/decision-protocol";
+import { clipText, decisionOutcomeUpdateSchema, type DecisionContextResult, type DecisionOutcomeUpdate, type DecisionOutcomeUpdateResult } from "@cognelis/decision-protocol";
 import { DecisionLifecycleWriteError, type DecisionStore } from "@cognelis/decision-storage";
 import { relative, sep } from "node:path";
 
@@ -34,19 +34,23 @@ export class DecisionOutcomeService {
     const changed = saved.note.contentHash !== request.expectedContentHash;
     const record = saved.note.record;
     const warnings: string[] = [];
-    if (changed) warnings.push("笔记版本已改变；绑定旧版本的范围和人工关系需要重新核对，本次没有自动更新这些判断。");
+    // Those bound to the version replaced were bound to the new one with it (IMP-128); said only of what was not.
+    if (changed && saved.stale > 0) warnings.push(`笔记版本已改变；${saved.stale} 条范围或人工关系绑定的是更早的版本（例如在 Obsidian 里改过），没有随这次回填更新，仍需重新核对。`);
+    if (changed && saved.stale < 0) warnings.push("笔记版本已改变；这次读不到范围和人工关系的记录，绑定旧版本的判断没有随之更新，需要重新核对。");
     if (!saved.indexed) warnings.push("Markdown 已保存，但决策索引更新失败；请在设置中重建决策索引，勿重复回填。");
+    // A→B→C: B is no answer to what replaced A. Where a chain ends is said in search's own words, each its own warning
+    // and after the rest: run into one, two chains took it past the 500 characters a warning holds, the App answered
+    // 500, and the agent was told a result already in the note was not saved.
+    const chain = standing?.lifecycleState === "superseded" ? standing.warnings.filter((warning) => warning.includes("本身也已被替代")) : [];
     // Said by search_decision_context and by nothing here: a result went onto a decision replaced since as onto one
     // that stands, and the agent built on it.
     if (standing?.lifecycleState === "superseded") {
-      // A→B→C: B is no answer to what replaced A. Named as standing only while it does; where a chain ends is said
-      // in search's own words.
-      const chain = standing.warnings.filter((warning) => warning.includes("本身也已被替代"));
+      // Named as standing only while it does.
       const current = standing.successors
         .map((successor) => ({ successor, at: `${successor.source ?? "decisions"}/${successor.id}` }))
         .filter(({ at }) => !chain.some((warning) => warning.includes(`后继记录 ${at} 本身也已被替代`))).slice(0, 3)
         .map(({ successor, at }) => `${at}《${successor.title.slice(0, 40)}》`);
-      warnings.push(`此记录已被替代${current.length === 0 ? "" : `，当前有效的是 ${current.join("、")}`}；${chain.join("")}结果已按用户要求回填，请核对后继记录后再据此判断。`);
+      warnings.push(`此记录已被替代${current.length === 0 ? "" : `，当前有效的是 ${current.join("、")}`}；结果已按用户要求回填，请核对后继记录后再据此判断。`);
     } else if (standing?.lifecycleState === "uncertain") {
       warnings.push("此记录的有效状态待核对（关系依据过期、来源不完整或替代链存在循环）；结果已回填，但不能当作已确认的当前规则。");
     }
@@ -54,8 +58,9 @@ export class DecisionOutcomeService {
     return {
       status: changed ? "saved" : "unchanged", contentHash: saved.note.contentHash,
       relativePath: relative(this.vaultPath, saved.note.path).split(sep).join("/"),
-      state: { expectedOutcome: record.expectedOutcome ?? null, outcome: record.outcome, review: record.outcomeReview, reviewDueDate: record.reviewDueDate },
-      indexed: saved.indexed, warnings,
+      state: { expectedOutcome: record.expectedOutcome ?? null, outcome: record.outcome, review: record.outcomeReview, reviewDueDate: record.reviewDueDate, ...(record.reviewScheduleReasons?.length ? { reviewScheduleReasons: record.reviewScheduleReasons } : {}) },
+      // As many and as long as the result holds, the chain's lines the first to give way.
+      indexed: saved.indexed, warnings: [...warnings, ...chain].slice(0, 10).map((warning) => clipText(warning, 500)),
     };
   }
 }

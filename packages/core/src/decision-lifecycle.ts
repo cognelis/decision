@@ -1,4 +1,4 @@
-import type { DecisionRelationRecord, DecisionRelationReference } from "@cognelis/decision-protocol";
+import type { DecisionRelationRecord } from "@cognelis/decision-protocol";
 
 export interface DecisionLifecycleDocument {
   source: string;
@@ -9,8 +9,10 @@ export interface DecisionLifecycleDocument {
   supersededBy: string[];
 }
 
-export const decisionReferenceKey = (record: Pick<DecisionRelationReference, "source" | "recordId">): string => `${record.source}:${record.recordId}`;
-export const decisionRelationKey = (record: Pick<DecisionRelationRecord, "first" | "second">): string =>
+type RecordReference = { source: string; recordId: string };
+export const decisionReferenceKey = (record: RecordReference): string => `${record.source}:${record.recordId}`;
+/** Two records' pair, whatever their ids hold: sorted and JSON-encoded, ids with a line break or a colon stay apart. */
+export const decisionRelationKey = (record: { first: RecordReference; second: RecordReference }): string =>
   JSON.stringify([decisionReferenceKey(record.first), decisionReferenceKey(record.second)].sort());
 
 export const canonicalDecisionRelation = <T extends Pick<DecisionRelationRecord, "first" | "second" | "successor">>(record: T): T =>
@@ -27,7 +29,12 @@ export const decisionRelationState = (record: DecisionRelationRecord, documents:
   return first.contentHash === record.first.contentHash && second.contentHash === record.second.contentHash ? "current" : "stale";
 };
 
-export const buildDecisionLifecycle = (documents: DecisionLifecycleDocument[], relations: DecisionRelationRecord[], unavailable = false) => {
+/**
+ * `gone`: whether a record not among `documents` is known deleted, not merely unread (a note in iCloud). A relationship or
+ * replacement with it then says nothing of the record left: deleted as a wrong write (IMP-121), it held the decision it
+ * was related to under review, ranked after every current record, until someone withdrew the relationship.
+ */
+export const buildDecisionLifecycle = (documents: DecisionLifecycleDocument[], relations: DecisionRelationRecord[], unavailable = false, gone: (key: string) => boolean = () => false) => {
   const byKey = new Map(documents.map((document) => [`${document.source}:${document.id}`, document]));
   const successors = new Map(documents.map((document) => [`${document.source}:${document.id}`, new Set(document.supersededBy.map((id) => `${document.source}:${id}`))]));
   for (const document of documents) for (const id of document.supersedes) {
@@ -49,6 +56,8 @@ export const buildDecisionLifecycle = (documents: DecisionLifecycleDocument[], r
     const state = decisionRelationState(relation, byKey);
     states.set(decisionRelationKey(relation), state);
     if (state === "revoked") continue;
+    const deleted = (key: string) => !byKey.has(key) && gone(key);
+    if (state === "missing_source" && (deleted(first) || deleted(second))) continue;
     if (state !== "current") { needsReview.add(first); needsReview.add(second); continue; }
     // A current explicit judgment supersedes the older inline relationship for
     // this pair, without rewriting either source note's fields or status.
@@ -64,7 +73,7 @@ export const buildDecisionLifecycle = (documents: DecisionLifecycleDocument[], r
 
   const reverse = new Map<string, Set<string>>();
   for (const [from, targets] of successors) for (const target of targets) {
-    if (!byKey.has(target)) needsReview.add(from);
+    if (!byKey.has(target) && !gone(target)) needsReview.add(from);
     if (!reverse.has(target)) reverse.set(target, new Set());
     reverse.get(target)!.add(from);
   }
@@ -94,12 +103,18 @@ export const buildDecisionLifecycle = (documents: DecisionLifecycleDocument[], r
   };
   propagate(cycleAffected);
   for (const key of cycleAffected) needsReview.add(key);
+  // Marked replaced by its own note, by records all since deleted: neither replaced nor current, to be checked.
+  for (const document of documents) {
+    const key = `${document.source}:${document.id}`;
+    const next = [...successors.get(key) ?? []];
+    if (document.status === "superseded" && next.length > 0 && next.every((target) => !byKey.has(target) && gone(target))) needsReview.add(key);
+  }
   propagate(needsReview);
   if (unavailable) for (const document of documents) if (document.source !== "principles") needsReview.add(`${document.source}:${document.id}`);
   const state = (document: DecisionLifecycleDocument): "current" | "superseded" | "uncertain" => {
     const key = `${document.source}:${document.id}`;
     if (needsReview.has(key)) return "uncertain";
-    return document.status === "superseded" || document.status === "retired" || (successors.get(key)?.size ?? 0) > 0 ? "superseded" : "current";
+    return document.status === "superseded" || document.status === "retired" || [...successors.get(key) ?? []].some((next) => byKey.has(next) || !gone(next)) ? "superseded" : "current";
   };
   return { successors, predecessors: reverse, conflicts, needsReview, cycleAffected, byRecord, states, state };
 };

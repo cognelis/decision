@@ -183,14 +183,45 @@ describe("MethodologyPanel", () => {
     expect(selected[0]?.textContent).toBe(label);
   });
 
-  it("names what the header counts after the status shown", async () => {
+  it("puts each tab's own action in the header and counts the list beside the filter it counts", async () => {
     const user = userEvent.setup();
     renderPanel();
     const header = (await screen.findByRole("heading", { name: "方法论", level: 1 })).closest("header")!;
+    const filter = screen.getByRole("group", { name: "方法论状态" });
 
-    expect(header).toHaveTextContent("待确认原则");
-    await user.click(within(screen.getByRole("group", { name: "方法论状态" })).getByRole("button", { name: "全部" }));
-    expect(header).toHaveTextContent("全部原则");
+    // 原则: the workbench and 新建原则 on the right of the header; the count sits beside the status it counts.
+    expect(within(header).getByRole("button", { name: /^方法论工作箱/u })).toBeVisible();
+    expect(within(header).getByRole("button", { name: "新建原则" })).toBeVisible();
+    await waitFor(() => expect(filter.parentElement).toHaveTextContent("0 条"));
+
+    // 图谱 keeps its count of adopted principles where the header counts, with no action beside it.
+    const tabs = screen.getByRole("tablist", { name: "方法论视图" });
+    await user.click(within(tabs).getByRole("tab", { name: "图谱" }));
+    expect(header).toHaveTextContent("已采纳原则");
+    expect(within(header).queryByRole("button")).toBeNull();
+
+    // 技能与流程 brings its own 新建草案 there.
+    await user.click(within(tabs).getByRole("tab", { name: "技能与流程" }));
+    expect(await within(header).findByRole("button", { name: "新建草案" })).toBeVisible();
+    expect(within(header).queryByRole("button", { name: "新建原则" })).toBeNull();
+  });
+
+  it("keeps one solid button: 审核第一条 while the build guide shows, 新建原则 otherwise", async () => {
+    const api = stubApi();
+    vi.mocked(api.listMethodologies).mockResolvedValue([
+      acceptedMethodologyFixture({ status: "candidate", confirmedAt: null }),
+    ]);
+    const user = userEvent.setup();
+    render(<MethodologyPanel api={api} onOpenDecision={vi.fn()} onBrowseDecisions={vi.fn()} />);
+
+    const page = await screen.findByRole("region", { name: "方法论" });
+    const guide = await within(page).findByRole("region", { name: "方法论建设进度" });
+    expect(within(guide).getByRole("button", { name: "审核第一条" })).toHaveClass("primary-button");
+    expect(within(page).getByRole("button", { name: "新建原则" })).toHaveClass("secondary-button");
+
+    await user.click(within(screen.getByRole("group", { name: "方法论状态" })).getByRole("button", { name: "已采纳" }));
+    await waitFor(() => expect(within(page).queryByRole("region", { name: "方法论建设进度" })).toBeNull());
+    expect(within(page).getByRole("button", { name: "新建原则" })).toHaveClass("primary-button");
   });
 
   it("asks the workspace for its records on mount", async () => {
@@ -579,7 +610,7 @@ describe("MethodologyPanel", () => {
 
     // Taken, the older failure replaced the newer answer.
     expect(screen.getByText("还没有可分析的决策")).toBeVisible();
-    expect(screen.queryByText("决策分析暂时不可用")).toBeNull();
+    expect(screen.queryByText(/决策分析暂时无法读取/u)).toBeNull();
   });
 
   it("reports arrival even when the id no longer exists", async () => {
@@ -600,4 +631,16 @@ describe("MethodologyPanel", () => {
     await waitFor(() => expect(consumed).toHaveBeenCalled());
     await screen.findByRole("region", { name: "方法论" });
   });
+});
+
+
+it("shows an unavailable decision in a principle's sources without hiding the principle or offering a broken jump", async () => {
+  const api = stubApi();
+  const principle = acceptedMethodologyFixture({ id: "missing-source-principle", sourceDecisionIds: ["deleted-decision"], sourceDecisions: [], quality: methodologyQuality({ evidenceCount: 0, missingEvidenceCount: 1 }) });
+  vi.mocked(api.listMethodologies).mockResolvedValue([principle]);
+  render(<MethodologyPanel api={api} initialPrincipleId={principle.id} onOpenDecision={vi.fn()} onBrowseDecisions={vi.fn()} />);
+  const dialog = within(await screen.findByRole("dialog", { name: "方法论详情" }));
+  expect(await dialog.findByText(/这条决策已删除或暂不可用.*deleted-decision/u)).toBeVisible();
+  expect(dialog.getByText(principle.principle)).toBeVisible();
+  expect(dialog.queryByRole("button", { name: "deleted-decision" })).toBeNull();
 });

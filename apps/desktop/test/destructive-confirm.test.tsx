@@ -25,6 +25,8 @@ describe("a destructive action confirmed by a second click", () => {
 
     await user.dblClick(await screen.findByRole("button", { name: "删除 OpenAI 生产" }));
     expect(api.deleteModelProviderProfile).not.toHaveBeenCalled();
+    // Asked under the row, saying what goes with it.
+    expect(screen.getByRole("group", { name: "确认删除 OpenAI 生产" })).toHaveTextContent("删除「OpenAI 生产」和它保存在本机的 API 密钥？");
 
     await user.click(screen.getByRole("button", { name: "确认删除 OpenAI 生产" }));
     expect(api.deleteModelProviderProfile).toHaveBeenCalledWith("remote-1");
@@ -55,7 +57,7 @@ describe("a destructive action confirmed by a second click", () => {
 
     await user.click(await screen.findByRole("button", { name: "删除 后端A" }));
     await user.click(screen.getByRole("button", { name: "编辑 后端B" }));
-    await user.click(screen.getByRole("button", { name: "取消编辑" }));
+    await user.click(screen.getByRole("button", { name: "取消" }));
     // Still armed after all that, one stray click deleted the backend and its key.
     expect(screen.queryByRole("button", { name: "确认删除 后端A" })).toBeNull();
     expect(screen.getByRole("button", { name: "删除 后端A" })).toBeVisible();

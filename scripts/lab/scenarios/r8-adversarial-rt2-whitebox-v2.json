@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "rt2-v2-lexical-function-terms",
+      "description": "词表最小对照：CAN 总线、IT 部门、SQL IN 与 do/it/can 的实际词项。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8711.md",
+            "content": "---\nid: WB8711\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"CAN\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8711\n\nCAN\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8712.md",
+            "content": "---\nid: WB8712\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"总线\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8712\n\n总线\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8713.md",
+            "content": "---\nid: WB8713\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"IT\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8713\n\nIT\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8714.md",
+            "content": "---\nid: WB8714\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"部门\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8714\n\n部门\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8715.md",
+            "content": "---\nid: WB8715\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"IN\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8715\n\nIN\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8716.md",
+            "content": "---\nid: WB8716\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"SQL\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8716\n\nSQL\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8717.md",
+            "content": "---\nid: WB8717\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"DO\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8717\n\nDO\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8718.md",
+            "content": "---\nid: WB8718\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"block\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8718\n\nblock\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8719.md",
+            "content": "---\nid: WB8719\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"it\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8719\n\nit\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8720.md",
+            "content": "---\nid: WB8720\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"can\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8720\n\ncan\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "can-bus-minimal",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "CAN 总线",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8711"
+            ],
+            "mustExclude": [
+              "WB8712"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "it-department-minimal",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "IT 部门",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8713"
+            ],
+            "mustExclude": [
+              "WB8714"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "sql-in-minimal",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "SQL IN",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8715"
+            ],
+            "mustExclude": [
+              "WB8716"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "do-literal",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "do",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8717"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "it-literal",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "it",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8719"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "can-literal",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "can",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8720"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "rt2-v2-successor-targets",
+      "description": "强制取回已替代旧记录，检查提示里的最终后继选择；另检查错误编号指向跨项目记录时不得误称有效。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8801.md",
+            "content": "---\nid: WB8801\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"定时轮询投递通知\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: [\"WB8802\"]\n---\n# WB8801\n\n定时轮询投递通知\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8802.md",
+            "content": "---\nid: WB8802\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"直接同步调用投递通知\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: [\"WB8801\"]\nsuperseded_by: [\"WB8803\"]\n---\n# WB8802\n\n直接同步调用投递通知\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8803.md",
+            "content": "---\nid: WB8803\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"采用 transactional outbox 经后台队列投递通知\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: [\"WB8802\"]\nsuperseded_by: []\n---\n# WB8803\n\n采用 transactional outbox 经后台队列投递通知\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8811.md",
+            "content": "---\nid: WB8811\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"支付写入使用请求序号防止重复扣款\"\nproject: \"payments\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: [\"WB8812\"]\n---\n# WB8811\n\n支付写入使用请求序号防止重复扣款\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8812.md",
+            "content": "---\nid: WB8812\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"报表压缩使用列式存储\"\nproject: \"analytics\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8812\n\n报表压缩使用列式存储\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "chain-final-choice",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "定时轮询投递通知",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8801"
+            ],
+            "contains": [
+              "当前有效的是 summarize/WB8803《WB8803》：采用 transactional outbox 经后台队列投递通知"
+            ],
+            "k": 8,
+            "relation": "superseded"
+          }
+        },
+        {
+          "id": "unrelated-project-pointer",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "支付写入防重复扣款",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8811"
+            ],
+            "notContains": [
+              "当前有效的是 summarize/WB8812"
+            ],
+            "k": 8,
+            "project": "payments"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rt2-v2-deleted-status-consistency",
+      "description": "已删除后继使旧记录替代关系失效时，界面状态不能同时继续把它标成已替代。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8821.md",
+            "content": "---\nid: WB8821\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"旧的磁盘缓存方案\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: [\"WB8822\"]\n---\n# WB8821\n\n旧的磁盘缓存方案\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8822.md",
+            "content": "---\nid: WB8822\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"已删除的 Redis 缓存后继\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8822\n\n已删除的 Redis 缓存后继\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "remove-deleted-target",
+          "remove": "Decision Journal/summarize/WB8822.md"
+        },
+        {
+          "id": "deleted-old-status",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "旧的磁盘缓存方案",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8821"
+            ],
+            "contains": [
+              "记录的后继已不存在"
+            ],
+            "notContains": [
+              "已被替代 / 退役"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    }
+  ]
+}

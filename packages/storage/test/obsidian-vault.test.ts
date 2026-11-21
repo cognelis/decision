@@ -890,19 +890,21 @@ describe("ObsidianVaultRepository", () => {
     expect(scan.diagnostics).toEqual([{ relativePath: "Projects/plan.md", reason: "Markdown note is in iCloud, not on this Mac" }]);
   });
 
-  it("leaves out what the reader excluded in Obsidian, by the plain paths among its filters", async () => {
+  it("leaves out what the reader excluded in Obsidian, by its plain paths and its regular expressions", async () => {
     const vault = await makeVault();
     await mkdir(join(vault, ".obsidian"));
-    await writeFile(join(vault, ".obsidian", "app.json"), JSON.stringify({ userIgnoreFilters: ["Templates/", "Archive/Old/", "/草稿/"] }));
-    for (const path of ["Templates/会议模板.md", "Archive/Old/旧方案.md", "Archive/现行.md", "Projects/上线.md", "草稿.md"]) {
+    // A plain path is a prefix; /…/ an expression over the path; one that does not compile ("/[/") is passed over.
+    await writeFile(join(vault, ".obsidian", "app.json"), JSON.stringify({ userIgnoreFilters: ["Templates/", "Archive/Old/", "/草稿/", "/^private\\//", "/[/"] }));
+    for (const path of ["Templates/会议模板.md", "Archive/Old/旧方案.md", "Archive/现行.md", "Projects/上线.md", "草稿.md", "private/secret.md", "Projects/private/kept.md"]) {
       await mkdir(join(vault, ...path.split("/").slice(0, -1)), { recursive: true });
       await writeFile(join(vault, ...path.split("/")), "回滚预案");
     }
 
     const scan = await new ObsidianVaultRepository(vault).scan();
 
-    // Read past, the excluded template and archive came back in every search; a regular expression is not followed.
-    expect(scan.notes.map((note) => note.relativePath)).toEqual(["Archive/现行.md", "Projects/上线.md", "草稿.md"]);
+    // Read past, the excluded template and archive came back in every search; its expressions passed over, so did a
+    // folder excluded by one.
+    expect(scan.notes.map((note) => note.relativePath)).toEqual(["Archive/现行.md", "Projects/private/kept.md", "Projects/上线.md"]);
     expect(scan.diagnostics).toEqual([]);
   });
 

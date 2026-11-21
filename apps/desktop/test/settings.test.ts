@@ -1,14 +1,39 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// A write to be refused, by the file it is for: the settings are saved through three, each failing on its own.
+const refused = vi.hoisted(() => ({ file: undefined as string | undefined }));
+vi.mock("node:fs/promises", async (original) => {
+  const fs = await original<typeof import("node:fs/promises")>();
+  const writeFile = (async (path: Parameters<typeof fs.writeFile>[0], ...rest: unknown[]) => {
+    // The temporary file a save writes first: `<file>.<pid>.<uuid>.tmp`.
+    if (refused.file !== undefined && typeof path === "string" && path.includes(`/${refused.file}.`) && path.endsWith(".tmp")) {
+      throw Object.assign(new Error(`EIO: i/o error, write ${refused.file}`), { code: "EIO" });
+    }
+    return (fs.writeFile as (...args: unknown[]) => Promise<void>)(path, ...rest);
+  }) as typeof fs.writeFile;
+  return { ...fs, writeFile, default: { ...fs, writeFile } };
+});
 
 import {
   SettingsRepository,
   discoverObsidianVaults,
+  serializeSettingsChanges,
+  withAccent,
+  withCaptureClassifier,
+  captureClassifierMoveFailedMessage,
   withModelTraceContentEnabled,
+  withTheme,
+  type AppSettings,
   withVaultPath,
 } from "../src/main/settings.js";
+// The build before IMP-153, frozen from 5409f3c8 (fixtures/settings-5409f3c8/README.md).
+import {
+  SettingsRepository as SettingsRepositoryBeforeImp153,
+  withTheme as withThemeBeforeImp153,
+} from "./fixtures/settings-5409f3c8/main/settings.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -19,6 +44,7 @@ const temporaryDirectory = async (): Promise<string> => {
 };
 
 afterEach(async () => {
+  refused.file = undefined;
   await Promise.all(
     temporaryDirectories.splice(0).map((path) =>
       rm(path, { recursive: true, force: true }),
@@ -39,7 +65,8 @@ describe("SettingsRepository", () => {
       modelTraceContentEnabled: true,
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
-      captureClassifier: "rules" as const,
+      captureClassifier: "local" as const,
+      accent: "blue" as const,
     });
     await repository.save({
       version: 3,
@@ -49,6 +76,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
     });
 
     // The fields 1.1.0 does not know are left out at their defaults: written, 1.1.0 quit at once on the file.
@@ -62,6 +90,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules",
+      accent: "blue" as const,
     });
   });
 
@@ -82,6 +111,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
     });
   });
 
@@ -106,7 +136,171 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
     });
+  });
+
+  // A start as main/index.ts makes it: loaded, then moved off the old default once (IMP-154).
+  const start = async (path: string) => {
+    const repository = new SettingsRepository(path);
+    const settings = await repository.moveCaptureClassifier(await repository.load());
+    return { repository, settings };
+  };
+  /** As a build before IMP-153 saved every settings file: `rules` beside it, written whether chosen or not. */
+  const savedBeforeImp153 = async (directory: string, captureClassifier = "rules") => {
+    const path = join(directory, "settings.json");
+    await writeFile(path, JSON.stringify({ version: 3, vaultPath: "/vault", theme: "auto", modelTraceContentEnabled: true }));
+    await writeFile(join(directory, "settings-extra.json"), JSON.stringify({ captureClassifier, reviewRemindersEnabled: true }));
+    return path;
+  };
+
+  it("starts a new install on the rules plus this machine's model, and keeps `rules` chosen there (IMP-153)", async () => {
+    const directory = await temporaryDirectory();
+    const path = join(directory, "settings.json");
+    const first = await start(path);
+    expect(first.settings.captureClassifier).toBe("local");
+    await first.repository.save(withCaptureClassifier(first.settings, "rules"));
+
+    await expect(start(path)).resolves.toMatchObject({ settings: { captureClassifier: "rules" } });
+  });
+
+  it("moves the old default `rules` once, recorded in a file of its own, and keeps `rules` chosen after it (IMP-154)", async () => {
+    const directory = await temporaryDirectory();
+    const path = await savedBeforeImp153(directory);
+
+    const moved = await start(path);
+    expect(moved.settings.captureClassifier).toBe("local");
+    expect(moved.repository.captureClassifierMoveFailed).toBeNull();
+    // Saved before it is used, with its record beside the settings.
+    expect(JSON.parse(await readFile(join(directory, "settings-extra.json"), "utf8"))).toMatchObject({ captureClassifier: "local" });
+    expect(JSON.parse(await readFile(join(directory, "settings-migrations.json"), "utf8"))).toEqual({ captureClassifier: "decided" });
+
+    await moved.repository.save(withCaptureClassifier(moved.settings, "rules"));
+    for (let restart = 0; restart < 2; restart += 1) {
+      await expect(start(path)).resolves.toMatchObject({ settings: { captureClassifier: "rules" } });
+    }
+  });
+
+  it("leaves `models` where it was when it moves the old default (IMP-154)", async () => {
+    const directory = await temporaryDirectory();
+    await expect(start(await savedBeforeImp153(directory, "models"))).resolves.toMatchObject({ settings: { captureClassifier: "models" } });
+  });
+
+  it("keeps `rules` chosen after the move through a build before IMP-153 saving another setting (IMP-154)", async () => {
+    const directory = await temporaryDirectory();
+    const path = await savedBeforeImp153(directory);
+    const upgraded = await start(path);
+    await upgraded.repository.save(withCaptureClassifier(upgraded.settings, "rules"));
+
+    // Back on the build before: the theme changed and saved, which writes every field it knows and no other.
+    const before = new SettingsRepositoryBeforeImp153(path);
+    await before.save(withThemeBeforeImp153(await before.load(), "dark"));
+
+    await expect(start(path)).resolves.toMatchObject({ settings: { captureClassifier: "rules", theme: "dark" } });
+  });
+
+  it("keeps the old classifier, saying why, rather than use the new default it could not save (IMP-154)", async () => {
+    const directory = await temporaryDirectory();
+    const path = await savedBeforeImp153(directory);
+    await chmod(directory, 0o500);
+    try {
+      const failed = await start(path);
+      expect(failed.settings.captureClassifier).toBe("rules");
+      expect(failed.repository.captureClassifierMoveFailed).toMatchObject({ reason: expect.stringMatching(/EACCES|permission/iu), retried: true });
+      // Nothing written, and a later save at this start does not record a move it never made.
+      await expect(failed.repository.save(withTheme(failed.settings, "dark"))).rejects.toThrow();
+    } finally {
+      await chmod(directory, 0o700);
+    }
+    expect(JSON.parse(await readFile(join(directory, "settings-extra.json"), "utf8"))).toMatchObject({ captureClassifier: "rules" });
+    await expect(readFile(join(directory, "settings-migrations.json"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+
+    // Tried again at the next start, the folder writable again.
+    const retried = await start(path);
+    expect(retried.settings.captureClassifier).toBe("local");
+    expect(retried.repository.captureClassifierMoveFailed).toBeNull();
+  });
+
+  it.each([
+    // The record is written first: refused, nothing changes and the next start tries again.
+    ["settings-migrations.json", "rules", true, "local"],
+    // Recorded, then the classifier beside the settings refused: kept as it was, and not moved again.
+    ["settings-extra.json", "rules", false, "rules"],
+    // Recorded, the classifier written beside the settings, then the settings refused: the move stands, recorded.
+    ["settings.json", "rules", false, "local"],
+  ] as const)("never uses the new default without its record when the write of %s is refused (IMP-154)", async (file, kept, retried, next) => {
+    const directory = await temporaryDirectory();
+    const path = await savedBeforeImp153(directory);
+    refused.file = file;
+    const failed = await start(path);
+    expect(failed.settings.captureClassifier).toBe(kept);
+    expect(failed.repository.captureClassifierMoveFailed).toMatchObject({ reason: expect.stringContaining("EIO"), retried });
+    refused.file = undefined;
+
+    const restarted = await start(path);
+    expect(restarted.settings.captureClassifier).toBe(next);
+    expect(restarted.repository.captureClassifierMoveFailed).toBeNull();
+    const recorded = await readFile(join(directory, "settings-migrations.json"), "utf8").then(() => true, () => false);
+    // The one thing never seen: the new default with no record of the move.
+    expect(recorded || restarted.settings.captureClassifier !== "local").toBe(true);
+    expect(recorded).toBe(next === "local" || !retried);
+  });
+
+  it("keeps `rules` chosen by the reader after a move that failed (IMP-154)", async () => {
+    const directory = await temporaryDirectory();
+    const path = await savedBeforeImp153(directory);
+    refused.file = "settings-migrations.json";
+    const failed = await start(path);
+    expect(failed.settings.captureClassifier).toBe("rules");
+    refused.file = undefined;
+
+    // As main/index.ts saves a classifier chosen in the models page.
+    await failed.repository.recordCaptureClassifierDecided();
+    await failed.repository.save(withCaptureClassifier(failed.settings, "rules"));
+
+    for (let restart = 0; restart < 2; restart += 1) {
+      await expect(start(path)).resolves.toMatchObject({ settings: { captureClassifier: "rules" } });
+    }
+  });
+
+  it("saves no classifier the reader chose when its decision cannot be recorded", async () => {
+    const directory = await temporaryDirectory();
+    const repository = new SettingsRepository(await savedBeforeImp153(directory));
+    refused.file = "settings-migrations.json";
+    await expect(repository.recordCaptureClassifierDecided()).rejects.toThrow("EIO");
+  });
+
+  it("names the classifier a failed move kept, and what the reader's turns go to on 规则加模型 (IMP-154)", () => {
+    const retried = { reason: "EACCES: permission denied", retried: true };
+    expect(captureClassifierMoveFailedMessage("rules", retried)).toBe(
+      "设置保存不了（EACCES: permission denied），采集分类这次仍按「只用规则」。请检查设置所在文件夹的写入权限，下次启动会再试一次；也可以在模型页手动选择。",
+    );
+    expect(captureClassifierMoveFailedMessage("local", retried)).toContain("这次仍按「规则加本机模型」。");
+    expect(captureClassifierMoveFailedMessage("models", retried)).toContain(
+      "这次仍按「规则加模型」：每一轮对话都会按模型页的后端顺序发给所选后端，可能是命令行或远程服务。",
+    );
+    expect(captureClassifierMoveFailedMessage("rules", { ...retried, retried: false })).toContain("之后不会再自动更改");
+    for (const kept of ["rules", "local"] as const) {
+      expect(captureClassifierMoveFailedMessage(kept, retried)).not.toContain("远程");
+    }
+  });
+
+  it.each(["local", "models"] as const)("keeps %s through a move whose record cannot be written, saying so", async (stored) => {
+    const directory = await temporaryDirectory();
+    refused.file = "settings-migrations.json";
+    const failed = await start(await savedBeforeImp153(directory, stored));
+    expect(failed.settings.captureClassifier).toBe(stored);
+    expect(failed.repository.captureClassifierMoveFailed).toMatchObject({ retried: true });
+  });
+
+  it("records no move at a start that made none, for a later start to make it", async () => {
+    const directory = await temporaryDirectory();
+    const path = await savedBeforeImp153(directory);
+    const repository = new SettingsRepository(path);
+    // Loaded and saved without the move (what a failed move leaves): `rules` stays the old default, not a choice.
+    await repository.save(withTheme(await repository.load(), "dark"));
+    await expect(readFile(join(directory, "settings-migrations.json"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(start(path)).resolves.toMatchObject({ settings: { captureClassifier: "local", theme: "dark" } });
   });
 
   it.each(["auto", "light", "dark"] as const)(
@@ -123,6 +317,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
       };
 
       await repository.save(settings);
@@ -167,11 +362,51 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: false,
       localCredentialsEnabled: true,
       captureClassifier: "models",
+      accent: "blue" as const,
     });
 
     // Changed since in an earlier build, which writes into the file: that is the later word.
     await writeFile(path, JSON.stringify({ version: 3, vaultPath: "/vault 2", theme: "light", modelTraceContentEnabled: false, captureClassifier: "rules" }));
     await expect(repository.load()).resolves.toMatchObject({ captureClassifier: "rules", reviewRemindersEnabled: false });
+  });
+
+  it("keeps the theme colour beside the settings, and reads one it cannot use as the default (IMP-140)", async () => {
+    const directory = await temporaryDirectory();
+    const path = join(directory, "settings.json");
+    const repository = new SettingsRepository(path);
+    await repository.save(withAccent(await repository.load(), "#4D7C0F"));
+
+    expect(JSON.parse(await readFile(path, "utf8"))).not.toHaveProperty("accent");
+    expect(JSON.parse(await readFile(join(directory, "settings-extra.json"), "utf8"))).toMatchObject({ accent: "#4d7c0f" });
+    await expect(repository.load()).resolves.toMatchObject({ accent: "#4d7c0f" });
+
+    await writeFile(join(directory, "settings-extra.json"), JSON.stringify({ accent: "chartreuse" }));
+    await expect(repository.load()).resolves.toMatchObject({ accent: "blue" });
+  });
+
+  it("makes each settings change to what the one before left, one at a time (IMP-140)", async () => {
+    const directory = await temporaryDirectory();
+    let settings = await new SettingsRepository(join(directory, "settings.json")).load();
+    const saved: AppSettings[] = [];
+    let releaseFirst!: () => void;
+    const firstHeld = new Promise<void>((resolve) => { releaseFirst = resolve; });
+    const change = serializeSettingsChanges(() => settings, async (next) => {
+      if (saved.length === 0) await firstHeld;
+      saved.push(next);
+      settings = next;
+    });
+
+    // The theme still saving when the colour is chosen: built from the settings then, the colour put the theme back.
+    const theme = change((current) => withTheme(current, "dark"));
+    const accent = change((current) => withAccent(current, "purple"));
+    releaseFirst();
+    await Promise.all([theme, accent]);
+
+    expect(saved.map((next) => [next.theme, next.accent])).toEqual([["dark", "blue"], ["dark", "purple"]]);
+    expect(settings).toMatchObject({ theme: "dark", accent: "purple" });
+    // A change that failed leaves the next one to run.
+    await expect(change(() => { throw new Error("refused"); })).rejects.toThrow("refused");
+    await expect(change((current) => withTheme(current, "light"))).resolves.toMatchObject({ theme: "light", accent: "purple" });
   });
 
   it("keeps aside a file of added settings it cannot read, rather than writing over it at the next save", async () => {
@@ -239,7 +474,7 @@ describe("SettingsRepository", () => {
     const later = JSON.stringify({ version: 4, vaultPath: "/vault" });
     await writeFile(path, later, "utf8");
 
-    await expect(new SettingsRepository(path).load()).rejects.toThrow(/更新版本的 Decision/u);
+    await expect(new SettingsRepository(path).load()).rejects.toThrow(/更新版本的 Paraself/u);
     expect(await readFile(path, "utf8")).toBe(later);
   });
 
@@ -254,6 +489,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
         },
         "/new",
       ),
@@ -265,6 +501,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
     });
   });
 
@@ -279,6 +516,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
         },
         false,
       ),
@@ -290,6 +528,7 @@ describe("SettingsRepository", () => {
       reviewRemindersEnabled: true,
       localCredentialsEnabled: false,
       captureClassifier: "rules" as const,
+      accent: "blue" as const,
     });
   });
 
@@ -347,4 +586,18 @@ describe("discoverObsidianVaults", () => {
 
     await expect(discoverObsidianVaults(configPath)).resolves.toEqual([present]);
   });
+});
+
+it("persists and clears the global model proxy beside existing settings, rejecting credential URLs", async () => {
+  const directory = await temporaryDirectory(); const path = join(directory, "settings.json");
+  const repository = new SettingsRepository(path); const settings = await repository.load();
+  await repository.save({ ...settings, modelProxyUrl: "http://127.0.0.1:7890" });
+  expect(JSON.parse(await readFile(path, "utf8"))).not.toHaveProperty("modelProxyUrl");
+  expect(JSON.parse(await readFile(join(directory, "settings-extra.json"), "utf8"))).toMatchObject({ modelProxyUrl: "http://127.0.0.1:7890" });
+  expect((await new SettingsRepository(path).load()).modelProxyUrl).toBe("http://127.0.0.1:7890");
+  const credential = new URL("http://proxy.test:8080"); credential.username = "synthetic"; credential.password = "synthetic";
+  for (const url of [credential.href, "socks5://proxy.test:1080", "http://proxy.test/path", "http://proxy.test/?token=x"]) await expect(repository.save({ ...settings, modelProxyUrl: url })).rejects.toThrow();
+  expect((await repository.load()).modelProxyUrl).toBe("http://127.0.0.1:7890");
+  await repository.save({ ...settings, modelProxyUrl: null });
+  expect((await new SettingsRepository(path).load()).modelProxyUrl).toBeNull();
 });

@@ -1,7 +1,20 @@
 import type { CapturedQuestion } from "@cognelis/decision-protocol";
+import { recommendationFollow } from "@cognelis/decision-core/recommendation";
 import { useState } from "react";
 
+import { renderInlineMarkdown, renderMarkdown } from "./pages/assistant/markdown.js";
+
 const DEFAULT_ALTERNATIVE_LIMIT = 3;
+
+/** An option's or answer's label as the assistant wrote it: emphasis and code, no blocks. */
+export const AnswerLabel = ({ text }: { text: string }) => (
+  <span className="inline-markdown">{renderInlineMarkdown(text)}</span>
+);
+
+/** An option's description as the assistant wrote it, which can run to a list. */
+export const OptionDescription = ({ text }: { text: string }) => (
+  <div className="assistant-answer option-description">{renderMarkdown(text)}</div>
+);
 
 export interface DecisionAnswerItem {
   key: string;
@@ -27,6 +40,10 @@ export const answerOptionIndex = (
     return matchingIndexes.length === 1 ? matchingIndexes[0] : undefined;
   };
 };
+
+/** The reader's own words beside a picked option; a custom answer is those words already. */
+export const answerReply = (question: CapturedQuestion): string | undefined =>
+  question.answer.kind === "custom" ? undefined : question.answer.reply;
 
 export const partitionDecisionAnswers = (
   question: CapturedQuestion,
@@ -70,7 +87,7 @@ export const partitionDecisionAnswers = (
 
 type DecisionAnswerSummaryProps =
   | { question: CapturedQuestion; selectedAnswer?: never }
-  | { question?: never; selectedAnswer: string };
+  | { question?: never; selectedAnswer: string; followedRecommendation?: boolean };
 
 export const DecisionAnswerSummary = (
   props: DecisionAnswerSummaryProps,
@@ -105,16 +122,29 @@ export const DecisionAnswerSummary = (
       >
         {selected.map((answer) => (
           <li className="decision-answer-item" key={answer.key}>
-            <strong>{answer.label}</strong>
+            <strong><AnswerLabel text={answer.label} /></strong>
             {answer.description === undefined ? null : (
-              <p>{answer.description}</p>
+              <OptionDescription text={answer.description} />
             )}
           </li>
         ))}
       </ul>
+      {props.question === undefined || answerReply(props.question) === undefined ? null : (
+        <p className="decision-answer-reply">
+          原话：{answerReply(props.question)}
+        </p>
+      )}
       <p className="decision-answer-note" id="decision-answer-note">
         原生选择不会被改变；这里只补充判断依据。
       </p>
+      {(props.question === undefined
+        ? props.followedRecommendation === true
+        : recommendationFollow(props.question.options, props.question.answer) ===
+          "followed") ? (
+        <p className="decision-answer-followed" id="decision-answer-followed">
+          你选的是 agent 标为推荐的选项。理由写你自己的判断就好，不用转述 agent 的论证。
+        </p>
+      ) : null}
 
       {alternatives.length === 0 ? null : (
         <section
@@ -125,9 +155,9 @@ export const DecisionAnswerSummary = (
           <ul id="decision-alternatives-list" aria-label="当时的其它候选">
             {visibleAlternatives.map((option) => (
               <li key={option.key}>
-                <strong>{option.label}</strong>
+                <strong><AnswerLabel text={option.label} /></strong>
                 {option.description === undefined ? null : (
-                  <p>{option.description}</p>
+                  <OptionDescription text={option.description} />
                 )}
               </li>
             ))}

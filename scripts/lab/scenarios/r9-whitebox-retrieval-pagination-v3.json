@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "r9-wb-pagination-one-term-only",
+      "description": "两个记录只在通知一词上有词面重合；语义目标相似度已由先前实跑确认超过 0.55，用于验证 weak-keyword 条件与 limit 对分页顺序的影响",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9400.md",
+            "content": "---\nid: D9400\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"Order changes and event publication use the transactional outbox pattern\"\nproject: \"orders-cn\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# Order event delivery\n\nOrder changes and event publication use the transactional outbox pattern to reliably notify downstream services.\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9401.md",
+            "content": "---\nid: D9401\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"故障时通过短信通知值班人员\"\nproject: \"orders-cn\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 故障升级策略\n\n故障时通过短信通知值班人员。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "page-first",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "订单状态变化怎样可靠地通知下游？",
+            "project": "orders-cn",
+            "limit": 1,
+            "offset": 0
+          }
+        },
+        {
+          "id": "page-second",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "订单状态变化怎样可靠地通知下游？",
+            "project": "orders-cn",
+            "limit": 1,
+            "offset": 1
+          }
+        },
+        {
+          "id": "page-full",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "订单状态变化怎样可靠地通知下游？",
+            "project": "orders-cn",
+            "limit": 2,
+            "offset": 0
+          }
+        }
+      ]
+    }
+  ]
+}

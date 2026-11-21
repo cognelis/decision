@@ -1,0 +1,390 @@
+[
+  {
+    "id": "R4A3-001",
+    "group": "description-commitment",
+    "assistantText": "本轮有三个彼此独立的实现方向：\n\n1. 保持同步接口 —— 当前最稳，影响很小。\n\n2. 加缓存层 —— 实现最简单，改动少。\n\n3. 切换异步接口 —— 最可靠，吞吐更高但涉及面较广。\n\nWhich approach should I implement?",
+    "userText": "就按你说的最稳那个方案来。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "R4A3-002",
+    "group": "description-commitment",
+    "assistantText": "本轮有三个彼此独立的实现方向：\n\n1. 保持同步接口 —— 当前最稳，影响很小。\n\n2. 加缓存层 —— 实现最简单，改动少。\n\n3. 切换异步接口 —— 最可靠，吞吐更高但涉及面较广。\n\nWhich approach should I implement?",
+    "userText": "按最简单的方案做吧。",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R4A3-003",
+    "group": "description-commitment",
+    "assistantText": "本轮有三个彼此独立的实现方向：\n\n1. 保持同步接口 —— 当前最稳，影响很小。\n\n2. 加缓存层 —— 实现最简单，改动少。\n\n3. 切换异步接口 —— 最可靠，吞吐更高但涉及面较广。\n\nWhich approach should I implement?",
+    "userText": "用那个最可靠的方案执行。",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ]
+  },
+  {
+    "id": "R4A3-004",
+    "group": "description-commitment",
+    "assistantText": "本轮有三个彼此独立的实现方向：\n\n1. 保持同步接口 —— 当前最稳，影响很小。\n\n2. 加缓存层 —— 实现最简单，改动少。\n\n3. 切换异步接口 —— 最可靠，吞吐更高但涉及面较广。\n\nWhich approach should I implement?",
+    "userText": "哪种方案最稳？我想先比较一下。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-005",
+    "group": "description-commitment",
+    "assistantText": "本轮有三个彼此独立的实现方向：\n\n1. 保持同步接口 —— 当前最稳，影响很小。\n\n2. 加缓存层 —— 实现最简单，改动少。\n\n3. 切换异步接口 —— 最可靠，吞吐更高但涉及面较广。\n\nWhich approach should I implement?",
+    "userText": "最简单的看起来不错，等我确认范围再做。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-006",
+    "group": "description-commitment",
+    "assistantText": "本轮有三个彼此独立的实现方向：\n\n1. 保持同步接口 —— 当前最稳，影响很小。\n\n2. 加缓存层 —— 实现最简单，改动少。\n\n3. 切换异步接口 —— 最可靠，吞吐更高但涉及面较广。\n\nWhich approach should I implement?",
+    "userText": "先分析三个方案的迁移成本，今天不批准。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-007",
+    "group": "which-status-vs-action",
+    "assistantText": "The rollout has three independent steps:\n1. Add the health check\n2. Set the canary threshold\n3. Keep the previous build available\nWhich tasks are already complete?",
+    "userText": "Tasks 1 and 2 are complete; 3 is still pending.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-008",
+    "group": "which-status-vs-action",
+    "assistantText": "The rollout has three independent steps:\n1. Add the health check\n2. Set the canary threshold\n3. Keep the previous build available\nWhich steps have already run?",
+    "userText": "Steps one and two ran this morning.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-009",
+    "group": "which-status-vs-action",
+    "assistantText": "The rollout has three independent steps:\n1. Add the health check\n2. Set the canary threshold\n3. Keep the previous build available\nWhich changes remain?",
+    "userText": "Only step 3 remains.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-010",
+    "group": "which-status-vs-action",
+    "assistantText": "The rollout has three independent steps:\n1. Add the health check\n2. Set the canary threshold\n3. Keep the previous build available\nWhich tasks should I do next?",
+    "userText": "Do tasks 1 and 3; hold 2 until the threshold is agreed.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R4A3-011",
+    "group": "which-status-vs-action",
+    "assistantText": "The rollout has three independent steps:\n1. Add the health check\n2. Set the canary threshold\n3. Keep the previous build available\nWhich step should I run first?",
+    "userText": "Run item two.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R4A3-012",
+    "group": "which-status-vs-action",
+    "assistantText": "The rollout has three independent steps:\n1. Add the health check\n2. Set the canary threshold\n3. Keep the previous build available\nWhich changes should I apply?",
+    "userText": "Apply 1 and 2, and leave 3 for later.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R4A3-013",
+    "group": "past-state-followup-action",
+    "assistantText": "For this patch, please choose the follow-up items:\n1. Update the API documentation\n2. Add the migration note\n3. Add the compatibility check\nWhich items should I handle now?",
+    "userText": "Step 1 completed yesterday; proceed with step 3.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R4A3-014",
+    "group": "past-state-followup-action",
+    "assistantText": "For this patch, please choose the follow-up items:\n1. Update the API documentation\n2. Add the migration note\n3. Add the compatibility check\nWhich items should I handle now?",
+    "userText": "1 is done; do 3.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R4A3-015",
+    "group": "past-state-followup-action",
+    "assistantText": "For this patch, please choose the follow-up items:\n1. Update the API documentation\n2. Add the migration note\n3. Add the compatibility check\nWhich items should I handle now?",
+    "userText": "The first item is finished; please do the third.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R4A3-016",
+    "group": "past-state-followup-action",
+    "assistantText": "For this patch, please choose the follow-up items:\n1. Update the API documentation\n2. Add the migration note\n3. Add the compatibility check\nWhich items should I handle now?",
+    "userText": "Steps 1 and 3 are already complete.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-017",
+    "group": "past-state-followup-action",
+    "assistantText": "For this patch, please choose the follow-up items:\n1. Update the API documentation\n2. Add the migration note\n3. Add the compatibility check\nWhich items should I handle now?",
+    "userText": "Step 1 was finished; step 3 is still pending.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-018",
+    "group": "past-state-followup-action",
+    "assistantText": "For this patch, please choose the follow-up items:\n1. Update the API documentation\n2. Add the migration note\n3. Add the compatibility check\nWhich items should I handle now?",
+    "userText": "Items 1 and 3 passed yesterday; no work remains.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-019",
+    "group": "topic-shift-common-word",
+    "assistantText": "Choose changes for the cache rollout:\nA. Cache each response for one minute\nB. Add cache hit-rate metrics\nC. Remove the old cache after migration\nWhich changes belong in this patch?",
+    "userText": "Implement A; separately help me document the current cache behavior.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "R4A3-020",
+    "group": "topic-shift-common-word",
+    "assistantText": "Choose changes for the cache rollout:\nA. Cache each response for one minute\nB. Add cache hit-rate metrics\nC. Remove the old cache after migration\nWhich changes belong in this patch?",
+    "userText": "I want option B; also summarize the cache notes for the handoff.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R4A3-021",
+    "group": "topic-shift-common-word",
+    "assistantText": "Choose changes for the cache rollout:\nA. Cache each response for one minute\nB. Add cache hit-rate metrics\nC. Remove the old cache after migration\nWhich changes belong in this patch?",
+    "userText": "Do C, then search the docs for the old cache migration note.",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ]
+  },
+  {
+    "id": "R4A3-022",
+    "group": "topic-shift-common-word",
+    "assistantText": "Choose changes for the cache rollout:\nA. Cache each response for one minute\nB. Add cache hit-rate metrics\nC. Remove the old cache after migration\nWhich changes belong in this patch?",
+    "userText": "Pause this for now; help me find every use of “cache” in the docs, without editing code.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-023",
+    "group": "topic-shift-common-word",
+    "assistantText": "Choose changes for the cache rollout:\nA. Cache each response for one minute\nB. Add cache hit-rate metrics\nC. Remove the old cache after migration\nWhich changes belong in this patch?",
+    "userText": "Different task: explain cache invalidation to a new teammate.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-024",
+    "group": "topic-shift-common-word",
+    "assistantText": "Choose changes for the cache rollout:\nA. Cache each response for one minute\nB. Add cache hit-rate metrics\nC. Remove the old cache after migration\nWhich changes belong in this patch?",
+    "userText": "Please search for the word cache and count its occurrences; do not change this patch.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-025",
+    "group": "english-request-in-trailing-note",
+    "assistantText": "I reviewed the proposed patch and listed three independent changes:\n1. Add a request timeout\n2. Retry idempotent calls\n3. Log the request ID\nNot tested yet — which of these should I do first?",
+    "userText": "Do 1 and 3 first; leave 2 for later.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R4A3-026",
+    "group": "english-request-in-trailing-note",
+    "assistantText": "The rollout edits are:\nA. Validate the artifact\nB. Deploy to staging\nC. Shift production traffic\nNo checks run — your choice: which changes should I apply?",
+    "userText": "Apply A and C; B stays out of this patch.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "R4A3-027",
+    "group": "english-request-in-trailing-note",
+    "assistantText": "The migration checklist is:\n1. Export current records\n2. Verify the export\n3. Import into the new store\nTesting was not run — which step should I take first?",
+    "userText": "Take step 2 now.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R4A3-028",
+    "group": "english-request-in-trailing-note",
+    "assistantText": "I have not run the checks. No tests yet — please review the current status only.",
+    "userText": "Thanks, wait for now.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-029",
+    "group": "english-request-in-trailing-note",
+    "assistantText": "The remaining work is listed above. Not verified yet — no request for changes in this note.",
+    "userText": "Understood; do not start anything.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-030",
+    "group": "english-request-in-trailing-note",
+    "assistantText": "No files changed. Tests were not run, and the checklist is still open.",
+    "userText": "Okay, keep the current state.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-031",
+    "group": "option-mapping-boundaries",
+    "assistantText": "Pick a cache backend:\nA. Redis (v7) — shared across workers\nB. Redis (v8) — newer protocol\nC. Local LRU — process-local only\nWhich option should I use?",
+    "userText": "Use v8.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R4A3-032",
+    "group": "option-mapping-boundaries",
+    "assistantText": "The three requested edits are:\nA. Validate the input\nB. Add a timeout\nC. Log the request ID\nWhich should I take?",
+    "userText": "Make A plus C; B stays out.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "R4A3-033",
+    "group": "option-mapping-boundaries",
+    "assistantText": "The migration steps are:\n1. Export rows\n2. Verify row counts\n3. Import the archive\nWhich items should I run?",
+    "userText": "Take items one and three.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R4A3-034",
+    "group": "option-mapping-boundaries",
+    "assistantText": "Choose from the three changes:\n1. Keep the old field\n2. Add the new field\n3. Remove the alias\nWhich should go into this patch?",
+    "userText": "Do 1; leave 2 unchanged and do not remove 3.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R4A3-035",
+    "group": "option-mapping-boundaries",
+    "assistantText": "The independent steps are:\n1. Run the schema check\n2. Update the API docs\n3. Add a migration note\nWhich steps should I take?",
+    "userText": "Neither; wait for the review first.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-036",
+    "group": "option-mapping-boundaries",
+    "assistantText": "I ran 3 tests on the current patch; one failed. The proposed edits are:\n1. Fix the timeout handling\n2. Add a request ID\nWhich change should I make?",
+    "userText": "Make 1.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R4A3-037",
+    "group": "single-proposed-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "批准这个范围。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R4A3-038",
+    "group": "single-proposed-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "可以，按这个范围做。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R4A3-039",
+    "group": "single-proposed-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "为什么选 8 秒？先解释一下，我还没批准。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-040",
+    "group": "single-proposed-action",
+    "assistantText": "The proposed edits are:\n\n1. Set the request timeout to eight seconds.\n\n2. Add a retry for idempotent calls.\n\nWhich change should I make?",
+    "userText": "批准超时这个改动，重试先别做。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R4A3-041",
+    "group": "single-proposed-action",
+    "assistantText": "The proposed edits are:\n\n1. Set the request timeout to eight seconds.\n\n2. Add a retry for idempotent calls.\n\nWhich change should I make?",
+    "userText": "只看一下当前超时值，暂时不改。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A3-042",
+    "group": "single-proposed-action",
+    "assistantText": "The proposed edits are:\n\n1. Set the request timeout to eight seconds.\n\n2. Add a retry for idempotent calls.\n\nWhich change should I make?",
+    "userText": "可以解释失败重试会影响什么吗？",
+    "decision": false,
+    "expectedSelected": []
+  }
+]

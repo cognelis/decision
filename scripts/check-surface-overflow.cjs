@@ -32,12 +32,15 @@ if (theme !== "light" && theme !== "dark") {
   throw new Error(`Unsupported theme: ${theme}`);
 }
 
-const SURFACES = process.env.DECISION_ASSISTANT_WORKFLOW === "1" ? ["assistant"] : [
+const SURFACES = process.env.PARASELF_LOCAL_REVIEW_WORKFLOW === "1" ? ["local-review"] : process.env.DECISION_ASSISTANT_WORKFLOW === "1" ? ["assistant"] : [
   "dashboard",
   "decisions",
   "assistant",
   "pr-review",
+  "local-review",
+  "todos",
   "methodology",
+  "prompts",
   "clients",
   "connections",
   "models",
@@ -144,7 +147,8 @@ const measure = async () => {
     window = new BrowserWindow({
       width: size.width,
       height: size.height,
-      show: true,
+      // Off screen, it renders all the same: shown, it made Electron the app in front (IMP-133).
+      show: false,
       frame: false,
       // Kept at this size on a smaller display (GitHub's macOS runner is 1024x768), which clamps a window otherwise.
       enableLargerThanScreen: true,
@@ -218,11 +222,101 @@ const measure = async () => {
           if (composer.bottom > innerHeight + 1 || composer.height < 30) throw new Error("Composer clipped");
           true;
         `);
-        if (process.env.DECISION_ASSISTANT_SCREENSHOT) {
-          require("node:fs").writeFileSync(process.env.DECISION_ASSISTANT_SCREENSHOT, (await window.webContents.capturePage()).toPNG());
+        if (process.env.PARASELF_ASSISTANT_SCREENSHOT) {
+          require("node:fs").writeFileSync(process.env.PARASELF_ASSISTANT_SCREENSHOT, (await window.webContents.capturePage()).toPNG());
         }
       }
+      const localScenarios = {};
+      if (surface === "local-review" && process.env.PARASELF_LOCAL_REVIEW_WORKFLOW === "1") {
+        const waitLocal = expression => window.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+          const deadline = Date.now() + 15000;
+          const check = () => { if (${expression}) resolve(); else if (Date.now() > deadline) reject(new Error('Local review state did not appear: ' + ${JSON.stringify(expression)})); else setTimeout(check, 25); }; check();
+        })`);
+        const captureLocal = async name => {
+          localScenarios[name] = await window.webContents.executeJavaScript(PROBE);
+          if (process.env.PARASELF_LOCAL_REVIEW_SCREENSHOT_DIR) {
+            const fs = require("node:fs"); fs.mkdirSync(process.env.PARASELF_LOCAL_REVIEW_SCREENSHOT_DIR, { recursive: true });
+            fs.writeFileSync(join(process.env.PARASELF_LOCAL_REVIEW_SCREENSHOT_DIR, `${name}-${theme}-${size.key}.png`), (await window.webContents.capturePage()).toPNG());
+          }
+        };
+        await waitLocal("document.querySelector('.local-review-code-line') && document.querySelector('.local-review-tabs [role=tab]')");
+        await waitLocal("document.querySelector('[role=separator][aria-label=\"调整文件栏宽度\"]')");
+        await window.webContents.executeJavaScript(`(() => {
+          const handle = document.querySelector('[role=separator][aria-label="调整文件栏宽度"]');
+          for (const label of ['收起文件树', '收起意见栏']) {
+            const button = document.querySelector('[aria-label="' + label + '"]');
+            if (button && (button.textContent.trim() || !button.querySelector('svg'))) throw new Error('Panel toggle is not icon-only');
+          }
+          handle.dispatchEvent(new KeyboardEvent('keydown', {key:'End', bubbles:true}));
+        })()`);
+        await waitLocal("Number(document.querySelector('[aria-label=\"调整文件栏宽度\"]').getAttribute('aria-valuenow')) === Number(document.querySelector('[aria-label=\"调整文件栏宽度\"]').getAttribute('aria-valuemax'))");
+        const assertColumnWidths = () => window.webContents.executeJavaScript(`(() => {
+          const files = document.querySelector('.local-review-directory').getBoundingClientRect(), code = document.querySelector('.local-review-workspace > .pr-diff-content').getBoundingClientRect();
+          if (files.width < 179 || files.width > 561 || code.width < 419) throw new Error('File/code width bounds violated: ' + files.width + '/' + code.width);
+        })()`);
+        await assertColumnWidths();
+        if (size.width >= 1160 && await window.webContents.executeJavaScript(`!!document.querySelector('[aria-label="展开意见栏"]')`)) {
+          await window.webContents.executeJavaScript(`document.querySelector('[aria-label="展开意见栏"]').click()`);
+          await waitLocal("document.querySelector('.local-review-workspace').getAttribute('data-notes-collapsed') === 'false'");
+          await assertColumnWidths();
+          await window.webContents.executeJavaScript(`document.querySelector('[aria-label="收起意见栏"]').click()`);
+          await waitLocal("document.querySelector('.local-review-workspace').getAttribute('data-notes-collapsed') === 'true'");
+        }
+        await window.webContents.executeJavaScript(`document.querySelector('[aria-label="调整文件栏宽度"]').dispatchEvent(new MouseEvent('dblclick', {bubbles:true}))`);
+        await waitLocal("Number(document.querySelector('[aria-label=\"调整文件栏宽度\"]').getAttribute('aria-valuenow')) === Math.min(300, Number(document.querySelector('[aria-label=\"调整文件栏宽度\"]').getAttribute('aria-valuemax')))");
+        await window.webContents.executeJavaScript(`document.querySelector('[aria-label="收起文件树"]').click()`);
+        await waitLocal("!document.querySelector('[role=separator][aria-label=\"调整文件栏宽度\"]')");
+        await window.webContents.executeJavaScript(`document.querySelector('[aria-label="展开文件树"]').click()`);
+        await waitLocal("document.querySelector('[role=separator][aria-label=\"调整文件栏宽度\"]')");
+        await window.webContents.executeJavaScript(`document.querySelector('.local-review-code-line').click()`);
+        await waitLocal("document.querySelector('.local-review-inline-editor textarea')");
+        await window.webContents.executeJavaScript(`(() => {
+          const area = document.querySelector('.local-review-inline-editor textarea');
+          const box = document.querySelector('.local-review-code').getBoundingClientRect();
+          if (box.height < 240) throw new Error('Local review code area is too short');
+          if (document.querySelector('.local-review-panel').scrollHeight > document.querySelector('.local-review-panel').clientHeight + 1) throw new Error('Local review page scrolls instead of its panes');
+          if (innerWidth <= 1350 && document.querySelector('[aria-label="展开意见栏"]')?.getAttribute('aria-expanded') !== 'false') throw new Error('Minimum window opinions rail should start folded');
+          if (document.activeElement !== area) throw new Error('Inline editor was not focused');
+        })()`);
+        await captureLocal("file-inline");
+        await window.webContents.executeJavaScript(`document.querySelector('.local-review-inline-editor button[type=button]').click(); [...document.querySelectorAll('.local-review-panel .pr-diff-modes button')].find(button => button.textContent === '变更').click()`);
+        await waitLocal("document.querySelector('.local-review-diff.diff-split .diff-widget')");
+        await window.webContents.executeJavaScript(`(() => {
+          const widget = document.querySelector('.local-review-diff [data-note-side="new"]');
+          if (!widget) throw new Error('Saved annotation is missing from diff widget');
+          const table = widget.closest('table').getBoundingClientRect(), card = widget.getBoundingClientRect();
+          if (card.left < table.left + table.width / 2 - 2 || card.right > table.right + 2) throw new Error('Split widget crosses into the other side');
+        })()`);
+        await captureLocal("diff-split");
+        await window.webContents.executeJavaScript(`document.querySelector('#local-review-tasks-tab').click()`);
+        await waitLocal("!document.querySelector('#local-review-background').hidden && document.querySelector('.local-review-task-detail')");
+        await captureLocal("background-tasks");
+        await window.webContents.executeJavaScript(`[...document.querySelectorAll('.local-review-panel button')].find(button => button.textContent === '审阅风险改动').click()`);
+        await waitLocal("document.querySelector('[role=dialog]')");
+        await window.webContents.executeJavaScript(`(() => {
+          const dialog = document.querySelector('[role=dialog]');
+          if (!dialog.textContent.includes('固定提交：') || !dialog.textContent.includes('仍然推送')) throw new Error('Risk authorization content missing');
+          const box = dialog.getBoundingClientRect();
+          if (box.x < -1 || box.right > innerWidth + 1 || box.y < -1 || box.bottom > innerHeight + 1) throw new Error('Risk dialog outside viewport');
+        })()`);
+        await captureLocal("risk-dialog");
+        if (process.env.PARASELF_LOCAL_REVIEW_SCREENSHOT) require("node:fs").writeFileSync(process.env.PARASELF_LOCAL_REVIEW_SCREENSHOT, (await window.webContents.capturePage()).toPNG());
+        await window.webContents.executeJavaScript(`document.querySelector('[aria-label="关闭高风险改动"]').click()`);
+        await waitLocal("!document.querySelector('[role=dialog]')");
+        await window.webContents.executeJavaScript(`[...document.querySelectorAll('.local-review-panel button')].find(button=>button.textContent==='工程设置').click()`);
+        await waitLocal("document.querySelector('[aria-label=依赖安装]')");
+        await captureLocal("dependency-settings-auto");
+        await window.webContents.executeJavaScript(`(()=>{const field=document.querySelector('[aria-label=依赖安装]');field.value='custom';field.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+        await waitLocal("document.querySelector('.local-review-settings textarea')");
+        await captureLocal("dependency-settings-custom");
+        await window.webContents.executeJavaScript(`document.querySelector('[aria-label="关闭工程设置"]').click()`);
+
+      }
       surfaces[surface] = await window.webContents.executeJavaScript(PROBE);
+      if (Object.keys(localScenarios).length) {
+        const scenarios = Object.values(localScenarios), current = surfaces[surface];
+        surfaces[surface] = { ...current, scenarios: localScenarios, documentOverflowX: Math.max(current.documentOverflowX, ...scenarios.map(value => value.documentOverflowX)), stageOverflowX: Math.max(current.stageOverflowX, ...scenarios.map(value => value.stageOverflowX)), clipped: scenarios.flatMap(value => value.clipped), cutOff: scenarios.flatMap(value => value.cutOff) };
+      }
     }
     measured[size.key] = surfaces;
   }

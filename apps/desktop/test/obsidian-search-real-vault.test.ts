@@ -9,10 +9,8 @@ import { fileURLToPath } from "node:url";
 import { ObsidianVaultRepository } from "@cognelis/decision-storage";
 import { describe, expect, it } from "vitest";
 
-import {
-  applicationSupportPaths,
-  resolveDecisionUserData,
-} from "../src/main/application-paths.js";
+import { resolveUserData } from "../../../config/user-data-directory.mjs";
+import { applicationSupportPaths } from "../src/main/application-paths.js";
 import {
   createObsidianSearchRuntime,
   obsidianSearchIndexPath,
@@ -23,13 +21,13 @@ import {
 import type { ObsidianSearchStatus } from "../src/shared/obsidian-search.js";
 
 const requiredEnvironmentNames = [
-  "DECISION_REAL_VAULT_PATH",
-  "DECISION_REAL_VAULT_QUERY",
-  "DECISION_REAL_VAULT_EXPECTED_PATH",
+  "PARASELF_REAL_VAULT_PATH",
+  "PARASELF_REAL_VAULT_QUERY",
+  "PARASELF_REAL_VAULT_EXPECTED_PATH",
 ] as const;
-const childFlagName = "DECISION_REAL_VAULT_CHILD";
-const childTemporaryDirectoryName = "DECISION_REAL_VAULT_TEMP_DIR";
-const validationChildFlagName = "DECISION_REAL_VAULT_VALIDATE_CHILD";
+const childFlagName = "PARASELF_REAL_VAULT_CHILD";
+const childTemporaryDirectoryName = "PARASELF_REAL_VAULT_TEMP_DIR";
+const validationChildFlagName = "PARASELF_REAL_VAULT_VALIDATE_CHILD";
 const childDeadlineMs = 8 * 60 * 1_000;
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const testFilePath = fileURLToPath(import.meta.url);
@@ -67,7 +65,8 @@ const assertPrivateCondition: (
   if (!condition) throw new Error(message);
 };
 
-const readOnlyUserDataResolution = () => resolveDecisionUserData(process.env);
+// The reader's own folder, as it is: nothing moved from Decision's, however the run ends.
+const readOnlyUserDataResolution = () => resolveUserData(process.env, { migrate: false });
 
 const readyStatus = (): ObsidianSearchStatus => ({
   state: "ready",
@@ -143,9 +142,9 @@ const runAcceptanceChild = (temporaryDirectory: string): Promise<boolean> =>
 describe("Obsidian real-vault acceptance boundary", () => {
   it("keeps opt-in inputs exact and production dependencies local", async () => {
     expect(requiredEnvironmentNames).toEqual([
-      "DECISION_REAL_VAULT_PATH",
-      "DECISION_REAL_VAULT_QUERY",
-      "DECISION_REAL_VAULT_EXPECTED_PATH",
+      "PARASELF_REAL_VAULT_PATH",
+      "PARASELF_REAL_VAULT_QUERY",
+      "PARASELF_REAL_VAULT_EXPECTED_PATH",
     ]);
     expect(requiredEnvironmentNames).not.toContain(childFlagName);
     expect(requiredEnvironmentNames).not.toContain(
@@ -231,6 +230,7 @@ describe("Obsidian real-vault acceptance boundary", () => {
       status: () => status,
       search: async ({ query }) => ({ query, results: [], status }),
       rebuild: async () => status,
+      readIndexedNote: async () => null,
       openNote: async () => undefined,
       close: async () => undefined,
     };

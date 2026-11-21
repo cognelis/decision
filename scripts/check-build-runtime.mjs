@@ -7,7 +7,7 @@ export const assertSupportedBuildRuntime = (version) => {
   const match = /^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/u.exec(version);
   if (match === null) {
     throw new Error(
-      `Unable to determine whether Node.js ${version} can package Decision. ` +
+      `Unable to determine whether Node.js ${version} can package Paraself. ` +
         `Use Node.js ${SUPPORTED_RUNTIME} (Node.js 22 LTS is recommended).`,
     );
   }

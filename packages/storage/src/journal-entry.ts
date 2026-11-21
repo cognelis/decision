@@ -15,7 +15,7 @@ import {
   readFile,
   rename,
 } from "node:fs/promises";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 
 import { assertVaultPresent, collectMarkdown, inFormOf, normalizedNote, noteText, withProperties } from "./markdown.js";
@@ -64,6 +64,7 @@ const MARKERS = {
 } as const;
 
 export interface JournalEntryDiagnostic {
+  recordId?: string;
   path: string;
   message: string;
 }
@@ -80,6 +81,8 @@ export interface JournalEntryQuery {
 export interface JournalEntryScan {
   entries: JournalEntry[];
   diagnostics: JournalEntryDiagnostic[];
+  /** Each listed entry's note, by id, relative to the vault with "/" separators. */
+  relativePaths?: Map<string, string>;
 }
 
 export interface JournalEntryWriteResult {
@@ -657,6 +660,38 @@ const duplicateId = (id: string): string =>
 /** Gone from the vault since the page listed it (deleted, moved away, or edited past reading). */
 export const journalEntryGone = "这条记录在 Obsidian 里已经找不到了（可能已被删除、移走或改坏），列表已重新读取。";
 
+/** Apply the same keyword ranking and bounds after a reader projects current record content. */
+export const selectJournalEntries = (entries: JournalEntry[], query: JournalEntryQuery = {}): JournalEntry[] => {
+  // Words as the decisions in the same search box are looked for, in one width and case (search-text.ts).
+  const tokens = searchTokens(query.query ?? "");
+  const limit = query.everything === true
+    ? Number.POSITIVE_INFINITY
+    : Math.max(1, Math.min(200, Math.trunc(query.limit ?? 200)));
+  return entries
+    .filter((entry) => query.kind === undefined || entry.kind === query.kind)
+    .filter(
+      (entry) =>
+        query.knowledgeStatus === undefined ||
+        entry.knowledgeStatus === query.knowledgeStatus,
+    )
+    .filter((entry) => {
+      // Nothing asked for, nothing to look through: every consultation lists them all.
+      if (tokens.length === 0) return true;
+      const haystack = foldedText(searchableText(entry));
+      return tokens.every((token) => haystack.includes(token));
+    })
+    // Searched, an entry whose title holds the words comes before newer ones that only mention them (a project
+    // named after them): ranked by recency alone, ⌘K's five and the assistant's five held none of it.
+    .map((entry) => ({ entry, rank: relevance(entry, tokens) }))
+    .sort((left, right) =>
+      right.rank - left.rank ||
+      right.entry.updatedAt.localeCompare(left.entry.updatedAt) ||
+      right.entry.id.localeCompare(left.entry.id),
+    )
+    .map(({ entry }) => entry)
+    .slice(0, limit);
+};
+
 export class JournalEntryRepository {
   readonly #vaultPath: string;
   readonly #folder: string;
@@ -679,39 +714,12 @@ export class JournalEntryRepository {
     const listed = new Set<string>();
     const unique = stored.entries.filter((item) => {
       if (!listed.has(item.entry.id)) return listed.add(item.entry.id);
-      diagnostics.push({ path: item.path, message: duplicateId(item.entry.id) });
+      diagnostics.push({ path: item.path, message: duplicateId(item.entry.id), recordId: item.entry.id });
       return false;
     });
-    // Words as the decisions in the same search box are looked for, in one width and case (search-text.ts).
-    const tokens = searchTokens(query.query ?? "");
-    const limit = query.everything === true
-      ? Number.POSITIVE_INFINITY
-      : Math.max(1, Math.min(200, Math.trunc(query.limit ?? 200)));
-    const entries = unique
-      .map((item) => item.entry)
-      .filter((entry) => query.kind === undefined || entry.kind === query.kind)
-      .filter(
-        (entry) =>
-          query.knowledgeStatus === undefined ||
-          entry.knowledgeStatus === query.knowledgeStatus,
-      )
-      .filter((entry) => {
-        // Nothing asked for, nothing to look through: every consultation lists them all.
-        if (tokens.length === 0) return true;
-        const haystack = foldedText(searchableText(entry));
-        return tokens.every((token) => haystack.includes(token));
-      })
-      // Searched, an entry whose title holds the words comes before newer ones that only mention them (a project
-      // named after them): ranked by recency alone, ⌘K's five and the assistant's five held none of it.
-      .map((entry) => ({ entry, rank: relevance(entry, tokens) }))
-      .sort((left, right) =>
-        right.rank - left.rank ||
-        right.entry.updatedAt.localeCompare(left.entry.updatedAt) ||
-        right.entry.id.localeCompare(left.entry.id),
-      )
-      .map(({ entry }) => entry)
-      .slice(0, limit);
-    return { entries, diagnostics };
+    const relativePaths = new Map(unique.map((item) => [item.entry.id, relative(this.#vaultPath, item.path).split(sep).join("/")]));
+    const entries = selectJournalEntries(unique.map(item => item.entry), query);
+    return { entries, diagnostics, relativePaths };
   }
 
   /**

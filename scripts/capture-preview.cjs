@@ -3,11 +3,13 @@
 //   npm run preview:capture -- <preview> <out.png> [action] [theme]
 //
 //   preview : dashboard | first-run | decisions | assistant | methodology |
-//             clients | models | activity | settings | candidate | rationale |
+//             clients | models | activity | settings | candidate | candidate-long | rationale |
+//             rationale-saving |
 //             panel
 //   action  : none (default) | help | quick-jump | journal | decision-detail | decision-review-date |
 //             decision-detail-bottom |
 //             pending-dialog | pending-dialog-bottom | scroll-bottom | tile-focus | assistant-hover | model-hover | assistant-library | assistant-sources | assistant-question
+//             | eval (runs the script in CAPTURE_EVAL: the way to reach a dialog or state no named action opens)
 //   theme   : light (default) | dark
 //
 // The page is served by the same Vite renderer config the layout checks use,
@@ -18,7 +20,7 @@ const { join, resolve } = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const repositoryRoot = resolve(__dirname, "..");
-const [preview = "dashboard", out, action = "none", theme = "light", size = "1160x760"] =
+const [preview = "dashboard", out, action = "none", theme = "light", size = "1160x760", accent = ""] =
   process.argv.slice(2);
 const [width, height] = size.split("x").map(Number);
 if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1) {
@@ -42,19 +44,28 @@ const ACTIONS = {
     document.querySelector('.desktop-navigation [aria-label="问答"]').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
   `,
   switches: "",
+  // 接入: the catalog's tools not found on this machine, unfolded.
+  "client-others": `
+    document.querySelector(".client-others").open = true;
+    await new Promise(resolve => setTimeout(resolve, 100));
+    document.querySelector(".client-others").scrollIntoView();
+  `,
   "record-idea": `
+    const field = (name) => document.querySelector('[aria-label="' + name + '"]') ??
+      document.getElementById([...document.querySelectorAll("label")].find((label) => label.textContent.trim() === name)?.htmlFor ?? "");
+    const submitDialog = () => document.querySelector('.modal-dialog-footer button[type="submit"]').click();
     [...document.querySelectorAll("button")].find(item => item.textContent.trim() === "主动记录").click();
     await new Promise(resolve => setTimeout(resolve, 100));
     [...document.querySelectorAll(".active-record-kinds button")].find(item => item.textContent.trim() === "想法").click();
     await new Promise(resolve => setTimeout(resolve, 60));
-    const title = document.querySelector('[aria-label="标题"]');
+    const title = field("标题");
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(title, "新想法保存后应该直接可见");
     title.dispatchEvent(new Event("input", { bubbles: true }));
-    const content = document.querySelector('[aria-label="想法内容"]');
+    const content = field("想法内容");
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(content, "先记录，再补充适用条件。");
     content.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise(resolve => setTimeout(resolve, 80));
-    document.querySelector('.active-record-form button[type="submit"]').click();
+    submitDialog();
     await new Promise(resolve => setTimeout(resolve, 350));
     const saved = document.querySelector('.journal-entry-card[aria-current="true"]');
     if (!saved || !saved.textContent.includes("新想法保存后应该直接可见")) throw new Error("Saved journal entry was not highlighted");
@@ -67,7 +78,8 @@ const ACTIONS = {
     card.querySelector("button").click();
     await new Promise(resolve => setTimeout(resolve, 100));
     const fillJournal = async (name, value) => {
-      const input = document.querySelector('[aria-label="' + name + '"]');
+      const input = document.querySelector('[aria-label="' + name + '"]') ??
+        document.getElementById([...document.querySelectorAll("label")].find((label) => label.textContent.trim() === name)?.htmlFor ?? "");
       const prototype = input.tagName === "SELECT" ? HTMLSelectElement.prototype : HTMLTextAreaElement.prototype;
       Object.getOwnPropertyDescriptor(prototype, "value").set.call(input, value);
       input.dispatchEvent(new Event(input.tagName === "SELECT" ? "change" : "input", { bubbles: true }));
@@ -79,10 +91,20 @@ const ACTIONS = {
     await fillJournal("变更原因", "补齐价值与验证方法，进入有效想法。");
   `,
   "schedule-record": `
+    const field = (name) => document.querySelector('[aria-label="' + name + '"]') ??
+      document.getElementById([...document.querySelectorAll("label")].find((label) => label.textContent.trim() === name)?.htmlFor ?? "");
+    const submitDialog = () => document.querySelector('.modal-dialog-footer button[type="submit"]').click();
+    // A review date two weeks out, worked out when it runs: a date written in here had passed by the time it was used,
+    // the detail said 已到复盘时间 instead of the date, and the actions after this one failed.
+    const reviewDay = new Date();
+    reviewDay.setHours(12, 0, 0, 0);
+    reviewDay.setDate(reviewDay.getDate() + 14);
+    const reviewValue = reviewDay.getFullYear() + "-" + String(reviewDay.getMonth() + 1).padStart(2, "0") + "-" + String(reviewDay.getDate()).padStart(2, "0");
+    const reviewLabel = (reviewDay.getMonth() + 1) + "月" + reviewDay.getDate() + "日";
     [...document.querySelectorAll("button")].find(item => item.textContent.trim() === "主动记录").click();
     await new Promise(resolve => setTimeout(resolve, 100));
     const fill = (name, value) => {
-      const input = document.querySelector('[aria-label="' + name + '"]');
+      const input = field(name);
       const prototype = input.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
       Object.getOwnPropertyDescriptor(prototype, "value").set.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -90,7 +112,7 @@ const ACTIONS = {
     fill("标题", "安排一次上线后复盘");
     fill("最终选择", "先灰度一周，再决定是否扩大范围。");
     fill("预期结果", "一周内故障率不增加，再逐步扩大范围。");
-    fill("复盘日期", "2026-10-01");
+    fill("复盘日期", reviewValue);
     await new Promise(resolve => setTimeout(resolve, 100));
   `,
   "schedule-edit": `
@@ -232,21 +254,8 @@ const ACTIONS = {
     await new Promise(resolve => setTimeout(resolve, 150));
     document.querySelector(".review-finding-verdict")?.scrollIntoView({ block: "center" });
   `,
-  // Seeds two reviews of one PR on other commits before the review page mounts, then opens the newer.
+  // Opens the newer of two reviews of one PR on other commits (seeded in SEEDS, before the page reads its history).
   "pr-previous": `
-    const files = [{ path: "src/request.ts", status: "modified" }, { path: "src/retry.ts", status: "modified" }];
-    const snapshot = (commit, retry) => ({ snapshotId: "00000000-0000-4000-8000-0000000000e1", reference: "sample/app#123", title: "示例：调整请求超时", description: "为请求添加超时保护。", project: "sample/app",
-      sourceCommit: commit.repeat(40), destinationCommit: "b".repeat(40), files, warnings: [], fileDigests: { "src/request.ts": "1".repeat(16), "src/retry.ts": retry.repeat(16) } });
-    const finding = (priority, title, path, line) => ({ priority, title, body: title + "。", path, side: "new", line, decisionIndexes: [] });
-    const report = (findings) => ({ status: "completed", summary: "预览：重新评审。", findings, evidence: [], readFiles: ["src/request.ts", "src/retry.ts"], unreadFiles: [], reviewedFiles: ["src/request.ts", "src/retry.ts"], unreviewedFiles: [], warnings: [], steps: 2, history: [] });
-    const base = { kind: "review", model: "本机", focus: "", draft: "", turns: [], events: [], state: "finished", error: "", verdicts: [], connectionId: "00000000-0000-4000-8000-000000000011" };
-    localStorage.setItem("decision.pr-review.history.v1", JSON.stringify([
-      { ...base, id: "00000000-0000-4000-8000-0000000000e3", at: "2026-09-30T10:00:00.000Z", snapshot: snapshot("a", "3"), published: [],
-        report: report([finding("P2", "超时后请求仍在运行", "src/request.ts", 14), finding("P3", "日志里缺少请求 ID", "src/request.ts", 20)]),
-        rechecks: [{ run: "00000000-0000-4000-8000-0000000000e2", finding: 1, verdict: "drop", reason: "第 30 行已加上最多 5 次的上限，并在每次重试前等待。", replacement: null, at: "2026-09-30T10:05:00.000Z", model: "本机" }] },
-      { ...base, id: "00000000-0000-4000-8000-0000000000e2", at: "2026-09-29T10:00:00.000Z", snapshot: snapshot("c", "2"), rechecks: [], published: [{ finding: 1, at: "2026-09-29T11:00:00.000Z" }],
-        report: report([finding("P2", "超时后请求仍在运行", "src/request.ts", 12), finding("P2", "重试没有上限", "src/retry.ts", 30), finding("P3", "重试间隔没有抖动", "src/retry.ts", 34)]) },
-    ]));
     document.querySelector('.desktop-navigation [aria-label="评审"]').click();
     const wait = async (find) => { const deadline = Date.now() + 10000; while (Date.now() < deadline) { const found = find(); if (found) return found; await new Promise(resolve => setTimeout(resolve, 30)); } throw new Error("Previous review capture: element missing"); };
     (await wait(() => [...document.querySelectorAll(".review-list-tabs button")].find(button => button.textContent.includes("历史评审")))).click();
@@ -367,7 +376,7 @@ const ACTIONS = {
       }
     }, 200);`,
   "scroll-bottom": `for (const element of document.querySelectorAll(
-      ".decision-workspace, .modal-dialog-body, .modal-dialog, .desktop-page-scroll"
+      ".decision-workspace, .rationale-columns, .modal-dialog-body, .modal-dialog, .desktop-page-scroll"
     )) {
       element.scrollTop = 1e6;
     }`,
@@ -382,7 +391,7 @@ const ACTIONS = {
 
 /** Actions that drive a multi-step flow need longer than the default settle. */
 ACTIONS["pr-diff-split"] = ACTIONS["pr-diff"] + `
-  [...document.querySelectorAll('button')].find(button => button.textContent === 'Side-by-Side').click();
+  [...document.querySelectorAll('button')].find(button => button.textContent === '并排').click();
 `;
 ACTIONS["pr-diff-file"] = ACTIONS["pr-diff"] + `
   [...document.querySelectorAll('button')].find(button => button.textContent === '文件内容').click();
@@ -397,7 +406,7 @@ ACTIONS["pr-prepare-bottom"] = ACTIONS["pr-prepare"] + `
     await new Promise(resolve => setTimeout(resolve, 100));
 `;
 ACTIONS["pr-merge-confirm"] = ACTIONS["pr-review"] + `
-  [...document.querySelectorAll('.pr-platform-actions button')].find(button => button.textContent === 'Merge').click();
+  [...document.querySelectorAll('.pr-platform-actions button')].find(button => button.textContent === '合并').click();
   await new Promise(resolve => setTimeout(resolve, 150));
   if (!document.querySelector('.pr-action-branches')) throw new Error('Merge confirmation missing');
 `;
@@ -412,14 +421,14 @@ ACTIONS["pr-review-history"] = ACTIONS["pr-review"] + `
 ACTIONS["pr-dismiss"] = ACTIONS["pr-review"] + `
   [...document.querySelectorAll('button')].find(button => button.textContent === '不采纳').click();
   await new Promise(resolve => setTimeout(resolve, 150));
-  const reason = document.querySelector('textarea[aria-label="不采纳的原因"]');
+  const reason = document.querySelector('#review-dismiss-reason');
   if (!reason) throw new Error('Dismiss dialog missing');
   Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(reason, '有意为之：超时由上层统一取消。');
   reason.dispatchEvent(new Event('input', { bubbles: true }));
   await new Promise(resolve => setTimeout(resolve, 100));
 `;
 ACTIONS["pr-dismissed"] = ACTIONS["pr-dismiss"] + `
-  document.querySelector('form[aria-label="不采纳这条问题"] button[type="submit"]').click();
+  document.querySelector('button[form="review-dismiss-form"]').click();
   await new Promise(resolve => setTimeout(resolve, 150));
   const note = document.querySelector('[aria-label="不采纳"]');
   if (!note) throw new Error('Dismissal note missing');
@@ -447,7 +456,7 @@ ACTIONS["pr-declined-again"] = ACTIONS["pr-prepare-dismissed"] + `
 ACTIONS["pr-prepare-published"] = ACTIONS["pr-review"] + `
   [...document.querySelectorAll('button')].find(button => button.textContent === '转为评论').click();
   await new Promise(resolve => setTimeout(resolve, 400));
-  [...document.querySelectorAll('form[aria-label="发布评论表单"] button')].find(button => button.textContent === '发布评论').click();
+  document.querySelector('button[form="pr-comment-form"]').click();
   await new Promise(resolve => setTimeout(resolve, 300));
   [...document.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === '重新评审最新提交').click();
   await new Promise(resolve => setTimeout(resolve, 150));
@@ -463,13 +472,13 @@ ACTIONS["pr-suggest"] = ACTIONS["pr-review"] + `
 `;
 ACTIONS["finish-review"] = ACTIONS["continue-review"] + `
   const question = document.querySelector(".dashboard-rationale-question h3").textContent;
-  document.querySelector('.dashboard-review-dialog-form button[type="submit"]').click();
+  document.querySelector('.modal-dialog-footer button[type="submit"]').click();
   await new Promise(resolve => setTimeout(resolve, 350));
   if (document.querySelector(".dashboard-review-dialog-form")) throw new Error("Review form did not close after save");
   if (document.querySelector(".dashboard-review-list")?.textContent.includes(question)) throw new Error("Reviewed decision remains pending");
 `;
 ACTIONS["save-scheduled-record"] = ACTIONS["schedule-record"] + `
-  document.querySelector('.active-record-form button[type="submit"]').click();
+  submitDialog();
   await new Promise(resolve => setTimeout(resolve, 350));
   const row = [...document.querySelectorAll(".decision-library-row")].find(item => item.textContent.includes("安排一次上线后复盘"));
   if (!row) throw new Error("Saved decision missing");
@@ -477,7 +486,7 @@ ACTIONS["save-scheduled-record"] = ACTIONS["schedule-record"] + `
   await new Promise(resolve => setTimeout(resolve, 100));
   if (!document.querySelector(".decision-library-detail").textContent.includes("一周内故障率不增加，再逐步扩大范围。")) throw new Error("Expected outcome missing from details");
   const schedule = [...document.querySelectorAll(".decision-outcome-heading")].find(item => item.textContent.includes("复盘计划"))?.closest("section");
-  if (!schedule || !schedule.textContent.includes("10月1日")) throw new Error("Review date not saved");
+  if (!schedule || !schedule.textContent.includes(reviewLabel)) throw new Error("Review date not saved");
   schedule.scrollIntoView({ block: "center" });
 `;
 ACTIONS["restore-record-draft"] = ACTIONS["schedule-record"] + `
@@ -485,23 +494,47 @@ ACTIONS["restore-record-draft"] = ACTIONS["schedule-record"] + `
   await new Promise(resolve => setTimeout(resolve, 100));
   [...document.querySelectorAll("button")].find(item => item.textContent.trim() === "主动记录").click();
   await new Promise(resolve => setTimeout(resolve, 100));
-  if (document.querySelector('[aria-label="标题"]').value !== "安排一次上线后复盘" || document.querySelector('[aria-label="复盘日期"]').value !== "2026-10-01") throw new Error("Draft was not restored");
-  if (!document.querySelector('.active-record-form [role="status"]').textContent.includes("已恢复上次草稿")) throw new Error("Restoration notice missing");
+  if (field("标题").value !== "安排一次上线后复盘" || field("复盘日期").value !== reviewValue) throw new Error("Draft was not restored");
+  if (!document.querySelector('.modal-dialog-footer [role="status"]').textContent.includes("已恢复上次草稿")) throw new Error("Restoration notice missing");
 `;
 const ACTION_SETTLE_MS = {};
+
+/**
+ * Stored state an action needs before the page first reads it (a review history): written, then the page is loaded
+ * again. Written by the action itself, it was read only where the page mounts later (the dashboard preview, on its
+ * navigation); the pr-review preview had read its history already and missed the records.
+ */
+const SEEDS = {
+  "pr-previous": `
+    const files = [{ path: "src/request.ts", status: "modified" }, { path: "src/retry.ts", status: "modified" }];
+    const snapshot = (commit, retry) => ({ snapshotId: "00000000-0000-4000-8000-0000000000e1", reference: "sample/app#123", title: "示例：调整请求超时", description: "为请求添加超时保护。", project: "sample/app",
+      sourceCommit: commit.repeat(40), destinationCommit: "b".repeat(40), files, warnings: [], fileDigests: { "src/request.ts": "1".repeat(16), "src/retry.ts": retry.repeat(16) } });
+    const finding = (priority, title, path, line) => ({ priority, title, body: title + "。", path, side: "new", line, decisionIndexes: [] });
+    const report = (findings) => ({ status: "completed", summary: "预览：重新评审。", findings, evidence: [], readFiles: ["src/request.ts", "src/retry.ts"], unreadFiles: [], reviewedFiles: ["src/request.ts", "src/retry.ts"], unreviewedFiles: [], warnings: [], steps: 2, history: [] });
+    const base = { kind: "review", model: "本机", focus: "", draft: "", turns: [], events: [], state: "finished", error: "", verdicts: [], connectionId: "00000000-0000-4000-8000-000000000011" };
+    localStorage.setItem("decision.pr-review.history.v1", JSON.stringify([
+      { ...base, id: "00000000-0000-4000-8000-0000000000e3", at: "2026-09-30T10:00:00.000Z", snapshot: snapshot("a", "3"), published: [],
+        report: report([finding("P2", "超时后请求仍在运行", "src/request.ts", 14), finding("P3", "日志里缺少请求 ID", "src/request.ts", 20)]),
+        rechecks: [{ run: "00000000-0000-4000-8000-0000000000e2", finding: 1, verdict: "drop", reason: "第 30 行已加上最多 5 次的上限，并在每次重试前等待。", replacement: null, at: "2026-09-30T10:05:00.000Z", model: "本机" }] },
+      { ...base, id: "00000000-0000-4000-8000-0000000000e2", at: "2026-09-29T10:00:00.000Z", snapshot: snapshot("c", "2"), rechecks: [], published: [{ finding: 1, at: "2026-09-29T11:00:00.000Z" }],
+        report: report([finding("P2", "超时后请求仍在运行", "src/request.ts", 12), finding("P2", "重试没有上限", "src/retry.ts", 30), finding("P3", "重试间隔没有抖动", "src/retry.ts", 34)]) },
+    ]));
+  `,
+};
 for (const name of ["restore-record-draft", "clarify-journal"]) {
+  // The form's end in view: its save is in the dialog's footer, which never scrolls away.
   ACTIONS[`${name}-bottom`] = ACTIONS[name] + `
-    const submit = document.querySelector('.modal-dialog-body button[type="submit"]');
-    submit.scrollIntoView({ block: "end" });
-    await new Promise(resolve => requestAnimationFrame(resolve));
     const body = document.querySelector(".modal-dialog-body");
-    const bounds = body.getBoundingClientRect();
+    body.scrollTop = body.scrollHeight;
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    const submit = document.querySelector('.modal-dialog-footer button[type="submit"]');
+    const dialog = submit.closest(".modal-dialog").getBoundingClientRect();
     const button = submit.getBoundingClientRect();
-    if (button.bottom > bounds.bottom + 1 || button.top < bounds.top || body.scrollWidth > body.clientWidth + 1) throw new Error("Form action is clipped at minimum size");
+    if (button.bottom > dialog.bottom + 1 || button.top < dialog.top || body.scrollWidth > body.clientWidth + 1) throw new Error("Form action is clipped at minimum size");
   `;
 }
 ACTIONS["save-clarified-journal"] = ACTIONS["clarify-journal"] + `
-  document.querySelector('.journal-revision-form button[type="submit"]').click();
+  document.querySelector('.modal-dialog-footer button[type="submit"]').click();
   await new Promise(resolve => setTimeout(resolve, 300));
   const savedCard = document.getElementById("journal-entry-idea-event-driven-cache");
   if (!savedCard?.textContent.includes("想法 · 有效") || !savedCard.textContent.includes("先用测试服务验证事件丢失")) throw new Error("Clarification was not saved");
@@ -516,7 +549,7 @@ ACTIONS["restore-journal"] = ACTIONS["save-clarified-journal"] + `
   await new Promise(resolve => setTimeout(resolve, 80));
   await fillJournal("记录状态", "active");
   await fillJournal("变更原因", "继续试验，恢复记录。");
-  document.querySelector('.journal-revision-form button[type="submit"]').click();
+  document.querySelector('.modal-dialog-footer button[type="submit"]').click();
   await new Promise(resolve => setTimeout(resolve, 250));
   const restoredCard = document.getElementById("journal-entry-idea-event-driven-cache");
   if (!restoredCard.textContent.includes("想法 · 有效") || !restoredCard.textContent.includes("v4")) throw new Error("Restore did not preserve revisions");
@@ -530,11 +563,12 @@ ACTIONS["journal-history"] = ACTIONS["restore-journal"] + `
   previous.scrollIntoView({ block: "center" });
 `;
 ACTIONS["show-expected-outcome"] = ACTIONS["save-scheduled-record"] + `
-  const expected = [...document.querySelectorAll(".decision-detail-context")].find(item => item.textContent.includes("预期结果"));
+  const expected = [...document.querySelectorAll(".decision-detail-expected")].find(item => item.textContent.includes("一周内故障率不增加"));
   if (!expected) throw new Error("Expected outcome not rendered");
   expected.scrollIntoView({ block: "center" });
 `;
 
+ACTIONS.eval = process.env.CAPTURE_EVAL ?? "";
 if (!(action in ACTIONS)) {
   console.error(`Unsupported action: ${action}`);
   app.exit(2);
@@ -549,6 +583,8 @@ const finish = async (code) => {
   app.exit(code);
 };
 
+// Out of the Dock, as the checks are (IMP-133).
+app.dock?.hide();
 app
   .whenReady()
   .then(async () => {
@@ -569,16 +605,17 @@ app
     window = new BrowserWindow({
       width,
       height,
-      show: action === "switches",
+      show: false,
       frame: false,
       transparent: true,
       backgroundColor: "#00000000",
-      webPreferences: { partition: `preview-${process.pid}`, offscreen: action !== "switches" },
+      // Off screen for the switches too: the keys go to the page itself, and nothing is put in front of the reader.
+      webPreferences: { partition: `preview-${process.pid}`, offscreen: true },
     });
     await window.loadURL(
-      `http://127.0.0.1:${address.port}/?preview=${encodeURIComponent(preview)}&theme=${encodeURIComponent(theme)}`,
+      `http://127.0.0.1:${address.port}/?preview=${encodeURIComponent(preview)}&theme=${encodeURIComponent(theme)}${accent ? `&accent=${encodeURIComponent(accent)}` : ""}${process.env.CAPTURE_QUERY ? `&${process.env.CAPTURE_QUERY}` : ""}`,
     );
-    await window.webContents.executeJavaScript(`new Promise((resolve) => {
+    const waitForStage = () => window.webContents.executeJavaScript(`new Promise((resolve) => {
       const deadline = Date.now() + 15000;
       const check = () => {
         const stage = document.querySelector(".desktop-stage");
@@ -590,6 +627,14 @@ app
       };
       check();
     })`);
+    await waitForStage();
+    if (SEEDS[action] !== undefined) {
+      await window.webContents.executeJavaScript(SEEDS[action]);
+      const loaded = new Promise((resolve) => window.webContents.once("did-finish-load", resolve));
+      window.webContents.reload();
+      await loaded;
+      await waitForStage();
+    }
     await new Promise((resolveDelay) => setTimeout(resolveDelay, 900));
     if (ACTIONS[action] !== "") {
       const settleMs = ACTION_SETTLE_MS[action] ?? 400;
@@ -637,7 +682,10 @@ app
       `);
     }
     if (action === "switches") {
-      window.focus();
+      // The page told it has focus, as a headless browser is: window.focus(), even off screen, made Electron the
+      // app in front, taking the keyboard from the reader's (IMP-133).
+      window.webContents.debugger.attach("1.3");
+      await window.webContents.debugger.sendCommand("Emulation.setFocusEmulationEnabled", { enabled: true });
       const initial = await window.webContents.executeJavaScript(`(() => {
         const controls = [...document.querySelectorAll('input[role="switch"]')];
         controls[0]?.scrollIntoView({ block: "center" });

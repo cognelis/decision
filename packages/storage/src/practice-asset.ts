@@ -544,7 +544,7 @@ export const publishedPracticeAsset = (
   return `---\n${notePropertiesYaml(properties, { lineWidth: 0 }).trimEnd()}\n---\n${vault === null ? own.body : unescapedPracticeBody(vault.body, vault.properties.title)}`;
 };
 
-/** Whose a published skill says it is: the asset, the client and the version Decision wrote it as; null for another's. */
+/** Whose a published skill says it is: the asset, the client and the version Paraself wrote it as; null for another's. */
 export const publishedPracticeIdentity = (content: string): { id: string; target: unknown; version: unknown } | null => {
   try {
     const decision = asObject(asObject(parseFrontmatter(normalizedNote(content)).properties.metadata).decision);

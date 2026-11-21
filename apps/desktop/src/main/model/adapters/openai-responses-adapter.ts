@@ -260,6 +260,15 @@ export const decodeStructuredOpenAIResponses = (
   const stopReason =
     parsed.data.incomplete_details?.reason ??
     (parsed.data.status === "incomplete" ? "incomplete" : null);
+  // Stopped at the provider's content filter (incomplete_details.reason "content_filter"): the content refused, whatever
+  // came before it, not output to be read or a budget to raise.
+  if (stopReason === "content_filter") {
+    throw new ModelProviderError(
+      "content_refused",
+      "Model provider stopped the response at its content filter · incomplete_reason=content_filter",
+      { providerRequestId: responseRequestId, usage },
+    );
+  }
   if (visibleOutput.trim().length === 0) {
     throw invalidOutput(
       `Model provider returned no visible structured output${stopReason === null ? "" : ` · incomplete_reason=${stopReason}`}`,
@@ -378,6 +387,8 @@ export class OpenAIResponsesAdapter {
     const userPrompt = buildSemanticUserPrompt(input);
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
+      provider: this.#profile.kind,
+      model: this.#profile.model,
       url: providerEndpoint(this.#profile.baseUrl!, "/responses"),
       headers: {
         authorization: `Bearer ${apiKey}`,
@@ -452,6 +463,8 @@ export class OpenAIResponsesAdapter {
 
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
+      provider: this.#profile.kind,
+      model: this.#profile.model,
       url: providerEndpoint(this.#profile.baseUrl!, "/responses"),
       headers: {
         authorization: `Bearer ${apiKey}`,

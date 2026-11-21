@@ -1,0 +1,314 @@
+[
+  {
+    "id": "R7RV2-001",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Use Segment as the name of a text segment in this parser example.",
+    "expected": "no_schedule",
+    "attack": "use + Segment 命中供应商名，但句子是在讲文本分段。"
+  },
+  {
+    "id": "R7RV2-002",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Adopt Render as the renderer verb in the grammar lesson.",
+    "expected": "no_schedule",
+    "attack": "adopt + Render 是普通词性/语法说明。"
+  },
+  {
+    "id": "R7RV2-003",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Switch to Resend when the editor should send the message again.",
+    "expected": "no_schedule",
+    "attack": "switch to + Resend 描述编辑器命令，不是选邮件供应商。"
+  },
+  {
+    "id": "R7RV2-004",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Use Segment to divide the paragraph into three segments.",
+    "expected": "no_schedule",
+    "attack": "Segment 是普通名词，语境是段落切分。"
+  },
+  {
+    "id": "R7RV2-005",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "We adopt Render for the final render pass before exporting the diagram.",
+    "expected": "no_schedule",
+    "attack": "Render 指渲染动作，不是托管供应商。"
+  },
+  {
+    "id": "R7RV2-006",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Switch to Resend in the command vocabulary after the draft is sent.",
+    "expected": "no_schedule",
+    "attack": "Resend 是“重新发送”命令词。"
+  },
+  {
+    "id": "R7RV2-007",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Use Segment as the label for each segment in this sample dataset.",
+    "expected": "no_schedule",
+    "attack": "Segment 是样本数据标签。"
+  },
+  {
+    "id": "R7RV2-008",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "The style guide says to adopt render as the English verb here.",
+    "expected": "no_schedule",
+    "attack": "render 为普通动词，未作厂商选择。"
+  },
+  {
+    "id": "R7RV2-009",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Switch to Segment B after the first segment has been parsed.",
+    "expected": "no_schedule",
+    "attack": "Segment B 指文本段落，不是 Segment 产品。"
+  },
+  {
+    "id": "R7RV2-010",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "In this grammar exercise, adopt Resend as an example of a compound verb.",
+    "expected": "no_schedule",
+    "attack": "Resend 是普通构词例子。"
+  },
+  {
+    "id": "R7RV2-011",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Adopt Segment for product analytics across the web app.",
+    "expected": "schedule",
+    "attack": "真实选择 Segment 作为产品分析供应商。"
+  },
+  {
+    "id": "R7RV2-012",
+    "group": "vendor-taken",
+    "kind": "decision",
+    "text": "Switch to Resend for transactional email delivery.",
+    "expected": "schedule",
+    "attack": "真实切换邮件服务供应商。"
+  },
+  {
+    "id": "R7RV2-013",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "All users are enabled for the beta by default; this is the current access state.",
+    "expected": "no_schedule",
+    "attack": "已生效状态陈述，不是在安排开放。"
+  },
+  {
+    "id": "R7RV2-014",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "The exported configuration contains `enable this for all users` as a sample value.",
+    "expected": "no_schedule",
+    "attack": "配置样例字符串，不是发布决策。"
+  },
+  {
+    "id": "R7RV2-015",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "Research records are opened to all users in the read-only archive.",
+    "expected": "no_schedule",
+    "attack": "资料库权限描述，不涉及产品发布。"
+  },
+  {
+    "id": "R7RV2-016",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "Books are added to the store in batches as inventory arrives.",
+    "expected": "no_schedule",
+    "attack": "实体商品上架库存描述。"
+  },
+  {
+    "id": "R7RV2-017",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "The media pipeline pushes image chunks in batches to the CDN.",
+    "expected": "no_schedule",
+    "attack": "数据传输操作，不是产品分批发布。"
+  },
+  {
+    "id": "R7RV2-018",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "The public download page is a mockup used in the design review.",
+    "expected": "no_schedule",
+    "attack": "下载页面原型，没有排期动作。"
+  },
+  {
+    "id": "R7RV2-019",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "The report says the feature is already available to every user.",
+    "expected": "no_schedule",
+    "attack": "报告中的既有状态。"
+  },
+  {
+    "id": "R7RV2-020",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "The build label reads “OPEN TO USERS” in the screenshot.",
+    "expected": "no_schedule",
+    "attack": "界面状态标签。"
+  },
+  {
+    "id": "R7RV2-021",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "Our test fixture has an `enable for all customers` string literal.",
+    "expected": "no_schedule",
+    "attack": "测试夹具字符串，不是执行发布。"
+  },
+  {
+    "id": "R7RV2-022",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "The tutorial asks readers to submit a package to the store as an exercise.",
+    "expected": "no_schedule",
+    "attack": "教程练习内容，不是团队发布计划。"
+  },
+  {
+    "id": "R7RV2-023",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "Should we enable the feature for all users next Monday?",
+    "expected": "schedule",
+    "attack": "真实询问全量开放时间。"
+  },
+  {
+    "id": "R7RV2-024",
+    "group": "new-release-phrases",
+    "kind": "decision",
+    "text": "新版本要分批开放给用户，还是一次全量开放？",
+    "expected": "schedule",
+    "attack": "真实比较分批与全量发布方案。"
+  },
+  {
+    "id": "R7RV2-025",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "Already deployed, but the current status value is “enable this for all users”.",
+    "expected": "no_schedule",
+    "attack": "DONE 后 but 引出的是状态字符串。"
+  },
+  {
+    "id": "R7RV2-026",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "Already migrated, but the CLI currently prints “should we add Kafka?” as a diagnostic sample.",
+    "expected": "no_schedule",
+    "attack": "转折后的选择问句只是诊断样例。"
+  },
+  {
+    "id": "R7RV2-027",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "已经完成打包，但是这条静态记录写着“下周开放给用户”。",
+    "expected": "no_schedule",
+    "attack": "转折后引用静态记录中的开放文字。"
+  },
+  {
+    "id": "R7RV2-028",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "Already released, but the support ticket title is “Switch to Resend”.",
+    "expected": "no_schedule",
+    "attack": "转折后是工单标题，不是服务选择。"
+  },
+  {
+    "id": "R7RV2-029",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "已经部署完成，不过监控标签显示 ENABLE FOR ALL USERS。",
+    "expected": "no_schedule",
+    "attack": "转折后是监控状态标签。"
+  },
+  {
+    "id": "R7RV2-030",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "Already finished the rollout, but the survey asks “Should we adopt Segment?”",
+    "expected": "no_schedule",
+    "attack": "调查问卷中的问题不代表团队决定。"
+  },
+  {
+    "id": "R7RV2-031",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "已经完成迁移，但日志模板里保留着“分批开放给用户”的占位文案。",
+    "expected": "no_schedule",
+    "attack": "日志模板文案触发发布词，不是新排期。"
+  },
+  {
+    "id": "R7RV2-032",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "Already shipped, but the application state currently says “open in waves”.",
+    "expected": "no_schedule",
+    "attack": "转折后描述应用状态字符串。"
+  },
+  {
+    "id": "R7RV2-033",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "已经通过商店审核，不过帮助提示写着“现在开放下载”。",
+    "expected": "no_schedule",
+    "attack": "帮助提示内容不是发布动作。"
+  },
+  {
+    "id": "R7RV2-034",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "Already enabled for everyone, but this is only the deployment status report.",
+    "expected": "no_schedule",
+    "attack": "转折后明确是状态报告。"
+  },
+  {
+    "id": "R7RV2-035",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "已经完成 staging 验证，但是现在要不要分批开放给客户？",
+    "expected": "schedule",
+    "attack": "完成前提后提出真实新发布决策。"
+  },
+  {
+    "id": "R7RV2-036",
+    "group": "done-turn-context",
+    "kind": "decision",
+    "text": "Already have Redis, but should we add Kafka for the event stream?",
+    "expected": "schedule",
+    "attack": "已完成/已有状态后提出真实架构决策。"
+  },
+  {
+    "id": "R7RV2-037",
+    "group": "release-store-context",
+    "kind": "decision",
+    "text": "The nightly integration test uploads a dummy package to TestFlight for checksum validation.",
+    "expected": "no_schedule",
+    "attack": "测试上传到 TestFlight 做校验，不代表真实发布排期。"
+  },
+  {
+    "id": "R7RV2-038",
+    "group": "release-store-context",
+    "kind": "decision",
+    "text": "CI pushes a fixture build to the app store sandbox only to validate authentication.",
+    "expected": "no_schedule",
+    "attack": "CI 将夹具推入商店沙盒，属于验证流程。"
+  },
+  {
+    "id": "R7RV2-039",
+    "group": "release-store-context",
+    "kind": "decision",
+    "text": "The preview banner string reads “enable this for all users”.",
+    "expected": "no_schedule",
+    "attack": "预览横幅中的文案包含 enable…for all users。"
+  }
+]

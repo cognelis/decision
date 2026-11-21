@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import type { PrCommentCandidates } from "@cognelis/decision-protocol";
 
 import {
   pendingRationaleTotal,
   pendingWorkTotal,
+  type AmendmentRecordView,
   type AppSnapshot,
   type DecisionApi,
   type DecisionLibraryItem,
   type DesktopPrimarySurface,
 } from "../../shared/renderer-api.js";
+import { OrganizationPanel } from "./pages/organization/OrganizationPanel.js";
+import { ModalDialog } from "./ModalDialog.js";
 import { DashboardGettingStarted } from "./DashboardGettingStarted.js";
 import {
   DashboardPendingRationales,
@@ -16,6 +20,8 @@ import {
 } from "./DashboardPendingRationales.js";
 import { DashboardReviewInbox, type ReviewInboxDraft } from "./DashboardReviewInbox.js";
 import { RecentDecisionList } from "./RecentDecisionList.js";
+import { decisionWordsNow } from "./pages/decisions/amendment-view.js";
+import { DecisionDeletionDialog } from "./pages/decisions/DecisionDeletionDialog.js";
 
 interface DecisionCenterProps {
   api: DecisionApi;
@@ -42,6 +48,8 @@ interface DecisionCenterProps {
   onKeepLocalRationale(id: string, completion: PendingRationaleCompletion): Promise<void>;
   /** Kept by the app: the home page's dialogs, as they were when a capture took the window over. */
   drafts?: HomeDrafts;
+  /** Opens a PR's discussion, showing the comments its link read as decisions. */
+  onOpenPrDiscussion?(target: { connectionId: string; reference: string; title: string }): void;
 }
 
 export interface HomeDrafts {
@@ -66,7 +74,19 @@ export const DecisionCenter = ({
   onDiscardRationale,
   onKeepLocalRationale,
   drafts,
+  onOpenPrDiscussion,
 }: DecisionCenterProps) => {
+  // What the links following their PRs read as decisions, by PR: read again with each snapshot pushed, so one recorded
+  // or turned down leaves and one found on the last look arrives.
+  const [organizing, setOrganizing] = useState(false);
+  const [organizingDirty, setOrganizingDirty] = useState(false);
+  const [rawQueues, setRawQueues] = useState(false);
+  const [prCandidates, setPrCandidates] = useState<PrCommentCandidates["prs"]>([]);
+  useEffect(() => {
+    let disposed = false;
+    api.listPrCommentCandidates().then((result) => { if (!disposed) setPrCandidates(result.prs); }, () => undefined);
+    return () => { disposed = true; };
+  }, [api, snapshot]);
   const [reviewInbox, setReviewInbox] = useState<DecisionLibraryItem[]>([]);
   const [unscheduled, setUnscheduled] = useState<DecisionLibraryItem[]>([]);
   const [reviewInboxLoading, setReviewInboxLoading] = useState(true);
@@ -74,7 +94,17 @@ export const DecisionCenter = ({
   // Saving from the card changes what belongs in it, and the list is loaded
   // here rather than carried by the pushed snapshot.
   const [reviewRevision, setReviewRevision] = useState(0);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const firstReviewRead = useRef(true);
+  // What agents or the reader rewrote of a decision's question and choice: the recent list reads as it stands now.
+  const [amendments, setAmendments] = useState<Map<string, AmendmentRecordView>>(new Map());
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => api.listDecisionAmendments())
+      .then((overview) => { if (active) setAmendments(new Map(overview.records.filter((record) => record.source === "decisions").map((record) => [record.recordId, record]))); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [api, snapshot.dashboard]);
 
   useEffect(() => {
     let active = true;
@@ -127,7 +157,8 @@ export const DecisionCenter = ({
     dashboard.unavailable !== true &&
     dashboard.totalDecisions === 0 &&
     snapshot.decisionCandidates.count === 0 &&
-    snapshot.pendingRationales.length === 0;
+    snapshot.pendingRationales.length === 0 &&
+    prCandidates.length === 0;
   const candidate = snapshot.decisionCandidates.current;
   const candidateQuestion = candidate?.event.questions[0]?.question;
   const candidateProject = candidate?.event.project;
@@ -175,14 +206,15 @@ export const DecisionCenter = ({
         <div>
           <span>概览</span>
           <h1>首页</h1>
-          <p>集中处理待确认事项、理由补充与最近决策。</p>
+          <p>记录你的决定与经验，查看自动维护进展。</p>
         </div>
         <div className="desktop-view-meta">
-          <strong>{pendingWorkTotal(snapshot)}</strong>
-          <span>项待办</span>
+          {snapshot.dashboard.organizationAutomatic ? null : <><strong>{pendingWorkTotal(snapshot)}</strong><span>项待处理</span></>}
+          <button type="button" className="secondary-button no-drag" onClick={() => setOrganizing(true)}>整理与记忆{(snapshot.dashboard.organizationPending ?? 0) > 0 ? ` · 需要你判断 ${snapshot.dashboard.organizationPending}` : ""}</button>
         </div>
       </header>
 
+      {organizing ? <ModalDialog title="整理与记忆" size="workspace" unsaved={organizingDirty} onClose={() => setOrganizing(false)}><OrganizationPanel api={api} organizationRevision={snapshot.dashboard.organizationRevision ?? 0} context={{ project: null, projects: [], listId: null, listTitle: null, items: [] }} onClose={() => setOrganizing(false)} onDirtyChange={setOrganizingDirty} /></ModalDialog> : null}
       <div className="dashboard-scroll">
         {firstRun ? null : <section className="dashboard-summary" aria-label="决策概览">
           {summary.map((item) =>
@@ -225,14 +257,15 @@ export const DecisionCenter = ({
             onRecord={onRecord}
           />
         ) : <>
-        <section className="dashboard-work-grid" aria-label="待办">
+        {snapshot.dashboard.organizationAutomatic ? <section className="dashboard-card"><h2>{(snapshot.dashboard.organizationPending ?? 0) === 0 ? "当前没有需要你判断的事项" : `${snapshot.dashboard.organizationPending} 个问题需要你判断`}</h2><p>常规整理自动进行；缺少理由和结果的记录安静保留，不需要逐条处理。</p><button type="button" className="secondary-button" onClick={() => setOrganizing(true)}>查看整理与记忆</button><button type="button" className="text-button" aria-expanded={rawQueues} onClick={() => setRawQueues(!rawQueues)}>查看原始待处理记录</button></section> : null}
+        <section className="dashboard-work-grid" aria-label="待处理" hidden={snapshot.dashboard.organizationAutomatic && !rawQueues}>
           <section
             className="dashboard-card dashboard-candidate-card"
             aria-labelledby="dashboard-candidate-title"
           >
             <header className="dashboard-card-header">
               <div>
-                <span>待办</span>
+                <span>待处理</span>
                 <h2 id="dashboard-candidate-title">待确认</h2>
               </div>
               <strong
@@ -244,7 +277,7 @@ export const DecisionCenter = ({
               </strong>
             </header>
             {candidateQuestion === undefined ? (
-              <p className="dashboard-empty-copy">目前没有需要确认的决策。</p>
+              prCandidates.length ? null : <p className="dashboard-empty-copy">目前没有需要确认的决策。</p>
             ) : (
               <div className="dashboard-candidate-body">
                 <span>下一项</span>
@@ -259,6 +292,20 @@ export const DecisionCenter = ({
                 </button>
               </div>
             )}
+            {prCandidates.length ? (
+              <div className="dashboard-pr-candidates">
+                <span>PR 评论里像是决定的 · {prCandidates.reduce((sum, item) => sum + item.count, 0)} 条</span>
+                <ul>
+                  {prCandidates.slice(0, 5).map((item) => (
+                    <li key={`${item.connectionId}\n${item.reference}`}>
+                      <button type="button" className="text-button" onClick={() => onOpenPrDiscussion?.(item)}>{item.title}</button>
+                      <small>{item.reference} · {item.count} 条</small>
+                    </li>
+                  ))}
+                </ul>
+                {prCandidates.length > 5 ? <small>另有 {prCandidates.length - 5} 个 PR</small> : null}
+              </div>
+            ) : null}
           </section>
 
           <DashboardPendingRationales
@@ -269,6 +316,7 @@ export const DecisionCenter = ({
             onComplete={onCompleteRationale}
             onSkip={onSkipRationale}
             onDiscard={onDiscardRationale}
+            recordApi={api}
             onKeepLocal={onKeepLocalRationale}
             {...(drafts === undefined ? {} : { drafts })}
           />
@@ -280,6 +328,7 @@ export const DecisionCenter = ({
             failed={reviewInboxFailed}
             onRetry={() => setReviewRevision((value) => value + 1)}
             onOpenDecision={onOpenDecision}
+            onDeleteDecision={setDeleting}
             onOpenReviewInbox={onOpenReviewInbox}
             onSaveOutcome={async (id, text, basis) => {
               await api.updateDecisionOutcome(id, text, ...(basis === undefined ? [] as const : [basis] as const));
@@ -299,10 +348,14 @@ export const DecisionCenter = ({
         </section>
 
         <RecentDecisionList
-          decisions={dashboard.recentDecisions}
+          decisions={dashboard.recentDecisions.map((decision) => decisionWordsNow(decision, amendments.get(decision.id)?.state))}
           onOpenDecision={onOpenDecision}
           onOpenRetrospective={onOpenRetrospective}
+          onDeleteDecision={setDeleting}
         />
+        {/* The list itself follows the snapshot the deletion pushes; an index warning arrives the same way. */}
+        {deleting === null ? null : <DecisionDeletionDialog api={api} target={{ id: deleting, storage: "vault" }}
+          onClose={() => setDeleting(null)} onDeleted={() => { setDeleting(null); setReviewRevision((value) => value + 1); }} />}
         </>}
       </div>
     </section>

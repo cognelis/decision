@@ -1,6 +1,6 @@
 import { queryCliModels } from "./cli-model-catalog.js";
 import type { ModelProviderProfile, ModelProxy } from "@cognelis/decision-protocol";
-import { providerProxyEnvironment, proxyEnvironmentNames } from "../provider-network.js";
+import { ModelNetworkPolicy } from "../provider-network.js";
 import {
   localModelClientStatusSchema,
   type LocalModelClientStatus,
@@ -63,6 +63,8 @@ export const localModelClientErrorCode = (
       return "credential_unavailable";
     case "unsupported":
       return "unsupported_client";
+    case "proxy_required":
+      return "invalid_configuration";
     case "diagnostics_failed":
     case "available":
     case undefined:
@@ -178,7 +180,7 @@ export class LocalModelClientDiscovery {
     options: LocalModelClientDiscoveryOptions = {},
   ) {
     this.#runner =
-      options.runner ?? new ManagedChildProcessRunner();
+      options.runner ?? new ManagedChildProcessRunner({ modelNetworkPolicy: "required" });
     this.#environment =
       options.environment ?? process.env;
     this.#now = options.now ?? (() => new Date());
@@ -235,12 +237,20 @@ export class LocalModelClientDiscovery {
     try {
       const environment: NodeJS.ProcessEnv = {
         ...this.#environment,
+        PARASELF_PROVIDER_CHILD: "1",
+        // A Decision-era bridge still hooked into the client until it reconnects reads only the old name.
         DECISION_PROVIDER_CHILD: "1",
       };
-      for (const name of proxyEnvironmentNames) delete environment[name];
-      Object.assign(environment, providerProxyEnvironment(this.#environment, proxy));
+      for (const name of Object.keys(environment)) if (/proxy/iu.test(name)) delete environment[name];
+      try { Object.assign(environment, new ModelNetworkPolicy(this.#environment).cliEnvironment(proxy)); }
+      catch {
+        console.info("model-network", JSON.stringify({ provider: kind, model: "catalog", policy: "required", route: "blocked", result: "blocked", errorCode: "invalid_configuration" }));
+        return localModelClientStatusSchema.parse({ kind, executablePath, authenticated: false, supported: false, availability: "proxy_required", checkedAt });
+      }
       const run = (args: string[]) =>
         this.#runner.run({
+          provider: kind,
+          model: "catalog",
           executable: executablePath,
           args,
           stdin: "",
@@ -326,13 +336,13 @@ export class LocalModelClientDiscovery {
         availability,
         checkedAt,
       });
-    } catch {
+    } catch (error) {
       return localModelClientStatusSchema.parse({
         kind,
         executablePath,
         authenticated: false,
         supported: false,
-        availability: "diagnostics_failed",
+        availability: error instanceof ManagedProcessError && error.code === "unsupported_client" ? "unsupported" : "diagnostics_failed",
         checkedAt,
       });
     }

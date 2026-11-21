@@ -41,7 +41,7 @@ export const verifyReleaseSet = async ({
   const targets = supportedReleaseTargets().map(({ platform, arch }) =>
     releaseTarget({
       repositoryRoot: directory,
-      productName: "Decision",
+      productName: "Paraself",
       version,
       platform,
       arch,
@@ -76,7 +76,7 @@ export const verifyReleaseSet = async ({
     const artifactStat = await stat(artifactPath);
     const sha256 = await fileSha256(artifactPath);
     const documents = createReleaseDocuments({
-      productName: "Decision",
+      productName: "Paraself",
       version,
       platform: target.platform,
       arch: target.arch,

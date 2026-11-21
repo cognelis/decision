@@ -198,7 +198,7 @@ const indexedVault = async (): Promise<ObsidianSearchService> => {
 };
 
 describe("retrieval quality", () => {
-  it.skipIf(process.env.DECISION_BENCHMARK !== "1")("measures initial keyword retrieval", async () => {
+  it.skipIf(process.env.PARASELF_BENCHMARK !== "1")("measures initial keyword retrieval", async () => {
     const start = performance.now();
     const service = await indexedVault();
     const indexReadyMs = performance.now() - start;

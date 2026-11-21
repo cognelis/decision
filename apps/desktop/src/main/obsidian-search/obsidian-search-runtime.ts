@@ -19,6 +19,7 @@ import type {
 import { QwenEmbeddingProvider } from "../semantic/qwen-embedding-provider.js";
 import {
   ObsidianSearchService,
+  type ObsidianIndexedNoteRead,
   type ObsidianSearchServiceOptions,
 } from "./obsidian-search-service.js";
 
@@ -33,6 +34,8 @@ export interface ObsidianSearchRuntime {
     limit?: number;
   }): Promise<ObsidianSearchResponse>;
   rebuild(): Promise<ObsidianSearchStatus>;
+  /** A note the index keeps, read now (ObsidianSearchService.readIndexedNote); null for any other path. */
+  readIndexedNote(relativePath: string): Promise<ObsidianIndexedNoteRead | null>;
   openNote(relativePath: string): Promise<void>;
   close(): Promise<void>;
 }
@@ -91,6 +94,9 @@ const createDisabledRuntime = (): ObsidianSearchRuntime => ({
   status: () => disabledStatus(),
   search: async ({ query }) => ({ query, results: [], status: disabledStatus() }),
   rebuild: async () => disabledStatus(),
+  readIndexedNote: async () => {
+    throw new Error(DISABLED_MESSAGE);
+  },
   openNote: async () => {
     throw new Error(DISABLED_MESSAGE);
   },
@@ -214,18 +220,18 @@ const closePartialResources = async (
     try {
       await watcher.close();
     } catch {
-      // A partially composed optional feature must not affect Decision startup.
+      // A partially composed optional feature must not affect Paraself startup.
     }
   }
   try {
     await embedding?.close?.();
   } catch {
-    // A partially composed optional feature must not affect Decision startup.
+    // A partially composed optional feature must not affect Paraself startup.
   }
   try {
     index?.close();
   } catch {
-    // A partially composed optional feature must not affect Decision startup.
+    // A partially composed optional feature must not affect Paraself startup.
   }
 };
 
@@ -277,6 +283,7 @@ export const createObsidianSearchRuntime = async (
       const fresh = await reopen(true);
       return fresh === null ? disabled.rebuild() : fresh.rebuild();
     },
+    readIndexedNote: (relativePath) => live?.readIndexedNote(relativePath) ?? disabled.readIndexedNote(relativePath),
     openNote: (relativePath) => live?.openNote(relativePath) ?? disabled.openNote(relativePath),
     close: async () => {
       await live?.close();

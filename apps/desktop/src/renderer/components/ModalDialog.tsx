@@ -48,12 +48,23 @@ interface ModalDialogProps {
   actions?: ReactNode;
   children: ReactNode;
   description?: string | undefined;
+  /** False while the dialog's own work is under way (a save, a send): nothing closes it, its close button included. */
   dismissible?: boolean;
+  /**
+   * What ends the dialog (cancel, save; a destructive one in `.modal-dialog-footer-start`), kept in sight under a
+   * body that scrolls. A submit button here sits outside its form and names it with `form`.
+   */
+  footer?: ReactNode;
   /** Keys of the dialog's own, heard from anywhere inside it; one it handles is prevented and goes no further. */
   onKeyDown?: ((event: KeyboardEvent<HTMLElement>) => void) | undefined;
   onClose(): void;
   size?: "compact" | "default" | "wide" | "workspace";
   title: string;
+  /**
+   * Something typed that a stray Escape or click outside would throw away: those are ignored. The close button still
+   * closes, as Cancel does: it is pressed on purpose.
+   */
+  unsaved?: boolean;
 }
 
 const focusableSelector = [
@@ -69,11 +80,14 @@ export const ModalDialog = ({
   children,
   description,
   dismissible = true,
+  footer,
   onKeyDown,
   onClose,
   size = "default",
   title,
+  unsaved = false,
 }: ModalDialogProps) => {
+  const closesByAccident = dismissible && !unsaved;
   const pageHidden = useContext(PageHidden);
   const titleId = useId();
   const descriptionId = useId();
@@ -103,11 +117,14 @@ export const ModalDialog = ({
     const frame = requestAnimationFrame(() => {
       const dialog = dialogRef.current;
       if (dialog === null || dialog.contains(document.activeElement)) return;
-      // Header actions (such as stepping to another record) are not where a
-      // dialog should start: Enter on them would leave what was just opened.
-      [...dialog.querySelectorAll<HTMLElement>(focusableSelector)]
-        .find((element) => element.closest(".modal-dialog-actions") === null)
-        ?.focus();
+      // A dialog opened over this one in the same frame (a confirmation, its Cancel taking focus) keeps it.
+      const backdrops = document.querySelectorAll(".modal-backdrop:not([hidden])");
+      if (!backdrops[backdrops.length - 1]?.contains(dialog)) return;
+      // A form starts on its first field. Anything else starts on the close button: header actions (such as stepping
+      // to another record) would leave what was just opened on Enter, and a body's first button may be one that acts.
+      const focusable = [...dialog.querySelectorAll<HTMLElement>(focusableSelector)];
+      (focusable.find((element) => element.matches("input, select, textarea") && element.closest(".modal-dialog-header") === null) ??
+        focusable.find((element) => element.closest(".modal-dialog-actions") === null))?.focus();
     });
     return () => {
       cancelAnimationFrame(frame);
@@ -169,10 +186,12 @@ export const ModalDialog = ({
   }, [pageHidden]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    // Keys from a dialog opened over this one reach here through React's tree, not the page's: they are that dialog's.
+    if (!event.currentTarget.contains(event.target as Node)) return;
     onKeyDown?.(event);
     if (event.defaultPrevented) return;
     // An Escape that ends an input method's composition belongs to the input method, not to the dialog.
-    if (isClearShortcut(event) && dismissible) {
+    if (isClearShortcut(event) && closesByAccident) {
       event.preventDefault();
       onClose();
       return;
@@ -222,7 +241,7 @@ export const ModalDialog = ({
         if (event.target !== event.currentTarget) return;
         // Not to be closed now, a click outside keeps focus where it was: on the page behind, this dialog's keys
         // would stop working and the app's shortcuts could leave it with its draft.
-        if (dismissible) onClose();
+        if (closesByAccident) onClose();
         else event.preventDefault();
       }}
     >
@@ -237,22 +256,22 @@ export const ModalDialog = ({
         onFocus={(event) => { lastFocused.current = event.target; }}
       >
         <header className="modal-dialog-header">
-          <div>
+          {/* Closing sits where macOS puts a window's: top left, before the title; the dialog's own controls stay right. */}
+          {closeButton}
+          <div className="modal-dialog-heading">
             <h2 id={titleId}>{title}</h2>
             {description === undefined ? null : (
               <p id={descriptionId}>{description}</p>
             )}
           </div>
-          {actions === undefined ? (
-            closeButton
-          ) : (
+          {actions === undefined ? null : (
             <div className="modal-dialog-header-actions">
               <div className="modal-dialog-actions">{actions}</div>
-              {closeButton}
             </div>
           )}
         </header>
         <div className="modal-dialog-body">{children}</div>
+        {footer === undefined ? null : <footer className="modal-dialog-footer">{footer}</footer>}
       </section>
     </div>,
     document.body,

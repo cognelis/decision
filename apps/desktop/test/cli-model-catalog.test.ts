@@ -27,7 +27,7 @@ describe("CLI model catalog", () => {
 
   it("queries Codex after initialization, handles fragmented pages, and omits hidden/account metadata", async () => {
     const run = vi.fn(async (request: ManagedProcessRequest) => {
-      expect(request.args).toEqual(["app-server", "--listen", "stdio://"]);
+      expect(request.args).toEqual(["-c", "features.respect_system_proxy=false", "-c", "features.system_proxy_fallback=false", "-c", "features.plugins=false", "-c", "features.apps=false", "app-server", "--listen", "stdio://"]);
       expect(JSON.parse(request.stdin).method).toBe("initialize");
       const init = '{"id":1,"result":{"account":"private"}}\n';
       expect(request.conversation!(init.slice(0, 10))).toEqual({ input: "", complete: false });
@@ -77,18 +77,13 @@ describe("CLI model catalog", () => {
 });
 
 
-it.runIf(process.env.DECISION_LIVE_CLI_CATALOG === "1")("reads both installed CLI catalogs without a user/model turn, then restores offline candidates", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "decision-live-catalog-")); directories.push(directory);
-  for (const [client, executable] of [["codex", process.env.DECISION_CODEX_EXECUTABLE!], ["claude-code", process.env.DECISION_CLAUDE_EXECUTABLE!]] as const) {
-    const request = { ...base, executable, environment: { ...process.env, DECISION_PROVIDER_CHILD: "1" } };
-    const runner = new ManagedChildProcessRunner();
-    const output = await runner.run({ ...request, args: ["--version"], stdin: "", timeoutMs: 2000 });
-    const version = output.stdout.match(/\b(\d+\.\d+\.\d+)\b/u)?.[1];
-    expect(version).toBeDefined();
-    const live = await queryCliModels(client, request, runner, directory, true, version);
-    expect(live.modelsSource).toBe("server");
-    expect(live.models.length).toBeGreaterThan(0);
-    const fallback = await queryCliModels(client, request, { run: async () => { throw new Error("offline"); } }, directory, false);
-    expect(fallback).toEqual({ modelsSource: "cache", models: live.models });
+it("blocks unmanaged CLI catalog initialization before spawn", async () => {
+  const spawnProcess = vi.fn();
+  const runner = new ManagedChildProcessRunner({ modelNetworkPolicy: "required", spawnProcess });
+  const request = { ...base, executable: process.execPath, environment: {} };
+  await expect(runner.run({ ...request, args: ["--version"], stdin: "", timeoutMs: 2000 })).rejects.toMatchObject({ code: "invalid_configuration" });
+  for (const client of ["codex", "claude-code"] as const) {
+    expect(await queryCliModels(client, request, runner)).toEqual({ models: [] });
   }
-}, 25_000);
+  expect(spawnProcess).not.toHaveBeenCalled();
+});

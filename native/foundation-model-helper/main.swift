@@ -40,6 +40,7 @@ private struct ModelClassification: Codable {
     let answerRelation: String
     let question: String?
     let optionLabels: [String]
+    let selectedOptionIndices: [Int]
     let answerExcerpt: String?
     let confidence: Double
 }
@@ -140,6 +141,12 @@ private func classificationSchema() -> GenerationSchema {
                 type: String?.self
             ),
             GenerationSchema.Property(
+                name: "selectedOptionIndices",
+                description: "Selected fixed indices from selection_options when supplied, otherwise 1-based positions in optionLabels; empty for refusal, quotation, delegation or an undecided choice.",
+                type: [Int].self,
+                guides: [.maximumCount(8)]
+            ),
+            GenerationSchema.Property(
                 name: "confidence",
                 description: "Confidence from 0.0 to 1.0 in the complete classification.",
                 type: Double.self,
@@ -169,6 +176,7 @@ private func decodeClassification(
             [String].self,
             forProperty: "optionLabels"
         ),
+        selectedOptionIndices: try content.value([Int].self, forProperty: "selectedOptionIndices"),
         answerExcerpt: try content.value(
             String?.self,
             forProperty: "answerExcerpt"

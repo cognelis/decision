@@ -14,15 +14,27 @@ import { parse as parseYaml } from "yaml";
  *   tools: [review]
  *   priority: 50                       # larger first
  *   enabled: true
+ *   enforcement: advisory              # Paraself's own: advisory (default) or blocking
  *   ---
  *
  * Matchers are unanchored, case-sensitive regular expressions, as in
  * code-meeseeks. Unlike code-meeseeks an invalid expression skips the rule
  * instead of matching every repository.
  */
+/**
+ * How hard a finding resting only on the rule may be pressed, the rule being the reviewer's own: advisory, a suggestion
+ * (the default); blocking, a P1 on it may block, its comment quoting the rule. A string, to take more levels later; one
+ * this version does not know is read as advisory and said in a warning, so a typo never makes a rule block.
+ */
+export const REVIEW_RULE_ENFORCEMENTS = ["advisory", "blocking"] as const;
+export type ReviewRuleEnforcement = (typeof REVIEW_RULE_ENFORCEMENTS)[number];
+
 export interface ReviewRule {
   id: string;
   priority: number;
+  enforcement: ReviewRuleEnforcement;
+  /** The enforcement as written, when this version does not know it (read as advisory). */
+  unknownEnforcement?: string;
   instructions: string;
   project: RegExp | null;
   repo: RegExp | null;
@@ -72,8 +84,12 @@ export function parseReviewRule(id: string, raw: string): ReviewRule | null {
     throw new Error("applies_to 必须是键值对象");
   }
   const appliesTo = scope as Record<string, unknown>;
+  const written = fields.enforcement === undefined || fields.enforcement === null ? "advisory" : String(fields.enforcement).trim();
+  const enforcement = (REVIEW_RULE_ENFORCEMENTS as readonly string[]).includes(written) ? written as ReviewRuleEnforcement : "advisory";
   return {
     id,
+    enforcement,
+    ...(enforcement === written ? {} : { unknownEnforcement: written.slice(0, 100) }),
     priority:
       typeof fields.priority === "number" && Number.isFinite(fields.priority)
         ? fields.priority
@@ -126,6 +142,7 @@ export async function loadReviewRules(
   for (const id of files) {
     try {
       const rule = parseReviewRule(id, await readFile(join(directory, id), "utf8"));
+      if (rule?.unknownEnforcement !== undefined) warnings.push(`评审规则 ${id} 的 enforcement「${rule.unknownEnforcement}」不认识，按 advisory（只作建议）处理；可用的值：${REVIEW_RULE_ENFORCEMENTS.join("、")}。`);
       if (rule !== null) rules.push(rule);
     } catch (error) {
       warnings.push(`评审规则 ${id} 已跳过：${error instanceof Error ? error.message : String(error)}`);

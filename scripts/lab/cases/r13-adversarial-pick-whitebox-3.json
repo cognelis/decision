@@ -1,0 +1,12 @@
+[
+  {
+    "id": "wb-pick-d-faq-title-word-is-not-an-option-choice",
+    "group": "guard-d-background-fragment",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "维护窗口安排一下,先说明几个常见问题:\n\n**Q: 周末能排吗?**\nA: 不行,周末不可用。\n\n**Q: 为什么周末不行?**\nA: 周末时段不在可维护范围内,暂不开放。\n\n那每周五下午可以吗?\n\n补充注意事项:\n- 维护期间相关服务可能短暂不可用,建议提前通知受影响方\n- 需确认具体时间段(几点到几点)和预计时长\n- 如遇节假日或大促周期,需额外确认是否顺延",
+    "userText": "选每周五下午维护。",
+    "source": "synthetic"
+  }
+]

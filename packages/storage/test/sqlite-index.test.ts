@@ -8,6 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { adoptedSummaryContext, CONTEXT_SUMMARY_LINES } from "@cognelis/decision-protocol";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -179,6 +180,36 @@ describe("SqliteIndex", () => {
     reopened.close();
   });
 
+  it("leaves the lines around an adopted local summary out of what is searched, shows them still, and finds it by what it says", async () => {
+    const { change, views, decided } = CONTEXT_SUMMARY_LINES;
+    const summary = [change, "src/request.ts:12 给请求加了超时。", views, "- 超时写死不好调整", decided, "超时由网关约定的配置传入。"].join("\n");
+    const paths = await makePaths();
+    const repository = new MarkdownRepository(paths.vault);
+    const index = new SqliteIndex(paths.database);
+    for (const record of [
+      recordFixture({ id: "adopted", question: "超时由谁决定？", contextSummary: adoptedSummaryContext(summary, "PR：调整请求超时（sample/app#123）") }),
+      recordFixture({ id: "plain", question: "日志保留多久？", contextSummary: "合规要求留 30 天。" }),
+    ]) index.upsert(await repository.read((await repository.write(record)).path));
+    const searchedFor = (target: SqliteIndex) => {
+      // Written by the App around every adopted summary: kept, each such decision was found by any of these words.
+      for (const word of ["本机模型总结", "上下文", "采用", "观点", "做什么"]) expect({ word, found: found(target, word) }).toEqual({ word, found: [] });
+      expect(found(target, "网关约定")).toEqual(["adopted"]);
+      expect(found(target, "sample/app#123")).toEqual(["adopted"]);
+    };
+    searchedFor(index);
+    // Shown as written: the reader still sees which part the local model wrote.
+    expect(index.queryDecisions({ query: "网关约定" })[0]?.context).toContain(`${CONTEXT_SUMMARY_LINES.mark}\n${change}`);
+    index.close();
+
+    // Search rows made again from the decisions table (an older layout): the lines stay out there too.
+    const old = new DatabaseSync(paths.database);
+    old.exec("DROP TABLE decisions_fts; CREATE VIRTUAL TABLE decisions_fts USING fts5(id UNINDEXED, question, selected_option, rationale, context, expected_outcome, outcome, outcome_lesson, project, tags, tokenize='trigram'); PRAGMA user_version = 0;");
+    old.close();
+    const reopened = new SqliteIndex(paths.database);
+    searchedFor(reopened);
+    reopened.close();
+  });
+
   it("looks for punctuation typed alone as typed, rather than listing every decision", async () => {
     const paths = await makePaths();
     const repository = new MarkdownRepository(paths.vault);
@@ -264,13 +295,13 @@ describe("SqliteIndex", () => {
     const inspect = new DatabaseSync(paths.database, { readOnly: true });
     // As listRecent reads each snapshot's twelve, and the library lists them with no filter: every row read
     // and sorted, on every push, at ten thousand decisions.
-    for (const sql of [
-      "SELECT * FROM decisions ORDER BY created DESC, id DESC LIMIT 12",
-      "SELECT d.id, d.question FROM decisions d ORDER BY d.created DESC, d.id DESC LIMIT 50",
+    for (const [sql, name] of [
+      ["SELECT * FROM decisions ORDER BY COALESCE(confirmed_at, created) DESC, id DESC LIMIT 12", "decisions_recent"],
+      ["SELECT d.id, d.question FROM decisions d ORDER BY d.created DESC, d.id DESC LIMIT 50", "decisions_created"],
     ]) {
       const plan = (inspect.prepare(`EXPLAIN QUERY PLAN ${sql}`).all() as Array<{ detail: string }>)
         .map((row) => row.detail).join("; ");
-      expect(plan).toContain("USING INDEX decisions_created");
+      expect(plan).toContain(`USING INDEX ${name}`);
       expect(plan).not.toContain("TEMP B-TREE");
     }
     inspect.close();
@@ -301,6 +332,27 @@ describe("SqliteIndex", () => {
     const after = new SqliteIndex(paths.database);
     expect(after.needsRebuild).toBe(false);
     after.close();
+  });
+
+  it("upgrades an index without confirmation time and recovers it from the notes", async () => {
+    const paths = await makePaths();
+    const repository = new MarkdownRepository(paths.vault);
+    const oldNote = await repository.read((await repository.write(recordFixture({ id: "confirmed-old", created: "2025-01-01T00:00:00.000Z", confirmedAt: "2026-11-16T10:00:00.000Z" }))).path);
+    const newNote = await repository.read((await repository.write(recordFixture({ id: "newer", created: "2026-01-01T00:00:00.000Z" }))).path);
+    const first = new SqliteIndex(paths.database);
+    first.rebuild([oldNote, newNote]);
+    first.close();
+    const legacy = new DatabaseSync(paths.database);
+    legacy.exec("DROP INDEX decisions_recent; ALTER TABLE decisions DROP COLUMN confirmed_at;");
+    legacy.close();
+    const migrated = new SqliteIndex(paths.database);
+    try {
+      expect(migrated.needsRebuild).toBe(true);
+      expect(migrated.listRecent().map(({ id }) => id)).toEqual(["newer", "confirmed-old"]);
+      migrated.rebuild([oldNote, newNote]);
+      expect(migrated.needsRebuild).toBe(false);
+      expect(migrated.listRecent().map(({ id }) => id)).toEqual(["confirmed-old", "newer"]);
+    } finally { migrated.close(); }
   });
 
   it("lists recent decisions and counts records since a timestamp", async () => {

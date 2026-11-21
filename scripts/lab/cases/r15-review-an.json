@@ -1,0 +1,4152 @@
+[
+  {
+    "id": "an-a-cond-rhetorical-01-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "如果是这样，就选快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-01-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果是这样，就选快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-02-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If that's the case, go with Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-02-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If that's the case, go with Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-03-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "如果没有其他问题，就上快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-03-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果没有其他问题，就上快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-04-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "若无异议，采用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-04-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "若无异议，采用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-05-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "如果按你说的，那就选快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-05-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果按你说的，那就选快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-06-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If I understand correctly, Snapshot export is what we need. Go with it.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-06-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If I understand correctly, Snapshot export is what we need. Go with it.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-07-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If I had to choose, go with Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-07-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If I had to choose, go with Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-08-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "如果可行，就用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-08-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果可行，就用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-09-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If feasible, ship Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-09-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If feasible, ship Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-10-rule",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "如果你没意见，就用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-rhetorical-10-model",
+    "group": "an-a:cond-rhetorical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果你没意见，就用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-01-rule",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Ship Snapshot export even if QA complains.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-01-model",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export even if QA complains.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-02-rule",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Go with Snapshot export even if it costs more.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-02-model",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Go with Snapshot export even if it costs more.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-03-rule",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Use Snapshot export; I don't care if it's slower.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-03-model",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Use Snapshot export; I don't care if it's slower.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-04-rule",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Go with Snapshot export, which we discussed once before.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-04-model",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Go with Snapshot export, which we discussed once before.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-05-rule",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "就算慢一点也用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-concessive-05-model",
+    "group": "an-a:cond-concessive",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "就算慢一点也用快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-met-paraphrase-01-rule",
+    "group": "an-a:cond-met-paraphrase",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If QA signs off, ship Snapshot export. They did this morning.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-met-paraphrase-01-model",
+    "group": "an-a:cond-met-paraphrase",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. They did this morning.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-met-paraphrase-02-rule",
+    "group": "an-a:cond-met-paraphrase",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "如果审计通过，做快照导出。审计昨天过了。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-met-paraphrase-02-model",
+    "group": "an-a:cond-met-paraphrase",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果审计通过，做快照导出。审计昨天过了。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-met-paraphrase-03-rule",
+    "group": "an-a:cond-met-paraphrase",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If QA signs off, ship Snapshot export. QA signed off but hasn't emailed yet.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cond-met-paraphrase-03-model",
+    "group": "an-a:cond-met-paraphrase",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. QA signed off but hasn't emailed yet.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-01-rule",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I can't use Dark theme so go with Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-01-model",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't use Dark theme so go with Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-02-rule",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I cannot approve Dark theme but Snapshot export is approved.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-02-model",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot approve Dark theme but Snapshot export is approved.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-03-rule",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "暗色主题我不能批准但快照导出可以做。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-03-model",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "暗色主题我不能批准但快照导出可以做。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-04-rule",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出不能用旧版本，就用新版做快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-cannot-other-04-model",
+    "group": "an-a:cannot-other",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出不能用旧版本，就用新版做快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-01-rule",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Don't overthink it: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-01-model",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Don't overthink it: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-02-rule",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Never mind the cost: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-02-model",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Never mind the cost: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-03-rule",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "不要犹豫：快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-03-model",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "不要犹豫：快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-04-rule",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Not a hard call: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-idiom-04-model",
+    "group": "an-a:colon-idiom",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Not a hard call: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-state-01-rule",
+    "group": "an-a:colon-state",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Already decided: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-state-01-model",
+    "group": "an-a:colon-state",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Already decided: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-state-02-rule",
+    "group": "an-a:colon-state",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Tests passed: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-state-02-model",
+    "group": "an-a:colon-state",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Tests passed: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-state-03-rule",
+    "group": "an-a:colon-state",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "已经定了：快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-state-03-model",
+    "group": "an-a:colon-state",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "已经定了：快照导出。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-cond-01-rule",
+    "group": "an-a:colon-cond",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If I had to choose: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-colon-cond-01-model",
+    "group": "an-a:colon-cond",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If I had to choose: Snapshot export.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-wild-01-rule",
+    "group": "an-a:withheld-wild",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Go with Snapshot export. No downtime was approved, so do it at night.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-wild-01-model",
+    "group": "an-a:withheld-wild",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Go with Snapshot export. No downtime was approved, so do it at night.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-wild-02-rule",
+    "group": "an-a:withheld-wild",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Ship Snapshot export. No budget has been approved for Dark theme.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-wild-02-model",
+    "group": "an-a:withheld-wild",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export. No budget has been approved for Dark theme.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-wild-03-rule",
+    "group": "an-a:withheld-wild",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Ship Snapshot export. No extra headcount was approved.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-wild-03-model",
+    "group": "an-a:withheld-wild",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export. No extra headcount was approved.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-before-scope-01-rule",
+    "group": "an-a:before-scope",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Use Snapshot export before making a decision on the rest.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-before-scope-01-model",
+    "group": "an-a:before-scope",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Use Snapshot export before making a decision on the rest.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-before-scope-02-rule",
+    "group": "an-a:before-scope",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "先定快照导出，暗色主题做决定前再聊。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-before-scope-02-model",
+    "group": "an-a:before-scope",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "先定快照导出，暗色主题做决定前再聊。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-01-rule",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "The doc says “go with Snapshot export” — yes, do that.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-01-model",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The doc says “go with Snapshot export” — yes, do that.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-02-rule",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "PM 说的「做快照导出」没问题，就这么办。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-02-model",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "PM 说的「做快照导出」没问题，就这么办。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-03-rule",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "As the ticket says, “use Snapshot export”. Agreed, do it.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-03-model",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "As the ticket says, “use Snapshot export”. Agreed, do it.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-04-rule",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "QA wrote “ship Snapshot export” and they're right.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-quote-agree-04-model",
+    "group": "an-a:quote-agree",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "QA wrote “ship Snapshot export” and they're right.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-defer-next-01-rule",
+    "group": "an-a:defer-next",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Next quarter we revisit.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-defer-next-01-model",
+    "group": "an-a:defer-next",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Next quarter we revisit.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-defer-next-02-rule",
+    "group": "an-a:defer-next",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Later.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-defer-next-02-model",
+    "group": "an-a:defer-next",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Later.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-defer-next-03-rule",
+    "group": "an-a:defer-next",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出。暗色主题以后再说。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-defer-next-03-model",
+    "group": "an-a:defer-next",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出。暗色主题以后再说。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-later-period-01-rule",
+    "group": "an-a:later-period",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export, it's on next quarter's roadmap anyway.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-later-period-01-model",
+    "group": "an-a:later-period",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export, it's on next quarter's roadmap anyway.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-later-period-02-rule",
+    "group": "an-a:later-period",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出，明年的预算已经批了。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-later-period-02-model",
+    "group": "an-a:later-period",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出，明年的预算已经批了。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-handback-01-rule",
+    "group": "an-a:handback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "我倾向快照导出，具体由你定。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-handback-01-model",
+    "group": "an-a:handback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "我倾向快照导出，具体由你定。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-handback-02-rule",
+    "group": "an-a:handback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I prefer Snapshot export, the rest is your call.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-handback-02-model",
+    "group": "an-a:handback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export, the rest is your call.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-handback-03-rule",
+    "group": "an-a:handback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "我倾向快照导出；别的先不定，再等等。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-handback-03-model",
+    "group": "an-a:handback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "我倾向快照导出；别的先不定，再等等。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-prefer-01-rule",
+    "group": "an-a:withheld-prefer",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出更合适。不代表别的不做。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-withheld-prefer-01-model",
+    "group": "an-a:withheld-prefer",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出更合适。不代表别的不做。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-rest-prefer-01-rule",
+    "group": "an-a:rest-prefer",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "2",
+      "3"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出不要，其他更合适。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-rest-prefer-01-model",
+    "group": "an-a:rest-prefer",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照压缩",
+      "暗色主题"
+    ],
+    "expectedPositions": [
+      2,
+      3
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出不要，其他更合适。",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-rest-prefer-02-rule",
+    "group": "an-a:rest-prefer",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "2",
+      "3"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Not Snapshot export; the others make more sense.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a-rest-prefer-02-model",
+    "group": "an-a:rest-prefer",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      2,
+      3
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Not Snapshot export; the others make more sense.",
+    "source": "R15-AN A 段 an-probes.mjs（设计审查，近义真选择）"
+  },
+  {
+    "id": "an-a2-dottedlabel-01-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses — it's cheap and safe.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-01-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses — it's cheap and safe.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-02-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses, since it's cheaper.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-02-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses, since it's cheaper.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-03-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Let's go: Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-03-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Let's go: Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-04-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses. Simple.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-04-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses. Simple.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-05-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses is the better one.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-05-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses is the better one.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-06-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I'd say Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）",
+    "note": "main 对普通标签的同句式不选，这里的选中来自带点号标签的切句；期望按用户确实选了记"
+  },
+  {
+    "id": "an-a2-dottedlabel-06-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I'd say Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）",
+    "note": "main 对普通标签的同句式不选，这里的选中来自带点号标签的切句；期望按用户确实选了记"
+  },
+  {
+    "id": "an-a2-dottedlabel-07-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Yes to Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-07-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Yes to Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-08-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses for me.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-08-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses for me.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-09-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses sounds right.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-09-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses sounds right.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-10-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses, go.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-dottedlabel-10-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses, go.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-01-rule",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "我倾向快照导出。另外，暗色主题的事你来定。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-01-model",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "我倾向快照导出。另外，暗色主题的事你来定。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-02-rule",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I prefer Snapshot export. Dark theme is your call.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-02-model",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export. Dark theme is your call.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-03-rule",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出更合适。供应商还没定下来。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-03-model",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出更合适。供应商还没定下来。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-04-rule",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出更合适。我们还没拍板哪天上线。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-04-model",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出更合适。我们还没拍板哪天上线。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-05-rule",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出更合适，命名还要再商量。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-preferencehandedback-05-model",
+    "group": "an-a2:preferencehandedback",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出更合适，命名还要再商量。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-01-rule",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export gets my approval. No vendor has been selected yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-01-model",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export gets my approval. No vendor has been selected yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-02-rule",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export works for me. No owner has been picked yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-02-model",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export works for me. No owner has been picked yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-03-rule",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出可以。供应商还没选定。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-03-model",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出可以。供应商还没选定。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-04-rule",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出批准。负责人还没定下来。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-04-model",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出批准。负责人还没定下来。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-05-rule",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export is approved. I haven't picked an owner.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-withdrawn-05-model",
+    "group": "an-a2:withdrawn",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is approved. I haven't picked an owner.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-01-rule",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出不会做不好的，就它了。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-01-model",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出不会做不好的，就它了。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-02-rule",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I cannot use Snapshot export's old config; use the new one.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-02-model",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot use Snapshot export's old config; use the new one.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-03-rule",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出不能用旧版本，用新版。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-03-model",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出不能用旧版本，用新版。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-04-rule",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I won't do Snapshot export halfway: full implementation.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-04-model",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I won't do Snapshot export halfway: full implementation.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-cannottake-05-rule",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I can't ship Snapshot export today; tomorrow then.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）",
+    "note": "标注偏弱：明天发也是采用"
+  },
+  {
+    "id": "an-a2-cannottake-05-model",
+    "group": "an-a2:cannottake",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't ship Snapshot export today; tomorrow then.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）",
+    "note": "标注偏弱：明天发也是采用"
+  },
+  {
+    "id": "an-a2-beforedeciding-01-rule",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export it is — explain why it's faster before I make a decision.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-beforedeciding-01-model",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export it is — explain why it's faster before I make a decision.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-beforedeciding-02-rule",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出就定了但做决定前解释一下为什么。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-beforedeciding-02-model",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出就定了但做决定前解释一下为什么。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-beforedeciding-03-rule",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出可以，但做决定前解释下为什么快。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-beforedeciding-03-model",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出可以，但做决定前解释下为什么快。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-beforedeciding-04-rule",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export then, but explain why before deciding anything.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-beforedeciding-04-model",
+    "group": "an-a2:beforedeciding",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export then, but explain why before deciding anything.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-01-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export goes into the next release.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-01-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export goes into the next release.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-02-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出进下个版本。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-02-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出进下个版本。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-03-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出是明年的重点，定了。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-03-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出是明年的重点，定了。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-04-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "The headline of the next release is Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-04-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The headline of the next release is Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-01-rule",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Current choice: Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-01-model",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Current choice: Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-02-rule",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Current answer: Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-02-model",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Current answer: Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-03-rule",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "目前的答案：快照导出。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-03-model",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "目前的答案：快照导出。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-04-rule",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "目前看：快照导出。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-04-model",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "目前看：快照导出。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-05-rule",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "当前方案：快照导出。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-05-model",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "当前方案：快照导出。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-06-rule",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Current pick: Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-colonhead-06-model",
+    "group": "an-a2:colonhead",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Current pick: Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-01-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export! Hold that thought.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-01-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export! Hold that thought.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-02-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Later we revisit.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-02-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Later we revisit.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-03-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出，回头再说别的。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-03-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出，回头再说别的。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-04-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export, then later.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-deferrednext-04-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export, then later.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-01-rule",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "If QA signs off, ship Snapshot export. QA signed off; the QA report hasn't been filed yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-01-model",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. QA signed off; the QA report hasn't been filed yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-02-rule",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "如果审计通过，做快照导出。审计通过了，审计报告还没归档。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-02-model",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果审计通过，做快照导出。审计通过了，审计报告还没归档。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-03-rule",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Once legal approves, go with Snapshot export. Legal approved; legal hasn't sent the paperwork yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-03-model",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Once legal approves, go with Snapshot export. Legal approved; legal hasn't sent the paperwork yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-04-rule",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Ship Snapshot export if QA is happy. QA is happy; QA hasn't updated the board yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-condition-04-model",
+    "group": "an-a2:condition",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export if QA is happy. QA is happy; QA hasn't updated the board yet.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-01-rule",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "QA wrote “ship Snapshot export”. That was only background. Now it's my decision too.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-01-model",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "QA wrote “ship Snapshot export”. That was only background. Now it's my decision too.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-02-rule",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "工单里写着「选快照导出」，那只是例子，不过我现在就定它。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-02-model",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "工单里写着「选快照导出」，那只是例子，不过我现在就定它。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-03-rule",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "PM 写的是「做快照导出」，那只是背景，不过我也这么定。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-03-model",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "PM 写的是「做快照导出」，那只是背景，不过我也这么定。",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-04-rule",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "The RFC says “use Snapshot export”. Only background, sure, but I'm going with it.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-quotedonly-04-model",
+    "group": "an-a2:quotedonly",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The RFC says “use Snapshot export”. Only background, sure, but I'm going with it.",
+    "source": "R15-AN A2 段 an-a2-probes.mjs（v3 复审，逐机制 lostCorrect）"
+  },
+  {
+    "id": "an-a2-laterperiod-05-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I prefer Snapshot export for the next release.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-05-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export for the next release.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-06-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export is better for next year.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-06-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is better for next year.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-07-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出明年也更合适。",
+    "source": "R15-AN A2 段 an-a2-rows2.json；期望按 R15 holdout H 段盲判改为空集（时间限定在未来、本轮没有采用）"
+  },
+  {
+    "id": "an-a2-laterperiod-07-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出明年也更合适。",
+    "source": "R15-AN A2 段 an-a2-rows2.json；期望按 R15 holdout H 段盲判改为空集（时间限定在未来、本轮没有采用）"
+  },
+  {
+    "id": "an-a2-laterperiod-08-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "My pick for next quarter is Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-08-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "My pick for next quarter is Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-09-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Next year's choice is Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-09-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Next year's choice is Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-10-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "下个版本做快照导出。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-10-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "下个版本做快照导出。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-11-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出，明年重点。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-11-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出，明年重点。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-12-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export first; Dark theme next quarter.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-laterperiod-12-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export first; Dark theme next quarter.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-05-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. The migration can wait.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-05-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. The migration can wait.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-06-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Everything else later.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-06-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Everything else later.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-07-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Defer that question.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-07-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Defer that question.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-08-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export; hold off on the rest.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-08-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export; hold off on the rest.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-09-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出。其他的先放一放。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-09-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出。其他的先放一放。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-10-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Later today.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-10-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Later today.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-11-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Later!",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-11-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Later!",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-12-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出，先放一放暗色主题的事。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-12-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出，先放一放暗色主题的事。",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-13-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Snapshot export. Postpone it? No, do it.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-deferrednext-13-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Postpone it? No, do it.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-11-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I'd go with Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-11-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I'd go with Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-12-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I'd pick Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-12-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I'd pick Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows2.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-13-rule",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Definitely Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows2.json",
+    "note": "main 对普通标签的同句式不选，这里的选中来自带点号标签的切句；期望按用户确实选了记"
+  },
+  {
+    "id": "an-a2-dottedlabel-13-model",
+    "group": "an-a2:dottedlabel",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Definitely Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows2.json",
+    "note": "main 对普通标签的同句式不选，这里的选中来自带点号标签的切句；期望按用户确实选了记"
+  },
+  {
+    "id": "an-a2-laterperiod-13-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I prefer Snapshot export next quarter.",
+    "source": "R15-AN A2 段 an-a2-rows3.json；期望按 R15 holdout H 段盲判改为空集（时间限定在未来、本轮没有采用）"
+  },
+  {
+    "id": "an-a2-laterperiod-13-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export next quarter.",
+    "source": "R15-AN A2 段 an-a2-rows3.json；期望按 R15 holdout H 段盲判改为空集（时间限定在未来、本轮没有采用）"
+  },
+  {
+    "id": "an-a2-laterperiod-14-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "下半年首选快照导出。",
+    "source": "R15-AN A2 段 an-a2-rows3.json；期望按 R15 holdout H 段盲判改为空集（时间限定在未来、本轮没有采用）"
+  },
+  {
+    "id": "an-a2-laterperiod-14-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "下半年首选快照导出。",
+    "source": "R15-AN A2 段 an-a2-rows3.json；期望按 R15 holdout H 段盲判改为空集（时间限定在未来、本轮没有采用）"
+  },
+  {
+    "id": "an-a2-laterperiod-15-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "首选快照导出，下半年上线。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-laterperiod-15-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "首选快照导出，下半年上线。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-laterperiod-16-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出更合适，明年也用。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-laterperiod-16-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出更合适，明年也用。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-laterperiod-17-rule",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出下个版本就上。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-laterperiod-17-model",
+    "group": "an-a2:laterperiod",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出下个版本就上。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-control-01-rule",
+    "group": "an-a2:dottedlabel-control",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "I'd say Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-control-01-model",
+    "group": "an-a2:dottedlabel-control",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I'd say Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-control-02-rule",
+    "group": "an-a2:dottedlabel-control",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Snapshot export\n2. Snapshot compression\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Definitely Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-control-02-model",
+    "group": "an-a2:dottedlabel-control",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Definitely Snapshot export.",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-control-03-rule",
+    "group": "an-a2:dottedlabel-control",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "1. Cache v1.2 responses\n2. Cache user requests\n3. Dark theme\n\nWhich one should I implement first?",
+    "userText": "Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-dottedlabel-control-03-model",
+    "group": "an-a2:dottedlabel-control",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses.",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-deferrednext-14-rule",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. 快照导出\n2. 快照压缩\n3. 暗色主题\n\n你选哪个？",
+    "userText": "快照导出。推迟。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-a2-deferrednext-14-model",
+    "group": "an-a2:deferrednext",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩、暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出。推迟。",
+    "source": "R15-AN A2 段 an-a2-rows3.json"
+  },
+  {
+    "id": "an-category-fragment-en-model",
+    "group": "an-a2:categorypiece",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Redis"
+    ],
+    "expectedPositions": [
+      2
+    ],
+    "probeLabels": [
+      "Remote cache",
+      "Redis",
+      "PostgreSQL"
+    ],
+    "assistantText": "Work items: Remote cache, Redis, PostgreSQL.\n\nPer your instruction I did not call tools.",
+    "userText": "Use cache Redis.",
+    "source": "R15-CR category-fragment-en 同形；期望按总控 10-27 裁定只含 Redis（holdout 盲判）"
+  }
+]

@@ -1,3 +1,4 @@
+import type { JournalEntry } from "@cognelis/decision-core";
 import {
   DECISION_CONSULTATION_FEEDBACK_VERSION,
   DECISION_CONSULTATION_VERSION,
@@ -9,12 +10,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
+import { buildDecisionConsultation } from "../../desktop/src/main/decision-consultation-service.js";
 import {
   consultDecisionPrinciples,
   createDecisionMcpServer,
   recordDecisionJournalEntry,
   recordDecisionConsultationFeedback,
 } from "../src/mcp-server.js";
+import { MANIFEST_LANGUAGES } from "../src/repository-languages.js";
 
 const matchedResponse = (): DecisionConsultationResponse => ({
   consultationVersion: DECISION_CONSULTATION_VERSION,
@@ -51,6 +54,12 @@ const matchedResponse = (): DecisionConsultationResponse => ({
 
 // What a model sees in Claude Code: only the structuredContent of a result that has one.
 const modelView = (result: { structuredContent?: unknown }): string => JSON.stringify(result.structuredContent);
+
+// The languages a consultation was sent with: the agent's as said, or those worked out from the repository, which go
+// as the ones it has no manifest of.
+type LanguagesSent = { languages?: string[]; absentLanguages?: string[] };
+const languagesSent = (request: LanguagesSent): string[] | undefined =>
+  request.absentLanguages === undefined ? request.languages : MANIFEST_LANGUAGES.filter((language) => !request.absentLanguages!.includes(language));
 
 describe("decision consultation MCP", () => {
   it("advertises and serves the read-only tool over MCP transport", async () => {
@@ -105,7 +114,7 @@ describe("decision consultation MCP", () => {
     });
     expect(initialized).toMatchObject({
       result: {
-        serverInfo: { name: "decision", version: "1.2.0" },
+        serverInfo: { name: "paraself", version: "1.2.0" },
         instructions: expect.stringContaining("returns the user's own preferences and ideas that bear on the question separately labelled"),
       },
     });
@@ -146,16 +155,137 @@ describe("decision consultation MCP", () => {
             name: "search_decision_context",
             annotations: expect.objectContaining({ readOnlyHint: true, destructiveHint: false }),
           }),
+          expect.objectContaining({ name: "update_decision_journal_entry", annotations: expect.objectContaining({ readOnlyHint: false, destructiveHint: false }) }),
           expect.objectContaining({ name: "record_decision_scope", annotations: expect.objectContaining({ readOnlyHint: false }) }),
           expect.objectContaining({ name: "record_decision_relation", annotations: expect.objectContaining({ readOnlyHint: false }) }),
           expect.objectContaining({ name: "record_decision_outcome", annotations: expect.objectContaining({ readOnlyHint: false, destructiveHint: true }) }),
           expect.objectContaining({ name: "prepare_decision_handoff", annotations: expect.objectContaining({ readOnlyHint: true }) }),
           expect.objectContaining({ name: "open_decision_source", annotations: expect.objectContaining({ readOnlyHint: false, destructiveHint: false }) }),
           expect.objectContaining({ name: "record_decision_context_feedback", annotations: expect.objectContaining({ readOnlyHint: false }) }),
-          expect.objectContaining({ name: "get_decision_context_feedback", annotations: expect.objectContaining({ readOnlyHint: true }) }),
+          expect.objectContaining({ name: "list_decision_context_feedback", annotations: expect.objectContaining({ readOnlyHint: true }) }),
+          expect.objectContaining({
+            name: "record_todo_list",
+            // Saved only when asked, one checkable finding per item: said where every client reads it.
+            description: expect.stringMatching(/Only when the user asks for it[\s\S]*standing instruction[\s\S]*independently checkable finding[\s\S]*Never include secrets/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+          }),
+          expect.objectContaining({
+            name: "list_todo_lists",
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          expect.objectContaining({
+            name: "update_todo_item",
+            // Finished or dropped only with what was done and how it was checked, or why; never to tidy the list.
+            description: expect.stringMatching(/done and dropped require a note[\s\S]*how it was verified[\s\S]*never mark items done or dropped just to tidy the list[\s\S]*change it back/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          // 历史决定: a ledger apart from the decision search, written only when asked, withdrawn instead of deleted.
+          expect.objectContaining({ name: "record_historical_decision", description: expect.stringMatching(/not found by search_decision_context[\s\S]*Only when the user asks for it[\s\S]*makes no copy/u), annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "list_historical_decisions", description: expect.stringMatching(/not part of the context to check before coding or reviewing/u), annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "get_historical_decision", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "update_historical_decision", description: expect.stringMatching(/Only when the user asks for it[\s\S]*expectedRevision[\s\S]*expectedStatus[\s\S]*There is no delete: status withdrawn/u), annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "open_historical_decision", description: expect.stringMatching(/^Only when the user asks to open[\s\S]*Only what the record itself names can be opened[\s\S]*Nothing is written/u), annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true } }),
+          expect.objectContaining({ name: "search_obsidian_notes", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "get_obsidian_note", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({
+            name: "record_review_benchmark_cases",
+            // Curated only when asked, a candidate until the user checked it: said where every client reads it.
+            description: expect.stringMatching(/Only when the user asks you to curate[\s\S]*starts as a candidate[\s\S]*no secrets/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          expect.objectContaining({ name: "list_review_benchmark_cases", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({
+            name: "get_review_benchmark_case",
+            description: expect.stringContaining("holdout split comes without its labels"),
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          expect.objectContaining({
+            name: "update_review_benchmark_case",
+            description: expect.stringMatching(/only after the user has said they checked its labels[\s\S]*never on your own judgement/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          // Every case reviewed again: model calls for minutes each, only when the user asks.
+          expect.objectContaining({ name: "run_review_benchmark", description: expect.stringMatching(/spends model calls for every case[\s\S]*only when the user asks/u), annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } }),
+          expect.objectContaining({ name: "list_review_benchmark_runs", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "get_review_benchmark_run", description: expect.stringMatching(/a holdout run's cases stay hidden/u), annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          // Reads the code platform with the user's token: the one tool here open to the world, and still read-only.
+          expect.objectContaining({ name: "list_prs", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } }),
+          expect.objectContaining({ name: "list_pr_reviews", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({
+            name: "get_pr_review",
+            description: expect.stringMatching(/a personal basis[\s\S]*a suggestion only, never a demand on the author[\s\S]*not an approval/u),
+            annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          // Spends model calls, and a second call starts a second review: only when asked.
+          expect.objectContaining({
+            name: "run_pr_review",
+            description: expect.stringMatching(/only when the user asks for a review, never on your own[\s\S]*posts nothing to the PR/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          }),
+          expect.objectContaining({
+            name: "update_pr_review_finding",
+            description: expect.stringMatching(/only when the user says so, never to tidy up[\s\S]*already posted to the PR cannot be dismissed/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          expect.objectContaining({ name: "get_pr_description_draft", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } }),
+          // Overwrites the description: only the exact text the user confirmed, over the version read.
+          expect.objectContaining({
+            name: "update_pr",
+            description: expect.stringMatching(/over the version get_pr_description_draft read[\s\S]*only after the user has seen and confirmed the exact text, never on your own[\s\S]*an AI's approval is no one's/u),
+            annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+          }),
+          // Writes to the team's code platform: the user names what goes out, an approval is never the agent's.
+          expect.objectContaining({
+            name: "record_pr_comments",
+            description: expect.stringMatching(/only when the user has said which findings to post[\s\S]*never on your own[\s\S]*cannot be blocking[\s\S]*never posted again[\s\S]*an AI's approval is no one's/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+          }),
+          expect.objectContaining({ name: "get_pr_review_settings", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          // Spends model calls every day it is on: only when the user asks.
+          expect.objectContaining({
+            name: "update_pr_review_settings",
+            description: expect.stringMatching(/change it only when the user asks, never on your own/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          expect.objectContaining({ name: "list_pr_comments", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } }),
+          // Replies on the team's platform: only once the user said how and why.
+          expect.objectContaining({
+            name: "update_pr_comment",
+            description: expect.stringMatching(/only after the user has said what to do with that comment and why, never on your own[\s\S]*not answered again/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+          }),
+          // Spends model calls and reaches the platform; a PR's push stays the user's, in the App.
+          expect.objectContaining({
+            name: "record_local_review_job",
+            description: expect.stringMatching(/waits until the user confirms the push in the App[\s\S]*only when the user asks for these comments to be fixed, never on your own/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          }),
+          expect.objectContaining({ name: "list_local_review_jobs", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "get_local_review_job", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({
+            name: "update_local_review_job",
+            description: expect.stringMatching(/only when the user says so[\s\S]*Confirming a push or approving a high-risk change is not here/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          }),
+          expect.objectContaining({ name: "get_review_quality", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } }),
+          expect.objectContaining({
+            name: "update_review_rule",
+            description: expect.stringMatching(/Only when the user asks/u),
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          }),
+          expect.objectContaining({ name: "record_review_escape", description: expect.stringMatching(/Only when the user asks/u), annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true } }),
+          expect.objectContaining({ name: "list_review_escapes", annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
+          expect.objectContaining({ name: "update_review_escape", description: expect.stringMatching(/When the user says so[\s\S]*confirmed into the benchmark only after the user checks it/u), annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } }),
+          expect.objectContaining({ name: "list_rule_promotion_candidates", description: expect.stringMatching(/Proposing one is the user's/u), annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }),
         ],
       },
     });
+    expect((initialized.result as { instructions: string }).instructions).toMatch(
+      /Use record_todo_list only when the user asks[\s\S]*standing instruction[\s\S]*one at a time with update_todo_item[\s\S]*never to tidy the list\. Use record_review_benchmark_cases only when the user asks[\s\S]*only after the user says they checked it, quoting their words\. Use run_review_benchmark only when the user asks[\s\S]*leave judging and adopting to the user in the App\. list_prs, list_pr_reviews and get_pr_review read PRs[\s\S]*never a demand on the author\. Use run_pr_review only when the user asks for a review[\s\S]*Use update_pr_review_finding[\s\S]*only when they say so\. record_pr_comments posts findings[\s\S]*update_pr writes it back only after the user confirmed the exact text\. Use update_pr_review_settings to turn automatic pre-review on or off only when the user asks[\s\S]*list_pr_comments reads the comments on the user's own PR; update_pr_comment answers one only after the user said how and why\. record_local_review_job hands comments to the local review only when the user asks for them to be fixed[\s\S]*a PR's fix is pushed only once the user confirms it in the App\. get_review_quality reads what became of the findings posted[\s\S]*update_review_rule turns one of the user's own review rules off or on only when they ask\. list_review_escapes reads the problems review let through[\s\S]*only when the user says so\. list_rule_promotion_candidates reads the user's own rules review keeps needing, to propose for REVIEW\.md once they agree\. Approving and merging are the user's alone\.$/u,
+    );
+    expect((initialized.result as { instructions: string }).instructions).toMatch(
+      /Use record_historical_decision, list_historical_decisions, get_historical_decision, update_historical_decision and open_historical_decision only when the user asks[\s\S]*search_decision_context never returns them/u,
+    );
     // One flat object: shown a union at the top, Claude Code offered its first branch alone, and a
     // preference or an idea could not be recorded at all.
     const journal = ((listed.result as { tools: Array<{ name: string; inputSchema: Record<string, unknown> }> }).tools)
@@ -230,13 +360,15 @@ describe("decision consultation MCP", () => {
     await writeFile(join(repository, "package.json"), JSON.stringify({ devDependencies: { typescript: "^5.0.0" } }));
     await mkdir(join(repository, "cmd"));
     const consult = vi.fn(async () => matchedResponse());
-    const sent = () => (consult.mock.calls.at(-1) as unknown as [{ languages?: string[] }])[0].languages;
+    const sent = () => languagesSent((consult.mock.calls.at(-1) as unknown as [LanguagesSent])[0]);
     const ask = (input: Record<string, unknown>) =>
       consultDecisionPrinciples({ question: "错误要不要包一层？", ...input }, { sourceClient: "codex", runtime: { consult }, cwd: join(repository, "cmd") });
 
-    // Not said: worked out from the repository's root, from a directory inside it.
+    // Not said: worked out from the repository's root, from a directory inside it, and sent as the ones it has no
+    // manifest of, never as the code's languages.
     await ask({});
     expect(sent()).toEqual(["go", "javascript", "typescript"]);
+    expect((consult.mock.calls.at(-1) as unknown as [LanguagesSent])[0]).not.toHaveProperty("languages");
     // Said by the agent: as it said them.
     await ask({ languages: ["rust"] });
     expect(sent()).toEqual(["rust"]);
@@ -252,7 +384,7 @@ describe("decision consultation MCP", () => {
 
   it("gives a manifest's whole family of languages, so a preference kept for one of them is not dropped", async () => {
     const consult = vi.fn(async () => matchedResponse());
-    const sent = () => (consult.mock.calls.at(-1) as unknown as [{ languages?: string[] }])[0].languages;
+    const sent = () => languagesSent((consult.mock.calls.at(-1) as unknown as [LanguagesSent])[0]);
     const repository = async (...manifests: string[]) => {
       const root = await mkdtemp(join(tmpdir(), "decision-languages-family-"));
       await mkdir(join(root, ".git"));
@@ -275,8 +407,8 @@ describe("decision consultation MCP", () => {
     const repository = await mkdtemp(join(tmpdir(), "decision-languages-old-app-"));
     await mkdir(join(repository, ".git"));
     await writeFile(join(repository, "go.mod"), "module example.com/app\n");
-    const consult = vi.fn(async (request: { languages?: string[] }, report?: (failure: { reason: "refused"; message: string | null }) => void) => {
-      if (request.languages === undefined) return matchedResponse();
+    const consult = vi.fn(async (request: LanguagesSent, report?: (failure: { reason: "refused"; message: string | null }) => void) => {
+      if (request.absentLanguages === undefined) return matchedResponse();
       report?.({ reason: "refused", message: null });
       return null;
     });
@@ -284,6 +416,35 @@ describe("decision consultation MCP", () => {
     const result = await consultDecisionPrinciples({ question: "错误要不要包一层？" }, { sourceClient: "codex", runtime: { consult } as never, cwd: repository });
     expect(consult).toHaveBeenCalledTimes(2);
     expect(result.structuredContent).toMatchObject({ availability: "available" });
+  });
+
+  it("leaves out a preference kept for a language the repository has no manifest of, not one kept for a language no manifest names", async () => {
+    const kept = (id: string, languages: string[]) => ({
+      id, kind: "preference", title: "部署脚本命令失败必须立刻退出", knowledgeStatus: "active", sourceKind: "agent_capture",
+      sourceForm: "machine_summary", project: null, occurredAt: null, sensitivity: "private", context: null, rationale: null,
+      content: "部署脚本里任何命令失败都要立刻退出，不要继续执行后面的步骤。", tags: [], languages,
+      appliesWhen: "编写或修改部署脚本时。", exceptions: "交互式一次性命令。", strength: "hard_constraint",
+      evidenceMaturity: "self_declared", createdAt: "2026-10-01T10:00:00.000Z", updatedAt: "2026-10-01T10:00:00.000Z",
+      revision: 1, revisionEvents: [],
+    }) as unknown as JournalEntry;
+    const journal = [kept("preference-shell", ["shell"]), kept("preference-python", ["python"]), kept("preference-swift", ["swift"])];
+    const recalled = async (...manifests: string[]) => {
+      const root = await mkdtemp(join(tmpdir(), "decision-languages-recall-"));
+      await mkdir(join(root, ".git"));
+      for (const manifest of manifests) await writeFile(join(root, manifest), "");
+      const result = await consultDecisionPrinciples(
+        { question: "部署脚本里某条命令失败后，要不要继续执行后面的步骤？" },
+        // The App's own consultation, with the journal as the App reads it.
+        { sourceClient: "codex", cwd: root, runtime: { consult: async (request) => buildDecisionConsultation(request, [], undefined, journal) } },
+      );
+      return (result.structuredContent.consultation?.signals ?? []).map((signal) => signal.recordId).sort();
+    };
+
+    // No manifest names Shell: kept for it, the hard constraint went from every repository with a package.json. Python's
+    // is still left out of one without a manifest of Python.
+    expect(await recalled("package.json")).toEqual(["preference-shell"]);
+    // An iOS app's Xcode project beside its fastlane Gemfile: Swift's, read as Ruby alone, was left out.
+    expect(await recalled("Gemfile", "App.xcodeproj")).toEqual(["preference-shell", "preference-swift"]);
   });
 
   it("records the languages a preference is specific to, and leaves them out of a decision", async () => {
@@ -336,7 +497,7 @@ describe("decision consultation MCP", () => {
       { question: "是否继续？" },
       { sourceClient: "claude-code", runtime: { consult: async (_request, report) => (report?.({ reason: "outdated" }), null) } },
     );
-    expect(outdated.content[0]?.text).toContain("请用户重启或更新 Decision");
+    expect(outdated.content[0]?.text).toContain("请用户重启或更新 Paraself");
   });
 
   it("records only an explicit user rating through the anonymous receipt", async () => {
@@ -546,7 +707,7 @@ describe("decision consultation MCP", () => {
         runtime: { consult: async () => null, record: async (_request, report) => (report?.({ reason: "refused", message: "找不到仓库目录 /vault。" }), null) },
       },
     );
-    expect(refused.content[0]?.text).toContain("没有记录这条：Decision 没有完成这次请求：找不到仓库目录 /vault。");
+    expect(refused.content[0]?.text).toContain("没有记录这条：Paraself 没有完成这次请求：找不到仓库目录 /vault。");
     expect(refused.content[0]?.text).not.toContain("没有运行");
 
     // In Node's own words, which end with no stop: the tool's next sentence ran straight on from them.
@@ -652,5 +813,24 @@ describe("decision consultation MCP", () => {
     // Read as none, a hard constraint the reader had written down went unsaid.
     expect(result.content[0]?.text).toContain("不能据此认为用户在这个问题上没有偏好或约束");
     expect(modelView(result)).toContain("不能据此认为用户在这个问题上没有偏好或约束");
+  });
+
+  it("tells the agent some principles and preferences were not read, rather than that there are none", async () => {
+    const ask = (response: DecisionConsultationResponse) => consultDecisionPrinciples(
+      { question: "现在直接把这个修复部署到生产环境吗？" },
+      { sourceClient: "codex", runtime: { consult: async () => response }, requestIdFactory: () => "consultation-partly-unread" },
+    );
+    // The one adopted principle beside a sync conflict's copy, a preference note iCloud moved off this Mac.
+    const unread = await ask({ ...matchedResponse(), status: "no_match", matches: [], principlesIncomplete: true, signalsIncomplete: true });
+    for (const said of [unread.content[0]?.text ?? "", modelView(unread)]) {
+      expect(said).not.toContain("尚无可读取的已采纳原则");
+      expect(said).toContain("不能据此认为用户没有相关的已采纳原则");
+      expect(said).toContain("不能据此认为用户在这个问题上没有其它偏好或约束");
+    }
+    // Said beside what was found, too: what matched may not be all there is.
+    const matched = await ask({ ...matchedResponse(), principlesIncomplete: true });
+    expect(matched.content[0]?.text).toContain("先验证再扩大");
+    expect(matched.content[0]?.text).toContain("部分原则笔记这次没能读取");
+    expect(modelView(matched)).toContain("部分原则笔记这次没能读取");
   });
 });

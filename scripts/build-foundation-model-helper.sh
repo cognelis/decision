@@ -4,9 +4,9 @@ set -eu
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_file="$repository_root/native/foundation-model-helper/main.swift"
 output_directory="$repository_root/dist/semantic"
-output_file="$output_directory/decision-foundation-model-helper"
+output_file="$output_directory/paraself-foundation-model-helper"
 manifest_file="$repository_root/apps/desktop/assets/models/qwen3.5-2b-q4-k-m.json"
-module_cache="${TMPDIR:-/private/tmp}/decision-swift-module-cache"
+module_cache="${TMPDIR:-/private/tmp}/paraself-swift-module-cache"
 
 mkdir -p "$output_directory" "$module_cache"
 

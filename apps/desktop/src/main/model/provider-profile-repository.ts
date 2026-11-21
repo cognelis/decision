@@ -133,7 +133,7 @@ export class ProviderProfileRepository {
     } catch (error) {
       if (!isMissing(error)) {
         throw new Error(
-          `读不出模型服务配置文件 ${this.#path}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Decision。`,
+          `读不出模型服务配置文件 ${this.#path}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Paraself。`,
         );
       }
       const profiles = defaultProfiles();
@@ -149,7 +149,7 @@ export class ProviderProfileRepository {
         await rename(this.#path, aside);
       } catch {
         // Not set aside, the next save would write over it.
-        throw new Error(`模型服务配置文件 ${this.#path} 读不出来，也没能把它移到一边，请把它移走后重新打开 Decision。`);
+        throw new Error(`模型服务配置文件 ${this.#path} 读不出来，也没能把它移到一边，请把它移走后重新打开 Paraself。`);
       }
       this.setAside = aside;
       const profiles = defaultProfiles();
@@ -177,7 +177,7 @@ export class ProviderProfileRepository {
     } catch (error) {
       if (isMissing(error)) return {};
       throw new Error(
-        `读不出模型服务配置文件 ${this.#addedPath}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Decision。`,
+        `读不出模型服务配置文件 ${this.#addedPath}（${error instanceof Error ? error.message : String(error)}），请检查它的访问权限后重新打开 Paraself。`,
       );
     }
     let profiles: unknown;

@@ -44,6 +44,35 @@ describe("SettingsPanel", () => {
     expect(toggle).toBeChecked();
   });
 
+  it("picks a theme colour from the presets, and saves one of the reader's own once the picker stops (IMP-140)", async () => {
+    const setAccent = vi.fn(async () => undefined);
+    await harness({ setAccent });
+    expect(screen.getByRole("button", { name: "蓝" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "紫" }));
+    await waitFor(() => expect(setAccent).toHaveBeenCalledWith("purple"));
+
+    // A drag through the picker reports every step: only where it stops is saved.
+    const picker = screen.getByLabelText("自定义主题色");
+    fireEvent.change(picker, { target: { value: "#112233" } });
+    fireEvent.change(picker, { target: { value: "#4d7c0f" } });
+    expect(setAccent).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(setAccent).toHaveBeenCalledTimes(2));
+    expect(setAccent).toHaveBeenLastCalledWith("#4d7c0f");
+  });
+
+  it("drops a custom colour still waiting to be saved when a preset is chosen after it (IMP-140)", async () => {
+    const setAccent = vi.fn(async () => undefined);
+    await harness({ setAccent });
+
+    fireEvent.change(screen.getByLabelText("自定义主题色"), { target: { value: "#4d7c0f" } });
+    fireEvent.click(screen.getByRole("button", { name: "紫" }));
+    await waitFor(() => expect(setAccent).toHaveBeenCalledWith("purple"));
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    expect(setAccent.mock.calls).toEqual([["purple"]]);
+  });
+
   it("shows why the index needs attention, and what a rebuild found", async () => {
     const preview = createPreviewApi();
     const snapshot = await preview.getSnapshot();
@@ -109,7 +138,7 @@ it("toggles local credential mode and reports migration failures", async () => {
   await harness({ setLocalCredentialsEnabled });
   const toggle = screen.getByRole("switch", { name: "本地密钥模式" });
   expect(toggle).toHaveAttribute("aria-checked", "false");
-  expect(screen.getByText(/密钥以明文保存在本机/)).toBeVisible();
+  expect(screen.getByText(/密钥经混淆保存在本机应用目录.*这不是加密/)).toBeVisible();
   fireEvent.click(toggle);
   await waitFor(() => expect(setLocalCredentialsEnabled).toHaveBeenCalledWith(true));
   expect(await screen.findByRole("status")).toHaveTextContent("迁移失败");
@@ -134,11 +163,23 @@ it("says the model backends could not be read, reads them again on request, and 
   expect(await screen.findByText("模型后端暂时无法读取：模型后端配置无法读取")).toBeVisible();
   expect(screen.getByRole("button", { name: "添加模型后端" })).toBeDisabled();
   fail = false;
-  await user.click(screen.getByRole("button", { name: "重新读取" }));
+  await user.click(screen.getByRole("button", { name: "重试" }));
   await waitFor(() => expect(screen.getByRole("button", { name: "添加模型后端" })).toBeEnabled());
 
   await user.selectOptions(screen.getByRole("combobox", { name: "采集分类使用的引擎" }), "models");
   expect(await screen.findByText("采集分类没能保存：设置无法保存")).toBeVisible();
+});
+
+it("offers the rules plus this machine's model first and as the default, and says the chain gets every turn (IMP-153)", () => {
+  render(<ModelsPanel snapshot={rationaleSnapshot({ current: null, primarySurface: "models" })} api={createPreviewApi()} />);
+  const select = screen.getByRole("combobox", { name: "采集分类使用的引擎" });
+  expect(select).toHaveValue("local");
+  expect([...(select as HTMLSelectElement).options].map((option) => [option.value, option.text])).toEqual([
+    ["local", "规则加本机模型，只用本机 Qwen 4B（默认）"],
+    ["rules", "只用规则，不调用模型"],
+    ["models", "规则加模型，每一轮发给下方后端（按顺序，可能是远程）"],
+  ]);
+  expect(select).toHaveAccessibleDescription(/对话不离开这台电脑.*不会改用下方其他后端.*每一轮对话都会按下方顺序发给所选后端/u);
 });
 
 it("says no model can be used when none is enabled, rather than calling the rules unavailable", async () => {

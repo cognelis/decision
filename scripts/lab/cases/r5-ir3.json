@@ -1,0 +1,201 @@
+[
+  {
+    "id": "R5IR3-001",
+    "group": "single-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show option 2 first, then implement it.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "expectedBand": "high"
+  },
+  {
+    "id": "R5IR3-002",
+    "group": "single-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show option 2 first, then implement the diff.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "expectedBand": "high"
+  },
+  {
+    "id": "R5IR3-003",
+    "group": "single-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show option 2 first, then implement the patch.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "expectedBand": "high"
+  },
+  {
+    "id": "R5IR3-004",
+    "group": "single-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show option 2 first, then implement the change.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "expectedBand": "high"
+  },
+  {
+    "id": "R5IR3-005",
+    "group": "ambiguous-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Compare options 1 and 2, then implement it.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR3-006",
+    "group": "ambiguous-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Compare options 1 and 2, then implement the diff.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR3-007",
+    "group": "ambiguous-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Compare options 1 and 2, then implement the patch.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR3-008",
+    "group": "ambiguous-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Compare options 1 and 2, then implement the change.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR3-009",
+    "group": "plural-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show options 1 and 2, then implement them.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR3-010",
+    "group": "plural-reference",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show options 1 and 2, then implement those.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR3-011",
+    "group": "replacement",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Option 2 works for me, but apply option 1.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ],
+    "expectedBand": "high"
+  },
+  {
+    "id": "R5IR3-012",
+    "group": "replacement",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Option 3 works for me, but use option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "expectedBand": "high"
+  },
+  {
+    "id": "R5IR3-013",
+    "group": "additive-control",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Apply 1, but also implement 2.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ],
+    "expectedBand": "medium"
+  },
+  {
+    "id": "R5IR3-014",
+    "group": "explicit-target",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show option 2 first, then implement option 1.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR3-015",
+    "group": "contextual-status",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Option 2 works for me in the existing setup; do not change anything.",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R5IR3-016",
+    "group": "exclusion-description",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Anything but option 2 is expensive; I am comparing the choices.",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R5IR3-017",
+    "group": "exclusion-description",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Option 2 is anything but lightweight; inspect the tradeoffs first.",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedBand": "any"
+  },
+  {
+    "id": "R5IR3-018",
+    "group": "exclusion-control",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Anything but option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR3-019",
+    "group": "exclusion-approval",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Anything but option 2 is fine.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR3-020",
+    "group": "conditional-control",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show option 2, then implement the patch only after I confirm.",
+    "decision": false,
+    "expectedSelected": []
+  }
+]

@@ -1,15 +1,15 @@
-# Decision 跨平台发布
+# Paraself 跨平台发布
 
-Decision `v1.1.0` 起默认发布 Windows x64 与 Apple Silicon macOS 两个原生桌面制品。项目免费、开源；没有商业签名证书时仍然发布，但必须如实展示系统告警、校验和与签名状态。已经公开的 `v1.0.0` 源码 Release 与标签保持不变。
+Paraself（`v1.2.0` 及以前名为 Decision）自 `v1.1.0` 起默认发布 Windows x64 与 Apple Silicon macOS 两个原生桌面制品。项目免费、开源；没有商业签名证书时仍然发布，但必须如实展示系统告警、校验和与签名状态。已经公开的 `v1.0.0` 源码 Release 与标签保持不变。
 
 ## 发布目标
 
 | 平台 | GitHub runner | 主制品 | 签名状态 |
 | --- | --- | --- | --- |
-| Windows x64 | `windows-latest` | `Decision-<version>-win-x64-Setup.exe` | `signature: "unsigned"` |
-| Apple Silicon macOS | `macos-26` | `Decision-darwin-arm64-<version>.zip` | `signature: "ad-hoc"` |
+| Windows x64 | `windows-latest` | `Paraself-<version>-win-x64-Setup.exe` | `signature: "unsigned"` |
+| Apple Silicon macOS | `macos-26` | `Paraself-darwin-arm64-<version>.zip` | `signature: "ad-hoc"` |
 
-每个主制品必须同时带同名 `.sha256` 和 `decision-<platform>-<arch>.json`。Squirrel 的 `.nupkg`、`RELEASES`、source map、测试 fixture、模型权重、SQLite、用户数据和本地凭据都不是公开附件。
+每个主制品必须同时带同名 `.sha256` 和 `paraself-<platform>-<arch>.json`。Squirrel 的 `.nupkg`、`RELEASES`、source map、测试 fixture、模型权重、SQLite、用户数据和本地凭据都不是公开附件。
 
 ## 源码构建
 
@@ -26,9 +26,9 @@ npm run smoke
 npm run release:verify
 ```
 
-Windows x64 不编译 Apple Foundation Models helper 或 Liquid Glass addon，并在包中验证这些 Apple 专用文件不存在。Windows bridge 使用 `.cmd` 入口，应用与 Obsidian 的默认目录从 Windows 系统环境解析。CI 必须静默安装最终 Setup，从实际 `%LOCALAPPDATA%/Decision/app-<version>` 目录执行完整冒烟并在结束后卸载；不能只启动 Forge 的未安装目录。
+Windows x64 不编译 Apple Foundation Models helper，并在包中验证这个 Apple 专用文件不存在。Windows bridge 使用 `.cmd` 入口，应用与 Obsidian 的默认目录从 Windows 系统环境解析。CI 必须静默安装最终 Setup，从实际 `%LOCALAPPDATA%/Paraself/app-<version>` 目录执行完整冒烟并在结束后卸载；不能只启动 Forge 的未安装目录。
 
-Apple Silicon macOS 需要 macOS 26 SDK 与 Xcode Command Line Tools，用于编译 Foundation Models helper；Liquid Glass addon 的最低运行目标保持 macOS 13.5，旧系统无法使用的 Apple 能力会降级而不阻止其它决策功能。无证书构建执行 ad-hoc 签名、关闭 hardened runtime 且不公证。
+Apple Silicon macOS 需要 macOS 26 SDK 与 Xcode Command Line Tools，用于编译 Foundation Models helper；旧系统无法使用的 Apple 能力会降级而不阻止其它决策功能。无证书构建执行 ad-hoc 签名、关闭 hardened runtime 且不公证。
 
 本机只能完整执行当前平台的安装包。Windows x64 与 macOS arm64 的最终验收都必须在 GitHub 原生 runner 上分别完成，不能用交叉编译代替启动、Hook、MCP、待处理队列、Markdown、SQLite 重建与退出清理的冒烟测试。
 
@@ -36,7 +36,7 @@ Apple Silicon macOS 需要 macOS 26 SDK 与 Xcode Command Line Tools，用于编
 
 Windows unsigned 安装器可能触发 Microsoft Defender SmartScreen 的“未知发布者”提示。用户应只从官方 `cognelis/decision` Release 下载，先用相邻 `.sha256` 核对完整性，再从 SmartScreen 的“更多信息”界面确认文件名并继续。
 
-macOS ZIP 中的 App 使用 ad-hoc 签名且未经过 Apple notarization。Gatekeeper 阻止首次启动时，用户应先核对 SHA-256，再在“系统设置 → 隐私与安全性”中对该次 Decision 启动选择“仍要打开”。文档不得建议全局关闭 Gatekeeper 或 SmartScreen。
+macOS ZIP 中的 App 使用 ad-hoc 签名且未经过 Apple notarization。Gatekeeper 阻止首次启动时，用户应先核对 SHA-256，再在“系统设置 → 隐私与安全性”中对该次 Paraself 启动选择“仍要打开”。文档不得建议全局关闭 Gatekeeper 或 SmartScreen。
 
 SHA-256 只能证明下载内容与发布附件一致，不能证明发布者身份，也不能代替 Authenticode、Developer ID 或 Apple 公证。
 
@@ -47,12 +47,12 @@ SHA-256 只能证明下载内容与发布附件一致，不能证明发布者身
 ```json
 {
   "schemaVersion": 2,
-  "product": "Decision",
+  "product": "Paraself",
   "version": "1.1.0",
   "platform": "win32",
   "arch": "x64",
   "artifact": {
-    "name": "Decision-1.1.0-win-x64-Setup.exe",
+    "name": "Paraself-1.1.0-win-x64-Setup.exe",
     "bytes": 123456,
     "sha256": "<64 lowercase hex characters>"
   },
@@ -81,11 +81,11 @@ macOS 清单使用 `platform: "darwin"`、`arch: "arm64"` 与 `signature: "ad-ho
 
 真实证书不是免费公开发布的前置条件。未来配置 Authenticode 或 Developer ID 时，应继续保持相同文件名、SHA-256、schema-v2 清单、双平台成对发布与人工更新策略，并把清单状态分别升级为 `authenticode` 或 `developer-id`。
 
-macOS 的既有 `DECISION_RELEASE=1` 路径仍要求完整 Developer ID Application 身份和唯一一种公证策略；缺少或混用凭据时失败关闭。任何 `.p8`、`.p12`、`.pfx`、私钥、密码或钥匙串都不能提交到仓库。引入真实凭据属于新的权限与安全决策，需要另行批准。
+macOS 的既有 `PARASELF_RELEASE=1` 路径仍要求完整 Developer ID Application 身份和唯一一种公证策略；缺少或混用凭据时失败关闭。任何 `.p8`、`.p12`、`.pfx`、私钥、密码或钥匙串都不能提交到仓库。引入真实凭据属于新的权限与安全决策，需要另行批准。
 
 ## 移行与更新边界
 
-跨平台封装不改变 Obsidian Markdown 格式、稳定编号或待处理协议。整个 1.x 系列继续读取旧品牌目录、环境变量、Hook、MCP 与 bridge 兼容入口；默认应用数据目录迁移发生在打开 SQLite、凭据、模型、spool 和未完成草稿之前。历史沉淀与尚未完成的 capture、candidate、semantic pair、理由和表单草稿都必须继续可读、可恢复、可处理。
+跨平台封装不改变 Obsidian Markdown 格式、稳定编号或待处理协议。改名为 Paraself 后，旧名 Decision 的数据目录、`DECISION_` 环境变量、`DECISION_HOOK=` 标记、名为 `decision` 的 MCP 服务器与 `decision-bridge` 只作为一次性读取、迁移和清理入口：默认应用数据目录的改名发生在打开 SQLite、凭据、模型、spool 和未完成草稿之前（App 与 bridge 都先做）。历史沉淀与尚未完成的 capture、candidate、semantic pair、理由和表单草稿都必须继续可读、可恢复、可处理。
 
 更新策略固定为 `manual`。应用不访问版本服务器，也不会自动替换自身；新版本由用户从官方 GitHub Release 下载。Intel macOS、Windows ARM64、Linux、应用商店和自动更新不属于 `v1.1.0` 契约。
 

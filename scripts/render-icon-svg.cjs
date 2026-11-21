@@ -1,13 +1,11 @@
 const { app, BrowserWindow } = require("electron");
 const { readFile, writeFile } = require("node:fs/promises");
 
-const [sourcePath, trayOutputPath] = process.argv.slice(2);
-const appOnlyMarkTransform =
-  ' transform="translate(512 440) scale(1.22) translate(-512 -512)"';
+const [sourcePath, outputPath] = process.argv.slice(2);
 
-if (sourcePath === undefined || trayOutputPath === undefined) {
+if (sourcePath === undefined || outputPath === undefined) {
   throw new Error(
-    "Usage: electron render-icon-svg.cjs <source.svg> <tray.png>",
+    "Usage: electron render-icon-svg.cjs <source.svg> <output.png>",
   );
 }
 
@@ -43,17 +41,7 @@ const renderSvg = async (svg, outputPath) => {
 app
   .whenReady()
   .then(async () => {
-    const source = await readFile(sourcePath, "utf8");
-    const monochrome = source
-      .replace(/^.*data-app-background="true".*$/gm, "")
-      .replace('viewBox="0 0 1024 1024"', 'viewBox="220 250 584 584"')
-      .replace(appOnlyMarkTransform, "")
-      .replace('filter="url(#markShadow)" ', "")
-      .replaceAll('stroke="url(#decisionGradient)"', 'stroke="#000000"')
-      .replaceAll('stroke="url(#secondaryGradient)"', 'stroke="#000000"')
-      .replaceAll('fill="url(#decisionGradient)"', 'fill="#000000"')
-      .replaceAll('fill="url(#secondaryGradient)"', 'fill="#000000"');
-    await renderSvg(monochrome, trayOutputPath);
+    await renderSvg(await readFile(sourcePath, "utf8"), outputPath);
     app.quit();
   })
   .catch((error) => {

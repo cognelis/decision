@@ -1,7 +1,13 @@
-import type { ManagedQwenModelId, ManagedQwenModelStatus } from "@cognelis/decision-protocol";
-import type { PrDiscussion, PrActionContext, PrActionRequest, PrActionResult, PrReviewCommentRequest, PrGeneralCommentRequest, PrReviewCommentResult, PrReviewReevaluate, PrReviewVerdict, PrReviewFileRequest, PrReviewFileResponse, PrReviewDiffRequest, PrReviewDiffResponse, PrReviewFollowUp, PrReviewFollowUpResult, PrReviewLoad, PrReviewPrefetch, PrReviewSnapshot, PrReviewRun, PrReviewReport, PrReviewProgress, PrConnection, PrConnectionInput, PrListQuery, PrListResponse } from "@cognelis/decision-protocol";
-import type { ProactiveRecordInput } from "./proactive-record.js";
-export type { ProactiveRecordInput } from "./proactive-record.js";
+import type { DecisionDeletionTarget, DecisionDeletionRequest, DecisionDeletionPreview, DecisionDeletionResult, MisrecognitionSummary } from "./decision-deletion.js";
+import type { CustomClient, ManagedQwenModelId, ManagedQwenModelStatus, OnboardingRequest, OnboardingView } from "@cognelis/decision-protocol";
+import type { OrganizationForget, OrganizationForgetPreview, OrganizationForgetResult, OrganizationForgetTarget, OrganizationQuery, OrganizationRunControl, OrganizationRunRequest, OrganizationRunResult, OrganizationRunView, OrganizationSettings, OrganizationSnapshot, SuggestionDecision, SuggestionDecisionResult, SuggestionDraftSave, SuggestionRegenerate, SuggestionUndo, SuggestionUndoResult, SuggestionsAdopt, SuggestionsAdoptResult, TodoAnnotations, TodoAnnotationsQuery } from "@cognelis/decision-protocol";
+import type { GetHistoricalDecisionResult, ListHistoricalDecisionsRequest, ListHistoricalDecisionsResult, OpenHistoricalDecisionRequest, OpenHistoricalDecisionResult, RebuildHistoricalDecisionIndexResult, RecordHistoricalDecisionRequest, RecordHistoricalDecisionResult, UpdateHistoricalDecisionRequest, UpdateHistoricalDecisionResult } from "@cognelis/decision-protocol";
+import type { TodoItemChange, TodoItemMove, TodoItemsChange, TodoItemsDelete, TodoItemsMove, TodoItemsMoveResult, TodoItemsResult, TodoListDelete, TodoListDeleteResult, TodoItemUpdateResult, TodoListQuery, TodoListResponse, TodoListSettings, TodoListSettingsResult, TodoManualRecord, TodoRecordResult } from "@cognelis/decision-protocol";
+import type { ReviewPromotionAction, ReviewPromotionActionResult, ReviewBenchmarkPageRequest, ReviewBenchmarkPageResult, ReviewEscapeUpdateInput, ReviewEscapeUpdateResult, ReviewQualityResult, ReviewRuleUpdateResult, PrReviewSettingsResult, PrCommentRespond, PrCommentRespondResult, PrReceivedComments, PrReceivedCommentsRequest, PrDescription, PrDescriptionRead, PrDescriptionUpdate, PrDescriptionUpdateResult, PrReviewHistoryChanged, PrReviewHistoryList, PrReviewHistorySave, PrReviewHistorySaveResult, PrReviewStatusList, PrReviewStatusRequest } from "@cognelis/decision-protocol";
+import type { LocalReviewFromPr, LocalReviewState, LocalReviewSettings, LocalReviewFiles, LocalReviewAnnotate, LocalReviewAction, LocalReviewSendMessage, LocalReviewExecute, LocalReviewMarkRead, LocalReviewConversationAction } from "@cognelis/decision-protocol";
+import type { PrDiscussion, PrDiscussionRecognize, PrCommentCandidates, PrActionContext, PrActionRequest, PrActionResult, PrReviewCommentRequest, PrGeneralCommentRequest, PrReviewCommentResult, PrReviewReevaluate, PrReviewVerdict, PrReviewFileRequest, PrReviewFileResponse, PrReviewDiffRequest, PrReviewDiffResponse, PrReviewFollowUp, PrReviewFollowUpResult, PrReviewLoad, PrReviewPrefetch, PrReviewSnapshot, PrReviewRun, PrReviewReport, PrReviewProgress, PrConnection, PrConnectionInput, PrListQuery, PrListResponse } from "@cognelis/decision-protocol";
+import type { ProactiveRecordInput, RecordContextSummary, RecordContextSummaryRequest } from "./proactive-record.js";
+export type { ProactiveRecordInput, RecordContextSummary, RecordContextSummaryRequest } from "./proactive-record.js";
 import type { DecisionFeedbackUpdate, DecisionFeedbackUpdateResult, DecisionFeedbackQuery, DecisionFeedbackResponse } from "@cognelis/decision-protocol";
 import type {
   AssistantSourceCheck,
@@ -16,6 +22,7 @@ import type {
   RetrievalAnswerCitation,
   RetrievalAnswerScope,
 } from "@cognelis/decision-protocol";
+import type { AmendableSource, AmendmentState, DecisionAmendmentRequest, DecisionAmendmentResult } from "@cognelis/decision-protocol";
 import type { DecisionContextQuery, DecisionContextResponse, DecisionScopeUpdate, DecisionScopeUpdateResult, DecisionRelationUpdate, DecisionRelationUpdateResult, DecisionSourceReference, DecisionSourceOpenResult, DecisionHandoffRequest, DecisionHandoffResponse } from "@cognelis/decision-protocol";
 import type {
   CandidateQueueSnapshot,
@@ -46,8 +53,9 @@ import type {
   PracticePublicationTarget,
   RationaleQueueSnapshot,
   RationaleSubmission,
+  SelectedAnswer,
 } from "@cognelis/decision-core";
-import type { InstallMode, InstallReport, IntegrationStatus } from "@cognelis/decision-integrations";
+import type { ClientSummary, InstallMode, InstallReport, IntegrationStatus } from "@cognelis/decision-integrations";
 import type {
   CapturedQuestion,
   DecisionConsultationFeedbackRating,
@@ -64,7 +72,7 @@ import type {
 } from "@cognelis/decision-protocol";
 import type { RebuildReport } from "@cognelis/decision-storage";
 
-import type { ThemePreference } from "./appearance.js";
+import type { AccentPreference, ThemePreference } from "./appearance.js";
 import type { CaptureClassifier } from "./capture-classifier.js";
 import type {
   ObsidianSearchResponse,
@@ -78,7 +86,18 @@ export type {
   ObsidianSearchStatus,
 } from "./obsidian-search.js";
 
+/** 历史决定 as the page sends them: the App adds the version, and that the change came from the App itself. */
+export type HistoricalDecisionListQuery = Omit<ListHistoricalDecisionsRequest, "version">;
+export type HistoricalDecisionInput = Omit<RecordHistoricalDecisionRequest, "version" | "sourceClient">;
+export type HistoricalDecisionChange = Omit<UpdateHistoricalDecisionRequest, "version" | "sourceClient">;
+/** The record `id`'s own note, or one of the links (`link`) or related notes (`relatedNote`) it names. */
+export type HistoricalDecisionOpenTarget = Omit<OpenHistoricalDecisionRequest, "version">;
+
 export const RENDERER_METHOD_NAMES = [
+  "listHistoricalDecisions", "getHistoricalDecision", "recordHistoricalDecision", "updateHistoricalDecision", "rebuildHistoricalDecisionIndex", "openHistoricalDecision",
+  "listTodoLists", "recordTodoList", "changeTodoItem", "updateTodoList", "moveTodoItem", "changeTodoItems", "moveTodoItemsToList", "deleteTodoItems", "deleteTodoList",
+  "getOrganization", "runOrganization", "controlOrganizationRun", "decideSuggestion", "adoptSuggestions", "saveSuggestionDraft", "undoSuggestion", "regenerateSuggestion", "setOrganizationSettings", "previewOrganizationForget", "forgetOrganizationSource", "getTodoAnnotations",
+  "getLocalReviewState", "chooseLocalReviewRepository", "startLocalReviewSession", "saveLocalReviewSettings", "clearLocalReviewDependencies", "loadLocalReviewFiles", "readLocalReviewFile", "saveLocalReviewAnnotation", "removeLocalReviewAnnotation", "submitLocalReview", "submitLocalReviewFromPr", "actOnLocalReview", "sendLocalReviewMessage", "executeLocalReviewPlan", "markLocalReviewRead", "actOnLocalReviewConversation", "onLocalReviewNavigate",
   "getSnapshot",
   "onSnapshot",
   "submitRationale",
@@ -87,6 +106,7 @@ export const RENDERER_METHOD_NAMES = [
   "closeCandidateReview",
   "confirmCandidate",
   "ignoreCandidate",
+  "skipCandidate",
   "retryCandidate",
   "openSurface",
   "closePrimarySurface",
@@ -94,8 +114,15 @@ export const RENDERER_METHOD_NAMES = [
   "listDecisionProjects",
   "listLocalDecisions",
   "resolveLocalDecision",
+  "previewDecisionDeletion",
+  "deleteDecision",
+  "getMisrecognitionSummary",
   "createProactiveRecord",
+  "summarizeRecordContext",
+  "cancelRecordContextSummary",
   "listJournalEntries",
+  "listDecisionAmendments",
+  "updateDecisionAmendment",
   "reviseJournalEntry",
   "getObsidianSearchStatus",
   "searchObsidian",
@@ -110,6 +137,20 @@ export const RENDERER_METHOD_NAMES = [
   "loadPrReview",
   "peekPrReview",
   "prefetchPrReviews",
+  "listPrReviewHistory",
+  "savePrReviewHistory",
+  "listPrReviewStatuses",
+  "getPrDescription",
+  "updatePrDescription",
+  "listPrReceivedComments",
+  "respondToPrComment",
+  "readPrReviewOutcomes",
+  "getReviewQuality",
+  "updateReviewRule",
+  "updateReviewEscape",
+  "reviewBenchmarkPage",
+  "actOnReviewPromotion",
+  "getPrReviewSettings",
   "loadPrReviewDiff",
   "getPrActionContext",
   "performPrAction",
@@ -118,6 +159,9 @@ export const RENDERER_METHOD_NAMES = [
   "reevaluatePrReviewFinding",
   "openReviewRulesDirectory",
   "listPrDiscussion",
+  "recognizePrDiscussion",
+  "dismissPrCommentCandidate",
+  "listPrCommentCandidates",
   "openPrLink",
   "openPr",
   "loadPrReviewFile",
@@ -125,7 +169,9 @@ export const RENDERER_METHOD_NAMES = [
   "followUpPrReview",
   "cancelPrReview",
   "onPrReviewProgress",
+  "onPrReviewHistoryChanged",
   "runAssistantTurn",
+  "sendOnboarding",
   "listAssistantModels",
   "cancelAssistantTurn",
   "saveAssistantFeedback",
@@ -156,6 +202,10 @@ export const RENDERER_METHOD_NAMES = [
   "listManualFormDrafts",
   "saveManualFormDraft",
   "deleteManualFormDraft",
+  "listPrompts",
+  "createPrompt",
+  "updatePrompt",
+  "deletePrompt",
   "generateMethodology",
   "createMethodologyMergeDraft",
   "createMethodologyRevisionDraft",
@@ -200,14 +250,19 @@ export const RENDERER_METHOD_NAMES = [
   "revealVault",
   "installIntegrations",
   "removeIntegrations",
+  "listCustomClients",
+  "saveCustomClient",
+  "deleteCustomClient",
   "rebuildIndex",
   "setTheme",
+  "setAccent",
   "listModelTraces",
   "deleteModelTrace",
   "deleteModelTraceRequest",
   "forgetAssistantTurns",
   "clearModelTraces",
   "setModelTraceContentEnabled",
+  "setModelProxyUrl",
   "setReviewRemindersEnabled",
   "setLocalCredentialsEnabled",
   "setCaptureClassifier",
@@ -291,6 +346,50 @@ export const PRACTICE_ASSET_METHOD_NAMES = [
 ] as const satisfies readonly (keyof DecisionApi)[];
 
 export const IPC_CHANNELS = {
+  listHistoricalDecisions: "decision:historical-list",
+  getHistoricalDecision: "decision:historical-get",
+  recordHistoricalDecision: "decision:historical-record",
+  updateHistoricalDecision: "decision:historical-update",
+  rebuildHistoricalDecisionIndex: "decision:historical-rebuild-index",
+  openHistoricalDecision: "decision:historical-open",
+  listTodoLists: "decision:todo-list",
+  recordTodoList: "decision:todo-record",
+  changeTodoItem: "decision:todo-change-item",
+  updateTodoList: "decision:todo-list-settings",
+  moveTodoItem: "decision:todo-move-item",
+  changeTodoItems: "decision:todo-change-items",
+  deleteTodoItems: "decision:todo-delete-items",
+  moveTodoItemsToList: "decision:todo-move-items-to-list",
+  deleteTodoList: "decision:todo-delete-list",
+  getOrganization: "decision:organization",
+  runOrganization: "decision:organization-run",
+  controlOrganizationRun: "decision:organization-run-control",
+  decideSuggestion: "decision:organization-decide",
+  adoptSuggestions: "decision:organization-adopt",
+  saveSuggestionDraft: "decision:organization-draft",
+  undoSuggestion: "decision:organization-undo",
+  regenerateSuggestion: "decision:organization-regenerate",
+  setOrganizationSettings: "decision:organization-settings",
+  previewOrganizationForget: "decision:organization-forget-preview",
+  forgetOrganizationSource: "decision:organization-forget",
+  getTodoAnnotations: "decision:todo-annotations",
+  getLocalReviewState: "decision:local-review-state",
+  chooseLocalReviewRepository: "decision:local-review-choose",
+  startLocalReviewSession: "decision:local-review-session",
+  saveLocalReviewSettings: "decision:local-review-settings",
+  clearLocalReviewDependencies: "decision:local-review-clear-dependencies",
+  loadLocalReviewFiles: "decision:local-review-files",
+  readLocalReviewFile: "decision:local-review-read",
+  saveLocalReviewAnnotation: "decision:local-review-annotate",
+  removeLocalReviewAnnotation: "decision:local-review-remove-annotation",
+  submitLocalReview: "decision:local-review-submit",
+  submitLocalReviewFromPr: "decision:local-review-from-pr",
+  actOnLocalReview: "decision:local-review-action",
+  sendLocalReviewMessage: "decision:local-review-send-message",
+  executeLocalReviewPlan: "decision:local-review-execute",
+  markLocalReviewRead: "decision:local-review-mark-read",
+  actOnLocalReviewConversation: "decision:local-review-conversation-action",
+  localReviewNavigate: "decision:local-review-navigate",
   snapshot: "decision:get-snapshot",
   snapshotChanged: "decision:snapshot",
   rationale: "decision:submit-rationale",
@@ -299,13 +398,18 @@ export const IPC_CHANNELS = {
   closeCandidateReview: "decision:close-candidate-review",
   confirmCandidate: "decision:confirm-candidate",
   ignoreCandidate: "decision:ignore-candidate",
+  skipCandidate: "decision:skip-candidate",
   retryCandidate: "decision:retry-candidate",
   openSurface: "decision:open-surface",
   closePrimarySurface: "decision:close-primary-surface",
   listDecisions: "decision:list-decisions",
   listDecisionProjects: "decision:list-decision-projects",
   createProactiveRecord: "decision:create-proactive-record",
+  summarizeRecordContext: "decision:record-context-summary",
+  cancelRecordContextSummary: "decision:record-context-summary-cancel",
   listJournalEntries: "decision:list-journal-entries",
+  listDecisionAmendments: "decision:list-decision-amendments",
+  updateDecisionAmendment: "decision:update-decision-amendment",
   reviseJournalEntry: "decision:revise-journal-entry",
   getObsidianSearchStatus: "decision:obsidian-search-status",
   searchObsidian: "decision:obsidian-search",
@@ -320,6 +424,20 @@ export const IPC_CHANNELS = {
   loadPrReview: "decision:pr-review-load",
   peekPrReview: "decision:pr-review-peek",
   prefetchPrReviews: "decision:pr-review-prefetch",
+  listPrReviewHistory: "decision:pr-review-history-list",
+  savePrReviewHistory: "decision:pr-review-history-save",
+  listPrReviewStatuses: "decision:pr-review-statuses",
+  getPrDescription: "decision:pr-description",
+  updatePrDescription: "decision:pr-description-update",
+  listPrReceivedComments: "decision:pr-received-comments",
+  respondToPrComment: "decision:pr-comment-respond",
+  readPrReviewOutcomes: "decision:pr-review-outcomes",
+  getReviewQuality: "decision:review-quality",
+  updateReviewRule: "decision:review-rule-update",
+  updateReviewEscape: "decision:review-escape-update",
+  reviewBenchmarkPage: "decision:review-benchmark-page",
+  actOnReviewPromotion: "decision:review-promotion",
+  getPrReviewSettings: "decision:pr-review-settings",
   loadPrReviewDiff: "decision:pr-review-diff",
   getPrActionContext: "decision:pr-action-context",
   performPrAction: "decision:pr-action",
@@ -328,6 +446,9 @@ export const IPC_CHANNELS = {
   reevaluatePrReviewFinding: "decision:pr-review-reevaluate",
   openReviewRulesDirectory: "decision:open-review-rules-directory",
   listPrDiscussion: "decision:pr-discussion",
+  recognizePrDiscussion: "decision:pr-discussion-recognize",
+  dismissPrCommentCandidate: "decision:pr-comment-dismiss",
+  listPrCommentCandidates: "decision:pr-comment-candidates",
   openPrLink: "decision:pr-link-open",
   openPr: "decision:pr-open",
   loadPrReviewFile: "decision:pr-review-file",
@@ -335,7 +456,9 @@ export const IPC_CHANNELS = {
   followUpPrReview: "decision:pr-review-follow-up",
   cancelPrReview: "decision:pr-review-cancel",
   prReviewProgress: "decision:pr-review-progress",
+  prReviewHistoryChanged: "decision:pr-review-history-changed",
   runAssistantTurn: "decision:assistant-turn",
+  sendOnboarding: "decision:assistant-onboarding",
   listAssistantModels: "decision:assistant-models",
   cancelAssistantTurn: "decision:assistant-cancel",
   saveAssistantFeedback: "decision:assistant-feedback",
@@ -370,6 +493,10 @@ export const IPC_CHANNELS = {
   listManualFormDrafts: "decision:list-manual-form-drafts",
   saveManualFormDraft: "decision:save-manual-form-draft",
   deleteManualFormDraft: "decision:delete-manual-form-draft",
+  listPrompts: "decision:list-prompts",
+  createPrompt: "decision:create-prompt",
+  updatePrompt: "decision:update-prompt",
+  deletePrompt: "decision:delete-prompt",
   generateMethodology: "decision:generate-methodology",
   createMethodologyMergeDraft: "decision:create-methodology-merge-draft",
   createMethodologyRevisionDraft:
@@ -428,10 +555,17 @@ export const IPC_CHANNELS = {
   revealVault: "decision:reveal-vault",
   installIntegrations: "decision:install-integrations",
   removeIntegrations: "decision:remove-integrations",
+  listCustomClients: "decision:list-custom-clients",
+  saveCustomClient: "decision:save-custom-client",
+  deleteCustomClient: "decision:delete-custom-client",
   rebuildIndex: "decision:rebuild-index",
   listLocalDecisions: "decision:list-local-decisions",
   resolveLocalDecision: "decision:resolve-local-decision",
+  previewDecisionDeletion: "decision:preview-decision-deletion",
+  deleteDecision: "decision:delete-decision",
+  getMisrecognitionSummary: "decision:misrecognition-summary",
   setTheme: "decision:set-theme",
+  setAccent: "decision:set-accent",
   listModelTraces: "decision:list-model-traces",
   deleteModelTrace: "decision:delete-model-trace",
   deleteModelTraceRequest: "decision:delete-model-trace-request",
@@ -440,6 +574,7 @@ export const IPC_CHANNELS = {
   setReviewRemindersEnabled: "decision:set-review-reminders-enabled",
   setLocalCredentialsEnabled: "decision:set-local-credentials-enabled",
   setCaptureClassifier: "decision:set-capture-classifier",
+  setModelProxyUrl: "decision:set-model-proxy-url",
   setModelTraceContentEnabled:
     "decision:set-model-trace-content-enabled",
   listManagedQwenModels: "decision:list-managed-qwen-models",
@@ -465,7 +600,7 @@ export interface AppHealth {
   methodologyMessage?: string;
 }
 
-export type { IntegrationStatus };
+export type { ClientSummary, IntegrationStatus };
 
 export interface PendingRationaleSummary {
   id: string;
@@ -476,6 +611,8 @@ export interface PendingRationaleSummary {
   selectedAnswer: string;
   contextSummary: string | null;
   capturedQuestion: CapturedQuestion | null;
+  /** Set for one loaded from the vault (no `capturedQuestion`) whose answer is the option marked as recommended. */
+  followedRecommendation?: true;
   /**
    * False for one put off in a capture and held in the app's recovery queue alone: written to Obsidian only once its
    * rationale is completed (or 保留但不补), and 不记录 never writes it. Absent for a note in the vault.
@@ -500,7 +637,10 @@ export const DESKTOP_PRIMARY_SURFACES = [
   "decisions",
   "assistant",
   "pr-review",
+  "local-review",
+  "todos",
   "methodology",
+  "prompts",
   "clients",
   "connections",
   "models",
@@ -524,7 +664,8 @@ export interface RecentDecisionSummary {
 
 export type DecisionRationaleFilter = "captured" | "deferred" | "skipped";
 
-export type DecisionSourceFilter = "claude-code" | "codex" | "manual" | "pr-comment" | "test";
+/** A client's id, or `manual`, `pr-comment`, `test`. */
+export type DecisionSourceFilter = string;
 
 export type UserJournalSourceKind =
   | "app_manual"
@@ -579,12 +720,15 @@ export interface DecisionProjectCount {
 }
 
 export interface DecisionLibraryItem extends RecentDecisionSummary {
+  answer?: SelectedAnswer;
   rationale: string | null;
   context: string | null;
   expectedOutcome?: string | null;
   outcome: string | null;
   outcomeReview: OutcomeReview | null;
   reviewDueDate: string | null;
+  /** Why the review was scheduled as the decision was written, as shown ("发布类决策"); with no date, cleared since. */
+  reviewScheduleReasons?: string[];
   appliedPrincipleIds: string[];
   appliedPrinciples: DecisionAppliedPrinciple[];
   searchMatch?: "keyword" | "semantic" | "hybrid";
@@ -949,11 +1093,40 @@ export type ManualFormDraft = ManualFormDraftInput & {
   updatedAt: string;
 };
 
+/** A prompt the reader keeps to paste into an agent: a title and its text, nothing else. */
+export interface PromptItem {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PromptInput {
+  title: string;
+  body: string;
+}
+
+/** An edit, refused if the prompt is no longer at the `updatedAt` it was opened at. */
+export interface PromptUpdate extends PromptInput {
+  id: string;
+  expectedUpdatedAt: string;
+}
+
 export interface DashboardSnapshot {
   /** Moves whenever what the index holds changes (SqliteIndex.revision): pages in view read their decisions again. */
   revision?: number;
   /** Moves whenever a preference or idea is written, by an agent or in the app: the list of them in view reads again. */
   journalRevision?: number;
+  /** Moves whenever a todo list is written, by an agent or on the page: the lists in view read again. */
+  todoRevision?: number;
+  /** Moves whenever a 历史决定 is written, by an agent, on the page or in Obsidian: the list in view reads again. */
+  historicalDecisionRevision?: number;
+  /** Moves whenever the organization's suggestions or runs change (IMP-191): the panel in view reads again. */
+  organizationRevision?: number;
+  /** Suggestions waiting for review, as the 整理 entry's badge counts them (OrganizationSnapshot.counts.pending). */
+  organizationPending?: number;
+  organizationAutomatic?: boolean;
   totalDecisions: number;
   recorded7d: number;
   reviewAttention: number;
@@ -969,8 +1142,12 @@ export interface AppSnapshot extends RationaleQueueSnapshot {
   candidateReviewProgress: CandidateReviewProgress | null;
   decisionCandidates: CandidateQueueSnapshot;
   theme: ThemePreference;
+  accent: AccentPreference;
   vaultPath: string | null;
   health: AppHealth;
+  /** The clients the 接入 page lists, as the registry describes them; every label of a client comes from here. */
+  clients: ClientSummary[];
+  /** By client id. */
   integrationStatus: IntegrationStatus;
   /** Every one put off in a capture, and the vault's newest; pendingRationaleCount says how many in all. */
   pendingRationales: PendingRationaleSummary[];
@@ -978,6 +1155,8 @@ export interface AppSnapshot extends RationaleQueueSnapshot {
   pendingRationaleCount?: number;
   semanticRecognition: SemanticRecognitionStatus;
   modelTraceContentEnabled?: boolean;
+  modelProxyUrl?: string | null;
+  modelProxyEnvironmentOverride?: boolean;
   reviewRemindersEnabled?: boolean;
   localCredentialsEnabled?: boolean;
   captureClassifier?: CaptureClassifier;
@@ -994,7 +1173,7 @@ export const rationalesToGive = (
 ): number => pendingRationaleTotal(snapshot) + (snapshot.current === null ? 0 : 1) + snapshot.waitingCount;
 
 /**
- * The 待办 the home page, the sidebar and the tray each show. They counted apart, the tray leaving out the reviews
+ * The 待处理 the home page, the sidebar and the tray each show (not the 待办 page's lists). They counted apart, the tray leaving out the reviews
  * and the home page the rationale being asked for, and said two numbers for one moment.
  */
 export const pendingWorkTotal = (
@@ -1002,7 +1181,9 @@ export const pendingWorkTotal = (
     AppSnapshot,
     "decisionCandidates" | "dashboard" | "pendingRationales" | "pendingRationaleCount" | "current" | "waitingCount"
   >,
-): number => snapshot.decisionCandidates.count + rationalesToGive(snapshot) + snapshot.dashboard.reviewAttention;
+): number => snapshot.dashboard.organizationAutomatic === true
+  ? (snapshot.dashboard.organizationPending ?? 0) + (snapshot.current === null ? 0 : 1) + snapshot.waitingCount
+  : snapshot.decisionCandidates.count + rationalesToGive(snapshot) + snapshot.dashboard.reviewAttention;
 
 export type RationaleInput = RationaleSubmission & {
   candidateId: string;
@@ -1025,6 +1206,7 @@ export interface ModelProviderTestResult {
   providerRequestId?: string;
   processExitCode?: number;
   diagnosticExcerpt?: string;
+  costUsd?: number;
 }
 
 export interface DecisionConsultationPreviewInput {
@@ -1038,7 +1220,25 @@ export interface DecisionConsultationFeedbackInput {
   rating: DecisionConsultationFeedbackRating;
 }
 
+/** One record's amendments as the page reads them: `stale` is in `state.revised`, worked out against the note as it is now. */
+export interface AmendmentRecordView {
+  source: AmendableSource;
+  recordId: string;
+  /** The original note's hash now (what a revise is made against); null when it cannot be told. */
+  contentHash: string | null;
+  state: AmendmentState;
+}
+export interface AmendmentOverview {
+  records: AmendmentRecordView[];
+  /** The amendment notes could not be read: none shown is then not none kept. */
+  unavailable: boolean;
+}
+
 export interface DecisionEvidenceApi {
+  /** What agents added to, rewrote in or withdrew from the records (kept beside the notes); the page shows it with them. */
+  listDecisionAmendments(): Promise<AmendmentOverview>;
+  /** The reader's own change to an amendment (restore, withdraw, revise back): the client is the reader, 「我」. */
+  updateDecisionAmendment(request: DecisionAmendmentRequest): Promise<DecisionAmendmentResult>;
   saveDecisionContextFeedback(input: DecisionFeedbackUpdate): Promise<DecisionFeedbackUpdateResult>;
   getDecisionContextFeedback(input: DecisionFeedbackQuery): Promise<DecisionFeedbackResponse>;
 
@@ -1052,8 +1252,83 @@ export interface DecisionEvidenceApi {
 export interface LocalDecisionPage { records: import("@cognelis/decision-core").DecisionRecord[]; total: number }
 
 export interface DecisionApi extends DecisionEvidenceApi {
+  /** 历史决定, newest decision first: one page, the projects and tags in use, the notes that could not be read, and the index's state. */
+  listHistoricalDecisions(query: HistoricalDecisionListQuery): Promise<ListHistoricalDecisionsResult>;
+  /** One record with its neighbours in the chain of 替代, where its note is, and its changes kept on this machine. */
+  getHistoricalDecision(id: string): Promise<GetHistoricalDecisionResult>;
+  /** A record the reader writes; the same matter, decision, project and day again answers with the one kept. */
+  recordHistoricalDecision(input: HistoricalDecisionInput): Promise<RecordHistoricalDecisionResult>;
+  /** A change made on the revision (and, for a status, the status) the page showed; `promote` makes a decision record of it, once. */
+  updateHistoricalDecision(input: HistoricalDecisionChange): Promise<UpdateHistoricalDecisionResult>;
+  /** The index made again from the notes in the vault. */
+  rebuildHistoricalDecisionIndex(): Promise<RebuildHistoricalDecisionIndexResult>;
+  /** Opens a record's note in Obsidian, one of its own links in the browser, or one of its related notes: nothing it does not name. */
+  openHistoricalDecision(target: HistoricalDecisionOpenTarget): Promise<OpenHistoricalDecisionResult>;
+  /** 待办清单, those with items still to handle first; `includeClosed` lists the finished ones as well. */
+  listTodoLists(query: TodoListQuery): Promise<TodoListResponse>;
+  /** A list the reader writes on the page, or items they add to one (`listId`). */
+  recordTodoList(input: TodoManualRecord): Promise<TodoRecordResult>;
+  /** One item moved on or noted, made only on the status the page showed (`expectedStatus`). */
+  changeTodoItem(input: TodoItemChange): Promise<TodoItemUpdateResult>;
+  /** A list's settings: 长期清单 (kept with the unfinished ones for items added later) or not, its title, archived. */
+  updateTodoList(input: TodoListSettings): Promise<TodoListSettingsResult>;
+  /** An item moved in the list's order: before another item, or to the end (`before` null). */
+  moveTodoItem(input: TodoItemMove): Promise<TodoListSettingsResult>;
+  /** Several items of one list changed at once (status, priority, due date), each on what the page showed. */
+  changeTodoItems(input: TodoItemsChange): Promise<TodoItemsResult>;
+  /** Items deleted from a list. */
+  deleteTodoItems(input: TodoItemsDelete): Promise<TodoItemsResult>;
+  moveTodoItemsToList(input: TodoItemsMove): Promise<TodoItemsMoveResult>;
+  /** A list deleted (its note to the wastebasket), its title typed. */
+  deleteTodoList(input: TodoListDelete): Promise<TodoListDeleteResult>;
+  /** 整理面板：当前作用域的建议、计数、最近一轮与设置（IMP-191）。 */
+  getOrganization(input: OrganizationQuery): Promise<OrganizationSnapshot>;
+  /** 整理一次：只用选定的模型，不回落到别的后端。 */
+  runOrganization(input: OrganizationRunRequest): Promise<OrganizationRunResult>;
+  /** 暂停、继续或停止正在进行的一轮。 */
+  controlOrganizationRun(input: OrganizationRunControl): Promise<OrganizationRunView>;
+  /** 采纳、稍后、不采纳或重新打开一条建议，按页面显示的修订与证据版本。 */
+  decideSuggestion(input: SuggestionDecision): Promise<SuggestionDecisionResult>;
+  /** 采纳所选：逐条独立处理，一条失败不影响其它，也不回滚已采纳的。 */
+  adoptSuggestions(input: SuggestionsAdopt): Promise<SuggestionsAdoptResult>;
+  /** 保存编辑草稿：取消编辑也保留，重新整理不覆盖。 */
+  saveSuggestionDraft(input: SuggestionDraftSave): Promise<SuggestionDecisionResult>;
+  /** 撤销一次采纳：内容没被改过才直接恢复，否则先给出恢复差异。 */
+  undoSuggestion(input: SuggestionUndo): Promise<SuggestionUndoResult>;
+  /** 只对这条建议的来源重新整理。 */
+  regenerateSuggestion(input: SuggestionRegenerate): Promise<OrganizationRunResult>;
+  /** 后台整理的开关与模型（默认关）。 */
+  setOrganizationSettings(input: OrganizationSettings): Promise<OrganizationSettings>;
+  /** 遗忘一条来源前：会删除或改写的经验、要清除的候选、注记、向量与调用记录。 */
+  previewOrganizationForget(input: OrganizationForgetTarget): Promise<OrganizationForgetPreview>;
+  /** 按预览遗忘：各项分别执行，失败的如实列出。 */
+  forgetOrganizationSource(input: OrganizationForget): Promise<OrganizationForgetResult>;
+  /** 待办页的阅读层：已采纳的主题组与「开始前要看」。 */
+  getTodoAnnotations(input: TodoAnnotationsQuery): Promise<TodoAnnotations>;
+  getLocalReviewState(): Promise<LocalReviewState>;
+  chooseLocalReviewRepository(input: { baseBranch?: string | undefined }): Promise<string | null>;
+  startLocalReviewSession(input: { repositoryId: string; baseBranch?: string | undefined }): Promise<string>;
+  clearLocalReviewDependencies(input: { repositoryId: string }): Promise<void>;
+  saveLocalReviewSettings(input: { repositoryId: string; settings: LocalReviewSettings }): Promise<void>;
+  loadLocalReviewFiles(input: { repositoryId: string; sessionId: string }): Promise<LocalReviewFiles>;
+  readLocalReviewFile(input: { repositoryId: string; sessionId: string; path: string; side: "old" | "new" }): Promise<string>;
+  saveLocalReviewAnnotation(input: LocalReviewAnnotate): Promise<string>;
+  removeLocalReviewAnnotation(input: { repositoryId: string; sessionId: string; annotationId: string }): Promise<void>;
+  submitLocalReview(input: { repositoryId: string; sessionId: string; profileId: string; worker?: "codex" | "claude-code" | "pi" | undefined }): Promise<string>;
+  /** 修: comments on the user's own PR handed to a local review, its fix pushed onto the PR's branch once they say so. */
+  submitLocalReviewFromPr(input: LocalReviewFromPr): Promise<string>;
+  actOnLocalReview(input: LocalReviewAction): Promise<void>;
+  sendLocalReviewMessage(input: LocalReviewSendMessage): Promise<string>;
+  executeLocalReviewPlan(input: LocalReviewExecute): Promise<string>;
+  markLocalReviewRead(input: LocalReviewMarkRead): Promise<void>;
+  actOnLocalReviewConversation(input: LocalReviewConversationAction): Promise<void>;
+  onLocalReviewNavigate(listener: (jobId: string) => void): () => void;
   listLocalDecisions(query: string, offset: number): Promise<LocalDecisionPage>;
   resolveLocalDecision(id: string, action: "publish" | "discard"): Promise<void>;
+  previewDecisionDeletion(input: DecisionDeletionTarget): Promise<DecisionDeletionPreview>;
+  deleteDecision(input: DecisionDeletionRequest): Promise<DecisionDeletionResult>;
+  /** Decisions deleted as 识别错误 in the last 30 days, counted by band, signal and rule version. */
+  getMisrecognitionSummary(): Promise<MisrecognitionSummary>;
   getSnapshot(): Promise<AppSnapshot>;
   onSnapshot(listener: (snapshot: AppSnapshot) => void): () => void;
   submitRationale(input: RationaleInput): Promise<void>;
@@ -1062,6 +1337,8 @@ export interface DecisionApi extends DecisionEvidenceApi {
   closeCandidateReview(): Promise<void>;
   confirmCandidate(candidateId: string): Promise<void>;
   ignoreCandidate(candidateId: string): Promise<void>;
+  /** Behind the rest, unanswered: the next one comes up. */
+  skipCandidate(candidateId: string): Promise<void>;
   retryCandidate(candidateId: string): Promise<void>;
   openSurface(surface: DesktopPrimarySurface): Promise<void>;
   closePrimarySurface(): Promise<void>;
@@ -1071,7 +1348,14 @@ export interface DecisionApi extends DecisionEvidenceApi {
   createProactiveRecord(
     input: ProactiveRecordInput,
   ): Promise<ProactiveRecordResult>;
+  /** A model on this machine summarizes a record's context; nothing is written, the reader decides what to use. */
+  summarizeRecordContext(input: RecordContextSummaryRequest): Promise<RecordContextSummary>;
+  /** Stops the summary started with this id; one already finished or unknown is left alone. */
+  cancelRecordContextSummary(requestId: string): Promise<void>;
   listJournalEntries(query: JournalEntryListQuery): Promise<JournalEntry[]>;
+  /** As DecisionEvidenceApi's: said here too, where the surface test counts the operations. */
+  listDecisionAmendments(): Promise<AmendmentOverview>;
+  updateDecisionAmendment(request: DecisionAmendmentRequest): Promise<DecisionAmendmentResult>;
   reviseJournalEntry(
     id: string,
     input: JournalEntryRevisionInput,
@@ -1112,15 +1396,49 @@ export interface DecisionApi extends DecisionEvidenceApi {
   peekPrReview(input: PrReviewLoad): Promise<PrReviewSnapshot | null>;
   /** Reads the listed PRs ahead in the background; resolves when the round ends. */
   prefetchPrReviews(input: PrReviewPrefetch): Promise<void>;
+  /** 评审历史, kept by the App (pr-review-history-store.ts): newest first, with how many record files could not be read. */
+  listPrReviewHistory(): Promise<PrReviewHistoryList>;
+  /** The records changed since the last save, whole, and the ids of those deleted. */
+  savePrReviewHistory(input: PrReviewHistorySave): Promise<PrReviewHistorySaveResult>;
+  /** Each PR's build, people's approvals and open blockers as its platform has them now (pr-review-approval.ts). */
+  listPrReviewStatuses(input: PrReviewStatusRequest): Promise<PrReviewStatusList>;
+  /** The PR's title and description as its platform has them now, and the version a write back must match. */
+  getPrDescription(input: PrDescriptionRead): Promise<PrDescription>;
+  /** The description as the author confirmed it, written back over the version read (pr-review-description.ts). */
+  updatePrDescription(input: PrDescriptionUpdate): Promise<PrDescriptionUpdateResult>;
+  /** 作者回应: someone else's comments on the user's PR, each with the replies under it (pr-review-responses.ts). */
+  listPrReceivedComments(input: PrReceivedCommentsRequest): Promise<PrReceivedComments>;
+  /** 不修 or 转后续, sent as a standard reply in the comment's thread with the user's account; 转后续 files a todo first. */
+  respondToPrComment(input: PrCommentRespond): Promise<PrCommentRespondResult>;
+  /** 发布后跟踪结果: a record's posted findings read again from its PR; the page is told when they moved. */
+  readPrReviewOutcomes(input: { id: string }): Promise<{ changed: boolean }>;
+  /** 评审质量 of one link (review-quality.ts): reads its merged PRs from the platform, twenty new ones a look. */
+  getReviewQuality(input: { connectionId: string }): Promise<ReviewQualityResult>;
+  /** One of Paraself's own local review rules turned off, or on again. */
+  updateReviewRule(input: { rule: string; enabled: boolean }): Promise<ReviewRuleUpdateResult>;
+  /** 漏网复盘: its four lines written, dismissed, opened again, or made a defect benchmark candidate (review-escapes.ts). */
+  updateReviewEscape(input: ReviewEscapeUpdateInput): Promise<ReviewEscapeUpdateResult>;
+  /** 评测集 on the review quality page: its sets and suggestions, runs started, read, judged, adopted (review-benchmark-page.ts). */
+  reviewBenchmarkPage(request: ReviewBenchmarkPageRequest): Promise<ReviewBenchmarkPageResult>;
+  /** 晋升提议: one proposed, its line handed to the local review as a comment on REVIEW.md, or left (review-promotions.ts). */
+  actOnReviewPromotion(action: ReviewPromotionAction): Promise<ReviewPromotionActionResult>;
+  /** 自动预评审 on each link, with what it spent today (pr-auto-review.ts). */
+  getPrReviewSettings(): Promise<PrReviewSettingsResult>;
   getPrActionContext(input: PrReviewDiffRequest): Promise<PrActionContext>;
   performPrAction(input: PrActionRequest): Promise<PrActionResult>;
   publishPrReviewComment(input: PrReviewCommentRequest): Promise<PrReviewCommentResult>;
   publishPrGeneralComment(input: PrGeneralCommentRequest): Promise<PrReviewCommentResult>;
   reevaluatePrReviewFinding(input: PrReviewReevaluate): Promise<PrReviewVerdict>;
-  /** Opens Decision's own review rules folder, creating it with a disabled example when empty. */
+  /** Opens Paraself's own review rules folder, creating it with a disabled example when empty. */
   openReviewRulesDirectory(): Promise<void>;
   /** The comments already on a PR, each with its link and the decision recorded from it, if any. */
   listPrDiscussion(input: PrReviewLoad): Promise<PrDiscussion>;
+  /** Has the link's model read the PR's comments not read yet for decisions, within its calls for the day; the discussion as it now stands. */
+  recognizePrDiscussion(input: PrDiscussionRecognize): Promise<PrDiscussion>;
+  /** The reader says a comment the model read as a decision is not one: it is not offered again. */
+  dismissPrCommentCandidate(url: string): Promise<void>;
+  /** What the links following their PRs read as decisions and the reader has not handled, by PR; and each link's last look. */
+  listPrCommentCandidates(): Promise<PrCommentCandidates>;
   /** Opens a PR comment link in the browser, only when it belongs to a connected platform. */
   openPrLink(url: string): Promise<void>;
   /** Opens the PR's own page on its platform in the browser. */
@@ -1131,7 +1449,11 @@ export interface DecisionApi extends DecisionEvidenceApi {
   followUpPrReview(input: PrReviewFollowUp): Promise<PrReviewFollowUpResult>;
   cancelPrReview(runId: string): Promise<void>;
   onPrReviewProgress(listener: (progress: PrReviewProgress) => void): () => void;
+  /** Records an agent changed through the App: read them again before saving over them. */
+  onPrReviewHistoryChanged(listener: (changed: PrReviewHistoryChanged) => void): () => void;
   runAssistantTurn(input: AssistantTurnRequest): Promise<AssistantTurnResponse>;
+  /** A step of the assistant's 接入新工具 conversation: a message, or an answer to its card; never a retrieval. */
+  sendOnboarding(input: OnboardingRequest): Promise<OnboardingView>;
   /**
    * Stops the turn with this id. Unknown or finished ids are a no-op: the
    * reader clicking "停止" as the answer lands must not raise an error.
@@ -1185,6 +1507,10 @@ export interface DecisionApi extends DecisionEvidenceApi {
   listManualFormDrafts(): Promise<ManualFormDraft[]>;
   saveManualFormDraft(input: ManualFormDraftInput): Promise<ManualFormDraft>;
   deleteManualFormDraft(key: ManualFormDraftKey): Promise<void>;
+  listPrompts(): Promise<PromptItem[]>;
+  createPrompt(input: PromptInput): Promise<PromptItem>;
+  updatePrompt(input: PromptUpdate): Promise<PromptItem>;
+  deletePrompt(id: string): Promise<void>;
   generateMethodology(sourceDecisionIds: string[]): Promise<MethodologyItem>;
   createMethodologyMergeDraft(
     sourcePrincipleIds: string[],
@@ -1308,11 +1634,23 @@ export interface DecisionApi extends DecisionEvidenceApi {
    * renderer may ask for this one folder and cannot name another.
    */
   revealVault(): Promise<boolean>;
-  installIntegrations(mode: InstallMode): Promise<InstallReport>;
-  /** Takes Decision's hooks and MCP server out of both clients; skills published to them stay. */
-  removeIntegrations(): Promise<InstallReport>;
+  /** Connects (or, dry-run, checks) the clients named, by id: every one unless said. */
+  installIntegrations(mode: InstallMode, clients?: string[]): Promise<InstallReport>;
+  /** Takes Paraself's hooks and MCP server out of the clients named, every one unless said; skills published to them stay. */
+  removeIntegrations(clients?: string[]): Promise<InstallReport>;
+  /** The clients the reader added on the 接入 page, as they wrote them. */
+  listCustomClients(): Promise<CustomClient[]>;
+  /**
+   * Saves a client the reader wrote, in place of `previousId` when it is one edited: that one, connected, is first
+   * disconnected where it was, and is to be connected again. Refused (an id or a hook file another client has, one in
+   * Paraself's own data) with why.
+   */
+  saveCustomClient(input: { client: CustomClient; previousId?: string | undefined }): Promise<CustomClient[]>;
+  /** Disconnects a client the reader added and, that done, deletes it; not disconnected, it is kept and the reason said. */
+  deleteCustomClient(id: string): Promise<InstallReport>;
   rebuildIndex(): Promise<RebuildReport>;
   setTheme(theme: ThemePreference): Promise<void>;
+  setAccent(accent: AccentPreference): Promise<void>;
   listModelTraces(): Promise<ModelInvocationTrace[]>;
   deleteModelTrace(traceId: string): Promise<boolean>;
   deleteModelTraceRequest(requestId: string): Promise<number>;
@@ -1320,6 +1658,7 @@ export interface DecisionApi extends DecisionEvidenceApi {
   forgetAssistantTurns(turnIds: string[]): Promise<void>;
   clearModelTraces(): Promise<number>;
   setModelTraceContentEnabled(enabled: boolean): Promise<void>;
+  setModelProxyUrl(url: string | null): Promise<void>;
   setReviewRemindersEnabled(enabled: boolean): Promise<void>;
   setLocalCredentialsEnabled(enabled: boolean): Promise<void>;
   setCaptureClassifier(classifier: CaptureClassifier): Promise<void>;

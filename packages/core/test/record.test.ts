@@ -164,6 +164,23 @@ describe("createDecisionRecord", () => {
     ]);
   });
 
+  it("keeps the reply an option was read off (R2-IA2)", () => {
+    const record = createDecisionRecord(
+      candidateFixture(
+        captureFixture({
+          captureMode: "transcript",
+          questions: [
+            questionFixture(0, { answer: { kind: "preset", values: ["Markdown"], reply: "选 A，好读" } }),
+          ],
+        }),
+      ),
+      { status: "skipped" },
+      "decision-reply",
+      new Date("2026-07-27T01:02:03.000Z"),
+    );
+    expect(record.selectedAnswer).toEqual({ kind: "preset", values: ["Markdown"], reply: "选 A，好读" });
+  });
+
   it("preserves multi-select values and maps deferred and skipped statuses", () => {
     const candidate = candidateFixture(
       captureFixture({
@@ -269,6 +286,8 @@ describe("createDecisionRecord", () => {
         detectorVersion: "rules-v1",
       },
     });
+    // Kept for the misrecognition receipt a deletion can leave: the rule's own labels, no text.
+    expect(record.detection?.signals).toEqual(["has_choice_prompt", "answer_matches_option"]);
   });
 
   it("keeps factor-only completion free of fabricated user text", () => {

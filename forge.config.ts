@@ -5,7 +5,7 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
-import { readDecisionEnvironment } from "./config/decision-environment.mjs";
+import { readParaselfEnvironment } from "./config/paraself-environment.mjs";
 import packageJson from "./package.json";
 
 type MacDistributionConfig = Pick<
@@ -17,7 +17,7 @@ const environmentValue = (
   environment: NodeJS.ProcessEnv,
   suffix: string,
 ): string | undefined => {
-  const value = readDecisionEnvironment(environment, suffix)?.trim();
+  const value = readParaselfEnvironment(environment, suffix)?.trim();
   return value === undefined || value.length === 0 ? undefined : value;
 };
 
@@ -43,7 +43,7 @@ export const createMacDistributionConfig = (
   );
   if (identity === undefined) {
     throw new Error(
-      "DECISION_SIGNING_IDENTITY is required for a distribution build",
+      "PARASELF_SIGNING_IDENTITY is required for a distribution build",
     );
   }
   if (!identity.startsWith("Developer ID Application:")) {
@@ -79,7 +79,7 @@ export const createMacDistributionConfig = (
 
   if (keychain !== undefined && keychainProfile === undefined) {
     throw new Error(
-      "DECISION_NOTARY_KEYCHAIN requires a keychain profile",
+      "PARASELF_NOTARY_KEYCHAIN requires a keychain profile",
     );
   }
 
@@ -97,9 +97,9 @@ export const createMacDistributionConfig = (
     };
   } else {
     const missing = [
-      ["DECISION_APPLE_API_KEY", appleApiKey],
-      ["DECISION_APPLE_API_KEY_ID", appleApiKeyId],
-      ["DECISION_APPLE_API_ISSUER", appleApiIssuer],
+      ["PARASELF_APPLE_API_KEY", appleApiKey],
+      ["PARASELF_APPLE_API_KEY_ID", appleApiKeyId],
+      ["PARASELF_APPLE_API_ISSUER", appleApiIssuer],
     ]
       .filter(([, value]) => value === undefined)
       .map(([key]) => key);
@@ -126,7 +126,7 @@ export const createMacDistributionConfig = (
 };
 
 const localElectronZipDir =
-  readDecisionEnvironment(process.env, "ELECTRON_ZIP_DIR");
+  readParaselfEnvironment(process.env, "ELECTRON_ZIP_DIR");
 
 const ignorePackagedSource = (file: string): boolean => {
   if (file.length === 0) {
@@ -180,9 +180,9 @@ const config: ForgeConfig = {
       unpack: "**/*.{node,dylib,so,dll}",
     },
     ignore: ignorePackagedSource,
-    name: "Decision",
-    executableName: "Decision",
-    appBundleId: "com.cognelis.decision",
+    name: "Paraself",
+    executableName: "Paraself",
+    appBundleId: "com.cognelis.paraself",
     appCategoryType: "public.app-category.developer-tools",
     icon: "apps/desktop/assets/app-icon",
     extraResource: [
@@ -201,10 +201,10 @@ const config: ForgeConfig = {
   makers: [
     new MakerZIP({}, ["darwin"]),
     new MakerSquirrel({
-      name: "Decision",
+      name: "Paraself",
       authors: "Cognelis contributors",
       description: "Local-first decision capture and review platform",
-      setupExe: `Decision-${packageJson.version}-win-x64-Setup.exe`,
+      setupExe: `Paraself-${packageJson.version}-win-x64-Setup.exe`,
       setupIcon: "apps/desktop/assets/app-icon.ico",
       noMsi: true,
     }),
@@ -215,6 +215,12 @@ const config: ForgeConfig = {
         {
           entry: "apps/desktop/src/main/index.ts",
           config: "apps/desktop/vite.main.config.ts",
+          target: "main",
+        },
+        {
+          // The local models' utility process (IMP-135), forked by main.cjs from beside it.
+          entry: "apps/desktop/src/main/semantic/local-model-host.ts",
+          config: "apps/desktop/vite.local-model.config.ts",
           target: "main",
         },
         {

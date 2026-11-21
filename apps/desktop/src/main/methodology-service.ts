@@ -75,7 +75,7 @@ export const methodologyOutputJsonSchema = {
   },
 } as const;
 
-const methodologySystemPrompt = `你是 Decision 的方法论提炼器。输入只包含用户已经记录实际结果并人工复盘的决策证据。
+const methodologySystemPrompt = `你是 Paraself 的方法论提炼器。输入只包含用户已经记录实际结果并人工复盘的决策证据。
 
 你的任务是从这些证据中提炼一个可复用、可执行、边界清晰的候选原则。必须遵守：
 1. 只使用输入证据，不补写未出现的事实、因果或成功指标。

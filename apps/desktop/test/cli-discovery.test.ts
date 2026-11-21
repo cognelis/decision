@@ -77,7 +77,7 @@ describe("LocalModelClientDiscovery", () => {
       { slug: "hidden-model", visibility: "hide" }, { slug: "first-model", visibility: "list", priority: 3 },
       { slug: "x".repeat(201), visibility: "list" }, null,
     ] }));
-    const discovery = new LocalModelClientDiscovery({ runner: { run }, environment: { PATH: directory, CODEX_HOME: directory } });
+    const discovery = new LocalModelClientDiscovery({ runner: { run }, environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: directory, CODEX_HOME: directory } });
     const status = await discovery.inspect("codex");
     expect(status.modelsSource).toBe("cache");
     expect(status.models).toEqual([{ id: "first-model", label: "First" }, { id: "later-model", label: "Later" }]);
@@ -93,7 +93,7 @@ describe("LocalModelClientDiscovery", () => {
     const run = vi.fn(async (request: ManagedProcessRequest) => request.args[0] === "--version" ? result("codex-cli 0.147.0") : request.args[0] === "login" ? result("Logged in using ChatGPT") : request.args[0] === "--help" ? result("--ask-for-approval") : result(codexExecFlagsFixture()));
     const home = join(directory, ".codex");
     await mkdir(home);
-    const discovery = new LocalModelClientDiscovery({ runner: { run }, environment: { PATH: directory, HOME: directory } });
+    const discovery = new LocalModelClientDiscovery({ runner: { run }, environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: directory, HOME: directory } });
     expect((await discovery.inspect("codex")).models).toBeUndefined();
     await writeFile(join(home, "models_cache.json"), JSON.stringify({ models: [{ slug: "model-name", visibility: "list" }] }));
     expect((await discovery.inspect("codex")).models).toEqual([{ id: "model-name", label: "model-name" }]);
@@ -105,6 +105,7 @@ describe("LocalModelClientDiscovery", () => {
     ["logged_out", "credential_unavailable"],
     ["unsupported", "unsupported_client"],
     ["diagnostics_failed", "process_failed"],
+    ["proxy_required", "invalid_configuration"],
   ] as const)(
     "maps %s client readiness to %s",
     (availability, expected) => {
@@ -127,7 +128,7 @@ describe("LocalModelClientDiscovery", () => {
       executed.push(request.executable);
       throw new ManagedProcessError("process_failed", "stopped after the lookup");
     });
-    const discovery = new LocalModelClientDiscovery({ runner: { run }, environment: { PATH: directory }, platform: "win32" });
+    const discovery = new LocalModelClientDiscovery({ runner: { run }, environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: directory }, platform: "win32" });
 
     await discovery.inspect("claude-code");
     expect(executed[0]).toBe(join(directory, "claude.cmd"));
@@ -162,7 +163,7 @@ describe("LocalModelClientDiscovery", () => {
     );
     const discovery = new LocalModelClientDiscovery({
       runner: { run },
-      environment: { PATH: directory, HTTPS_PROXY: "http://old-proxy:8080", NO_PROXY: "*" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: directory, HTTPS_PROXY: "http://old-proxy:8080", NO_PROXY: "*" },
       now: () =>
         new Date("2026-07-30T00:00:00.000Z"),
     });
@@ -185,32 +186,20 @@ describe("LocalModelClientDiscovery", () => {
       ["login", "status"],
       ["--help"],
       ["exec", "--help"],
-      ["app-server", "--listen", "stdio://"],
+      ["-c", "features.respect_system_proxy=false", "-c", "features.system_proxy_fallback=false", "-c", "features.plugins=false", "-c", "features.apps=false", "app-server", "--listen", "stdio://"],
     ]);
     for (const [request] of run.mock.calls) expect(request.environment).toMatchObject({ HTTPS_PROXY: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", NO_PROXY: "", no_proxy: "" });
 
   });
 
-  it.runIf(
-    process.env.DECISION_CODEX_EXECUTABLE !== undefined,
-  )(
-    "recognizes the installed Codex without running comprehensive environment diagnostics",
-    async () => {
-      const path = process.env.DECISION_CODEX_EXECUTABLE!;
-      const inspected = await new LocalModelClientDiscovery({
-        environment: process.env,
-      }).inspect("codex", path);
-
-      expect(inspected).toMatchObject({
-        kind: "codex-cli",
-        executablePath: path,
-        authenticated: true,
-        supported: true,
-        availability: "available",
-      });
-    },
-    10_000,
-  );
+  it.each([undefined, "", "invalid", "socks5://127.0.0.1:1080"])("reports proxy configuration separately before any CLI spawn: %s", async value => {
+    const { path, directory } = await executable("codex");
+    const run = vi.fn();
+    const environment = value === undefined ? { PATH: directory } : { PATH: directory, MODEL_PROXY_URL: value };
+    const inspected = await new LocalModelClientDiscovery({ runner: { run }, environment }).inspect("codex", path);
+    expect(inspected).toMatchObject({ kind: "codex-cli", executablePath: path, authenticated: false, supported: false, availability: "proxy_required" });
+    expect(run).not.toHaveBeenCalled();
+  });
 
   it("inspects Claude Code JSON auth and safe invocation flags", async () => {
     const { path } = await executable("claude");
@@ -242,7 +231,7 @@ describe("LocalModelClientDiscovery", () => {
     );
     const discovery = new LocalModelClientDiscovery({
       runner: { run },
-      environment: { PATH: "" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
       now: () =>
         new Date("2026-07-30T00:00:00.000Z"),
     });
@@ -264,7 +253,7 @@ describe("LocalModelClientDiscovery", () => {
       ["--version"],
       ["auth", "status", "--json"],
       ["--help"],
-      ["-p", "--safe-mode", "--tools", "", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--no-session-persistence", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose"],
+      ["-p", "--safe-mode", "--setting-sources", "", "--tools", "", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--no-session-persistence", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose"],
     ]);
   });
 
@@ -273,7 +262,7 @@ describe("LocalModelClientDiscovery", () => {
     const run = vi.fn(async () => result("codex-cli 0.48.0"));
     const discovery = new LocalModelClientDiscovery({
       runner: { run },
-      environment: { PATH: "/definitely/missing" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "/definitely/missing" },
       now: () => new Date("2026-07-30T00:00:00.000Z"),
     });
     // The built-ins, off, Codex's path kept from the time it was found.
@@ -296,7 +285,7 @@ describe("LocalModelClientDiscovery", () => {
   it("reports missing and non-executable clients", async () => {
     const missing = new LocalModelClientDiscovery({
       runner: { run: vi.fn() },
-      environment: { PATH: "/definitely/missing" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "/definitely/missing" },
       now: () =>
         new Date("2026-07-30T00:00:00.000Z"),
     });
@@ -331,7 +320,7 @@ describe("LocalModelClientDiscovery", () => {
     ];
     const discovery = new LocalModelClientDiscovery({
       runner: { run: vi.fn(async () => responses.shift()!) },
-      environment: { PATH: "" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
       now: () =>
         new Date("2026-07-30T00:00:00.000Z"),
     });
@@ -356,7 +345,7 @@ describe("LocalModelClientDiscovery", () => {
     ];
     const discovery = new LocalModelClientDiscovery({
       runner: { run: vi.fn(async () => responses.shift()!) },
-      environment: { PATH: "" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
       now: () =>
         new Date("2026-07-30T00:00:00.000Z"),
     });
@@ -406,7 +395,7 @@ describe("LocalModelClientDiscovery", () => {
         runner: {
           run: vi.fn(async () => responses.shift()!),
         },
-        environment: { PATH: "" },
+        environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
         now: () =>
           new Date("2026-07-30T00:00:00.000Z"),
       });
@@ -431,7 +420,7 @@ describe("LocalModelClientDiscovery", () => {
     ];
     const discovery = new LocalModelClientDiscovery({
       runner: { run: vi.fn(async () => responses.shift()!) },
-      environment: { PATH: "" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
       now: () =>
         new Date("2026-07-30T00:00:00.000Z"),
     });
@@ -460,7 +449,7 @@ describe("LocalModelClientDiscovery", () => {
     });
     const discovery = new LocalModelClientDiscovery({
       runner: { run },
-      environment: { PATH: "" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
       now: () => new Date("2026-07-30T00:00:00.000Z"),
     });
 
@@ -485,7 +474,7 @@ describe("LocalModelClientDiscovery", () => {
     });
     const discovery = new LocalModelClientDiscovery({
       runner: { run },
-      environment: { PATH: "" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
       now: () => new Date("2026-07-30T00:00:00.000Z"),
     });
 
@@ -529,7 +518,7 @@ describe("LocalModelClientDiscovery", () => {
       );
       const discovery = new LocalModelClientDiscovery({
         runner: { run },
-        environment: { PATH: "" },
+        environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
         now: () =>
           new Date("2026-07-30T00:00:00.000Z"),
       });
@@ -561,7 +550,7 @@ describe("LocalModelClientDiscovery", () => {
           );
         }),
       },
-      environment: { PATH: "" },
+      environment: { MODEL_PROXY_URL: "http://127.0.0.1:7890", PATH: "" },
       now: () =>
         new Date("2026-07-30T00:00:00.000Z"),
     });

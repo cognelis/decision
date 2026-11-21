@@ -1,25 +1,32 @@
 import { zonedFormatter } from "../../../calendar-date.js";
 import { PrPlatformActions } from "./PrPlatformActions.js";
 import { PrDiffDialog, type DiffFocus } from "./PrDiffDialog.js";
-import { PrReviewCommentDialog, findingCommentDraft } from "./PrReviewCommentDialog.js";
+import { PrReviewCommentDialog } from "./PrReviewCommentDialog.js";
 import { PrReviewScopeDialog, plannedGroups } from "./PrReviewScopeDialog.js";
 import { PrReviewBatchCommentDialog } from "./PrReviewBatchCommentDialog.js";
 import { PrDiscussionDialog, commentDraft } from "./PrDiscussionDialog.js";
+import { ReviewQualityView } from "./ReviewQualityView.js";
+import { ReviewBenchmarkView } from "./ReviewBenchmarkView.js";
 import { ActiveRecordDialog, type ActiveRecordDraft } from "../decisions/ActiveRecordDialog.js";
 import { ListWidthHandle } from "../../ListWidthHandle.js";
-import { PR_REVIEW_BATCH_MAX_CALLS, clipText, otherProjectOf, prReviewLanes, prReviewUnitChars } from "@cognelis/decision-protocol";
+import { PR_OUTCOME_LABELS, type PrPublishedOutcome, PR_DESCRIPTION_SECTION_LABELS, PR_REVIEW_BATCH_MAX_CALLS, PR_REVIEW_HISTORY_LIMITS, PR_RISK_LABELS, clipText, otherProjectOf, prDescriptionFactsFrom, prDescriptionSections, prFindingBasis, prFindingBlocksByDefault, prFindingCommentDraft, prQuickApprovalChecks, prReviewLanes, prReviewUnitChars } from "@cognelis/decision-protocol";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
-import type { PrReviewFinding, PrReviewReport, PrReviewUsage, PrReviewSnapshot, RetrievalAnswerProvider, PrConnection, PrListItem } from "@cognelis/decision-protocol";
+import type { PrReviewFinding, PrReviewReport, PrReviewUsage, PrReviewSnapshot, RetrievalAnswerProvider, PrConnection, PrListItem, ReviewBenchmarkPageResult, ReviewQualityResult } from "@cognelis/decision-protocol";
 import type { DecisionApi } from "../../../../shared/renderer-api.js";
 import { PLATFORM_LABELS } from "./PrConnectionsPanel.js";
-import { dismissalsIn, dismissedIn, publishedIn, loadReviewHistory, saveReviewHistory, mergeReviewEvents, type Dismissal, type ReviewHistoryEntry } from "./review-history.js";
+import { dismissalsIn, dismissedIn, publishedIn, readReviewHistory, mergeReviewEvents, type Dismissal, type ReviewHistoryEntry } from "./review-history.js";
 import { LENS, ReviewSteps, reviewSteps } from "./review-steps.js";
 import { FENCE, renderMarkdown } from "../assistant/markdown.js";
 import { ModalDialog, PageHidden } from "../../ModalDialog.js";
 import { ActionIcon, IconButton } from "../../IconButton.js";
 import { platformMessage } from "./platform-message.js";
+import { RiskBadge, RiskTile } from "./pr-risk.js";
+import { ApprovalConditions, BuildBadge, type ReadStatus } from "./pr-approval.js";
+import { PrDescriptionDialog } from "./PrDescriptionDialog.js";
+import { PrReceivedComments } from "./PrReceivedComments.js";
+import { BasisTag, GuideBasis } from "./pr-basis.js";
 
-type ReviewApi = Pick<DecisionApi, "listPrDiscussion" | "openPrLink" | "createProactiveRecord" | "getPrActionContext" | "performPrAction" | "publishPrGeneralComment" | "openPr" | "peekPrReview" | "prefetchPrReviews" | "publishPrReviewComment" | "reevaluatePrReviewFinding" | "openReviewRulesDirectory" | "listPrConnections" | "openSurface" | "listPullRequests" | "loadPrReview" | "loadPrReviewDiff" | "loadPrReviewFile" | "runPrReview" | "followUpPrReview" | "cancelPrReview" | "onPrReviewProgress" | "listAssistantModels" | "openVaultDocument" | "exportAssistantConversation">;
+type ReviewApi = Pick<DecisionApi, "listPrReviewHistory" | "savePrReviewHistory" | "listPrDiscussion" | "recognizePrDiscussion" | "dismissPrCommentCandidate" | "openPrLink" | "createProactiveRecord" | "summarizeRecordContext" | "cancelRecordContextSummary" | "getPrActionContext" | "performPrAction" | "publishPrGeneralComment" | "listPrReviewStatuses" | "onPrReviewHistoryChanged" | "getPrDescription" | "updatePrDescription" | "listPrReceivedComments" | "respondToPrComment" | "readPrReviewOutcomes" | "getPrReviewSettings" | "getReviewQuality" | "updateReviewRule" | "updateReviewEscape" | "reviewBenchmarkPage" | "actOnReviewPromotion" | "getLocalReviewState" | "submitLocalReviewFromPr" | "actOnLocalReview" | "listModelProviderProfiles" | "openPr" | "peekPrReview" | "prefetchPrReviews" | "publishPrReviewComment" | "reevaluatePrReviewFinding" | "openReviewRulesDirectory" | "listPrConnections" | "openSurface" | "listPullRequests" | "loadPrReview" | "loadPrReviewDiff" | "loadPrReviewFile" | "runPrReview" | "followUpPrReview" | "cancelPrReview" | "onPrReviewProgress" | "listAssistantModels" | "openVaultDocument" | "exportAssistantConversation">;
 // The same wording as dates elsewhere in the app (2026年9月30日 09:05), whatever the system region is.
 const fullTime = zonedFormatter({ year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 const dayTime = zonedFormatter({ month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -39,7 +46,7 @@ const COMMANDS: Record<string, string> = {
 const COMMAND_LABELS: Record<string, string> = { "/describe": "PR 概览", "/improve": "改进建议" };
 /** The three ways to start on a PR; the composer's one button runs the chosen one. */
 const MODES = [
-  { id: "review", title: "完整评审", body: "整个 PR 一起读（大 PR 按相关文件分组），找出新引入的问题并逐条核验，核对历史决策与团队评审规则，结果可转为 PR 评论。", action: "开始评审" },
+  { id: "review", title: "完整评审", body: "整个 PR 一起读（大 PR 按相关文件分组），找出新引入的问题并逐条核验，核对过往决策与团队评审规则，结果可转为 PR 评论。", action: "开始评审" },
   { id: "/describe", title: "PR 概览", body: "类型、摘要、逐文件说明表和评审关注点，先弄清这次改了什么。", action: "生成 PR 概览" },
   { id: "/improve", title: "改进建议", body: "附 diff 代码块的具体改进，逐条复核打分后按重要度列出，只针对本次变更。", action: "生成改进建议" },
 ] as const;
@@ -100,9 +107,9 @@ const batchProgress = (events: ReviewHistoryEntry["events"]) => {
 };
 /** One finding to hand to a coding agent or a chat: what is wrong, and exactly which line of which commit. */
 const findingMarkdown = (snapshot: PrReviewSnapshot, finding: PrReviewFinding, evidence: PrReviewReport["evidence"]) => {
-  // The decisions it cites, by source and id, so an agent with the Decision tools can read them.
+  // The decisions it cites, by source and id, so an agent with the Paraself tools can read them.
   const cited = finding.decisionIndexes.flatMap(number => evidence.filter(item => item.index === number).map(({ record }) => `- [${number}] ${record.source}/${record.id} ${record.title}`));
-  return `${findingCommentDraft(finding)}\n\n位置：\`${finding.path}:${finding.line}\`（${finding.side === "new" ? "新版本" : "旧版本"}，${snapshot.reference} @ ${(finding.side === "new" ? snapshot.sourceCommit : snapshot.baseCommit ?? snapshot.destinationCommit).slice(0, 12)}）${cited.length ? `\n\n相关决策：\n${cited.join("\n")}` : ""}`;
+  return `${prFindingCommentDraft(finding)}\n\n位置：\`${finding.path}:${finding.line}\`（${finding.side === "new" ? "新版本" : "旧版本"}，${snapshot.reference} @ ${(finding.side === "new" ? snapshot.sourceCommit : snapshot.baseCommit ?? snapshot.destinationCommit).slice(0, 12)}）${cited.length ? `\n\n相关决策：\n${cited.join("\n")}` : ""}`;
 };
 /** The files picked for a PR that this snapshot can still review; none left means the whole PR. */
 const scopedPaths = (scope: { reference: string; paths: string[] } | null, snapshot: PrReviewSnapshot) => {
@@ -134,15 +141,27 @@ const olderReviews = (entry: ReviewHistoryEntry, history: ReviewHistoryEntry[]) 
 const findingKeys = (finding: PrReviewFinding, replacement?: { title: string } | null) =>
   [finding.title, replacement?.title ?? finding.title].map(title => `${finding.path}\n${title}`);
 const OPEN_SETTINGS_FAILED = "无法打开设置，请从侧边栏进入。";
+const CONNECTIONS_FAILED = "读取代码平台链接失败，请重试。";
+/**
+ * From this width of the detail pane the evidence, the review's numbers and its steps get a column of their own. The
+ * default window (1160×760) and the smallest (860×620) stay below it at any list width, so they keep one column.
+ */
+const REVIEW_ASIDE_MIN_WIDTH = 960;
 /** A status with its standing P1s set off, so a PR that needs changes first stands out in a list. */
 const markP1 = (status: string) => status.split(/(（\d+ 个 P1）)/u).map((part, index) => index % 2 ? <strong key={index} className="review-status-p1">{part}</strong> : part);
 /** What a draft from here was saved as: the dialog lets it become a preference or an idea instead. */
-const RECORD_KIND = { decision: "决策", preference: "偏好", idea: "想法" } as const;
+const RECORD_KIND = { decision: "决策", historical_decision: "历史决定", preference: "偏好", idea: "想法" } as const;
 const CARRIED_PLACE = { same: "文件没有改动，应当还在", gone: "文件已不在这次的变更里", changed: "文件有改动，尚未复核" } as const;
 const CARRIED_CHECK = { keep: "仍然存在", replace: "仍然存在，位置或表述有变", drop: "已不存在" } as const;
-/** List items as a read-ahead request: the list time lets an unchanged PR cost nothing. */
-const prefetchItems = (items: readonly { reference: string; updatedAt?: string | undefined }[]) =>
-  items.map(({ reference, updatedAt }) => ({ reference, ...(updatedAt ? { updatedAt } : {}) }));
+/** What the list said of a PR, as a snapshot request carries it: its time and comment count let an unchanged PR cost nothing. */
+const fromList = ({ reference, updatedAt, comments }: { reference: string; updatedAt?: string | undefined; comments?: number | undefined }) =>
+  ({ reference, ...(updatedAt ? { updatedAt } : {}), ...(comments === undefined ? {} : { commentCount: comments }) });
+/**
+ * The list says the PR moved after this record: updated since, or with more comments than the record counted (a new
+ * comment does not move Bitbucket's update time).
+ */
+const movedAfter = (item: PrListItem, record: ReviewHistoryEntry) => Date.parse(item.updatedAt) > Date.parse(record.at)
+  || (item.comments !== undefined && record.listedComments !== undefined && item.comments > record.listedComments);
 /** The pipeline a preset command runs as, when the question is one. */
 const commandOf = (question: string): "describe" | "improve" | undefined => {
   const command = question.trim().split(/\s+/u)[0]?.toLowerCase();
@@ -180,12 +199,15 @@ const changeNote = (size: NonNullable<PrReviewSnapshot["changeSize"]>): string =
 const ruleNames = (rules: NonNullable<PrReviewSnapshot["rules"]>): string =>
   rules.map(rule => rule.source === "code-meeseeks" ? `${rule.id}（code-meeseeks）` : rule.id).join("、");
 
+/** What became of a posted finding on its PR, as last read (发布后跟踪结果). */
+const outcomeText = (outcome: PrPublishedOutcome): string => outcome.kind === "none" ? "作者还没回应"
+  : outcome.kind === "maybe_fixed" ? "可能修了：没有回复，原位置在之后的提交里改过" : `作者：${PR_OUTCOME_LABELS[outcome.kind]}${outcome.words ? ` —— ${outcome.words}` : ""}`;
 /** A finding's state after the review: re-evaluated and/or posted to the PR, here or by another review of these commits. */
 const findingFollowUp = (index: number, entry?: Pick<ReviewHistoryEntry, "verdicts" | "published">, postedElsewhere: ReadonlySet<number> = new Set()): string => {
   const verdict = entry?.verdicts.find(item => item.finding === index);
   return [
     verdict ? `${verdict.by ? "评审者不采纳" : `复评：${VERDICT[verdict.verdict]}`} · ${verdict.reason}${verdict.replacement ? `\n替代评论：${verdict.replacement.title}\n${verdict.replacement.body}` : ""}` : "",
-    entry?.published.some(item => item.finding === index) ? "已发布为 PR 评论" : postedElsewhere.has(index) ? "同一提交的另一次评审已发布为 PR 评论" : "",
+    entry?.published.some(item => item.finding === index) ? `已发布为 PR 评论${(() => { const outcome = entry.published.find(item => item.finding === index)?.outcome; return outcome ? ` · ${outcomeText(outcome)}` : ""; })()}` : postedElsewhere.has(index) ? "同一提交的另一次评审已发布为 PR 评论" : "",
   ].filter(Boolean).map(line => `\n\n${line}`).join("");
 };
 
@@ -219,12 +241,17 @@ const conclusionsMarkdown = (report: PrReviewReport): string => !report.conclusi
   report.summary.split("\n\n").at(-1)?.startsWith("分 ") ? report.summary.split("\n\n").at(-1) : undefined,
 ].filter(Boolean).join("\n\n");
 
+/** A review saved before the verdicts were facts scored its candidates, and left out those under 80. */
+const filteredNote = (filtered: NonNullable<PrReviewReport["filtered"]>): string => filtered.some((item) => item.score !== undefined) ? "置信度低于 80" : "核验找到了具体反证";
+
 export function reviewMarkdown(snapshot: PrReviewSnapshot, report: PrReviewReport, entry?: Pick<ReviewHistoryEntry, "verdicts" | "published"> & { focus?: string }, postedElsewhere?: ReadonlySet<number>): string {
   return [`# PR 评审：${snapshot.title}`, snapshot.reference,
     `源提交：${snapshot.sourceCommit}\n目标提交：${snapshot.destinationCommit}${snapshot.baseCommit ? `\n分叉点：${snapshot.baseCommit}` : ""}\n评审规则：${snapshot.rules?.length ? ruleNames(snapshot.rules) : "无"}\n仓库规范：${snapshot.guides?.length ? snapshot.guides.join("、") : "无"}\n关注点：${entry?.focus || "未指定"}`,
     `状态：${STATUS[report.status]}\n\n${conclusionsMarkdown(report)}`,
     ...report.findings.map((finding, index) => `## ${finding.priority} ${finding.title}\n${finding.path}:${finding.line}（${finding.side === "new" ? "新版本" : "旧版本"}）\n\n${finding.body}\n\n决策证据：${finding.decisionIndexes.map((index) => `[${index}]`).join("、") || "无"}${findingFollowUp(index, entry, postedElsewhere)}`),
-    ...(report.filtered?.length ? [`## 核验未通过的候选问题\n置信度低于 80，没有列入问题：\n${report.filtered.map(({ finding, score, reason }) => `- ${finding.priority} ${finding.title}（${finding.path}:${finding.line}）· 置信度 ${score} · ${reason}`).join("\n")}`] : []),
+    ...(report.needsContext?.length ? [`## 待核实的候选问题\n核验缺少判断所需的材料，既未确认也未否定，没有列入问题：\n${report.needsContext.map(({ finding, reason, missing }) => `- ${finding.priority} ${finding.title}（${finding.path}:${finding.line}）· 缺少：${missing} · ${reason}`).join("\n")}`] : []),
+    ...(report.unplaced?.length ? [`## 没能定位到变更行的候选问题\n评审员提出了，但不在这组已读的变更行附近，没有核验，也没有列入问题：\n${report.unplaced.map((finding) => `- ${finding.priority} ${finding.title}（${finding.path}:${finding.line}）· ${finding.body}`).join("\n")}`] : []),
+    ...(report.filtered?.length ? [`## 核验未通过的候选问题\n${filteredNote(report.filtered)}，没有列入问题：\n${report.filtered.map(({ finding, score, reason }) => `- ${finding.priority} ${finding.title}（${finding.path}:${finding.line}）· ${score === undefined ? "" : `置信度 ${score} · `}${reason}`).join("\n")}`] : []),
     `## 覆盖\n已完成评审：${report.reviewedFiles.join("、") || "无"}\n未完成评审：${report.unreviewedFiles.join("、") || "无"}\n已读取完整文本 diff：${report.readFiles.join("、") || "无"}\n未完整读取：${report.unreadFiles.join("、") || "无"}\n${report.groups ? `评审分组：${report.groups} 组\n` : ""}${report.depth === "deep" ? "评审方式：深度评审（每组两位审查者：缺陷；规则与决策）\n" : ""}模型调用：${report.steps} 次${usageLabel(report.usage)}\n\n${report.warnings.join("\n")}`,
     "## 评审过程", ...report.history.map((event) => eventLine(event, false)),
     "## 决策证据", ...report.evidence.map(({ index, record }) => `[${index}] ${record.source}/${record.id} ${record.title}\n来源：${record.sourceRef.relativePath}\n版本：${record.sourceRef.contentHash ?? "未知"}\n范围：${applicabilityLabel(record)}\n状态：${record.lifecycleState === "uncertain" ? "有效状态待核对" : record.current ? "未识别到替代" : "已替代或退役"}\n\n${record.summary}\n适用条件：${record.appliesWhen ?? "未记录"}\n注意：${record.caution ?? "无"}\n${record.warnings.join("\n")}`),
@@ -240,16 +267,18 @@ function VerdictNote({ verdict, onWithdraw }: { verdict: ReviewHistoryEntry["ver
   </div>;
   return <div className="review-finding-verdict" data-verdict={verdict.verdict} role="note" aria-label="复评结论">
     <p><strong>复评：{VERDICT[verdict.verdict]}</strong> · {verdict.reason}</p>
-    {verdict.replacement ? <div><strong>{verdict.replacement.title}</strong><p className="review-text">{verdict.replacement.body}</p></div> : null}
+    {verdict.replacement ? <div><strong>{verdict.replacement.title}</strong><div className="assistant-answer">{renderMarkdown(verdict.replacement.body)}</div></div> : null}
     <small>{verdict.model}</small>
   </div>;
 }
 
-export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity, openRun }: { api: ReviewApi; hidden?: boolean; onOpenDecision?(id: string): void;
+export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity, openRun, openDiscussion }: { api: ReviewApi; hidden?: boolean; onOpenDecision?(id: string): void;
   /** For the sidebar while this page is elsewhere: a review running, or one that ended unseen. */
   onActivity?(activity: "running" | "done" | null): void;
   /** A record picked elsewhere (quick jump); each new object opens it again. */
-  openRun?: { id: string } | null }) {
+  openRun?: { id: string } | null;
+  /** A PR's discussion to open at the comments its link read as decisions, from the home page. */
+  openDiscussion?: { connectionId: string; reference: string; title: string } | null }) {
   const [connections, setConnections] = useState<PrConnection[]>([]);
   const [connectionId, setConnectionId] = useState("");
   const [scope, setScope] = useState<Scope>("review-requested");
@@ -260,11 +289,61 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   const more = Object.values(cursors).some((cursor) => cursor != null);
   const [listing, setListing] = useState(false);
   const [listError, setListError] = useState("");
-  const [storedHistory] = useState(loadReviewHistory);
-  const [history, setHistory] = useState(storedHistory.entries);
-  const [selectedRun, setSelectedRun] = useState(storedHistory.entries[0]?.id ?? "");
-  const [historyError, setHistoryError] = useState(storedHistory.error);
+  // Bumped by 重试 after the links could not be read: read again, and the list with them.
+  const [connectionsRead, setConnectionsRead] = useState(0);
+  // Read from the App once the page opens, and saved only once read: nothing is written over what was not read yet.
+  const [historyRead, setHistoryRead] = useState(false);
+  const [history, setHistory] = useState<ReviewHistoryEntry[]>([]);
+  const [selectedRun, setSelectedRun] = useState("");
+  const [historyError, setHistoryError] = useState("");
+  // The records as last saved, by id: a save sends those changed since, whole, and the ids of those deleted.
+  const savedHistory = useRef(new Map<string, ReviewHistoryEntry>());
+  useEffect(() => {
+    let gone = false;
+    void readReviewHistory(api, api === window.decision).then(({ entries, error }) => {
+      if (gone) return;
+      savedHistory.current = new Map(entries.map(entry => [entry.id, entry]));
+      // A review started before the history came stays ahead of it.
+      setHistory(current => [...current, ...entries.filter(entry => !current.some(item => item.id === entry.id))]);
+      setSelectedRun(current => current || (entries[0]?.id ?? ""));
+      setHistoryError(error);
+      setHistoryRead(true);
+    });
+    return () => { gone = true; };
+  }, [api]);
+  // An agent changed records through the App (update_pr_review_finding, record_pr_comments): those are read again and
+  // taken as saved, so the page shows the change and never writes its older copy over it.
+  // ponytail: a change the page makes to the same record in the moment between is lost one way or the other; per-record
+  // revisions if agents and the page ever edit one record at once.
+  useEffect(() => api.onPrReviewHistoryChanged(({ ids }) => {
+    void api.listPrReviewHistory().then(({ entries }) => {
+      const changed = new Map(entries.filter(entry => ids.includes(entry.id)).map(entry => [entry.id, entry]));
+      for (const [id, entry] of changed) savedHistory.current.set(id, entry);
+      // One it does not hold yet (a review an agent started): added among them, newest first.
+      setHistory(current => {
+        const added = [...changed.values()].filter(entry => !current.some(item => item.id === entry.id));
+        const updated = current.map(item => changed.get(item.id) ?? item);
+        return added.length ? [...added, ...updated].sort((a, b) => b.at.localeCompare(a.at)) : updated;
+      });
+      // A comment it posted may be a task: the PR's blockers are read again too.
+      for (const entry of new Map([...changed.values()].flatMap(item => item.connectionId ? [[`${item.connectionId}|${item.snapshot.reference}`, item] as const] : [])).values()) readStatuses(entry.connectionId!, [entry.snapshot.reference]);
+    }, () => undefined);
+  }), [api]);
+  // 自动预评审 on the link listed: today's reviews, read again as records come and go.
+  const autoReview = connections.find(item => item.id === connectionId)?.autoReview;
+  const [autoUsed, setAutoUsed] = useState<number | null>(null);
+  useEffect(() => {
+    setAutoUsed(null);
+    if (!autoReview) return;
+    let gone = false;
+    void api.getPrReviewSettings().then(({ settings }) => { if (!gone) setAutoUsed(settings.find(item => item.connectionId === connectionId)?.usedToday ?? null); }, () => undefined);
+    return () => { gone = true; };
+  }, [api, connectionId, autoReview, history.length]);
   const [deleteHistory, setDeleteHistory] = useState(false);
+  // A later round reads only what the new commits changed (the design's 收敛); the reader can still ask for the whole PR.
+  const [incremental, setIncremental] = useState(true);
+  // The PR whose description's missing parts are being drafted (PrDescriptionDialog).
+  const [describing, setDescribing] = useState<{ connectionId: string; snapshot: PrReviewSnapshot } | null>(null);
   const [commentFinding, setCommentFinding] = useState<number | null>(null);
   // The finding being turned down, and why so far; and the list of those turned down in the repository, open.
   // `opened`: the reason it began with; changed since, Escape no longer closes it with what was typed.
@@ -273,14 +352,47 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   // The answer being posted to the PR as a whole, by its turn.
   const [commentTurn, setCommentTurn] = useState<string | null>(null);
   // The discussion stays chosen while a comment is being recorded, so saving returns to the list.
-  const [discussion, setDiscussion] = useState<{ connectionId: string; pr: Pick<PrReviewSnapshot, "title" | "reference" | "project"> } | null>(null);
+  const [discussion, setDiscussion] = useState<{ connectionId: string; pr: Pick<PrReviewSnapshot, "title" | "reference" | "project">; candidatesOnly?: boolean } | null>(null);
   const [recordDraft, setRecordDraft] = useState<ActiveRecordDraft | null>(null);
   const verdictFor = (index: number) => entry?.verdicts.find(item => item.finding === index);
   const [showDetails, setShowDetails] = useState(false);
   // Opened from a finding: the diff lands on its line.
   const [diffFocus, setDiffFocus] = useState<DiffFocus | null>(null);
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const [listView, setListView] = useState<"prs" | "history">("prs");
+  const detailRef = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(false);
+  useLayoutEffect(() => {
+    const detail = detailRef.current;
+    if (!detail || typeof ResizeObserver === "undefined") return;
+    // ponytail: one breakpoint on the detail's own width; below it everything stays in the report's single column.
+    const observer = new ResizeObserver(() => setWide(detail.clientWidth >= REVIEW_ASIDE_MIN_WIDTH));
+    observer.observe(detail);
+    return () => observer.disconnect();
+  }, []);
+  const [listView, setListView] = useState<"prs" | "history" | "quality">("prs");
+  // 评审质量 of the link chosen: read when shown, and again when asked (its first read takes the platform a while).
+  const [quality, setQuality] = useState<{ result: ReviewQualityResult | null; loading: boolean; error: string }>({ result: null, loading: false, error: "" });
+  const [qualityReads, setQualityReads] = useState(0);
+  // 评测集: its sets, runs and suggestions, local reads only; shown in place of the quality page when chosen.
+  const [qualitySection, setQualitySection] = useState<"outcomes" | "benchmark">("outcomes");
+  const [benchmark, setBenchmark] = useState<{ overview: NonNullable<ReviewBenchmarkPageResult["overview"]> | null; loading: boolean }>({ overview: null, loading: false });
+  const [benchmarkReads, setBenchmarkReads] = useState(0);
+  useEffect(() => {
+    if (listView !== "quality") return;
+    let gone = false;
+    setBenchmark(current => ({ ...current, loading: true }));
+    void api.reviewBenchmarkPage({ kind: "overview", ...(connectionId ? { connectionId } : {}) }).then(result => { if (!gone) setBenchmark({ overview: result.overview, loading: false }); },
+      () => { if (!gone) setBenchmark(current => ({ ...current, loading: false })); });
+    return () => { gone = true; };
+  }, [api, listView, connectionId, benchmarkReads]);
+  useEffect(() => {
+    if (listView !== "quality" || !connectionId) return;
+    let gone = false;
+    setQuality(current => ({ ...current, loading: true, error: "" }));
+    void api.getReviewQuality({ connectionId }).then(result => { if (!gone) setQuality({ result, loading: false, error: "" }); },
+      () => { if (!gone) setQuality(current => ({ ...current, loading: false, error: "读取评审质量失败，请检查链接后重试。" })); });
+    return () => { gone = true; };
+  }, [api, listView, connectionId, qualityReads]);
   const [search, setSearch] = useState("");
   const moreActions = useRef<HTMLDetailsElement>(null);
   const chatLog = useRef<HTMLOListElement>(null);
@@ -309,13 +421,23 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   const typing = useRef(false);
   const unsaved = useRef<(() => void) | null>(null);
   useEffect(() => {
-    if (storedHistory.error || history === storedHistory.entries) return;
+    if (!historyRead) return;
     const save = () => {
       unsaved.current = null;
       lastSave.current = Date.now();
-      const { saved, dropped, logDropped } = saveReviewHistory(history);
-      setHistoryError(!saved ? "评审历史保存失败（本机存储可能已满）；当前记录仍可查看，请导出报告后重试。"
-        : dropped > 0 || logDropped ? `本机存储已满，${[dropped > 0 ? `最早的 ${dropped} 条评审记录不再保存` : "", logDropped ? "最新一次评审只保存了结果、没有保存评审过程" : ""].filter(Boolean).join("，")}（这次打开期间仍可查看）；需要的话请先导出。` : "");
+      const known = savedHistory.current;
+      const entries = history.filter(item => known.get(item.id) !== item);
+      const removed = [...known.keys()].filter(id => !history.some(item => item.id === id));
+      if (!entries.length && !removed.length) return;
+      const saving = new Map(history.map(item => [item.id, item]));
+      void api.savePrReviewHistory({ entries, removed }).then(({ dropped, logDropped, refused }) => {
+        savedHistory.current = saving;
+        setHistoryError([
+          refused.length ? `有 ${refused.length} 条评审记录过大，没有保存（这次打开期间仍可查看），需要的话请先导出。` : "",
+          logDropped.length ? `有 ${logDropped.length} 次评审的记录过大，只保存了结果、没有保存评审过程。` : "",
+          dropped > 0 ? `评审历史超过 ${PR_REVIEW_HISTORY_LIMITS.entries} 条，最早改动的 ${dropped} 条不再保存。` : "",
+        ].join(""));
+      }, () => setHistoryError("评审历史保存失败；当前记录仍可查看，请导出报告后重试。"));
     };
     const wait = history.some(item => item.state === "running") ? lastSave.current + 1_000 - Date.now() : typing.current ? 600 : 0;
     typing.current = false;
@@ -323,7 +445,7 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     unsaved.current = save;
     const timer = setTimeout(save, wait);
     return () => clearTimeout(timer);
-  }, [history, storedHistory]);
+  }, [history, historyRead, api]);
   useEffect(() => {
     const flush = () => unsaved.current?.();
     window.addEventListener("pagehide", flush);
@@ -346,9 +468,30 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
       ...findings.map(finding => `- **${finding.priority}** ${finding.title}（\`${finding.path}:${finding.line}\`）`), ...earlier].join("\n");
   };
   // A finding posted to the PR, one comment or a batch: it is not offered for posting again.
-  const markPosted = (id: string, finding: number) =>
-    updateRun(id, item => ({ ...item, published: [...item.published.filter(done => done.finding !== finding), { finding, at: new Date().toISOString() }] }));
+  const markPosted = (id: string, finding: number, blocking = false, comment?: string) => {
+    updateRun(id, item => ({ ...item, published: [...item.published.filter(done => done.finding !== finding), { finding, at: new Date().toISOString(), ...(blocking ? { blocking: true as const } : {}), ...(comment ? { comment } : {}) }] }));
+    postedFrom(id);
+  };
+  /** A comment just posted from a record is no news to any record of its PR, whichever is newest. */
+  const postedFrom = (id: string) => setHistory(previous => {
+    const from = previous.find(item => item.id === id);
+    return from ? previous.map(item => item.connectionId === from.connectionId && item.snapshot.reference === from.snapshot.reference && item.listedComments !== undefined
+      ? { ...item, listedComments: item.listedComments + 1 } : item) : previous;
+  });
   const listRequest = useRef(0);
+  // Each PR's build, people's approvals and open blockers, by link and PR: read after the list shows and when a PR opens,
+  // so a slow platform never holds either up.
+  const [statuses, setStatuses] = useState<ReadonlyMap<string, ReadStatus>>(new Map());
+  const readStatuses = (connection: string, references: string[]) => {
+    for (let start = 0; start < references.length; start += 30) {
+      const asked = references.slice(start, start + 30);
+      void api.listPrReviewStatuses({ connectionId: connection, references: asked })
+        .then(({ statuses: read }) => read.map(item => ({ reference: item.reference, status: item.status, error: item.error })),
+          // Refused whole (the link gone, its token unreadable): said for each, rather than read on for ever.
+          (cause: unknown) => asked.map(reference => ({ reference, status: null, error: platformMessage(cause, "读取失败。") })))
+        .then(read => setStatuses(previous => new Map([...previous, ...read.map(item => [`${connection}|${item.reference}`, { status: item.status, error: item.error }] as const)])));
+    }
+  };
   const [focus, setFocus] = useState("");
   // Files picked for a PR's next review, kept per PR so newer commits keep the choice.
   const [reviewScope, setReviewScope] = useState<{ reference: string; paths: string[] } | null>(null);
@@ -420,9 +563,9 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     void api.listPrConnections().then((loaded) => {
       if (disposed) return;
       setConnections((current) => JSON.stringify(current) === JSON.stringify(loaded) ? current : loaded); setConnectionId((current) => loaded.some((item) => item.id === current) ? current : loaded[0]?.id ?? "");
-    }).catch(() => { if (!disposed) setListError("读取代码平台链接失败，请重试。"); });
+    }).catch(() => { if (!disposed) setListError(CONNECTIONS_FAILED); });
     return () => { disposed = true; };
-  }, [api, hidden, busy]);
+  }, [api, hidden, busy, connectionsRead]);
   /**
    * The scope's PRs, from the first page or (`further`) on from each list's cursor. 已合并 reads what I reviewed and
    * what I wrote, each from its own cursor, and shows them as one list, newest first, a PR in both shown once.
@@ -443,12 +586,23 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
         return [...kept, ...read.filter((item, index) => !kept.some((old) => old.reference === item.reference) && read.findIndex((other) => other.reference === item.reference) === index)];
       });
       setCursors((previous) => ({ ...(further ? previous : {}), ...Object.fromEntries(reads.map(({ filter }, index) => [filter, responses[index]!.nextPage])) }));
+      // A record made before the list counted comments, or away from the list, counts them from what it shows now.
+      const counts = new Map(read.flatMap((item) => item.comments === undefined ? [] : [[item.reference, item.comments] as const]));
+      const uncounted = (run: ReviewHistoryEntry) => run.listedComments === undefined && run.connectionId === connectionId && counts.has(run.snapshot.reference);
+      setHistory((previous) => previous.some(uncounted) ? previous.map((run) => uncounted(run) ? { ...run, listedComments: counts.get(run.snapshot.reference)! } : run) : previous);
       // Read the first PRs ahead so opening them is instant; unchanged ones cost nothing.
       // History opens its discussion, never the diff, so there is nothing to read ahead.
       if (!further && read.length && !merged) {
-        void api.prefetchPrReviews({ connectionId, items: prefetchItems(read.slice(0, 5)) }).catch(() => undefined);
+        void api.prefetchPrReviews({ connectionId, items: read.slice(0, 5).map(fromList) }).catch(() => undefined);
       }
-    } catch (cause) { if (generation === listRequest.current) setListError(platformMessage(cause, "PR 列表读取失败。")); }
+      if (!merged) readStatuses(connectionId, read.map(item => item.reference));
+    } catch (cause) {
+      if (generation !== listRequest.current) return;
+      setListError(platformMessage(cause, "PR 列表读取失败。"));
+      // Not the list it replaced: a read of the first page that failed leaves nothing to read as current. More that
+      // failed keeps what was read, the failure under it.
+      if (!further) { setItems([]); setCursors({}); }
+    }
     finally { if (generation === listRequest.current) setListing(false); }
   };
   useEffect(() => {
@@ -474,6 +628,12 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     setChoosingScope(false); setShowDismissals(false);
   };
   useEffect(() => {
+    if (!openDiscussion) return;
+    const repository = openDiscussion.reference.split("#")[0]!;
+    setDiscussion({ connectionId: openDiscussion.connectionId, candidatesOnly: true,
+      pr: { title: openDiscussion.title, reference: openDiscussion.reference, project: repository.split("/").at(-1)! } });
+  }, [openDiscussion]);
+  useEffect(() => {
     if (!openRun || !history.some(item => item.id === openRun.id)) return;
     setListView("history");
     selectRun(openRun.id);
@@ -481,14 +641,14 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   // A PR read before shows at once from the local cache while its commits are confirmed in the
   // background, silently unless they moved, so switching never flashes a busy panel and opening
   // another PR meanwhile just moves on. Only a PR never read blocks for a full read.
-  const load = async (target: { connectionId: string; reference: string; title: string; updatedAt?: string }) => {
+  const load = async (target: { connectionId: string; reference: string; title: string; updatedAt?: string; comments?: number | undefined }) => {
     // A running review holds the lock throughout; a PR opened meanwhile is read beside it, without taking the lock.
     const beside = reviewing.current !== null;
     if (pending.current && !beside) return;
     const generation = ++loadRequest.current;
     const release = () => { if (!beside) pending.current = false; };
     if (!beside) pending.current = true;
-    const request = { connectionId: target.connectionId, reference: target.reference, ...(target.updatedAt ? { updatedAt: target.updatedAt } : {}) };
+    const request = { connectionId: target.connectionId, ...fromList(target) };
     const reason = (cause: unknown) => platformMessage(cause, "PR 读取失败。");
     const cached = await api.peekPrReview(request).catch(() => null);
     if (generation !== loadRequest.current) { release(); return; }
@@ -509,7 +669,7 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     }
     confirming.current = null;
     if (!beside) setBusy("load");
-    setReading(true); setMessage("正在读取 PR 最新快照…");
+    setReading(true); setMessage("");
     // Beside a review another PR may be opened before this one arrives: the later choice wins.
     try { const fresh = await api.loadPrReview(request); if (generation === loadRequest.current) { setSnapshot(fresh); setMessage(""); } }
     catch (cause) { if (generation === loadRequest.current) { setError(reason(cause)); setMessage(""); } }
@@ -520,6 +680,17 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   };
   const selectedReference = entry?.snapshot.reference ?? loadTarget?.reference;
   const selectedConnection = entry?.connectionId ?? loadTarget?.connectionId;
+  /**
+   * The PR's comments as the platform's list counts them now, kept on a record made of it to tell later ones by: read
+   * again, since the list on screen may be hours old. Only where the list counts them at all; should the read fail, as
+   * it showed them.
+   */
+  const commentsNow = async (target: { connectionId: string; reference: string }) => {
+    const shown = target.connectionId === connectionId ? items.find((item) => item.reference === target.reference)?.comments : undefined;
+    if (shown === undefined) return {};
+    const pages = await Promise.all(SCOPES[scope].filters.map((filter) => api.listPullRequests({ connectionId, filter, page: 1 }).catch(() => null)));
+    return { listedComments: pages.flatMap((page) => page?.items ?? []).find((item) => item.reference === target.reference)?.comments ?? shown };
+  };
   const review = async () => {
     if (pending.current || !snapshot || !loadTarget || !currentModel) return;
     pending.current = true; setBusy("review"); setError(""); setMessage("");
@@ -527,7 +698,7 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     // newer commits, and its snapshot may have expired or been replaced by a read-ahead since; a review
     // of that would fail. Unchanged commits keep the same snapshot, confirmed again.
     await confirming.current;
-    const latest = await api.loadPrReview({ connectionId: loadTarget.connectionId, reference: loadTarget.reference }).catch(() => null);
+    const [latest, counted] = await Promise.all([api.loadPrReview({ connectionId: loadTarget.connectionId, reference: loadTarget.reference }).catch(() => null), commentsNow(loadTarget)]);
     if (latest !== null && latest.snapshotId !== snapshot.snapshotId) setMessage("PR 有新提交，已读取最新变更。");
     const reviewed = latest ?? snapshot;
     const id = crypto.randomUUID(); runId.current = id; reviewing.current = id;
@@ -535,14 +706,17 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     loadRequest.current++;
     setSelectedRun(id); setSnapshot(null);
     setHistory(previous => [{ id, kind: "review", at: new Date().toISOString(), model: [currentModel.label, currentModel.model].filter(Boolean).join(" · "), focus, snapshot: reviewed,
-      connectionId: loadTarget.connectionId, profileId, draft: "", turns: [], events: [], report: null, state: "running", error: "", published: [], verdicts: [], rechecks: [] }, ...previous]);
+      connectionId: loadTarget.connectionId, profileId, draft: "", turns: [], events: [], report: null, state: "running", error: "", published: [], verdicts: [], rechecks: [], ...counted }, ...previous]);
     const openResult = () => openRecord(id);
     try {
       const paths = scopedPaths(reviewScope, reviewed);
       const dismissed = dismissedIn(history, loadTarget.connectionId, reviewed.reference);
       const published = publishedIn(history, loadTarget.connectionId, reviewed.reference);
+      // The last review of this PR on an earlier commit: this round reads what came after it.
+      const earlier = incremental ? history.find(item => item.kind === "review" && item.report && item.connectionId === loadTarget.connectionId && item.snapshot.reference === reviewed.reference) : undefined;
+      const since = earlier && earlier.snapshot.sourceCommit !== reviewed.sourceCommit ? earlier.snapshot.sourceCommit : undefined;
       const result = await api.runPrReview({ snapshotId: reviewed.snapshotId, runId: id, profileId, focus, ...(paths ? { paths } : {}), ...(deep ? { depth: "deep" as const } : {}),
-        ...(dismissed.length ? { dismissed } : {}), ...(published.length ? { published } : {}) });
+        ...(dismissed.length ? { dismissed } : {}), ...(published.length ? { published } : {}), ...(since ? { since } : {}) });
       updateRun(id, item => ({ ...item, state: "finished", report: { ...result, history: [] }, events: mergeReviewEvents(item.events, result.history) }));
       notifyAway(`PR 评审 · ${STATUS[result.status]}`, `${reviewed.reference} · ${findingSummary(result.findings)}`, openResult);
     } catch (cause) {
@@ -559,6 +733,15 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     }
   };
   useEffect(() => { if (finishedAway !== null && selectedRun === finishedAway) setFinishedAway(null); }, [selectedRun, finishedAway]);
+  // 发布后跟踪结果: a record opened with findings posted reads what became of them, at most every five minutes; the
+  // App saves what moved and says so, as it does for an agent's change.
+  useEffect(() => {
+    const opened = history.find(item => item.id === selectedRun);
+    if (!opened?.connectionId || opened.kind !== "review" || !opened.published.length) return;
+    const last = Math.min(...opened.published.map(item => item.outcome ? Date.parse(item.outcome.at) : 0));
+    if (Date.now() - last < 5 * 60_000) return;
+    void api.readPrReviewOutcomes({ id: opened.id }).catch(() => undefined);
+  }, [api, selectedRun]);
   // Once per record: the model list is read again each time the page shows, and applying the record's
   // backend then undid one the reader had just picked, a local model swapped back for a remote one.
   const profileAppliedFor = useRef<string | null>(null);
@@ -620,15 +803,18 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     } catch { setError("复制失败，请稍后重试。"); }
   };
   /** Runs the way picked on the preparation page; review() and quickCommand() refuse while busy. */
-  const start = () => void (mode === "review" ? review() : quickCommand(mode));
+  // A review an agent started, which the App runs on its own: the one at a time is that one until it ends.
+  const agentReview = history.find(item => item.state === "running" && item.id !== reviewing.current);
+  const start = () => { if (!agentReview) void (mode === "review" ? review() : quickCommand(mode)); };
   const startLabel = MODES.find(option => option.id === mode)!.action;
   /** PR 概览 / 改进建议 straight on a PR, before any review: a record of its own to keep and follow up. */
   const quickCommand = async (command: "/describe" | "/improve") => {
     if (pending.current || !snapshot || !loadTarget || !currentModel) return;
     pending.current = true; setBusy("follow-up"); setError(""); setMessage("");
-    const asked = (await confirming.current) ?? snapshot;
+    const [confirmed, counted] = await Promise.all([confirming.current, commentsNow(loadTarget)]);
+    const asked = confirmed ?? snapshot;
     const created: ReviewHistoryEntry = { id: crypto.randomUUID(), kind: "chat", at: new Date().toISOString(), model: [currentModel.label, currentModel.model].filter(Boolean).join(" · "), focus, snapshot: asked,
-      connectionId: loadTarget.connectionId, profileId, draft: "", turns: [], events: [], report: null, state: "finished", error: "", published: [], verdicts: [], rechecks: [] };
+      connectionId: loadTarget.connectionId, profileId, draft: "", turns: [], events: [], report: null, state: "finished", error: "", published: [], verdicts: [], rechecks: [], ...counted };
     setHistory(previous => [created, ...previous]);
     loadRequest.current++;
     setSelectedRun(created.id); setSnapshot(null);
@@ -735,6 +921,14 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
     } catch { setError("导出失败，请重试。"); }
   };
   const activeSnapshot = entry?.snapshot ?? snapshot;
+  // The open PR's status, read fresh as it opens: the approval conditions and the approve button stand on it.
+  const statusKey = selectedConnection && activeSnapshot ? `${selectedConnection}|${activeSnapshot.reference}` : "";
+  useEffect(() => { if (statusKey) readStatuses(selectedConnection!, [activeSnapshot!.reference]); }, [statusKey]);
+  const openStatus = statusKey ? statuses.get(statusKey) : undefined;
+  // After the page posts or acts on the PR: a task posted, an approval given, is in what the platform reports next.
+  // What the comments on the user's own PR stand at, for its conditions: of the PR it was counted on.
+  const [responses, setResponses] = useState<{ key: string; answered: number; total: number } | null>(null);
+  const refreshStatus = () => { if (statusKey) readStatuses(selectedConnection!, [activeSnapshot!.reference]); };
   const chosenPaths = snapshot ? scopedPaths(reviewScope, snapshot) : null;
   // Findings still to post: not posted yet, not dropped on re-evaluation, reworded where one replaced them.
   const older = entry?.kind === "review" && entry.report && entry.state === "finished" ? olderReviews(entry, history) : [];
@@ -768,6 +962,8 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   const sinceReview = snapshot ? changedSinceReview(snapshot, history, loadTarget?.connectionId) : null;
   // The last review was on these very commits: another one calls the model again for the same code.
   const lastReview = snapshot ? history.find(item => item.kind === "review" && item.report && item.connectionId === loadTarget?.connectionId && item.snapshot.reference === snapshot.reference) : undefined;
+  // How many reviews this PR had here: from the third, a sign to talk it over rather than review again.
+  const rounds = snapshot ? history.filter(item => item.kind === "review" && item.connectionId === loadTarget?.connectionId && item.snapshot.reference === snapshot.reference).length : 0;
   const sameAsLast = lastReview?.report && lastReview.snapshot.sourceCommit === snapshot?.sourceCommit && lastReview.snapshot.destinationCommit === snapshot?.destinationCommit ? lastReview : undefined;
   // What no review of this very commit has read whole yet (not chosen, or not finished): all another one would add.
   const reviewedHere = new Set(sameAsLast && snapshot ? history.filter(item => item.kind === "review" && item.connectionId === loadTarget?.connectionId && item.snapshot.reference === snapshot.reference
@@ -791,6 +987,8 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   const fixList = entry?.report && standing.length ? [`# ${entry.snapshot.title}（${entry.snapshot.reference}）的评审问题\n\n共 ${standing.length} 个，复评判为误报的和评审者不采纳的没有列出。请逐条核对后修复。`,
     ...standing.map(finding => findingMarkdown(entry.snapshot, finding, entry.report!.evidence))].join("\n\n---\n\n") : null;
   const unjudged = entry?.report?.findings.filter((_, index) => !entry.verdicts.some(item => item.finding === index)).length ?? 0;
+  // A long report read one priority at a time, or only what is still open.
+  const filterable = !!report && report.findings.length > 3 && (new Set(report.findings.map(finding => finding.priority)).size > 1 || openCount < report.findings.length);
   // After a re-review: what earlier reviews found, as it stands on these commits. The newest speaks for the files it
   // looked at; a file it left out (a partial or unfinished review) keeps what an older one found. Dropped ones are left out.
   // Reviews of other commits; one of these same commits is a rerun, with nothing new to look at again.
@@ -927,19 +1125,29 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   const runStatus = (item: ReviewHistoryEntry) => {
     // The P1s still standing (a dropped one is not), so the list shows which PR needs changes first; "P1" is searchable too.
     const p1 = item.report?.findings.filter((finding, index) => finding.priority === "P1" && item.verdicts.find(verdict => verdict.finding === index)?.verdict !== "drop").length ?? 0;
+    // Which review of its PR here it was: the design's rounds, a third one a sign to talk it over instead.
+    const round = item.kind === "review" ? history.filter(other => other.kind === "review" && other.connectionId === item.connectionId && other.snapshot.reference === item.snapshot.reference && other.at <= item.at).length : 0;
     const state = item.kind === "chat" ? COMMAND_LABELS[item.turns[0]?.question ?? ""] ?? "问答"
-      : item.state === "running" ? `评审中${batchProgress(item.events)}` : item.report ? `${STATUS[item.report.status]}${item.report.findings.length ? ` · ${item.report.findings.length} 个问题${p1 ? `（${p1} 个 P1）` : ""}` : ""}` : item.state === "failed" ? "评审失败" : "已中断";
-    // Which PRs already carry comments from here, visible from the list.
-    return item.published.length ? `${state} · 已发布 ${item.published.length}` : state;
+      : item.state === "running" ? `评审中${batchProgress(item.events)}` : item.report ? `${STATUS[item.report.status]}${item.report.findings.length ? ` · ${item.report.findings.length} 个问题${p1 ? `（${p1} 个 P1）` : ""}` : ""}${round > 1 ? ` · 第 ${round} 轮` : ""}` : item.state === "failed" ? "评审失败" : "已中断";
+    // Which PRs already carry comments from here, visible from the list; one 自动预评审 started says so, searchable too.
+    const said = item.auto ? `自动 · ${state}` : state;
+    return item.published.length ? `${said} · 已发布 ${item.published.length}` : said;
   };
   const finished = finishedAway && entry?.id !== finishedAway && busy !== "review" ? history.find(item => item.id === finishedAway) : undefined;
   const finishedElsewhere = finished ? <p className="review-history-note" role="status">「{finished.snapshot.title}」{runStatus(finished)}。<button type="button" className="review-note-link" onClick={() => selectRun(finished.id)}>查看结果</button></p> : null;
   // What the list says about a PR: its latest review or overview here, and whether the PR moved since.
   const prStatus = (item: PrListItem) => {
     const saved = history.find(run => run.connectionId === connectionId && run.snapshot.reference === item.reference);
-    const changedSince = !merged && saved !== undefined && item.updatedAt !== undefined && Date.parse(item.updatedAt) > Date.parse(saved.at);
-    const status = merged ? "已合并" : saved ? runStatus(saved) : "未评审";
-    return { saved, changedSince, status, label: changedSince ? `${status} · 之后有更新` : status };
+    const changedSince = !merged && saved !== undefined && movedAfter(item, saved);
+    const read = statuses.get(`${connectionId}|${item.reference}`)?.status;
+    const quickly = !merged && saved?.kind === "review" && saved.report?.status === "completed" && read?.sourceCommit === saved.snapshot.sourceCommit
+      && prQuickApprovalChecks({ risk: saved.snapshot.risk?.level, status: read, description: saved.snapshot.description,
+        openFindings: saved.report.findings.filter((_, index) => saved.verdicts.find(verdict => verdict.finding === index)?.verdict !== "drop").length }).eligible;
+    const status = merged ? "已合并" : saved ? `${runStatus(saved)}${quickly ? " · 可以快速批准" : ""}` : "未评审";
+    // Known once a snapshot was read: of the last review here, or of the PR open now.
+    const risk = merged ? undefined : saved?.snapshot.risk ?? (snapshot?.reference === item.reference && selectedConnection === connectionId ? snapshot.risk : undefined);
+    const label = `${risk ? `${PR_RISK_LABELS[risk.level]} · ` : ""}${status}`;
+    return { saved, changedSince, status, risk, label: changedSince ? `${label} · 之后有更新` : label };
   };
   // The status is searchable too, so "未评审" or "之后有更新" narrows the list to what still needs a look.
   const visibleItems = items.filter(item => `${item.number} ${item.title} ${item.repository} ${item.author} ${prStatus(item).label}`.toLocaleLowerCase().includes(query));
@@ -952,7 +1160,7 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   const reviewable = entry?.connectionId !== undefined && connections.some(connection => connection.id === entry.connectionId);
   // The list says the PR moved after this record: say it where the record is read, with the way to review again.
   const listed = entry && entry.connectionId === connectionId && !merged ? items.find(item => item.reference === entry.snapshot.reference) : undefined;
-  const movedSince = entry !== undefined && entry.state !== "running" && listed?.updatedAt !== undefined && Date.parse(listed.updatedAt) > Date.parse(entry.at);
+  const movedSince = entry !== undefined && entry.state !== "running" && listed !== undefined && movedAfter(listed, entry);
   /** Back to the preparation page for this record's PR; from an overview or suggestions the next step is usually the full review. */
   const reviewLatest = (item: ReviewHistoryEntry) => {
     if (item.kind === "chat") setMode("review");
@@ -976,30 +1184,66 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
   const modelControl = <select id={entry ? "follow-up-model" : "review-model"} className="review-model-picker" aria-label={entry ? "对话模型" : "评审模型"} value={profileId} disabled={busy !== null} onChange={event => setProfileId(event.target.value)}>
     {models.length ? models.map(model => <option key={model.profileId} value={model.profileId}>{model.label}{model.model ? ` · ${model.model}` : ""}</option>) : <option value="">请先启用可用模型</option>}
   </select>;
+  // Quick approval: a finished review of these very commits with nothing standing, and the platform's checks for them.
+  const quick = entry?.kind === "review" && entry.report && openStatus?.status?.sourceCommit === entry.snapshot.sourceCommit
+    ? prQuickApprovalChecks({ risk: entry.snapshot.risk?.level, status: openStatus.status, openFindings: entry.report.status === "completed" ? standing.length : null, description: entry.snapshot.description }) : undefined;
   // Kept across a newer snapshot of the same PR (the background check of a cached one finding a new commit): keyed
   // by the snapshot, the 需要修改 dialog closed on its own with the comment typed into it. It reads the platform
   // again for the snapshot it is given. Keyed by the link too: the same `team/app#7` on a GitHub and a GitLab
   // mirror is two PRs, and one merged showed the other as merged, with a comment typed for one carried to it.
   const platformActions = activeSnapshot ? <PrPlatformActions key={`${entry?.connectionId ?? loadTarget?.connectionId ?? ""}|${activeSnapshot.reference}`} api={api} snapshot={activeSnapshot} connectionId={entry?.connectionId ?? loadTarget?.connectionId} disabled={busy !== null}
     openP1={entry?.report ? entry.report.findings.filter((finding, index) => finding.priority === "P1" && verdictFor(index)?.verdict !== "drop").length : 0}
+    status={openStatus?.status} quick={quick}
     onPending={value => { pending.current = value; setBusy(value ? "platform" : null); }}
-    onComplete={result => { setMessage(result.message); void list(); }} /> : null;
+    onComplete={result => { setMessage(result.message); void list(); refreshStatus(); }} /> : null;
+  // Wide enough, the evidence, the numbers and the steps stand beside the report instead of under it.
+  const besideLog = wide && report !== null;
+  const processSteps = (running: boolean) => <ReviewSteps items={steps} running={running} onOpenCode={code => { setDiffFocus(code); setShowDetails(true); }}
+    opens={code => code.view === "diff" || Boolean(activeSnapshot?.files.some(file => file.path === code.path))}
+    onOpenNote={path => void api.openVaultDocument(path).catch(() => setError("无法打开来源笔记，可能已移动或删除。"))} />;
+  /** A decision the review leaned on: where it is filed and what kind, its title, and whether it still stands, before it is opened. */
+  const evidenceItem = ({ index, record }: PrReviewReport["evidence"][number]) => {
+    const standingNow = record.lifecycleState === "uncertain" ? "有效状态待核对" : record.current ? "未识别到替代" : "已替代或退役";
+    return <details id={`review-evidence-${index}`} key={index} className="review-evidence-item" data-retired={standingNow === "已替代或退役" || undefined}>
+      <summary><span>[{index}] {record.source}/{record.id} · {record.kind === "adopted_principle" ? "已采纳原则" : "历史选择"}</span><strong>{record.title}</strong><span>{standingNow} · {applicabilityLabel(record)}</span></summary>
+      <p className="review-text">{record.summary}</p>
+      {record.applicability ? <><p>{record.applicability.reasons.join("；")}</p><p><span>例外</span>{record.applicability.scope.exceptions.join("；") || "未记录"}</p></> : null}
+      <p><span>适用条件</span>{record.appliesWhen ?? "未记录"}</p><p><span>注意</span>{record.caution ?? "无"}</p>
+      {record.warnings.map((warning) => <p key={warning}>{warning}</p>)}
+      <p className="review-evidence-source">来源 {record.sourceRef.relativePath} · 版本 {record.sourceRef.contentHash?.slice(0, 12) ?? "未确认"}</p>
+      <button type="button" className="text-button review-evidence-open" onClick={() => void api.openVaultDocument(record.sourceRef.relativePath).catch(() => setError("无法打开来源笔记，可能已移动或删除。"))}>打开来源笔记</button>
+    </details>;
+  };
+  const coverage = report ? ([
+    ["问题", report.findings.length ? `${report.findings.length} 个${standing.length < report.findings.length ? `，其中 ${closedCounts}` : ""}` : "没有发现问题"],
+    ["覆盖", `${report.reviewedFiles.length}/${report.reviewedFiles.length + report.unreviewedFiles.length} 个文件已评审，读取了 ${report.readFiles.length} 个文件的 diff${coverageNote(reportSnapshot, report)}`],
+    ["方式", [report.since ? `只看提交 ${report.since.slice(0, 8)} 之后的改动` : "", report.groups ? `分 ${report.groups} 组` : "", report.depth === "deep" ? "深度评审" : ""].filter(Boolean).join(" · ")],
+    ["规则", reportSnapshot?.rules?.length ? `${reportSnapshot.rules.length} 条：${ruleNames(reportSnapshot.rules)}` : ""],
+    ["用量", `${report.steps} 次模型调用${usageText(report.usage) ? ` · ${usageText(report.usage)}` : ""}`],
+  ] as const).filter(([, value]) => value) : [];
+  // A PR chosen whose changes are not here yet: its reading, or why it could not be read, is said in the middle, once.
+  const awaitingSnapshot = loadTarget !== null && !snapshot && !entry;
+  const changeSize = (size: PrReviewSnapshot["changeSize"]) => size ? <> <span className="review-change-size"><span data-change="add">+{size.added}</span> <span data-change="remove">−{size.removed}</span></span></> : null;
   return <section className="desktop-view pr-review-panel" hidden={hidden} aria-label="PR 评审">
     <header className="desktop-view-header drag-region">
-      <div><h1>评审</h1><p>结合代码与历史决策，审视每一次变更。</p></div>
-      <IconButton className="review-nav-toggle no-drag" aria-label="切换 PR 导航" aria-expanded={navigationOpen || (!entry && !loadTarget)} aria-controls="review-navigation" onClick={() => setNavigationOpen(value => !value)}><ActionIcon name="panel" /></IconButton>
-    </header>
-    <div className="review-workspace" data-navigation={navigationOpen || (!entry && !loadTarget)}>
-    <aside id="review-navigation" className="review-sidebar" aria-label="PR 列表">
-      <div className="review-sidebar-heading"><h2>工作列表</h2><IconButton aria-label="刷新 PR 列表" disabled={!browsable || listing || !connectionId} onClick={() => void list()}><ActionIcon name="refresh" /></IconButton></div>
-      <div className="review-list-controls">
+      <div><h1>评审</h1><p>结合代码与过往决策，审视每一次变更。</p></div>
+      {/* Which link the PRs are read from, and reading them again, are the whole page's: on its right, not in the list. */}
+      <div className="review-header-actions no-drag">
         <select id="review-connection" aria-label="代码平台链接" value={connectionId} disabled={!browsable || !connections.length} onChange={event => setConnectionId(event.target.value)}>
           {!connections.length ? <option value="">尚未添加平台</option> : connections.map(item => <option key={item.id} value={item.id}>{item.label} · {PLATFORM_LABELS[item.platform]}</option>)}
         </select>
-        <div className="review-list-tabs" role="group" aria-label="列表视图">
-          <button aria-pressed={listView === "prs"} onClick={() => { setListView("prs"); setSearch(""); }}>PR <span>{items.length}{more ? "+" : ""}</span></button>
-          <button aria-pressed={listView === "history"} onClick={() => { setListView("history"); setSearch(""); }}>历史评审 <span>{history.length}</span></button>
-        </div>
+        <IconButton className="review-header-refresh" aria-label="刷新 PR 列表" disabled={!browsable || listing || !connectionId} onClick={() => void list()}><ActionIcon name="refresh" /></IconButton>
+        <IconButton className="review-nav-toggle" aria-label="切换 PR 导航" aria-expanded={navigationOpen || (!entry && !loadTarget)} aria-controls="review-navigation" onClick={() => setNavigationOpen(value => !value)}><ActionIcon name="panel" /></IconButton>
+      </div>
+    </header>
+    <div className="review-workspace" data-navigation={navigationOpen || (!entry && !loadTarget)}>
+    <aside id="review-navigation" className="review-sidebar" aria-label="PR 列表">
+      <div className="review-list-tabs" role="group" aria-label="列表视图">
+        <button aria-pressed={listView === "prs"} onClick={() => { setListView("prs"); setSearch(""); }}>PR <span>{items.length}{more ? "+" : ""}</span></button>
+        <button aria-pressed={listView === "history"} onClick={() => { setListView("history"); setSearch(""); }}>历史评审 <span>{history.length}</span></button>
+        <button aria-pressed={listView === "quality"} onClick={() => { setListView("quality"); setSearch(""); }}>评审质量</button>
+      </div>
+      <div className="review-list-controls" hidden={listView === "quality"}>
         <div className="review-search"><ActionIcon name="search" /><input type="search" aria-label="搜索评审列表" placeholder={listView === "prs" ? "搜索已加载的 PR…" : "搜索历史评审…"} value={search} onChange={event => setSearch(event.target.value)} /></div>
         {/* One switch, a click away and always in view: a dropdown took two and went unseen, and two switches (whose,
             which state) read as a menu and a submenu. */}
@@ -1009,14 +1253,14 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
       </div>
       <div className="review-list-scroll">
       {listView === "prs" ? <>
-        {!connections.length ? <div className="review-list-empty"><p>连接代码平台，查看你的 PR。</p><button className="text-button" onClick={() => void api.openSurface("connections").catch(() => setListError(OPEN_SETTINGS_FAILED))}>管理链接</button></div> : null}
-        {/* A token that expired or lost access is the usual cause; the links page signs in with each one. */}
-        {/* Not after a failed opening of the settings: that is the very step that just failed. */}
-        {listError ? <p role="alert">{listError} {listError === OPEN_SETTINGS_FAILED ? null : <button type="button" className="review-note-link" onClick={() => void api.openSurface("connections").catch(() => setListError(OPEN_SETTINGS_FAILED))}>检查链接</button>}</p> : null}
-        {listing ? <p role="status">正在读取 PR 列表…</p> : !visibleItems.length && connectionId && !listError ? <p className="review-list-empty">{query ? "没有匹配的 PR。" : merged ? "当前范围没有已合并的 PR。" : "当前范围没有待处理的 PR。"}</p> : null}
+        {/* Not while the links could not be read: whether there are any is what is not known. */}
+        {!connections.length && listError !== CONNECTIONS_FAILED ? <div className="review-list-empty"><p>连接代码平台，查看你的 PR。</p><button className="text-button" onClick={() => void api.openSurface("connections").catch(() => setListError(OPEN_SETTINGS_FAILED))}>管理链接</button></div> : null}
+        {scope === "review-requested" && autoReview && autoUsed !== null ? <p className="review-list-note">{autoUsed >= autoReview.dailyReviews
+          ? `自动预评审今天的 ${autoReview.dailyReviews} 次已用完：余下的 PR 只列出，明天再评。` : `自动预评审已开：今天评审了 ${autoUsed} 次，最多 ${autoReview.dailyReviews} 次。`}</p> : null}
+        {listing ? <p className="review-list-empty" role="status">正在读取 PR 列表…</p> : !visibleItems.length && connectionId && !listError ? <p className="review-list-empty">{query ? "没有匹配的 PR。" : merged ? "当前范围没有已合并的 PR。" : "当前范围没有待处理的 PR。"}</p> : null}
         <ul className="review-pr-list" onKeyDown={moveInList(!merged)}>{visibleItems.map(item => {
           // The PR moved after the last review or overview: worth another look.
-          const { saved, changedSince, status } = prStatus(item);
+          const { saved, changedSince, status, risk } = prStatus(item);
           return <li key={item.reference}><button className="review-pr-item" aria-label={`${item.repository} #${item.number} ${item.title}`} aria-describedby={`review-status-${item.reference}`} disabled={!browsable} aria-pressed={selectedConnection === connectionId && selectedReference === item.reference} onClick={() => {
             // History is read, not reviewed again: its discussion opens without fetching the diff.
             if (merged) { setDiscussion({ connectionId, pr: { title: item.title, reference: item.reference, project: item.repository.split("/").at(-1)! } }); setNavigationOpen(false); }
@@ -1025,51 +1269,94 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
               void load({ ...item, connectionId });
               // The next two are read ahead, so walking down the list with ↓ stays instant.
               const next = visibleItems.slice(visibleItems.indexOf(item) + 1).slice(0, 2);
-              if (next.length) void api.prefetchPrReviews({ connectionId, items: prefetchItems(next) }).catch(() => undefined);
+              if (next.length) void api.prefetchPrReviews({ connectionId, items: next.map(fromList) }).catch(() => undefined);
             }
             else setNavigationOpen(false);
           }}>
             {/* Title first, where the eye goes; where it lives and who wrote it in one quiet line; then how it stands (Claude Design: "PR 列表条目", option B). */}
-            <strong>{item.title}</strong>
+            <strong title={item.title}>{item.title}</strong>
             <span className="review-item-meta"><span>{item.repository} #{item.number} · {item.author || "未知作者"}{item.updatedAt ? <> · <time dateTime={item.updatedAt} title={fullTime.format(new Date(item.updatedAt))}>{listDay(item.updatedAt)} 更新</time></> : null}</span></span>
             {/* The label names the PR; how it stands is read after it. */}
-            <span className="review-item-meta" id={`review-status-${item.reference}`}><span>{markP1(status)}</span>{changedSince ? <span data-changed title="上次评审或问答之后，PR 又有新提交或新评论">之后有更新</span> : null}</span>
+            <span className="review-item-meta" id={`review-status-${item.reference}`}><span><RiskBadge risk={risk} />{merged ? null : <BuildBadge read={statuses.get(`${connectionId}|${item.reference}`)} />}{markP1(status)}</span>{changedSince ? <span data-changed title="上次评审或问答之后，PR 又有新提交或新评论">之后有更新</span> : null}</span>
           </button></li>;
         })}</ul>
-        {more ? <button className="text-button review-load-more" disabled={!browsable || listing} onClick={() => void list(true)}>加载更多 PR</button> : null}
+        {/* Where the list is, or under what was read of it: a token that expired or lost access is the usual cause, and
+            the links page signs in with each one. Not after a failed opening of the settings: that is the step that failed. */}
+        {listError ? <div className="load-failure review-list-failure" role="alert"><span>{listError}</span>{listError === OPEN_SETTINGS_FAILED ? null : <>
+          <button type="button" className="secondary-button" disabled={listing} onClick={() => {
+            if (listError === CONNECTIONS_FAILED) { setListError(""); setConnectionsRead((value) => value + 1); } else void list(items.length > 0);
+          }}>重试</button>
+          <button type="button" className="review-note-link" onClick={() => void api.openSurface("connections").catch(() => setListError(OPEN_SETTINGS_FAILED))}>检查链接</button>
+        </>}</div> : null}
+        {more && !listError ? <button className="text-button review-load-more" disabled={!browsable || listing} onClick={() => void list(true)}>加载更多 PR</button> : null}
+      </> : listView === "quality" ? <>
+        <ul className="review-pr-list" aria-label="评审质量">
+          <li><button className="review-pr-item" aria-pressed={qualitySection === "outcomes"} onClick={() => { setQualitySection("outcomes"); requestAnimationFrame(() => document.getElementById("quality-outcomes")?.scrollIntoView({ block: "start" })); }}>
+            <strong>意见结果</strong>
+            <span className="review-item-meta"><span>近 30 天 · {quality.result?.quality ? `${quality.result.quality.outcomes.total} 条已发布` : "本连接"}</span></span>
+          </button></li>
+          {(() => { const escapes = quality.result?.quality?.escapes.filter(item => item.state !== "dismissed") ?? []; const open = escapes.filter(item => item.state === "open").length;
+            return escapes.length ? <li><button className="review-pr-item" onClick={() => { setQualitySection("outcomes"); requestAnimationFrame(() => document.getElementById("quality-escapes")?.scrollIntoView({ block: "start" })); }}>
+              <strong>漏网复盘</strong><span className="review-item-meta"><span>{open ? `${open} 条待写` : `${escapes.length} 条已写`}</span></span>
+            </button></li> : null; })()}
+          {(() => { const promotions = quality.result?.quality?.promotions.filter(item => !item.proposed) ?? [];
+            return promotions.length ? <li><button className="review-pr-item" onClick={() => { setQualitySection("outcomes"); requestAnimationFrame(() => document.getElementById("quality-promotions")?.scrollIntoView({ block: "start" })); }}>
+              <strong>晋升提议</strong><span className="review-item-meta"><span>{promotions.length} 条</span></span>
+            </button></li> : null; })()}
+          {(() => { const overview = benchmark.overview, waiting = overview ? overview.suggestions.length + overview.repositories.reduce((total, item) => total + item.candidates.length, 0) : 0;
+            return <li><button className="review-pr-item" aria-pressed={qualitySection === "benchmark"} onClick={() => setQualitySection("benchmark")}>
+              <strong>评测集</strong><span className="review-item-meta"><span>{waiting ? `${waiting} 条待确认` : "缺陷集与干净集"}</span></span>
+            </button></li>; })()}
+        </ul>
       </> : <>
         {!visibleHistory.length ? <p className="review-list-empty">{query ? "没有匹配的评审。" : "完成一次评审后，过程与对话会保存在这里。"}</p> : null}
         <ul className="review-pr-list" aria-label="历史评审" onKeyDown={moveInList(true)}>{visibleHistory.map(item => <li key={item.id}><button className="review-pr-item" data-run-id={item.id} disabled={!browsable} aria-pressed={selectedRun === item.id} onClick={() => selectRun(item.id)}>
-          <strong>{item.snapshot.title}</strong>
+          <strong title={item.snapshot.title}>{item.snapshot.title}</strong>
           <span className="review-item-meta"><span>{item.snapshot.reference} · <code>{item.snapshot.sourceCommit.slice(0, 8)}</code> · <time dateTime={item.at} title={fullTime.format(new Date(item.at))}>{dayTime.format(new Date(item.at))}</time> · {item.model}</span></span>
           <span className="review-item-meta"><span>{markP1(runStatus(item))}</span></span>
         </button></li>)}</ul>
       </>}
       </div>
-      <p className="review-sidebar-foot">{listView === "prs" ? merged ? "选择已合并的 PR，把讨论里的决定记为决策" : "选择 PR 开始评审或继续讨论 · ↑↓ 切换" : "仅保存在本机 · 含代码与决策摘录"}</p>
+      <p className="review-sidebar-foot">{listView === "quality" ? "只用代码平台和本机记录" : listView === "prs" ? merged ? "选择已合并的 PR，把讨论里的决定记为决策" : "选择 PR 开始评审或继续讨论 · ↑↓ 切换" : "仅保存在本机 · 含代码与决策摘录"}</p>
     </aside>
       <ListWidthHandle storageKey="decision.pr-review.list-width" label="调整 PR 列表宽度" controls="review-navigation" />
-    <div className="review-detail" aria-label="当前评审">
+    {listView === "quality" && qualitySection === "benchmark" ? <ReviewBenchmarkView api={api} overview={benchmark.overview} loading={benchmark.loading} connectionId={connectionId} onChanged={() => setBenchmarkReads(value => value + 1)} /> : null}
+    {listView === "quality" && qualitySection === "outcomes" ? <ReviewQualityView api={api} result={quality.result?.quality?.connectionId === connectionId ? quality.result : null} loading={quality.loading} error={quality.error} onReload={() => setQualityReads(value => value + 1)}
+      onEscapeChanged={escape => setQuality(current => current.result?.quality ? { ...current, result: { ...current.result, quality: { ...current.result.quality, escapes: current.result.quality.escapes.map(item => item.id === escape.id ? escape : item) } } } : current)}
+      onPromotionChanged={(key, promotion) => setQuality(current => current.result?.quality ? { ...current, result: { ...current.result, quality: { ...current.result.quality,
+        promotions: current.result.quality.promotions.flatMap(item => item.key !== key ? [item] : promotion ? [promotion] : []) } } } : current)} /> : null}
+    <div className="review-detail" aria-label="当前评审" ref={detailRef} hidden={listView === "quality"}>
       {message ? <p className="review-notice" role="status">{message}</p> : null}
-      {error ? <p className="review-notice" role="alert">{error}</p> : null}
+      {error && !awaitingSnapshot ? <p className="review-notice" role="alert">{error}</p> : null}
       {reevaluationError && reevaluationError.entryId === entry?.id ? <p className="review-notice" role="alert">{reevaluationError.text}</p> : null}
       {historyError ? <p className="review-notice" role="alert">{historyError}</p> : null}
-      {!entry && !loadTarget ? <div className="review-empty"><ActionIcon name="record" /><h2>从一次变更开始</h2><p>选择 PR，结合历史决策检查问题；也可以先生成 PR 概览或改进建议。<br />已有评审与问答可以继续追问。</p></div> : null}
-      {loadTarget && !snapshot && !entry ? <div className="review-empty"><h2>{loadTarget.title}</h2>{!reading ? <button className="secondary-button" onClick={() => void load(loadTarget)}>重试读取 PR</button> : <p>正在读取变更内容…</p>}</div> : null}
+      {!entry && !loadTarget ? <div className="review-empty"><ActionIcon name="record" /><h2>从一次变更开始</h2><p>选择 PR，结合过往决策检查问题；也可以先生成 PR 概览或改进建议。<br />已有评审与问答可以继续追问。</p></div> : null}
+      {awaitingSnapshot ? <div className="review-empty"><h2>{loadTarget.title}</h2>{reading ? <p role="status">正在读取 PR 最新快照…</p> : <>
+        {error ? <p className="error-message" role="alert">{error}</p> : null}
+        <button type="button" className="secondary-button" onClick={() => void load(loadTarget)}>重试读取 PR</button></>}</div> : null}
       {snapshot ? <div className="review-preparation">
-        <div className="review-context"><div><p className="review-context-meta">{snapshot.reference}</p><h2>{snapshot.title}</h2><p className="review-context-meta"><code>{snapshot.sourceCommit.slice(0, 12)}</code> · <button className="review-files-link" aria-label="查看 PR 详情" onClick={() => setShowDetails(true)}><ActionIcon name="diff" /><span>{snapshot.files.length} 个文件</span></button>{loadTarget ? <> · <button type="button" className="review-files-link" onClick={() => setDiscussion({ connectionId: loadTarget.connectionId, pr: snapshot })}>PR 讨论</button> · <button type="button" className="review-files-link" onClick={() => void api.openPr({ connectionId: loadTarget.connectionId, reference: snapshot.reference }).catch(() => setError("无法在浏览器中打开这个 PR，请检查平台链接。"))}>在平台打开</button></> : null}</p></div>
+        <div className="review-context"><div><p className="review-context-meta">{snapshot.reference}</p><h2>{snapshot.title}</h2><p className="review-context-meta"><code>{snapshot.sourceCommit.slice(0, 12)}</code> · <button className="review-files-link" aria-label="查看 PR 详情" onClick={() => setShowDetails(true)}><ActionIcon name="diff" /><span>{snapshot.files.length} 个文件</span></button>{changeSize(snapshot.changeSize)}{loadTarget ? <> · <button type="button" className="review-files-link" onClick={() => setDiscussion({ connectionId: loadTarget.connectionId, pr: snapshot })}>PR 讨论</button> · <button type="button" className="review-files-link" onClick={() => void api.openPr({ connectionId: loadTarget.connectionId, reference: snapshot.reference }).catch(() => setError("无法在浏览器中打开这个 PR，请检查平台链接。"))}>在平台打开<ActionIcon name="open" /></button></> : null}</p></div>
           {platformActions}</div>
+        {loadTarget && scope === "created" ? <ApprovalConditions risk={snapshot.risk} branch={snapshot.destinationBranch} read={openStatus} description={snapshot.description} commit={snapshot.sourceCommit} owners={snapshot.codeOwners} author
+          responses={responses?.key === `${loadTarget.connectionId}\n${loadTarget.reference}` ? responses : undefined} onDraft={() => setDescribing({ connectionId: loadTarget.connectionId, snapshot })} /> : null}
         <div className="review-preparation-body">
           {/* What the author says first; without it, an overview is the quicker way in. */}
           {snapshot.description.trim()
-            ? <details key={snapshot.snapshotId} className="review-description" open={snapshot.description.length <= 280 || undefined}><summary>PR 描述</summary><div className="assistant-answer">{renderMarkdown(snapshot.description)}</div></details>
+            ? <details key={snapshot.snapshotId} className="review-description" open={snapshot.description.length <= 280 || undefined}><summary>PR 描述</summary><div className="assistant-answer">{renderMarkdown(snapshot.description, undefined, { linkTargets: true })}</div></details>
             : <p className="review-history-note">PR 没有填写描述，可以先生成 PR 概览。{mode === "/describe" ? null : <> <button type="button" className="review-note-link" onClick={() => setMode("/describe")}>选择 PR 概览</button></>}</p>}
+          {/* The team's template: 验证、风险、撤回, drafted from what Paraself knows and written back once the author confirms. */}
+          {loadTarget && scope !== "created" && (() => { const lacking = (Object.keys(PR_DESCRIPTION_SECTION_LABELS) as Array<keyof typeof PR_DESCRIPTION_SECTION_LABELS>).filter(part => !(openStatus?.status?.sections ?? prDescriptionSections(snapshot.description))[part]);
+            return lacking.length ? <p className="review-history-note">PR 描述缺{lacking.map(part => PR_DESCRIPTION_SECTION_LABELS[part]).join("、")}。 <button type="button" className="review-note-link" onClick={() => setDescribing({ connectionId: loadTarget.connectionId, snapshot })}>起草三段描述</button></p> : null; })()}
+          {/* The user's own PR: what others said on it, each to be answered (作者回应). */}
+          {loadTarget && scope === "created" ? <PrReceivedComments api={api} connectionId={loadTarget.connectionId} reference={loadTarget.reference} onAnswered={message => { setMessage(message); refreshStatus(); }}
+            onCounted={(answered, total) => setResponses({ key: `${loadTarget.connectionId}\n${loadTarget.reference}`, answered, total })} /> : null}
           <section aria-labelledby="review-scope-title"><h3 id="review-scope-title">这次会带上</h3>
             <div className="review-scope">
+              {mode === "review" && snapshot.risk ? <RiskTile risk={snapshot.risk} branch={snapshot.destinationBranch} /> : null}
               <div>{chosenPaths ? <><strong>{chosenPaths.length} / {Object.keys(snapshot.fileBatches ?? {}).length}</strong><span>个文件将评审</span></> : <><strong>{snapshot.files.length}</strong><span>个变更文件</span></>}<small>{chosenPaths ? `共 ${snapshot.files.length} 个变更文件` : `${snapshot.files[0]?.path ?? ""}${snapshot.files.length > 1 ? " 等" : ""}`}{Object.keys(snapshot.fileBatches ?? {}).length > 1 ? <> · <button type="button" className="review-note-link" onClick={() => setChoosingScope(true)}>选择文件</button></> : null}</small>
                 {snapshot.changeSize ? <small>{changeNote(snapshot.changeSize)}</small> : null}</div>
               <div><strong>{snapshot.rules?.length ?? 0}</strong><span>条评审规则</span><small>{snapshot.rules?.length ? ruleNames(snapshot.rules) : "没有命中"} · <button type="button" className="review-note-link" onClick={() => void api.openReviewRulesDirectory().catch(() => setError("无法打开评审规则目录，请检查权限后重试。"))}>{snapshot.rules?.length ? "管理规则" : "添加规则"}</button></small></div>
-              {mode === "review" ? <div><strong>{snapshot.guides?.length ?? 0}</strong><span>份仓库规范</span><small>{snapshot.guides?.length ? `${snapshot.guides.join("、")} · 只按能在代码上核对的约定检查` : "没有读到根目录的 CLAUDE.md 或 AGENTS.md"}</small></div> : null}
+              {mode === "review" ? <div><strong>{snapshot.guides?.length ?? 0}</strong><span>份仓库规范</span><small>{snapshot.guides?.length ? `${snapshot.guides.join("、")} · 读自目标分支${snapshot.destinationBranch ? ` ${snapshot.destinationBranch}` : ""}，REVIEW.md 全部适用，其余只按能在代码上核对的约定检查` : "目标分支根目录没有 REVIEW.md、CLAUDE.md 或 AGENTS.md"}</small></div> : null}
               <div><strong>{snapshot.existingComments ?? 0}</strong><span>条已有评论</span><small>{snapshot.existingComments ? "会参考，不重复提出已被指出的问题" : "PR 上还没有可参考的评论"}</small></div>
               {mode === "review" && dismissedHere.length ? <div><strong>{dismissedHere.length}</strong><span>条不采纳过的问题</span><small>{dismissedHere[0]!.title}{dismissedHere.length > 1 ? " 等" : ""} · 告诉模型不再提同类问题 · <button type="button" className="review-note-link" aria-label="查看不采纳过的问题" onClick={() => setShowDismissals(true)}>查看</button></small></div> : null}
               {mode === "review" && publishedHere.length ? <div><strong>{publishedHere.length}</strong><span>条发布过的问题</span><small>{publishedHere[0]!.title}{publishedHere.length > 1 ? " 等" : ""} · 告诉模型团队在意同类问题</small></div> : null}
@@ -1092,18 +1379,23 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
             </label>)}
           </fieldset>
           {mode === "review" ? <label className="review-deep"><input type="checkbox" checked={deep} onChange={event => setDeep(event.target.checked)} />
-            <span><strong>深度评审</strong>每组再派一位审查者，专门核对团队评审规则与历史决策，和缺陷审查同时进行；模型调用约多一倍。</span></label> : null}
+            <span><strong>深度评审</strong>每组再派一位审查者，专门核对团队评审规则与过往决策，和缺陷审查同时进行；模型调用约多一倍。</span></label> : null}
+          {mode === "review" && lastReview && lastReview.snapshot.sourceCommit !== snapshot.sourceCommit ? <label className="review-deep"><input type="checkbox" checked={incremental} onChange={event => setIncremental(event.target.checked)} />
+            <span><strong>只看新提交</strong>只评审上次评审（提交 <code>{lastReview.snapshot.sourceCommit.slice(0, 8)}</code>）之后新提交改动的行，之前的改动以上次评审为准；平台给不出这些改动时评审全部。</span></label> : null}
+          {mode === "review" && rounds >= 3 ? <p className="review-history-note" role="note">这个 PR 已经评审了 {rounds} 轮。同类问题来回出现时，建议约作者当面谈，或请作者重新考虑方案；手动评审照常可用，自动预评审只评前三轮。</p> : null}
         </div>
         <div className="review-compose-area">{runningElsewhere}{finishedElsewhere}{lastFocus && !focus.trim() ? <p className="review-history-note">上次对这个 PR 的关注点：{lastFocus.length > 60 ? `${lastFocus.slice(0, 60)}…` : lastFocus} <button type="button" className="review-note-link" disabled={busy !== null} onClick={() => { setFocus(lastFocus); document.getElementById("review-focus")?.focus(); }}>沿用</button></p> : null}<div className="review-composer">
           <textarea id="review-focus" aria-label="本次关注点（可选）" rows={3} value={focus} maxLength={2000} disabled={busy !== null} placeholder="补充关注点（可选），例如权限边界、异常处理…" onChange={event => setFocus(event.target.value)}
             onKeyDown={event => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !event.nativeEvent.isComposing) { event.preventDefault(); start(); } }} />
-          <div className="review-composer-tools">{modelControl}<button className="primary-button" disabled={busy !== null || !currentModel} onClick={start}>{startLabel}</button></div>
+          <div className="review-composer-tools">{modelControl}<button className="primary-button" disabled={busy !== null || !currentModel || agentReview !== undefined} onClick={start}>{startLabel}</button></div>
+          {agentReview ? <p className="review-history-note" role="note">{agentReview.auto ? "自动预评审" : "agent 发起的评审"}（{agentReview.snapshot.reference}）正在 App 后台进行，结束后才能开始新的。</p> : null}
         </div><p className="review-compose-hint">{currentModel?.leavesDevice ? "代码、决策摘录、命中的评审规则和 PR 上已有的评论将发送给所选模型服务，可能消耗额度。" : "使用本机模型。"} 关注点对三种方式都生效；正文保存遵循模型调用记录设置。<span>⌘ / Ctrl + Enter {startLabel}</span></p></div>
       </div> : null}
       {entry ? <div className="review-conversation" role="region" aria-label="评审过程">
-        <div className="review-context"><div><p className="review-context-meta">{entry.snapshot.reference} <span>{markP1(runStatus(entry))}</span></p><h2>{entry.snapshot.title}</h2><p className="review-context-meta"><code>{entry.snapshot.sourceCommit.slice(0, 12)}</code> · <button className="review-files-link" aria-label="查看 PR 详情" onClick={() => setShowDetails(true)}><ActionIcon name="diff" /><span>{entry.snapshot.files.length} 个文件</span></button> · {fullTime.format(new Date(entry.at))}{entry.connectionId ? <> · <button type="button" className="review-files-link" onClick={() => setDiscussion({ connectionId: entry.connectionId!, pr: entry.snapshot })}>PR 讨论</button> · <button type="button" className="review-files-link" onClick={() => void api.openPr({ connectionId: entry.connectionId!, reference: entry.snapshot.reference }).catch(() => setError("无法在浏览器中打开这个 PR，请检查平台链接。"))}>在平台打开</button></> : null}</p></div>
+        <div className="review-context"><div><p className="review-context-meta">{entry.snapshot.reference} <RiskBadge risk={entry.snapshot.risk} /><span>{markP1(runStatus(entry))}</span></p><h2>{entry.snapshot.title}</h2><p className="review-context-meta"><code>{entry.snapshot.sourceCommit.slice(0, 12)}</code> · <button className="review-files-link" aria-label="查看 PR 详情" onClick={() => setShowDetails(true)}><ActionIcon name="diff" /><span>{entry.snapshot.files.length} 个文件</span></button>{changeSize(entry.snapshot.changeSize)} · {fullTime.format(new Date(entry.at))}{entry.connectionId ? <> · <button type="button" className="review-files-link" onClick={() => setDiscussion({ connectionId: entry.connectionId!, pr: entry.snapshot })}>PR 讨论</button> · <button type="button" className="review-files-link" onClick={() => void api.openPr({ connectionId: entry.connectionId!, reference: entry.snapshot.reference }).catch(() => setError("无法在浏览器中打开这个 PR，请检查平台链接。"))}>在平台打开<ActionIcon name="open" /></button></> : null}</p></div>
           <div className="review-context-actions">
             {platformActions}
+            {platformActions && entry.connectionId ? <span className="review-context-divider" aria-hidden="true" /> : null}
             {entry.connectionId ? <IconButton aria-label={entry.kind === "chat" ? "评审最新提交" : "重新评审最新提交"} disabled={busy !== null || !reviewable} onClick={() => reviewLatest(entry)}><ActionIcon name="refresh" /></IconButton> : null}
             <details className="review-more" ref={moreActions} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) closeActions(); }} onKeyDown={event => { if (event.key === "Escape") { closeActions(); event.currentTarget.querySelector("summary")?.focus(); } }}>
               <summary aria-label="评审操作"><ActionIcon name="more" /></summary>
@@ -1111,6 +1403,10 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
             </details>
           </div>
         </div>
+        {entry.kind === "review" && entry.connectionId ? <ApprovalConditions risk={entry.snapshot.risk} branch={entry.snapshot.destinationBranch} read={openStatus} description={entry.snapshot.description} commit={entry.snapshot.sourceCommit} owners={entry.snapshot.codeOwners}
+          onDraft={() => setDescribing({ connectionId: entry.connectionId!, snapshot: entry.snapshot })} /> : null}
+        <div className="review-body">
+        <div className="review-main">
         <div className="review-chat-viewport">
         <ol ref={chatLog} className="review-chat-messages" role="log" aria-label="执行记录" aria-live={hidden ? "off" : "polite"} tabIndex={0}
           onScroll={event => {
@@ -1120,11 +1416,9 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
             else if (distance >= 64) followLatest.current = false;
             setShowLatest(!followLatest.current);
           }}>
-          {entry.kind === "review" || entry.focus ? <li className="assistant-turn user" aria-label={entry.kind === "chat" ? "关注点" : "评审要求"}><div><p>{entry.kind === "chat" ? `关注点：${entry.focus}` : entry.focus || "检查变更新引入的问题，并核对历史决策。"}</p><small>{entry.model}</small></div></li> : null}
-          {steps.length ? <li className="review-process"><details key={entry.id} open={entry.state === "running" ? true : undefined}><summary><span>{entry.state === "running" ? "正在评审" : "评审过程"}</span><span>{lastStep}</span></summary>
-            <ReviewSteps items={steps} running={entry.state === "running"} onOpenCode={code => { setDiffFocus(code); setShowDetails(true); }}
-              opens={code => code.view === "diff" || Boolean(activeSnapshot?.files.some(file => file.path === code.path))}
-              onOpenNote={path => void api.openVaultDocument(path).catch(() => setError("无法打开来源笔记，可能已移动或删除。"))} />
+          {entry.kind === "review" || entry.focus ? <li className="assistant-turn user" aria-label={entry.kind === "chat" ? "关注点" : "评审要求"}><div><p>{entry.kind === "chat" ? `关注点：${entry.focus}` : entry.focus || "检查变更新引入的问题，并核对过往决策。"}</p><small>{entry.model}</small></div></li> : null}
+          {steps.length && !besideLog ? <li className="review-process"><details key={entry.id} open={entry.state === "running" ? true : undefined}><summary><span>{entry.state === "running" ? "正在评审" : "评审过程"}</span><span>{lastStep}</span></summary>
+            {processSteps(entry.state === "running")}
           </details></li> : null}
     {report ? <li className="assistant-turn assistant review-chat-result" aria-label="评审结果">
       {/* The verdict and how serious, then the summary; the rest of the numbers are one quiet line (Claude Design: "报告开头", option B). */}
@@ -1137,25 +1431,28 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
         {report.overview ? <p className="review-result-overview">{report.overview}</p> : null}
         {report.conclusions.length === 1 && !report.conclusions[0]!.lens ? <div className="assistant-answer">{renderMarkdown(report.conclusions[0]!.text)}</div>
           : <ul className="review-conclusions" aria-label="各组结论">{report.conclusions.map((item, index) => <li key={index}>
-            <div className="review-conclusion-head"><strong>{item.label}</strong>{item.lens ? <span className="review-step-lens">{LENS[item.lens]}</span> : null}</div>
-            <div className="assistant-answer">{renderMarkdown(item.text)}</div>
+            {/* A group read by two reviewers names its files once, over both conclusions. */}
+            {report.conclusions![index - 1]?.label === item.label ? null : <strong>{item.label}</strong>}
+            <div className="review-conclusion">{item.lens ? <span className="review-step-lens">{LENS[item.lens]}</span> : null}<div className="assistant-answer">{renderMarkdown(item.text)}</div></div>
           </li>)}</ul>}
       </div> : <div className="assistant-answer">{renderMarkdown(report.summary)}</div>}
-      <p className="review-result-meta">{report.findings.length ? `${report.findings.length} 个问题${standing.length < report.findings.length ? `（${closedCounts}）` : ""}` : "没有发现问题"} · 完成评审 {report.reviewedFiles.length}/{report.reviewedFiles.length + report.unreviewedFiles.length} 个文件{coverageNote(reportSnapshot, report)}{report.groups ? ` · 分 ${report.groups} 组` : ""}{report.depth === "deep" ? " · 深度评审" : ""} · 已读取 {report.readFiles.length} 个文件的文本 diff · {report.steps} 次模型调用{usageLabel(report.usage)}{reportSnapshot?.rules?.length ? ` · 按 ${reportSnapshot.rules.length} 条评审规则` : ""}</p>
+      {besideLog ? null : <p className="review-result-meta">{report.findings.length ? `${report.findings.length} 个问题${standing.length < report.findings.length ? `（${closedCounts}）` : ""}` : "没有发现问题"} · 完成评审 {report.reviewedFiles.length}/{report.reviewedFiles.length + report.unreviewedFiles.length} 个文件{coverageNote(reportSnapshot, report)}{report.groups ? ` · 分 ${report.groups} 组` : ""}{report.depth === "deep" ? " · 深度评审" : ""} · 已读取 {report.readFiles.length} 个文件的文本 diff · {report.steps} 次模型调用{usageLabel(report.usage)}{reportSnapshot?.rules?.length ? ` · 按 ${reportSnapshot.rules.length} 条评审规则` : ""}</p>}
       {report.warnings.length ? <ul className="review-result-warnings" aria-label="评审限制">{report.warnings.map((warning) => <li key={warning}><ActionIcon name="warning" />{warning}</li>)}</ul> : null}
       {report.unreviewedFiles.length ? <details><summary>未完成评审的文件（{report.unreviewedFiles.length}）</summary><ul>{report.unreviewedFiles.map((file) => <li key={file}>{file}</li>)}</ul></details> : null}
-      {report.findings.length > 3 && (new Set(report.findings.map(finding => finding.priority)).size > 1 || openCount < report.findings.length) ? <div className="review-finding-filter" role="group" aria-label="筛选问题">
+      {filterable || unjudged > 1 || postable.length > 1 || reevaluatingAll?.entryId === entry.id ? <div className="review-finding-bar">
+      {filterable ? <div className="review-finding-filter" role="group" aria-label="筛选问题">
         <button type="button" aria-pressed={priorityFilter === null} onClick={() => setPriorityFilter(null)}>全部 {report.findings.length}</button>
         {openCount < report.findings.length ? <button type="button" aria-pressed={priorityFilter === "open"} onClick={() => setPriorityFilter("open")}>待处理 {openCount}</button> : null}
         {new Set(report.findings.map(finding => finding.priority)).size > 1 ? (["P1", "P2", "P3"] as const).map(priority => { const count = report.findings.filter(finding => finding.priority === priority).length;
           return count ? <button key={priority} type="button" aria-pressed={priorityFilter === priority} onClick={() => setPriorityFilter(priority)}>{priority} {count}</button> : null; }) : null}
       </div> : null}
-      {priorityFilter === "open" && openCount === 0 ? <p>这份评审的问题都处理过了：已发布为 PR 评论或已撤销。</p> : null}
       {unjudged > 1 || postable.length > 1 || reevaluatingAll?.entryId === entry.id ? <p className="review-batch-publish">
         {reevaluatingAll?.entryId === entry.id ? <span role="status">正在复评 {reevaluatingAll.done + 1} / {reevaluatingAll.total}…</span>
           : unjudged > 1 ? <button type="button" className="secondary-button" disabled={busy !== null || !currentModel} onClick={event => { event.currentTarget.closest(".review-conversation")?.querySelector<HTMLElement>(".review-actions h2")?.focus({ preventScroll: true }); void reevaluateAll(); }}>全部复评（{unjudged}）</button> : null}
         {postable.length > 1 ? <button type="button" className="secondary-button" disabled={busy !== null} onClick={() => setBatch(postable)}>批量发布为 PR 评论（{postable.length}）</button> : null}
       </p> : null}
+      </div> : null}
+      {priorityFilter === "open" && openCount === 0 ? <p>这份评审的问题都处理过了：已发布为 PR 评论或已撤销。</p> : null}
       {previous && carried.length ? <details className="review-previous">
         <summary>{oneSource ? "上次评审" : "之前评审"}的 {carried.length} 个问题 · {carried.filter(item => item.place === "changed" && !item.again).length} 个所在文件有改动</summary>
         <p>{oneSource ? <>上次评审（{dayTime.format(new Date(previous.at))} · 提交 <code>{previous.snapshot.sourceCommit.slice(0, 8)}</code>）的问题</> : <>之前几次评审的问题（最近一次没评完的文件沿用更早的结论；发布过评论的问题一直跟到复核为已不存在）</>}，放到这次的提交上看：所在文件没改动的应当还在，有改动的可以逐条复核。</p>
@@ -1168,12 +1465,24 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
           : recheckable.length ? <button type="button" className="secondary-button" disabled={busy !== null || !currentModel} onClick={event => { event.currentTarget.closest("details")?.querySelector("summary")?.focus(); void recheckAll(recheckable); }}>复核有改动的 {recheckable.length} 个</button> : null}
       </details> : null}
       {report.findings.length === 0 ? <p>本次已覆盖范围内没有形成有效问题；不代表 PR 已获批准。</p> : report.findings.map((finding, index) => (priorityFilter === "open" ? handled(index) : priorityFilter !== null && finding.priority !== priorityFilter) ? null : <article className="review-finding" key={index} data-finding={index} data-verdict={verdictFor(index)?.verdict}>
-        {/* The priority is part of the heading, so reading by headings still hears it. */}
-        <h3 className="review-finding-head" tabIndex={-1}><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span> {finding.title}{raisedAgain.has(index) ? <>{" "}<span className="review-finding-again">之前也报过</span></> : null}{declinedFor(finding) && !verdictFor(index)?.by ? <>{" "}<span className="review-finding-again">以前不采纳过</span></> : null}</h3>
-        <button type="button" className="review-files-link review-finding-location" title="在 PR 详情的 diff 里定位到这一行" onClick={() => { setDiffFocus({ path: finding.path, side: finding.side, line: finding.line }); setShowDetails(true); }}><code>{finding.path}:{finding.line}（{finding.side === "new" ? "新版本" : "旧版本"}）</code></button>
-        <p className="review-text">{finding.body}</p>
+        <div className="review-finding-top">
+          {/* The priority is part of the heading, so reading by headings still hears it. */}
+          <h3 className="review-finding-head" tabIndex={-1}><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span> {finding.title}{raisedAgain.has(index) ? <>{" "}<span className="review-finding-again">之前也报过</span></> : null}{declinedFor(finding) && !verdictFor(index)?.by ? <>{" "}<span className="review-finding-again">以前不采纳过</span></> : null}</h3>
+          {/* What was posted stays posted; a later drop only stops new posts. */}
+          {!entry.connectionId ? null : entry.published.some(item => item.finding === index)
+            ? <><span className="review-finding-posted"><ActionIcon name="check" />已发布为 PR 评论{entry.published.some(item => item.finding === index && item.blocking) ? "（阻塞项）" : ""}</span>
+              {(() => { const outcome = entry.published.find(item => item.finding === index)?.outcome; return outcome ? <span className="review-finding-outcome" data-outcome={outcome.kind}>{outcomeText(outcome)}</span> : null; })()}</>
+            : postedBefore(index) ? <span className="review-finding-posted"><ActionIcon name="check" />同一提交的另一次评审已发布</span>
+            : verdictFor(index)?.verdict === "drop" ? null
+            : prFindingBlocksByDefault({ ...finding, ...(verdictFor(index)?.replacement ?? {}) }, entry.snapshot.guides, entry.snapshot.rules) ? <span className="review-finding-blocking">发布时设为阻塞</span>
+            : prFindingBasis({ ...finding, ...(verdictFor(index)?.replacement ?? {}) }, entry.snapshot.guides).tier === "personal" ? <span className="review-finding-blocking" data-off>不能设为阻塞</span> : null}
+        </div>
+        <button type="button" className="review-finding-location" title="在 PR 详情的 diff 里定位到这一行" onClick={() => { setDiffFocus({ path: finding.path, side: finding.side, line: finding.line }); setShowDetails(true); }}><code>{finding.path}:{finding.line}</code><span>{finding.side === "new" ? "新版本" : "旧版本"}</span></button>
+        {/* The model writes it in Markdown, as the copy and the comment draft take it: code fences and lists, not their marks. */}
+        <div className="assistant-answer review-finding-body">{renderMarkdown(finding.body)}</div>
         {declinedFor(finding) && !verdictFor(index)?.by ? <p className="review-history-note">你在 {declinedFor(finding)!.reference} 不采纳过同一问题：{declinedFor(finding)!.reason}</p> : null}
-        {finding.decisionIndexes.length ? <p>决策依据：{finding.decisionIndexes.map((number) => <a key={number} href={`#review-evidence-${number}`} onClick={event => {
+        <GuideBasis finding={finding} guides={entry.snapshot.guides} rules={entry.snapshot.rules} />
+        {finding.decisionIndexes.length ? <p className="review-finding-basis"><span>决策依据</span>{finding.decisionIndexes.map((number) => <a key={number} href={`#review-evidence-${number}`} onClick={event => {
           const evidence = document.getElementById(`review-evidence-${number}`);
           if (evidence instanceof HTMLDetailsElement) {
             event.preventDefault();
@@ -1182,9 +1491,10 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
             if (group) group.open = true;
             evidence.scrollIntoView?.({ block: "nearest" });
           }
-        }}>[{number}] </a>)}</p> : null}
+        }}>{[`[${number}]`, report.evidence.find(item => item.index === number)?.record.title].filter(Boolean).join(" ")}</a>)}<BasisTag finding={finding} guides={entry.snapshot.guides} only="personal" /></p> : null}
         {verdictFor(index) ? <VerdictNote verdict={verdictFor(index)!} onWithdraw={() => { withdraw(entry.id, index); refocus(`[data-finding="${index}"] h3`, ".review-actions h2"); }} /> : null}
         <div className="review-finding-actions">
+          <div>
           {/* One the reviewer turned down stays theirs until they take it back. */}
           {verdictFor(index)?.by ? null : <button type="button" className="text-button" aria-label={`复评「${finding.title}」`} disabled={busy !== null || !currentModel} onClick={() => void reevaluate(index)}>{reevaluating?.entryId === entry.id && reevaluating.index === index ? "复评中…" : verdictFor(index) ? "重新复评" : "复评"}</button>}
           {/* Asking about this one: the follow-up box names it, so the answer is about this finding rather than the report. */}
@@ -1200,52 +1510,52 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
               const reason = verdictFor(index)?.verdict === "drop" ? verdictFor(index)!.reason.slice(0, 500) : declinedFor(finding)?.reason ?? "";
               setDismissing({ index, reason, opened: reason });
             }}>不采纳</button>}
+          </div>
           {/* A dropped finding is closed, as code-meeseeks closes it; re-evaluate again to reopen it. */}
-          {/* What was posted stays posted; a later drop only stops new posts. */}
-          {!entry.connectionId ? null : entry.published.some(item => item.finding === index)
-            ? <span>已发布为 PR 评论</span>
-            : postedBefore(index) ? <span>同一提交的另一次评审已发布</span>
-            : verdictFor(index)?.verdict === "drop" ? null
-              : <button type="button" className="text-button" aria-label={`把「${finding.title}」转为 PR 评论`} disabled={busy !== null} onClick={() => setCommentFinding(index)}>转为评论</button>}
+          {!entry.connectionId || entry.published.some(item => item.finding === index) || postedBefore(index) || verdictFor(index)?.verdict === "drop" ? null
+            : <button type="button" className="secondary-button" aria-label={`把「${finding.title}」转为 PR 评论`} disabled={busy !== null} onClick={() => setCommentFinding(index)}>转为评论</button>}
         </div>
       </article>)}
       {/* What the verification left out, with its score and why: quieter than the findings, there to disagree with. */}
+      {/* Neither confirmed nor refuted: apart from the findings, ahead of those turned down, and never posted with them. */}
+      {report.needsContext?.length ? <details className="review-filtered"><summary>待核实的候选问题 · {report.needsContext.length}</summary>
+        <p className="review-history-note">核验缺少判断所需的材料，既未确认也未否定，没有列入上面的问题；请按缺少的材料自行核对。</p>
+        <ul>{report.needsContext.map(({ finding, reason, missing }, index) => <li key={index}><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span> <strong>{finding.title}</strong> <code>{finding.path}:{finding.line}</code><small>缺少：{missing} · {reason}</small></li>)}</ul>
+      </details> : null}
+      {report.unplaced?.length ? <details className="review-filtered"><summary>没能定位到变更行的候选问题 · {report.unplaced.length}</summary>
+        <p className="review-history-note">评审员提出了，但不在这组已读的变更行附近，没有核验，也没有列入上面的问题。</p>
+        <ul>{report.unplaced.map((finding, index) => <li key={index}><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span> <strong>{finding.title}</strong> <code>{finding.path}:{finding.line}</code><small>{finding.body}</small></li>)}</ul>
+      </details> : null}
       {report.filtered?.length ? <details className="review-filtered"><summary>核验未通过的候选问题 · {report.filtered.length}</summary>
-        <p className="review-history-note">逐条核验时置信度低于 80（按 Claude Code 的做法），没有列入上面的问题。</p>
-        <ul>{report.filtered.map(({ finding, score, reason }, index) => <li key={index}><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span> <strong>{finding.title}</strong> <code>{finding.path}:{finding.line}</code><small>置信度 {score} · {reason}</small></li>)}</ul>
+        <p className="review-history-note">逐条核验时{filteredNote(report.filtered)}，没有列入上面的问题。</p>
+        <ul>{report.filtered.map(({ finding, score, reason }, index) => <li key={index}><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span> <strong>{finding.title}</strong> <code>{finding.path}:{finding.line}</code><small>{score === undefined ? "" : `置信度 ${score} · `}{reason}</small></li>)}</ul>
       </details> : null}
       {/* No evidence is worth saying at once: it does not mean nothing in the history applies. */}
-      {!report.evidence.length ? <p className="review-evidence">决策证据：未取得相关决策证据；不能据此断言没有历史约束。</p> : <details className="review-evidence"><summary>决策证据 · {report.evidence.length}</summary>
-      {report.evidence.map(({ index, record }) => <details id={`review-evidence-${index}`} key={index}>
-        <summary>[{index}] {record.source}/{record.id} · {record.title}</summary>
-        <p>{record.kind === "adopted_principle" ? "已采纳原则" : "历史选择"} · {record.lifecycleState === "uncertain" ? "有效状态待核对" : record.current ? "未识别到替代" : "已替代或退役"} · {applicabilityLabel(record)}</p>
-        <p className="review-text">{record.summary}</p>
-        <p>来源：{record.sourceRef.relativePath} · 版本 {record.sourceRef.contentHash?.slice(0, 12) ?? "未确认"}</p>
-        {record.applicability ? <><p>{record.applicability.reasons.join("；")}</p><p>例外：{record.applicability.scope.exceptions.join("；") || "未记录"}</p></> : null}<p>适用条件：{record.appliesWhen ?? "未记录"}</p><p>注意：{record.caution ?? "无"}</p>
-        {record.warnings.map((warning) => <p key={warning}>{warning}</p>)}
-        <button className="secondary-button" onClick={() => void api.openVaultDocument(record.sourceRef.relativePath).catch(() => setError("无法打开来源笔记，可能已移动或删除。"))}>打开来源笔记</button>
-      </details>)}
+      {besideLog ? null : !report.evidence.length ? <p className="review-evidence">决策证据：未取得相关决策证据；不能据此断言没有历史约束。</p> : <details className="review-evidence"><summary>决策证据 · {report.evidence.length}</summary>
+        {report.evidence.map(evidenceItem)}
       </details>}
       <p className="review-history-note">结果由 AI 评审生成，只是草稿：未执行测试，未批准或合并 PR，未修改决策记录；评论只在你确认后逐条发布。</p>
     </li> : null}
         {entry.turns.map((turn, index) => <Fragment key={turn.id}>
           {/* Two columns say who speaks to the eye; a screen reader is told by name, as the answer beside it is. */}
-          <li className="assistant-turn user" aria-label="追问"><div><p className="review-text">{turn.question}</p></div></li>
+          <li className="assistant-turn user" aria-label="追问">{index === 0 ? <h3 className="review-follow-up-title">追问</h3> : null}<div><p className="review-text">{turn.question}</p></div></li>
           <li className="assistant-turn assistant" aria-label="追问回答">
             <div className="review-message-meta"><strong>{turn.model}</strong><time dateTime={turn.at}>{clock.format(new Date(turn.at))}</time>{usageText(turn.usage) ? <span>{usageText(turn.usage)}</span> : null}
+              <span className="review-message-actions">
               {/* A PR overview is usually pasted into the PR description, as pr-agent's /describe does. */}
               {turn.state === "done" ? <button type="button" className="text-button" aria-label="复制这条回答" onClick={() => void copyMarkdown(turn.answer)}>复制</button> : null}
               {/* Posting is the reader's act, after a confirm with the text in hand; once is enough. */}
               {turn.state !== "done" || !entry.connectionId ? null : turn.publishedAt
                 ? <span>已发布到 PR</span>
-                : <button type="button" className="text-button" aria-label="把这条回答发布到 PR" disabled={busy !== null} onClick={() => setCommentTurn(turn.id)}>发布到 PR</button>}</div>
+                : <button type="button" className="text-button" aria-label="把这条回答发布到 PR" disabled={busy !== null} onClick={() => setCommentTurn(turn.id)}>发布到 PR</button>}
+              </span></div>
             {turn.state === "done" ? <div className="assistant-answer">{renderMarkdown(turn.answer)}</div> : <p role={turn.state === "failed" ? "alert" : "status"}>{({ pending: "正在回答…", failed: turn.error ? `回答失败：${turn.error}` : "回答失败，请重试。", cancelled: "已停止回答。", interrupted: "上次回答已中断。" })[turn.state]}</p>}
             {index === entry.turns.length - 1 && ["failed", "cancelled", "interrupted"].includes(turn.state) ? <button className="secondary-button" disabled={busy !== null || !currentModel} onClick={() => void ask(turn.id)}>重试回答</button> : null}
           </li>
         </Fragment>)}
         </ol>
         </div>
-        {entry.state === "running" && !events.length ? <p className="review-notice" role="status">正在准备评审…</p> : null}
+        {entry.state === "running" && !events.length ? <p className="review-notice" role="status">{entry.id === reviewing.current ? "正在准备评审…" : `这次评审由${entry.auto ? "自动预评审" : " agent "}发起，在 App 后台进行；结束后这里显示结果。`}</p> : null}
         {movedSince ? <p className="review-notice" role="status">这份{entry.kind === "chat" ? "记录" : "评审"}之后，PR 又有新提交或新评论。<button type="button" className="review-note-link" disabled={busy !== null || !reviewable} onClick={() => reviewLatest(entry)}>评审最新提交</button></p> : null}
         {entry.state === "interrupted" ? <p className="review-notice" role="status">上次评审已中断。已保存执行记录；重新评审将读取最新快照。</p> : null}
         {entry.error ? <p className="review-notice" role="alert">{entry.error}</p> : null}
@@ -1254,9 +1564,9 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
             <textarea id="review-question" aria-label="继续追问" rows={2} maxLength={2000} value={entry.draft} readOnly={busy !== null} disabled={!discussable} placeholder={!discussable ? "评审完成后，继续讨论" : entry.kind === "chat" ? "继续问这个 PR…（/describe 生成 PR 概览，/improve 生成代码建议）" : "追问原因，讨论修复，或补充背景…（/describe 生成 PR 概览，/improve 生成代码建议）"} onChange={event => { typing.current = true; updateRun(entry.id, item => ({ ...item, draft: event.target.value })); }}
               onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void ask(); } }} />
             <div className="review-composer-tools">{modelControl}<div className="review-quick-commands" role="group" aria-label="评审指令">
-              <button type="button" className="review-note-link" title="/describe：类型、摘要、逐文件说明与关注点" disabled={busy !== null || !discussable || !currentModel} onClick={() => void ask(undefined, "/describe")}>PR 概览</button>
-              <button type="button" className="review-note-link" title="/improve：附 diff 代码块的具体改进建议" disabled={busy !== null || !discussable || !currentModel} onClick={() => void ask(undefined, "/improve")}>改进建议</button>
-              {entry.kind === "chat" && entry.connectionId ? <button type="button" className="review-note-link" title="读取最新提交，回到准备页做完整评审" disabled={busy !== null || !reviewable} onClick={() => reviewLatest(entry)}>完整评审</button> : null}
+              <button type="button" className="review-command" title="/describe：类型、摘要、逐文件说明与关注点" disabled={busy !== null || !discussable || !currentModel} onClick={() => void ask(undefined, "/describe")}>PR 概览</button>
+              <button type="button" className="review-command" title="/improve：附 diff 代码块的具体改进建议" disabled={busy !== null || !discussable || !currentModel} onClick={() => void ask(undefined, "/improve")}>改进建议</button>
+              {entry.kind === "chat" && entry.connectionId ? <button type="button" className="review-command" title="读取最新提交，回到准备页做完整评审" disabled={busy !== null || !reviewable} onClick={() => reviewLatest(entry)}>完整评审</button> : null}
             </div><div className="review-send-actions">
               <IconButton hidden={!showLatest} className="review-jump-latest" aria-label="滚动到底部" onClick={() => { followLatest.current = true; setShowLatest(false); if (chatLog.current) chatLog.current.scrollTop = chatLog.current.scrollHeight; }}><ActionIcon name="down" /></IconButton>
               {busy === "review" && entry.id === reviewing.current ? <IconButton aria-label="停止评审" onClick={() => { const stopping = runId.current; if (stopping) void api.cancelPrReview(stopping).then(() => { if (runId.current === stopping) setMessage("正在停止…"); }).catch(() => setError("取消失败，请重试。")); }}><ActionIcon name="stop" /></IconButton> : busy === "reevaluate" ? <IconButton aria-label="停止复评" onClick={() => { stopReevaluation.current = true; stoppedRequest.current = runId.current; if (runId.current) void api.cancelPrReview(runId.current).catch(() => setError("停止失败，请重试。")); }}><ActionIcon name="stop" /></IconButton> : busy === "follow-up" ? <IconButton aria-label="停止回答" onClick={() => {
@@ -1268,6 +1578,20 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
           </div>
           <p className="review-compose-hint">{currentModel?.leavesDevice ? "代码、评审与对话将发送给所选模型服务。" : "围绕本次提交与评审继续讨论。"}<span>Enter 发送 · Shift+Enter 换行</span></p>
         </form>
+        </div>
+        {besideLog && report ? <aside className="review-aside" aria-label="决策证据与评审信息">
+          <section aria-labelledby="review-aside-evidence"><h3 id="review-aside-evidence">决策证据{report.evidence.length ? <span>{report.evidence.length} 条</span> : null}</h3>
+            {/* No evidence is worth saying at once: it does not mean nothing in the history applies. */}
+            {report.evidence.length ? report.evidence.map(evidenceItem) : <p className="review-history-note">未取得相关决策证据；不能据此断言没有历史约束。</p>}
+          </section>
+          <section aria-labelledby="review-aside-coverage"><h3 id="review-aside-coverage">这次评审</h3>
+            <dl className="review-coverage">{coverage.map(([term, value]) => <Fragment key={term}><dt>{term}</dt><dd>{value}</dd></Fragment>)}</dl>
+          </section>
+          {steps.length ? <section aria-labelledby="review-aside-process"><h3 id="review-aside-process">评审过程</h3>
+            <details key={entry.id} className="review-aside-process"><summary>{lastStep ?? "评审过程"}</summary>{processSteps(entry.state === "running")}</details>
+          </section> : null}
+        </aside> : null}
+        </div>
       </div> : null}
     </div>
     </div>
@@ -1277,26 +1601,30 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
       onPublished={message => {
         const turnId = commentTurn;
         updateRun(entry.id, item => ({ ...item, turns: item.turns.map(turn => turn.id === turnId ? { ...turn, publishedAt: new Date().toISOString() } : turn) }));
+        postedFrom(entry.id);
         setCommentTurn(null); setMessage(message);
         refocus("#review-question");
       }} /> : null}
-    {commentFinding !== null && entry?.connectionId && entry.report?.findings[commentFinding] ? <PrReviewCommentDialog api={api} snapshot={entry.snapshot} connectionId={entry.connectionId} platform={connections.find(item => item.id === entry.connectionId)?.platform}
+    {commentFinding !== null && entry?.connectionId && entry.report?.findings[commentFinding] ? <PrReviewCommentDialog api={api} snapshot={entry.snapshot} connectionId={entry.connectionId} platform={connections.find(item => item.id === entry.connectionId)?.platform} status={openStatus?.status}
       // A replacing re-evaluation drafts the comment from its replacement text.
       finding={{ ...entry.report.findings[commentFinding]!, ...(verdictFor(commentFinding)?.replacement ?? {}) }}
       onClose={() => setCommentFinding(null)}
-      onPublished={message => { markPosted(entry.id, commentFinding); setCommentFinding(null); setMessage(message); refocus(`[data-finding="${commentFinding}"] h3`, ".review-actions h2"); }} /> : null}
-    {discussion && recordDraft === null && !hidden ? <PrDiscussionDialog api={api} connectionId={discussion.connectionId} pr={discussion.pr}
-      onRecord={comment => setRecordDraft(commentDraft(comment, discussion.pr, connections.find(item => item.id === discussion.connectionId)?.label ?? "代码平台"))}
+      onPublished={(message, blocking, comment) => { markPosted(entry.id, commentFinding, blocking, comment); setCommentFinding(null); setMessage(message); refreshStatus(); refocus(`[data-finding="${commentFinding}"] h3`, ".review-actions h2"); }} /> : null}
+    {discussion && recordDraft === null && !hidden ? <PrDiscussionDialog api={api} connectionId={discussion.connectionId} pr={discussion.pr} candidatesOnly={discussion.candidatesOnly}
+      onRecord={(comment, comments) => setRecordDraft(commentDraft(comment, discussion.pr, connections.find(item => item.id === discussion.connectionId)?.label ?? "代码平台", comments))}
       onOpenDecision={onOpenDecision ? id => { setDiscussion(null); onOpenDecision(id); } : undefined}
       onClose={() => setDiscussion(null)} /> : null}
     {/* Out of sight while the page is, not unmounted: a captured decision taking the window threw away the edits. */}
     {recordDraft ? <PageHidden.Provider value={hidden}><ActiveRecordDialog api={api} draft={recordDraft} onClose={() => setRecordDraft(null)}
       onSaved={result => { setRecordDraft(null); setMessage(`已记为${RECORD_KIND[result.recordKind]}${recordDraft.source ? "，并保留了评论链接" : ""}。`); }} /></PageHidden.Provider> : null}
-    {summaryDraft !== null && entry?.connectionId ? <PrReviewCommentDialog api={api} snapshot={entry.snapshot} connectionId={entry.connectionId} draft={summaryDraft}
-      onClose={() => setSummaryDraft(null)} onPublished={message => { setSummaryDraft(null); setMessage(message); }} /> : null}
-    {batch && entry?.connectionId ? <PrReviewBatchCommentDialog api={api} snapshot={entry.snapshot} connectionId={entry.connectionId} findings={batch}
-      onPosted={index => markPosted(entry.id, index)}
-      onClose={message => { setBatch(null); if (message) setMessage(message); refocus(".review-actions h2"); }} /> : null}
+    {summaryDraft !== null && entry?.connectionId ? <PrReviewCommentDialog api={api} snapshot={entry.snapshot} connectionId={entry.connectionId} draft={summaryDraft} summary
+      onClose={() => setSummaryDraft(null)} onPublished={message => { postedFrom(entry.id); setSummaryDraft(null); setMessage(message); }} /> : null}
+    {batch && entry?.connectionId ? <PrReviewBatchCommentDialog api={api} snapshot={entry.snapshot} connectionId={entry.connectionId} findings={batch} status={openStatus?.status}
+      onPosted={(index, blocking, comment) => markPosted(entry.id, index, blocking, comment)}
+      onClose={message => { setBatch(null); if (message) { setMessage(message); refreshStatus(); } refocus(".review-actions h2"); }} /> : null}
+    {describing ? <PrDescriptionDialog api={api} connectionId={describing.connectionId} reference={describing.snapshot.reference}
+      facts={prDescriptionFactsFrom(history, describing.connectionId, describing.snapshot.reference, { risk: describing.snapshot.risk, status: statuses.get(`${describing.connectionId}|${describing.snapshot.reference}`)?.status, files: describing.snapshot.files.map(file => file.path) })}
+      onClose={() => setDescribing(null)} onWritten={message => { setDescribing(null); setMessage(message); refreshStatus(); }} /> : null}
     {choosingScope && snapshot ? <PrReviewScopeDialog snapshot={snapshot} chosen={chosenPaths} unitChars={unitChars} onClose={() => setChoosingScope(false)}
       onConfirm={paths => { setReviewScope(paths ? { reference: snapshot.reference, paths } : null); setChoosingScope(false); }} /> : null}
     {showDetails && activeSnapshot ? <PrDiffDialog api={api} snapshot={activeSnapshot} reviewModel={entry?.model} connectionId={entry?.connectionId ?? loadTarget?.connectionId} focus={diffFocus ?? undefined}
@@ -1314,25 +1642,28 @@ export function PrReviewPanel({ api, hidden = false, onOpenDecision, onActivity,
         <small><code>{item.path}</code> · {item.reference} · <time dateTime={item.at}>{dayTime.format(new Date(item.at))}</time>{item.sources.length > 1 ? ` · 不采纳过 ${item.sources.length} 次` : ""}</small>
       </li>)}</ul> : <p>都已撤回，以后评审这个仓库时不再告诉模型。</p>}
     </ModalDialog> : null}
-    {dismissing && entry?.report?.findings[dismissing.index] ? <ModalDialog title="不采纳这条问题" size="compact" dismissible={dismissing.reason === dismissing.opened} onClose={() => setDismissing(null)}>
-      <form className="pr-action-form" aria-label="不采纳这条问题" onSubmit={event => {
+    {dismissing && entry?.report?.findings[dismissing.index] ? <ModalDialog title="不采纳这条问题" size="compact" unsaved={dismissing.reason !== dismissing.opened} onClose={() => setDismissing(null)}
+      footer={<><button type="button" className="secondary-button" onClick={() => setDismissing(null)}>取消</button><button type="submit" form="review-dismiss-form" className="primary-button">不采纳</button></>}>
+      <form id="review-dismiss-form" className="form-fields review-dismiss-form" aria-label="不采纳这条问题" onSubmit={event => {
         event.preventDefault();
         dismiss(entry.id, dismissing.index, dismissing.reason);
         setDismissing(null);
         refocus(`[data-finding="${dismissing.index}"] h3`, ".review-actions h2");
       }}>
         <p>「{entry.report.findings[dismissing.index]!.title}」会像撤销的问题一样收起。以后评审 {entry.snapshot.reference.replace(/#\d+$/u, "")} 时，会把它和原因告诉模型，不再提同类问题。</p>
-        <div className="pr-comment-field"><div className="pr-comment-field-head"><span>原因（可选）</span></div>
-          <textarea aria-label="不采纳的原因" rows={3} maxLength={500} value={dismissing.reason} placeholder="例如：有意为之，超时由上层统一处理" onChange={event => setDismissing({ ...dismissing, reason: event.target.value })} /></div>
-        <div className="modal-form-actions"><button type="button" className="secondary-button" onClick={() => setDismissing(null)}>取消</button><button type="submit" className="primary-button">不采纳</button></div>
+        <div className="form-field">
+          <label htmlFor="review-dismiss-reason">不采纳的原因（可选）</label>
+          <textarea id="review-dismiss-reason" rows={3} maxLength={500} value={dismissing.reason} placeholder="例如：有意为之，超时由上层统一处理" onChange={event => setDismissing({ ...dismissing, reason: event.target.value })} />
+        </div>
       </form>
     </ModalDialog> : null}
-    {deleteHistory && entry ? <ModalDialog title={entry.kind === "chat" ? "删除问答记录" : "删除评审记录"} size="compact" onClose={() => setDeleteHistory(false)}>
-      <p>{entry.kind === "chat" ? `删除「${entry.snapshot.title}」的这条问答记录？` : `删除「${entry.snapshot.title}」本次评审的本地过程和报告？`}不会修改代码平台上的 PR。{entry.verdicts.some(item => item.by) ? `这次评审里你不采纳的 ${entry.verdicts.filter(item => item.by).length} 条问题，以后评审这个仓库时也不再告诉模型。` : ""}</p>
-      <div className="modal-form-actions"><button className="secondary-button" onClick={() => setDeleteHistory(false)}>取消</button><button className="primary-button" onClick={() => {
+    {deleteHistory && entry ? <ModalDialog title={entry.kind === "chat" ? "删除这条问答记录？" : "删除这次评审记录？"} size="compact" onClose={() => setDeleteHistory(false)}
+      footer={<><button type="button" className="secondary-button" autoFocus onClick={() => setDeleteHistory(false)}>取消</button><button type="button" className="primary-button danger-button" onClick={() => {
         const remaining = history.filter(item => item.id !== selectedRun);
         setHistory(remaining); selectRun(remaining.find(item => item.connectionId === entry.connectionId && item.snapshot.reference === entry.snapshot.reference)?.id ?? ""); setDeleteHistory(false);
-      }}>确认删除</button></div>
+      }}>删除</button></>}>
+      <p>{entry.kind === "chat" ? `「${entry.snapshot.title}」的这条问答记录会从本机删除，不能恢复。` : `「${entry.snapshot.title}」这次评审的过程和报告会从本机删除，不能恢复。`}代码平台上的 PR 和已发布的评论不受影响。</p>
+      {entry.verdicts.some(item => item.by) ? <p>这次评审里你不采纳的 {entry.verdicts.filter(item => item.by).length} 条问题，以后评审这个仓库时也不再告诉模型。</p> : null}
     </ModalDialog> : null}
   </section>;
 }

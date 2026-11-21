@@ -1,4 +1,5 @@
 import { zonedFormatter } from "../../../calendar-date.js";
+
 import type { OutcomeVerdict } from "@cognelis/decision-core";
 
 import type { DecisionLibraryItem } from "../../../../shared/renderer-api.js";
@@ -31,6 +32,9 @@ export const decisionMarkdown = (decision: DecisionLibraryItem): string =>
     `### ${decision.question.replace(/\s+/gu, " ").trim()}`,
     "",
     `- 选择：${decision.selectedAnswer.replace(/\s+/gu, " ").trim()}`,
+    ...(decision.answer?.kind !== "custom" && decision.answer?.reply !== undefined
+      ? ["", `原话：${decision.answer.reply}`, ""]
+      : []),
     `- 项目：${decision.project} · ${dayFormatter.format(new Date(decision.created))}`,
     ...section("理由", decision.rationale),
     ...section("当时上下文", decision.context),

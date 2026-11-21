@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id":"r10-fresh-small-write-synonym-zh",
+      "description":"新建决策后不等待向量回填，立即用中文同义句查询。",
+      "steps":[{"id":"created","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"瞬时服务故障恢复","content":"网络短暂不可用时采用指数退避，等待逐次加倍并加入随机抖动，最多重试四次。","project":"lab","rationale":"合成探针，模拟立即写入。","expectedOutcome":"瞬时故障恢复且避免重试风暴。"},"expect":{"equals":{"record.status":"created"}}},{"id":"immediate","tool":"search_decision_context","args":{"query":"网络暂时断开时怎样自动恢复请求？","project":"lab","limit":5},"expect":{"mustInclude":[{"$ref":"created.record.recordId"}],"k":5,"writeReadback":true}}]
+    },
+    {
+      "id":"r10-fresh-small-write-cross-language",
+      "description":"英文决策写入后立刻用中文跨语言改写查询。",
+      "steps":[{"id":"created","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"订单事件一致性","content":"Order state changes and event publication use the transactional outbox pattern.","project":"orders","rationale":"Synthetic immediate-write probe.","expectedOutcome":"No event is published without its matching order transaction."},"expect":{"equals":{"record.status":"created"}}},{"id":"immediate","tool":"search_decision_context","args":{"query":"订单更新怎样确保事件可靠发出？","project":"orders","limit":5},"expect":{"mustInclude":[{"$ref":"created.record.recordId"}],"k":5,"writeReadback":true}}]
+    },
+    {
+      "id":"r10-fresh-write-synonym-en",
+      "description":"中文决策写入后立刻用英文同义表达查询。",
+      "steps":[{"id":"created","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"支付去重","content":"支付写操作必须携带幂等键，重复请求返回首次处理结果而不重复扣款。","project":"payments","rationale":"合成探针。","expectedOutcome":"重试不会导致二次扣款。"},"expect":{"equals":{"record.status":"created"}}},{"id":"immediate","tool":"search_decision_context","args":{"query":"How do payment retries avoid charging the same transaction twice?","project":"payments","limit":5},"expect":{"mustInclude":[{"$ref":"created.record.recordId"}],"k":5,"writeReadback":true}}]
+    },
+    {
+      "id":"r10-fresh-batch-over-limit",
+      "description":"连续写入 12 条不同决策（超过实现上限的探针），随后立即跨语言查询最后一条；不得误称所有条目已同步。",
+      "steps":[
+        {"id":"w01","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 01","content":"合成批量项 01：缓存过期后按需重建。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"恢复正确。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w02","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 02","content":"合成批量项 02：读取请求使用只读副本。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"隔离读写。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w03","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 03","content":"合成批量项 03：上传文件先校验内容哈希。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"识别重复文件。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w04","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 04","content":"合成批量项 04：过期会话由后台定时清理。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"会话状态有界。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w05","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 05","content":"合成批量项 05：导出任务保存可恢复检查点。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"中断后恢复。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w06","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 06","content":"合成批量项 06：日志按请求标识关联。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"支持追踪。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w07","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 07","content":"合成批量项 07：后台重试采用指数退避。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"避免拥塞。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w08","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 08","content":"合成批量项 08：敏感字段在持久化前脱敏。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"降低隐私暴露。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w09","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 09","content":"合成批量项 09：队列消费者以租约领取任务。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"避免重复消费。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w10","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 10","content":"合成批量项 10：数据库迁移分阶段执行。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"降低升级风险。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w11","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 11","content":"合成批量项 11：事件消费者记录幂等键。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"重复事件安全。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"w12","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"批量记录 12","content":"合成批量项 12：索引重建后台限速。","project":"batch","rationale":"合成批量探针。","expectedOutcome":"避免资源争用。"},"expect":{"equals":{"record.status":"created"}}},
+        {"id":"batch-immediate-query","tool":"search_decision_context","args":{"query":"How are index rebuilds throttled to protect resources?","project":"batch","limit":8},"expect":{"mustInclude":[{"$ref":"w12.record.recordId"}],"k":8,"writeReadback":true}}
+      ]
+    },
+    {
+      "id":"r10-fresh-write-storm",
+      "description":"短时间连续创建 6 个不同项目记录，再立即查询，观察写入风暴下的漏项与串项。",
+      "steps":[{"id":"a","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"风暴 A","content":"临时凭据只保存在系统密钥库。","project":"storm-a","rationale":"synthetic","expectedOutcome":"凭据不落普通文件。"},"expect":{"equals":{"record.status":"created"}}},{"id":"b","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"风暴 B","content":"图片缩略图异步生成。","project":"storm-b","rationale":"synthetic","expectedOutcome":"上传接口快速返回。"},"expect":{"equals":{"record.status":"created"}}},{"id":"c","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"风暴 C","content":"搜索索引按租户隔离。","project":"storm-c","rationale":"synthetic","expectedOutcome":"租户数据不串读。"},"expect":{"equals":{"record.status":"created"}}},{"id":"d","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"风暴 D","content":"报表采用增量计算。","project":"storm-d","rationale":"synthetic","expectedOutcome":"减少全量扫描。"},"expect":{"equals":{"record.status":"created"}}},{"id":"e","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"风暴 E","content":"邮件由持久化队列异步投递。","project":"storm-e","rationale":"synthetic","expectedOutcome":"服务重启后任务仍在。"},"expect":{"equals":{"record.status":"created"}}},{"id":"f","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"风暴 F","content":"限流按用户维度执行。","project":"storm-f","rationale":"synthetic","expectedOutcome":"避免单用户占满服务。"},"expect":{"equals":{"record.status":"created"}}},{"id":"storm-query","tool":"search_decision_context","args":{"query":"How do queued emails survive a restart?","project":"storm-e","limit":3},"expect":{"mustInclude":[{"$ref":"e.record.recordId"}],"mustExclude":[{"$ref":"b.record.recordId"}],"k":3,"writeReadback":true}}]
+    },
+    {
+      "id":"r10-fresh-write-then-delete",
+      "description":"创建前置合成记录后立即删除源文件并查询；删除项不可作为新向量泄漏。",
+      "seed":{"files":[{"path":"Decision Journal/summarize/F1090.md","content":"---\nid: F1090\ncreated: \"2026-10-23\"\nstatus: accepted\nselected_option: \"仅用于删除竞争探针\"\nproject: lab\ntags: [synthetic]\nsupersedes: []\nsuperseded_by: null\n---\n# 删除竞争\n这条合成记录会在查询前被删除。\n"}]},
+      "steps":[{"id":"remove","remove":"Decision Journal/summarize/F1090.md"},{"id":"after-delete","tool":"search_decision_context","args":{"query":"这条合成记录会在查询前被删除","project":"lab","limit":5},"expect":{"mustExclude":["F1090"],"k":5}}]
+    },
+    {
+      "id":"r10-fresh-scope-cross-project",
+      "description":"另一个项目刚写入同主题新记录后，当前项目查询不得返回它。",
+      "steps":[{"id":"created","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"账单重试策略","content":"账单扣款失败后最多进行三次指数退避重试。","project":"billing","rationale":"合成范围守卫。","expectedOutcome":"控制重复扣款风险。"},"expect":{"equals":{"record.status":"created"}}},{"id":"other-project-query","tool":"search_decision_context","args":{"query":"扣款失败后怎样自动重试？","project":"payments","limit":5},"expect":{"mustExclude":[{"$ref":"created.record.recordId"}],"k":5}}]
+    },
+    {
+      "id":"r10-fresh-rewrite-stale-vector",
+      "description":"先写入决策并记住哈希，再原地编辑正文后立即同义查询；旧向量不能代表新正文。",
+      "steps":[{"id":"created","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"会话存储","content":"用户会话采用内存缓存。","project":"sessions","rationale":"初始合成版本。","expectedOutcome":"低延迟读取。"},"expect":{"equals":{"record.status":"created"}}},{"id":"read-old","tool":"search_decision_context","args":{"source":"decisions","recordId":{"$ref":"created.record.recordId"}},"expect":{"mustInclude":[{"$ref":"created.record.recordId"}]}},{"id":"rewrite","tool":"record_decision_outcome","args":{"source":"decisions","recordId":{"$ref":"created.record.recordId"},"expectedContentHash":{"$ref":"read-old.context.results.0.sourceRef.contentHash"},"outcome":"合成更新：改为持久化 SQLite 会话存储。","review":{"verdict":"as_expected","lesson":"当前选择为 SQLite 持久化存储。"}},"expect":{"equals":{"outcomeUpdate.status":"saved"}}},{"id":"immediate-rewritten-query","tool":"search_decision_context","args":{"query":"Where are user sessions durably stored now?","project":"sessions","limit":5},"expect":{"mustInclude":[{"$ref":"created.record.recordId"}],"mustFlag":[{"id":{"$ref":"created.record.recordId"},"path":"outcomeState.review.verdict","equals":"as_expected"}],"k":5,"writeReadback":true}}]
+    },
+    {
+      "id":"r10-fresh-unrelated-neighbor",
+      "description":"立即同义查询命中新写目标，同时排除词面相似但语义无关的既有合成记录。",
+      "seed":{"files":[{"path":"Decision Journal/summarize/F1091.md","content":"---\nid: F1091\ncreated: \"2026-10-23\"\nstatus: accepted\nselected_option: \"保留三十天\"\nproject: analytics\ntags: [synthetic]\nsupersedes: []\nsuperseded_by: null\n---\n# 数据保留\n日志保留三十天后删除。\n"}]},
+      "steps":[{"id":"created","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"个人信息脱敏","content":"分析事件入仓前删除电子邮件和电话号码等直接身份字段。","project":"analytics","rationale":"合成即时写入。","expectedOutcome":"分析数据不含可直接识别个人的信息。"},"expect":{"equals":{"record.status":"created"}}},{"id":"immediate","tool":"search_decision_context","args":{"query":"How do we prevent analytics records from identifying a person directly?","project":"analytics","limit":5},"expect":{"mustInclude":[{"$ref":"created.record.recordId"}],"mustExclude":["F1091"],"k":5,"writeReadback":true}}]
+    },
+    {
+      "id":"r10-fresh-write-burst-target-last",
+      "description":"连续创建多条近似主题新决定后立即使用远距离同义表达，确认目标最后写入项能被召回，且不泄漏其它项目。",
+      "steps":[{"id":"noise-a","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"队列恢复 A","content":"任务队列通过租约避免同一工作被多个消费者领取。","project":"queue-a","rationale":"合成邻项。","expectedOutcome":"任务不会重复执行。"},"expect":{"equals":{"record.status":"created"}}},{"id":"noise-b","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"队列恢复 B","content":"死信队列保存处理失败的消息。","project":"queue-b","rationale":"合成邻项。","expectedOutcome":"失败任务可诊断。"},"expect":{"equals":{"record.status":"created"}}},{"id":"target","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"队列恢复 C","content":"消费者崩溃后，未确认的消息会在可见性租约到期后重新投递。","project":"queue-c","rationale":"合成即时写入目标。","expectedOutcome":"未完成消息最终会再次处理。"},"expect":{"equals":{"record.status":"created"}}},{"id":"immediate","tool":"search_decision_context","args":{"query":"What happens to work that was interrupted before acknowledgement?","project":"queue-c","limit":5},"expect":{"mustInclude":[{"$ref":"target.record.recordId"}],"mustExclude":[{"$ref":"noise-a.record.recordId"},{"$ref":"noise-b.record.recordId"}],"k":5,"writeReadback":true}}]
+    }
+  ]
+}

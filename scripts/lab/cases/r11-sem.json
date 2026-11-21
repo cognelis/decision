@@ -1,0 +1,1343 @@
+[
+ {
+  "id": "R11SEM-N01",
+  "group": "r11-guard-status",
+  "name": "status-table-wait-ack",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | 任务 | 状态 |\n|---|---|---|\n| A | 添加上传链路追踪 | 已完成 |\n| B | 轮换签名密钥 | 进行中 |\n| C | 缩短调试日志 | 未开始 |\n\n以上是当前进度。\n\n等你回复。",
+  "userText": "好的，收到。"
+ },
+ {
+  "id": "R11SEM-N02",
+  "group": "r11-guard-status",
+  "name": "status-table-italic-note-ack",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | 任务 | 状态 |\n|---|---|---|\n| A | 添加上传链路追踪 | 已完成 |\n| B | 轮换签名密钥 | 进行中 |\n| C | 缩短调试日志 | 未开始 |\n\n目前 A 已完成，B 进行中。\n\n*注:本次未运行测试。*",
+  "userText": "知道了，B 进度不错。"
+ },
+ {
+  "id": "R11SEM-N03",
+  "group": "r11-guard-status",
+  "name": "status-table-which-done-wait",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | 任务 | 状态 |\n|---|---|---|\n| A | 添加上传链路追踪 | 已完成 |\n| B | 轮换签名密钥 | 进行中 |\n| C | 缩短调试日志 | 未开始 |\n\n目前哪些任务已经完成？\n\n等你回复。",
+  "userText": "A 已经完成了。"
+ },
+ {
+  "id": "R11SEM-N04",
+  "group": "r11-guard-view-only",
+  "name": "table-ask-view-only-wait",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | 任务 |\n|---|---|\n| A | 添加上传链路追踪 |\n| B | 轮换签名密钥 |\n| C | 缩短调试日志 |\n\n你现在批准哪几项？\n\n等你回复。",
+  "userText": "先给我看看 A 的具体改动。"
+ },
+ {
+  "id": "R11SEM-N05",
+  "group": "r11-guard-view-only",
+  "name": "table-ask-view-only-en",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | Task |\n|----|------|\n| A | Add upload tracing: instrument the upload path so each upload can be followed end to end. |\n| B | Rotate signing keys: replace the current keys and update every place that signs with them. |\n| C | Shorten debug logs: trim the verbose debug output. |\n\nWhich of these should I do now?\n\nI'll wait for your reply.",
+  "userText": "Show me the diff for B first."
+ },
+ {
+  "id": "R11SEM-N06",
+  "group": "r11-guard-counter-question",
+  "name": "table-ask-counter-question",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | 任务 |\n|---|---|\n| A | 添加上传链路追踪 |\n| B | 轮换签名密钥 |\n| C | 缩短调试日志 |\n\n你批准哪几项?\n\n*注:未运行测试。*",
+  "userText": "B 为什么要轮换密钥？"
+ },
+ {
+  "id": "R11SEM-N07",
+  "group": "r11-guard-counter-question",
+  "name": "table-ask-counter-question-en",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | Task |\n|----|------|\n| A | Add upload tracing: instrument the upload path so each upload can be followed end to end. |\n| B | Rotate signing keys: replace the current keys and update every place that signs with them. |\n| C | Shorten debug logs: trim the verbose debug output. |\n\nWhich of these should I do now?\n\n_Note: tests were not run._",
+  "userText": "What does B change exactly?"
+ },
+ {
+  "id": "R11SEM-N08",
+  "group": "r11-guard-approve-other",
+  "name": "single-approve-other-thing",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "可以增加导出预览。\n\n你批准我实施吗？\n\n等你回复。",
+  "userText": "上周那个导入修复我已经批准了。"
+ },
+ {
+  "id": "R11SEM-N09",
+  "group": "r11-guard-defer",
+  "name": "single-defer-wait",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "可以增加导出预览。\n\n你批准我实施吗？\n\n等你回复。",
+  "userText": "我先看看代码再说。"
+ },
+ {
+  "id": "R11SEM-N10",
+  "group": "r11-guard-discussion",
+  "name": "comparison-table-discussion-wait",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| 维度 | A：线程池 | B：异步 IO |\n|---|---|---|\n| 延迟 | 中 | 低 |\n| 复杂度 | 低 | 高 |\n\n两者各有利弊，可以继续讨论。\n\n等你回复。",
+  "userText": "A 的复杂度确实低一些。"
+ },
+ {
+  "id": "R11SEM-N11",
+  "group": "r11-guard-discussion",
+  "name": "comparison-table-choose-evaluate",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| 维度 | A：线程池 | B：异步 IO |\n|---|---|---|\n| 延迟 | 中 | 低 |\n| 复杂度 | 低 | 高 |\n\n你倾向哪个？\n\n*注:本轮未压测。*",
+  "userText": "B 看起来延迟更低，但复杂度太高了。"
+ },
+ {
+  "id": "R11SEM-N12",
+  "group": "r11-guard-status",
+  "name": "fact-question-wait",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "服务现在跑在哪个端口？\n\n等你回复。",
+  "userText": "8080"
+ },
+ {
+  "id": "R11SEM-N13",
+  "group": "r11-guard-status",
+  "name": "report-italic-note",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "导出预览已经实现，加了 `--preview` 开关。\n\n*注:本次未运行任何测试。*",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-N14",
+  "group": "r11-guard-view-only",
+  "name": "multi-question-over-plan-view",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "**我打算怎么做**\n- 给导出命令加 `--preview` 开关，只输出摘要，不写文件。\n- 复用现有的序列化函数。\n- 加一个小自检。\n\n**需要你确认**\n1. 你批准我实施吗？\n2. 预览只看摘要，还是看完整内容？\n\n等你回复。",
+  "userText": "先解释一下序列化函数在哪。"
+ },
+ {
+  "id": "R11SEM-N15",
+  "group": "r11-guard-discussion",
+  "name": "table-name-first-recommend-no-question",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| 方案 | 优点 | 缺点 |\n|---|---|---|\n| RabbitMQ | 路由灵活，ack 成熟 | 吞吐有限 |\n| Kafka | 吞吐高，可重放 | 运维复杂 |\n| Redis Streams | 部署简单 | 持久化弱 |\n\n综合来看我推荐 RabbitMQ。",
+  "userText": "了解。"
+ },
+ {
+  "id": "R11SEM-N16",
+  "group": "r11-guard-discussion",
+  "name": "table-name-first-evaluate",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| 方案 | 优点 | 缺点 |\n|---|---|---|\n| RabbitMQ | 路由灵活，ack 成熟 | 吞吐有限 |\n| Kafka | 吞吐高，可重放 | 运维复杂 |\n| Redis Streams | 部署简单 | 持久化弱 |\n\n你们更倾向哪个？",
+  "userText": "Kafka 运维太复杂了。"
+ },
+ {
+  "id": "R11SEM-N17",
+  "group": "r11-guard-discussion",
+  "name": "opinion-agreement-question",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "我认为这次超时是连接池太小造成的，而不是网络抖动。\n\n你同意我的判断吗？",
+  "userText": "同意。"
+ },
+ {
+  "id": "R11SEM-N18",
+  "group": "r11-guard-status",
+  "name": "status-table-pick-view-only",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| # | 任务 | 状态 |\n|---|---|---|\n| 1 | 修复登录 | 进行中 |\n| 2 | 升级依赖 | 待办 |\n\n你想看哪一项的详细日志？",
+  "userText": "先给我看看 2 的日志。"
+ },
+ {
+  "id": "R11SEM-N19",
+  "group": "r11-guard-view-only",
+  "name": "coded-table-view-only",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "| ID | 任务 |\n|---|---|\n| T1 | 给上传链路加追踪：在关键节点埋点 |\n| T2 | 轮换签名密钥：生成新密钥并安排过渡 |\n| T3 | 精简调试日志：去掉冗余 debug 输出 |\n\n你现在批准哪几项？",
+  "userText": "先解释一下 T2 为什么要轮换。"
+ },
+ {
+  "id": "R11SEM-N20",
+  "group": "r11-guard-counter-question",
+  "name": "numbered-letter-names-counter-question",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "Review 发现以下四项可选改进：\n\n1. A — 加请求超时\n2. B — 加重试\n3. C — 加结构化日志\n4. D — 加健康检查端点\n\n你想做哪几项？直接回复字母即可。",
+  "userText": "D 具体要加什么？"
+ },
+ {
+  "id": "R11SEM-N21",
+  "group": "r11-guard-approve-other",
+  "name": "approves-unrelated-object",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "我准备把配置文件从 INI 改成 TOML。这个改动你批准吗？",
+  "userText": "README 里的错别字可以改，批准改错别字。",
+  "expectedBand": "medium",
+  "note": "approval of an unrelated object goes to review, not straight to the journal"
+ },
+ {
+  "id": "R11SEM-N22",
+  "group": "r11-guard-approve-other",
+  "name": "approves-unrelated-object-en",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "I plan to move the cron jobs to a queue worker. Do you approve this change?",
+  "userText": "The changelog wording is fine, I approve the changelog.",
+  "expectedBand": "any",
+  "note": "known residual, same as main: the reply shares only \"I\" with the question, and r5 refusals (\"I reject both\", \"I do not approve\") rely on that same overlap"
+ },
+ {
+  "id": "R11SEM-N23",
+  "group": "r11-guard-view-only",
+  "name": "which-to-view",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "1. 构建开始\n2. 依赖安装完成\n3. 单元测试通过\n\n你想先看哪条日志的上下文？",
+  "userText": "第 3 条应该是缓存命中了。"
+ },
+ {
+  "id": "R11SEM-N24",
+  "group": "r11-guard-view-only",
+  "name": "which-to-open-en",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "Three files changed:\n\n1. api.ts\n2. db.ts\n3. cache.ts\n\nWhich file should I open first?",
+  "userText": "2, the db one."
+ },
+ {
+  "id": "R11SEM-N25",
+  "group": "r11-guard-status",
+  "name": "asks-past-approval",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "上周你批准了那次回滚吗？\n\n我等你回复。",
+  "userText": "批准了。"
+ },
+ {
+  "id": "R11SEM-N26",
+  "group": "r11-guard-status",
+  "name": "asks-past-agreement",
+  "synthetic": true,
+  "decision": false,
+  "assistantText": "你同意过把旧接口下线吗？",
+  "userText": "同意过，已经下线了。"
+ },
+ {
+  "id": "R11SEM-P01",
+  "group": "r11-variant",
+  "name": "table-en-numeric-ids-halfwidth",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | Task |\n|----|------|\n| 1 | Add upload tracing: instrument the upload path. |\n| 2 | Rotate signing keys: replace the current keys. |\n| 3 | Shorten debug logs: trim the verbose output. |\n\n三项互相独立,你现在批准哪几项?(1、2、3 可任选。)\n\n我会等你回复再开始。",
+  "userText": "Approve 1 and 3; skip 2 for now.",
+  "expectedSelected": [
+   "1",
+   "3"
+  ]
+ },
+ {
+  "id": "R11SEM-P02",
+  "group": "r11-variant",
+  "name": "table-bold-ids-wait",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | 任务 |\n|---|---|\n| **A** | 添加上传链路追踪 |\n| **B** | 轮换签名密钥 |\n| **C** | 缩短调试日志 |\n\n你现在批准哪几项？\n\n等你回复。",
+  "userText": "A 和 C 先做，B 以后再说。",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P03",
+  "group": "r11-variant",
+  "name": "table-en-italic-note",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | Task |\n|----|------|\n| A | Add upload tracing: instrument the upload path so each upload can be followed end to end. |\n| B | Rotate signing keys: replace the current keys and update every place that signs with them. |\n| C | Shorten debug logs: trim the verbose debug output. |\n\n这三项彼此独立,可以单独批准。你现在批准哪几项?(A、B、C 可任选,也可以都不选。)\n\n*注:本次未运行任何测试。*",
+  "userText": "Approve A and C now; leave B for later.",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P04",
+  "group": "r11-variant",
+  "name": "table-zh-underscore-note",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | 任务 |\n|---|---|\n| A | 添加上传链路追踪 |\n| B | 轮换签名密钥 |\n| C | 缩短调试日志 |\n\n你现在批准哪些任务（A、B、C，可多选）？\n\n_备注：本轮没有运行测试。_",
+  "userText": "批准 A 和 C，B 先不做。",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P05",
+  "group": "r11-variant",
+  "name": "table-zh-bold-note-label",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | 任务 |\n|---|---|\n| A | 添加上传链路追踪 |\n| B | 轮换签名密钥 |\n| C | 缩短调试日志 |\n\n你批准哪几项？\n\n**注**：测试未运行。",
+  "userText": "只批准 B。",
+  "expectedSelected": [
+   "B"
+  ]
+ },
+ {
+  "id": "R11SEM-P06",
+  "group": "r11-variant",
+  "name": "table-en-question-en-note",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | Task |\n|----|------|\n| A | Add upload tracing: instrument the upload path so each upload can be followed end to end. |\n| B | Rotate signing keys: replace the current keys and update every place that signs with them. |\n| C | Shorten debug logs: trim the verbose debug output. |\n\nWhich of these should I do now? (A, B, C, any subset.)\n\n_Note: tests were not run._",
+  "userText": "Do A and C; hold B.",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P07",
+  "group": "r11-variant",
+  "name": "numbered-benlun-note",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？\n\n本轮未修改文件；尚未压测。",
+  "userText": "2",
+  "expectedSelected": [
+   "2"
+  ]
+ },
+ {
+  "id": "R11SEM-P08",
+  "group": "r11-variant",
+  "name": "bold-labels-separator-note",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "**A. 加追踪**：给上传链路打点。\n**B. 轮换密钥**：替换签名密钥。\n**C. 缩短日志**：精简调试输出。\n\n你批准哪几项?\n\n---\n\n*备注:测试未运行。*",
+  "userText": "A、C",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P09",
+  "group": "r11-variant",
+  "name": "single-zh-tongyi-wait",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "迁移脚本已经写好，只改了索引。\n\n你同意我现在把它合并吗？\n\n等你回复。",
+  "userText": "同意，合并吧。"
+ },
+ {
+  "id": "R11SEM-P10",
+  "group": "r11-variant",
+  "name": "single-zh-pizhun-wait",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "可以增加导出预览，减少误导出。\n\n你批准我实施吗？\n\n我会等你回复再动手。",
+  "userText": "批准，请实施导出预览。"
+ },
+ {
+  "id": "R11SEM-P11",
+  "group": "r11-variant",
+  "name": "single-en-wait",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "Adding an export preview lets you check the date range before writing the file.\n\nDo you approve me implementing the export preview?\n\nI'll wait for your answer.",
+  "userText": "Approved, go ahead."
+ },
+ {
+  "id": "R11SEM-P12",
+  "group": "r11-variant",
+  "name": "multi-question-over-plan",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "**我打算怎么做**\n- 给导出命令加 `--preview` 开关，只输出摘要，不写文件。\n- 复用现有的序列化函数。\n- 加一个小自检。\n\n**需要你确认**\n1. 你批准我实施吗？批准后我会先读代码。\n2. 预览只看摘要，还是看完整内容？\n\n等你回复。",
+  "userText": "批准，请实施导出预览。",
+  "expectedSelected": []
+ },
+ {
+  "id": "R11SEM-P13",
+  "group": "r11-variant",
+  "name": "followup-list-under-approval",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "**为什么可以删旧接口**\n\n旧接口已经三个月没有调用。\n\n**我打算这样做**\n\n1. 删除路由。\n2. 删除兼容层。\n\n**是否批准我删除旧接口？** 如果批准，也请告诉我：\n\n- 要保留兼容层一个版本吗？\n- 什么时候发版？\n\n我会等你回复再动手。",
+  "userText": "批准，删吧。",
+  "expectedSelected": []
+ },
+ {
+  "id": "R11SEM-P14",
+  "group": "r11-variant",
+  "name": "numbered-with-letter-names-please",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "Review 发现以下四项可选改进：\n\n1. A — 加请求超时\n2. B — 加重试\n3. C — 加结构化日志\n4. D — 加健康检查端点\n\n你想做哪几项？直接回复字母即可。",
+  "userText": "A and D please, nothing else.",
+  "expectedSelected": [
+   "A",
+   "D"
+  ]
+ },
+ {
+  "id": "R11SEM-P15",
+  "group": "r11-variant",
+  "name": "numbered-with-bold-letter-names",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "以下是可选改进：\n\n1. **A** —— 增加请求超时\n2. **B** —— 增加重试\n3. **C** —— 增加结构化日志\n\n你要做哪几项?(可多选)",
+  "userText": "B 和 C，谢谢",
+  "expectedSelected": [
+   "B",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P16",
+  "group": "r11-variant",
+  "name": "table-coded-ids-by-code",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | 任务 |\n|---|---|\n| T1 | 给上传链路加追踪：在关键节点埋点 |\n| T2 | 轮换签名密钥：生成新密钥并安排过渡 |\n| T3 | 精简调试日志：去掉冗余 debug 输出 |\n\n你现在批准哪几项？",
+  "userText": "批准 T1 和 T3，T2 先放着。",
+  "expectedSelected": [
+   "T1",
+   "T3"
+  ]
+ },
+ {
+  "id": "R11SEM-P17",
+  "group": "r11-variant",
+  "name": "table-coded-ids-by-position",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | 任务 |\n|---|---|\n| T1 | 给上传链路加追踪：在关键节点埋点 |\n| T2 | 轮换签名密钥：生成新密钥并安排过渡 |\n| T3 | 精简调试日志：去掉冗余 debug 输出 |\n\n你现在批准哪几项？",
+  "userText": "批准 A 和 C，B 先放着。",
+  "expectedSelected": [
+   "T1",
+   "T3"
+  ]
+ },
+ {
+  "id": "R11SEM-P18",
+  "group": "r11-variant",
+  "name": "table-name-first-pick",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| 方案 | 优点 | 缺点 |\n|---|---|---|\n| RabbitMQ | 路由灵活，ack 成熟 | 吞吐有限 |\n| Kafka | 吞吐高，可重放 | 运维复杂 |\n| Redis Streams | 部署简单 | 持久化弱 |\n\n推荐 RabbitMQ。你们更倾向哪个？",
+  "userText": "就选 Kafka。",
+  "expectedSelected": [
+   "2"
+  ]
+ },
+ {
+  "id": "R11SEM-P19",
+  "group": "r11-variant",
+  "name": "table-name-first-pick-en",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| Option | Pros | Cons |\n|---|---|---|\n| SQLite | simple | single writer |\n| PostgreSQL | concurrent | ops cost |\n\nWhich one should we use?",
+  "userText": "Go with PostgreSQL.",
+  "expectedSelected": [
+   "2"
+  ]
+ },
+ {
+  "id": "R11SEM-P20",
+  "group": "r11-variant",
+  "name": "negated-continue-after-question",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "方案：收口成单一入口 `load_config()`，加载时一次性校验。\n\n要不要我按这个方案实施？问完我会等你回复，不会继续做别的。",
+  "userText": "批准，实施吧。"
+ },
+ {
+  "id": "R11SEM-P21",
+  "group": "r11-variant",
+  "name": "wait-then-act-after-question",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "改动只限 staging 配置里的那一个凭证字段。\n\n这个改动你是否同意？我会等你的回复再继续。",
+  "userText": "Approved, go ahead."
+ },
+ {
+  "id": "R11SEM-P22",
+  "group": "r11-variant",
+  "name": "noun-object-approval-question",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "assistantText": "1. 定位配置字段。\n2. 替换过期凭证。\n\n你同意这个改法吗？确认后我再动手改文件。",
+  "userText": "同意，改吧。",
+  "note": "rework4: an object after the verb (你同意这个改法吗) is left to main, which reads it as a confirmation note only"
+ },
+ {
+  "id": "R11SEM-P23",
+  "group": "r11-variant",
+  "name": "act-on-option-name",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| 选项 | 说明 |\n|---|---|\n| A 保留旧缓存 | 改动最少 |\n| B 换用内存缓存 | 依赖更轻 |\n| C 引入 Redis | 功能最全 |\n\n你想选哪个？",
+  "userText": "B 就用内存缓存吧; C 先不要。",
+  "expectedSelected": [
+   "B"
+  ]
+ },
+ {
+  "id": "R11SEM-P24",
+  "group": "r11-variant",
+  "name": "long-label-embedded-whether",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | 任务 |\n|---|---|\n| A | 给导出接口加超时，并观察超时设置是否合理、是否需要按租户区分 |\n| B | 替换现有队列，评估迁移窗口与数据一致性 |\n| C | 补充告警文档，写明告警是否需要升级以及升级给谁 |\n\n以上改动您批准哪些？请直接回复对应的 ID。\n\n我会在这里等您的回复。",
+  "userText": "批准 A 和 C，B 以后再说。",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P25",
+  "group": "r11-variant",
+  "name": "reply-with-your-ids",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| ID | 任务 |\n|---|---|\n| A | 加重试 |\n| B | 换数据库 |\n| C | 写回滚文档 |\n\n请回复你批准的 ID，可多选。我会等待你的决定。",
+  "userText": "A、C",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-P26",
+  "group": "r11-variant",
+  "name": "option-table-with-status-column",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| 方案 | 当前状态 | 说明 |\n|---|---|---|\n| 本地队列 | 已验证 | 单机可用 |\n| 托管队列 | 待验证 | 可水平扩展 |\n\n你更倾向哪种方案？",
+  "userText": "托管队列。",
+  "expectedSelected": [
+   "2"
+  ]
+ },
+ {
+  "id": "R11SEM-P27",
+  "group": "r11-variant",
+  "name": "three-closing-blocks",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "A. 保留同步写入\nB. 改成批量写入\n\n请选 A 或 B。\n\n我会等你回复。\n\n备注：本轮没有改动文件。\n\nStatus: nothing changed.",
+  "userText": "选 B。",
+  "expectedSelected": [
+   "B"
+  ]
+ },
+ {
+  "id": "R11SEM-P28",
+  "group": "r11-variant",
+  "name": "as-requested-note",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "assistantText": "| 项目 | 改动 |\n|---|---|\n| A | 更新 CHANGELOG |\n| B | 升级 lint 规则 |\n| C | 删除旧脚本 |\n\n请回复要做的项目，例如“A、C”。\n\n按你的要求，我没有调用工具或修改文件；目前未检查具体内容。",
+  "userText": "A、C 做，B 不做。",
+  "expectedSelected": [
+   "A",
+   "C"
+  ]
+ },
+ {
+  "id": "R11SEM-CR-1",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "是否批准我实施导出预览？\n\n*注：这项提议已经取消，无需回复。*",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR-2",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "你同意这次测试通过了吗？",
+  "userText": "是的，测试全部通过。"
+ },
+ {
+  "id": "R11SEM-CR-3",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": true,
+  "assistantText": "A. 修复登录\nB. 增加缓存\n\n你批准哪项？另外想先看哪条日志？",
+  "userText": "A，修复登录。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-CR-4",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": true,
+  "assistantText": "| ID | 选项 | 说明 |\n|---|---|---|\n| A | 负责人 | 按负责人分组 |\n| B | 项目 | 按项目分组 |\n\n你选哪个方案？",
+  "userText": "A",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-CR-5",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "1. 标准库：零依赖\n2. 第三方依赖：更省事\n\n你选哪个？",
+  "userText": "用标准库不如第三方依赖方便",
+  "expectedBand": "any",
+  "expectedSelected": [],
+  "note": "evaluation, not a pick: band is high on main too, no option may be selected"
+ },
+ {
+  "id": "R11SEM-CR-1b",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "是否批准我部署？\n\n**注**：部署已经完成，不需要你回复。",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR-2b",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "你认可这是预期行为吗？",
+  "userText": "是的，这是预期行为。"
+ },
+ {
+  "id": "R11SEM-CR-2c",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "难道你同意直接删除所有审计记录吗？",
+  "userText": "当然不同意"
+ },
+ {
+  "id": "R11SEM-CR-3b",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": true,
+  "assistantText": "A. Fix login\nB. Add cache\n\nWhich changes should I implement? Which logs should I show first?",
+  "userText": "Implement A.",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-CR-5b",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "1. 标准库：零依赖\n2. 第三方依赖：更省事\n\n你选哪个？",
+  "userText": "用标准库代价太高",
+  "expectedBand": "any",
+  "expectedSelected": [],
+  "note": "evaluation, not a pick: band is high on main too, no option may be selected"
+ },
+ {
+  "id": "R11SEM-CR-5c",
+  "group": "r11-review",
+  "name": "reviewer R11-CR reproduction",
+  "synthetic": true,
+  "source": "R11-CR (/tmp/r11-cr-cases.json and report variants)",
+  "decision": false,
+  "assistantText": "1. 标准库：零依赖\n2. 第三方依赖：更省事\n\n你选哪个？",
+  "userText": "用标准库尚需讨论",
+  "expectedBand": "any",
+  "expectedSelected": [],
+  "note": "evaluation, not a pick: band is high on main too, no option may be selected"
+ },
+ {
+  "id": "R11SEM-CR2-cancel-control",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "是否批准我实施导出预览？\n\n注：尚未检查取消按钮的行为。",
+  "userText": "批准。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-CR2-cancel-without-no-reply",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "是否批准我实施导出预览？\n\n*注：这项提议已经取消。*",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR2-complete-without-no-reply",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "是否批准我部署？\n\n**注**：部署已经完成。",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR2-new-prefix-new-task",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "是否批准我实施导出预览？\n\n按你的要求，我没有继续实施，接下来只讨论文档。",
+  "userText": "好的",
+  "expectedBand": "any",
+  "note": "medium on main as well: the closing line drops the work rather than saying nothing was done"
+ },
+ {
+  "id": "R11SEM-CR2-past-proposal",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "你同意这个方案已经部署了吗？",
+  "userText": "是的，这个方案已经部署了。"
+ },
+ {
+  "id": "R11SEM-CR2-past-front",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "这个改动你批准过了吗？",
+  "userText": "是的，上周批准了。"
+ },
+ {
+  "id": "R11SEM-CR2-fact-proposal",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "你认可这个方案包含三个模块吗？",
+  "userText": "是的，包含三个模块。"
+ },
+ {
+  "id": "R11SEM-CR2-rhetorical-front",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "难道这个改动你批准吗？",
+  "userText": "当然不批准这个改动。"
+ },
+ {
+  "id": "R11SEM-CR2-same-question",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "A. 修复登录\nB. 增加缓存\n\n你批准哪项，另外想先看哪条日志？",
+  "userText": "A，修复登录。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-CR2-no-questionmark",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "1. api.ts\n2. db.ts\n\n请告诉我想先查看哪个文件。",
+  "userText": "2"
+ },
+ {
+  "id": "R11SEM-CR2-no-questionmark-en",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "1. api.ts\n2. db.ts\n\nTell me which file I should open first.",
+  "userText": "2"
+ },
+ {
+  "id": "R11SEM-CR2-new-prefix-cancel-action",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "是否批准我部署？\n\n按你的要求，我没有继续部署，已结束本次操作。",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR2-original-CR-1",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "是否批准我实施导出预览？\n\n*注：这项提议已经取消，无需回复。*",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR2-original-CR-2",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "你同意这次测试通过了吗？",
+  "userText": "是的，测试全部通过。"
+ },
+ {
+  "id": "R11SEM-CR2-original-CR-3",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "A. 修复登录\nB. 增加缓存\n\n你批准哪项？另外想先看哪条日志？",
+  "userText": "A，修复登录。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-CR2-original-CR-4",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "| ID | 选项 | 说明 |\n|---|---|---|\n| A | 负责人 | 按负责人分组 |\n| B | 项目 | 按项目分组 |\n\n你选哪个方案？",
+  "userText": "A",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-CR2-original-CR-5",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "1. 标准库：零依赖\n2. 第三方依赖：更省事\n\n你选哪个？",
+  "userText": "用标准库不如第三方依赖方便",
+  "expectedBand": "any",
+  "expectedSelected": []
+ },
+ {
+  "id": "R11SEM-CR2-approve-create",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "你同意我创建项目吗？",
+  "userText": "同意，创建项目。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-CR2-approve-test",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "你同意我添加单元测试吗？",
+  "userText": "同意，添加单元测试。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-CR2-approve-three",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "你批准我编写文档吗？",
+  "userText": "批准，编写文档。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-CR2-approve-export",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "你同意我导出预览吗？",
+  "userText": "同意，导出预览。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-CR2-third-note-control",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "是否批准我部署？\n\nStatus: 部署已经完成。\n\n注：本轮未运行测试。\n\n等你回复。",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR2-prefix-finished",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "是否批准我部署？\n\n按你的要求，我没有继续部署，已结束本次操作。",
+  "userText": "好的"
+ },
+ {
+  "id": "R11SEM-CR2-cancel-note-english",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": true,
+  "assistantText": "Should I implement the export preview?\n\nNote: tests for the Cancel button were not run.",
+  "userText": "Approve the export preview.",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-CR2-view-fact",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "A. 追踪日志：记录请求链路\nB. 错误日志：记录异常堆栈\n\n你想先看哪条日志？当前有几个文件？",
+  "userText": "A"
+ },
+ {
+  "id": "R11SEM-CR2-proposal-fact",
+  "group": "r11-review",
+  "name": "reviewer R11-CR re-review reproduction",
+  "synthetic": true,
+  "source": "R11-CR 复审 (/tmp/r11-cr2-cases.json)",
+  "decision": false,
+  "assistantText": "你认可这个方案已经发布了吗？",
+  "userText": "是的，这个方案已经发布了。"
+ },
+ {
+  "id": "R11SEM-SKC-c-calloff-proposal-cancelled",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "A. 立即合并补丁\nB. 等一周观察\n\n你选哪个？\n\n备注：这项提议已经取消，无需回复。",
+  "userText": "A。"
+ },
+ {
+  "id": "R11SEM-SKC-c-calloff-no-reply-needed-en",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "Would you approve the deployment plan?\n\nNote: the proposal was cancelled; no reply needed.",
+  "userText": "Yes."
+ },
+ {
+  "id": "R11SEM-SKC-c-calloff-negated-phrase",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "A. 保留当前策略\nB. 改成指数退避\n\n你想选哪个？\n\n备注：并没有取消这项提议，等你决定。",
+  "userText": "B。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-calloff-no-longer-needed-request",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "Do you want me to apply the cache change?\n\nStatus: this change is no longer needed; no response is required.",
+  "userText": "Apply it."
+ },
+ {
+  "id": "R11SEM-SKC-c-view-only-en",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "Which file should I open? Which log should I inspect?",
+  "userText": "Open config.yml and inspect server.log."
+ },
+ {
+  "id": "R11SEM-SKC-c-approve-then-view-cn",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "A. 合并补丁\nB. 先部署预发\n\n你批准哪项？另外想先看哪条日志？",
+  "userText": "批准 A；然后先看第 2 条日志。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-view-then-approve-en",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "Which file should I open? Do you approve deploying the retry fix?",
+  "userText": "I approve deploying the retry fix.",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-view-as-followup-question",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "这次要我把缓存切到 Redis 吗？你想先看哪条日志？",
+  "userText": "可以切换。日志先看第 2 条。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-option-row-named-owner",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "| Option | Description | Status |\n|---|---|---|\n| SQLite | Local file | Ready |\n| Owner | Shared responsibility model | Pilot |\n\nWhich option should we choose?",
+  "userText": "Owner。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-option-table-current-status-column",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "| 方案 | 当前状态 | 说明 |\n|---|---|---|\n| SQLite | 已验证 | 单机存储 |\n| PostgreSQL | 待验证 | 多客户端 |\n\n你更倾向哪种方案？",
+  "userText": "PostgreSQL。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-option-table-emphasized-state-header",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "| **Option** | **Owner** | **State** |\n|---|---|---|\n| SQLite | Lin | Ready |\n| PostgreSQL | Mei | Planned |\n\nWhich option do you prefer?",
+  "userText": "PostgreSQL。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-name-act-clause-end",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "A. SQLite\nB. Redis\n\n你选哪个？",
+  "userText": "B，就按 Redis 来吧。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-name-act-exact-label-and-verb",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "A. 标准库\nB. 第三方依赖\n\n你选哪个？",
+  "userText": "就按标准库做。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-approval-object-before",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "这个改动你批准吗？",
+  "userText": "批准。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-approval-object-after",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "你批准这个改动吗？",
+  "userText": "批准。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-agree-my-action",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "你同意我现在把 B 部署到预发吗？",
+  "userText": "同意。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-approve-past-le",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "你批准了这个改动吗？",
+  "userText": "批准了，昨天已经合并。"
+ },
+ {
+  "id": "R11SEM-SKC-c-approve-past-guo",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "你批准过上周的发布吗？",
+  "userText": "批准过，已经发布了。"
+ },
+ {
+  "id": "R11SEM-SKC-c-agree-past-guo",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "你同意过这次测试通过吗？",
+  "userText": "同意过，测试结果已经确认。"
+ },
+ {
+  "id": "R11SEM-SKC-c-fact-test-passed",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "你同意这次测试通过了吗？",
+  "userText": "同意，测试通过了。"
+ },
+ {
+  "id": "R11SEM-SKC-c-fact-expected-behavior",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "你认可这是预期行为吗？",
+  "userText": "认可，这是当前系统的行为。"
+ },
+ {
+  "id": "R11SEM-SKC-c-rhetorical-nandao",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "难道你同意这个计划吗？",
+  "userText": "同意。"
+ },
+ {
+  "id": "R11SEM-SKC-c-rhetorical-mofei",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "莫非你批准这个发布计划吗？",
+  "userText": "批准。"
+ },
+ {
+  "id": "R11SEM-SKC-c-approval-objectless",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": false,
+  "assistantText": "你同意吗？",
+  "userText": "同意。"
+ },
+ {
+  "id": "R11SEM-SKC-c-three-trailing-blocks-cn",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "A. 保留当前策略\nB. 改为指数退避\n\n请选 A 或 B。\n\n我会等你回复。\n\n备注：没有执行代码。\n\nStatus: no changes.",
+  "userText": "选 B。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ]
+ },
+ {
+  "id": "R11SEM-SKC-c-three-trailing-blocks-en",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "Would you approve the migration?\n\nI will wait for your answer.\n\nNote: no files were changed.\n\nStatus: no changes.",
+  "userText": "Yes, proceed.",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-requested-note-cn",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "你批准现在合并补丁吗？\n\n按你的要求，我没有调用任何工具。",
+  "userText": "批准，合并吧。",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-requested-note-en",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "Would you approve applying the cache fix?\n\nPer your instructions, I did not use any tools.",
+  "userText": "I approve.",
+  "expectedBand": "high"
+ },
+ {
+  "id": "R11SEM-SKC-c-requested-note-according",
+  "group": "r11-skeptic-c",
+  "name": "skeptic R11-SK C whitebox",
+  "synthetic": true,
+  "source": "lab/r11-adversarial@23a782aa r11-adversarial-whitebox-c.json",
+  "decision": true,
+  "assistantText": "A. 保持现有数据库\nB. 切换到 PostgreSQL\n\n你选哪项？\n\n依照你的指示，未改动任何文件。",
+  "userText": "B。",
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ]
+ }
+]

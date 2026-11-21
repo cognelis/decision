@@ -100,7 +100,7 @@ describe("PracticePublicationService", () => {
   it.runIf(process.getuid?.() !== 0)("says in words which client folder it may not write to", async () => {
     const { chmod } = await import("node:fs/promises");
     const { roots, service } = await makeService();
-    // A client once run with sudo: its folder belongs to root, and Decision may not write in it.
+    // A client once run with sudo: its folder belongs to root, and Paraself may not write in it.
     await mkdir(roots.codex, { recursive: true });
     await chmod(roots.codex, 0o500);
     try {
@@ -309,7 +309,7 @@ describe("PracticePublicationService", () => {
     await service.publish("skill-1", "codex", { confirmOverwrite: true });
     await cutShort(root, "codex", target);
 
-    // Called a skill Decision does not manage and confirmed over, the backup was written over with Decision's own
+    // Called a skill Paraself does not manage and confirmed over, the backup was written over with Paraself's own
     // text, and rollback brought that back.
     await expect(service.listStatuses("skill-1")).resolves.toContainEqual(expect.objectContaining({
       target: "codex", state: "update_available", requiresOverwriteConfirmation: false, message: expect.stringContaining("中断"),
@@ -323,7 +323,7 @@ describe("PracticePublicationService", () => {
     const { root, service, targetPath } = await makeService();
     const target = targetPath("claude-code");
     await mkdir(dirname(target), { recursive: true });
-    // Published by Decision on another Mac and synced here, or restored from a backup: its metadata says version 1
+    // Published by Paraself on another Mac and synced here, or restored from a backup: its metadata says version 1
     // for this asset, with no publication of it under way on this Mac.
     const synced = publishedPracticeAsset(acceptedAsset({ steps: ["另一台机器上的第一步。", "另一台机器上的第二步。"] }), null, { target: "claude-code", version: 1 });
     await writeFile(target, synced);

@@ -82,6 +82,34 @@ describe("QwenEmbeddingProvider", () => {
     expect(fake.runtime.getLlama).not.toHaveBeenCalled();
   });
 
+  it("waits out the model still loading for the warm-up at start before disposing it at a quit", async () => {
+    // The App asks one query of the model as it starts (warmQueries): quit while the model loads, a native load left
+    // running past the dispose aborted the process.
+    const fake = runtimeFixture();
+    let loaded!: () => void;
+    const loading = new Promise<void>((resolve) => { loaded = resolve; });
+    const loadModel = fake.llama.loadModel.getMockImplementation()!;
+    fake.llama.loadModel.mockImplementation(async (...args) => { await loading; return loadModel(...args); });
+    const provider = new QwenEmbeddingProvider({
+      modelsDirectory: "/models",
+      verifyModel: async () => availableModel(),
+      loadRuntime: async () => fake.runtime,
+    });
+
+    const warm = provider.embed(["Instruct: warm"]).catch(() => undefined);
+    await vi.waitFor(() => expect(fake.llama.loadModel).toHaveBeenCalled());
+    let closed = false;
+    const closing = provider.close().then(() => { closed = true; });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(closed).toBe(false);
+    expect(fake.calls).toEqual([]);
+    loaded();
+    await closing;
+    await warm;
+    expect(fake.calls).toEqual(["context", "model", "llama"]);
+  });
+
   it("serializes requests and disposes resources in dependency order", async () => {
     const fake = runtimeFixture();
     const provider = new QwenEmbeddingProvider({

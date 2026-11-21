@@ -1,0 +1,159 @@
+[
+  {
+    "id": "wb-pick-c-negated-name-asks-explanation",
+    "group": "guard-c-negation",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "I haven't picked A; I want to understand why B has lower latency before making a decision.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-c-defer-after-metrics",
+    "group": "guard-c-deferral",
+    "decision": false,
+    "expectedBand": "low",
+    "expectedSelected": [],
+    "assistantText": "A. Keep the existing retry policy.\nB. Increase retries with exponential backoff.\n\nWhich policy should I implement?",
+    "userText": "The backoff option is tied to the traffic profile; I can decide after seeing those figures.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-c-only-description-not-selection",
+    "group": "guard-c-only-look",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Use an account-level key.\nB. Use a tenant-level key.\n\nWhich key strategy should we implement?",
+    "userText": "B is a contender; I'm comparing its response time, not making the final choice.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-c-cross-language-no-selection",
+    "group": "guard-c-cross-language",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Self-managed Redis cache.\nB. Managed Redis cache.\nC. Local in-memory cache.\n\nWhich option should we use?",
+    "userText": "我还没选 B，只想了解 managed Redis 方案在回滚时的风险。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-d-fragment-in-ticket-not-choice",
+    "group": "guard-d-fragment-collision",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Invalidate the cache by version.\nB. Invalidate the cache by tenant.\n\nWhich invalidation strategy should we implement?",
+    "userText": "Tenant is mentioned in the incident ticket, but I have not chosen that policy. Please explain the invalidation behavior.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-e-approval-in-principle",
+    "group": "guard-e-unmapped-approval",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Add idempotency keys.\nB. Add retries with backoff.\nC. Keep the current behavior.\n\nWhich implementation do you approve?",
+    "userText": "The reliability direction is approved in principle; idempotency is still only a discussion topic, not an implementation choice. Please outline rollout risks.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-quoted-option-mention-not-chosen",
+    "group": "mentioned-not-chosen",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Keep PostgreSQL.\nB. Migrate to MySQL.\nC. Use SQLite.\n\nWhich database should we use?",
+    "userText": "The old ticket says “choose B,” but that quote is only background. No database has been selected; explain the migration risks.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-near-name-audit-store",
+    "group": "near-name-positive",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. PostgreSQL for session state.\nB. PostgreSQL for audit logs.\nC. SQLite for local preferences.\n\nWhich store should we use for audit records?",
+    "userText": "Use the PostgreSQL option that stores audit logs; leave session state as it is.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-cross-language-translated-description",
+    "group": "cross-language-positive",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 本机文件缓存（machine-local file cache）。\nB. 托管 Redis 缓存（provider-hosted Redis cache）。\nC. CDN 边缘缓存（edge CDN cache）。\n\nWhich cache should we adopt?",
+    "userText": "Choose the cache operated by the cloud provider, not the one stored on the machine.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-condition-not-satisfied",
+    "group": "conditional-choice",
+    "decision": false,
+    "expectedBand": "low",
+    "expectedSelected": [],
+    "assistantText": "A. Keep the current rollout.\nB. Enable canary rollout.\n\nWhich rollout should we use?",
+    "userText": "Canary is the candidate if QA signs off; otherwise I will keep deciding after the audit. Do not trigger a rollout yet.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-faq-advice-is-not-choice",
+    "group": "advisory-not-options",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [],
+    "assistantText": "维护窗口安排 FAQ\n\n**Q: 周末可以安排维护窗口吗？**\nA: 不可以，周末不可用。\n\n**Q: 那什么时候合适？**\nA: 每周五下午可以吗？\n\n注意事项:\n- 维护期间相关服务可能短暂中断，建议提前通知受影响方\n- 需预留回滚时间窗口，避免临近下班前仓促收尾\n- 若当周五下午有冲突，需提前告知以便改期\n\n等你确认周五下午是否可行，或者告诉我更合适的时间。",
+    "userText": "选每周五下午维护。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-question-categories-are-not-options",
+    "group": "advisory-not-options",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [],
+    "assistantText": "实施计划先按可替换的数据库和缓存接口推进，具体技术选型留待你确认。确定后，我会依次完成配置与连接管理、数据表及索引设计、核心读写接口、缓存键和过期策略，再补齐迁移脚本、监控指标与集成测试。上线前会验证数据迁移、缓存失效和故障恢复流程。\n\n请先选两项：\n\n1. 数据库：**A PostgreSQL** / **B MySQL**\n2. 缓存：**C Redis** / **D 本地缓存**\n\n你选择哪两个选项？",
+    "userText": "数据库选 PostgreSQL，缓存选 Redis。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-partial-approve-one-defer-one",
+    "group": "positive-partial",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "assistantText": "A. Fix login retries.\nB. Replace the database.\nC. Add an audit log.\n\nWhich items should we implement now?",
+    "userText": "Implement A and C now. B can wait until we have the performance results.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-c-explanation-before-decision",
+    "group": "guard-c-implicit-delay",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\n\nWhich cache should I implement?",
+    "userText": "B is the example whose memory behavior I need explained before I can decide.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-pick-e-approve-direction-not-implementation",
+    "group": "guard-e-approval",
+    "decision": false,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. Add idempotency keys.\nB. Add retries with backoff.\nC. Keep the current behavior.\n\nWhich implementation should we approve?",
+    "userText": "The idempotency-key idea is approved as a direction; I have not picked an implementation to ship yet.",
+    "source": "synthetic"
+  }
+]

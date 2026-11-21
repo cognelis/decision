@@ -1,0 +1,713 @@
+[
+  {
+    "id": "R5IR-001",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "先帮我解释一下 2",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-002",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Show me option 2's diff",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-003",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Explain item two first",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-004",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "先比较 1 和 3",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-005",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "只查看第 2 项，不修改",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-006",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Items 1 and 3 passed yesterday; no work remains.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-007",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Step one not found in the repo",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-008",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Option 2 is not found",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-009",
+    "group": "non-decisions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Neither; wait for the review first.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-010",
+    "group": "description-controls",
+    "assistantText": "A. 保持同步接口 —— 当前最稳，影响很小\nB. 加缓存层 —— 实现最简单，改动少\nC. 切换异步接口 —— 最可靠，吞吐更高\n\n你选哪个方案？",
+    "userText": "哪种方案最稳？我想先比较一下。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-011",
+    "group": "description-controls",
+    "assistantText": "A. 保持同步接口 —— 当前最稳，影响很小\nB. 加缓存层 —— 实现最简单，改动少\nC. 切换异步接口 —— 最可靠，吞吐更高\n\n你选哪个方案？",
+    "userText": "最简单的看起来不错，等我确认范围再做。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-012",
+    "group": "description-controls",
+    "assistantText": "A. 保持同步接口 —— 当前最稳，影响很小\nB. 加缓存层 —— 实现最简单，改动少\nC. 切换异步接口 —— 最可靠，吞吐更高\n\n你选哪个方案？",
+    "userText": "先分析三个方案的迁移成本，今天不批准。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-013",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Run item two.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR-014",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Do 1; explain item two first.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-015",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "先解释一下 2，3 做",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-016",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Step one not found; proceed with step 3.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-017",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Items 1 and 3 passed yesterday; run item two.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR-018",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "1 和 3 做，2 暂缓",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-019",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "都不做",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-020",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "None of them",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-021",
+    "group": "decision-guards",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Step one should not run",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-022",
+    "group": "description-commitments",
+    "assistantText": "A. 保持同步接口 —— 当前最稳，影响很小\nB. 加缓存层 —— 实现最简单，改动少\nC. 切换异步接口 —— 最可靠，吞吐更高\n\n你选哪个方案？",
+    "userText": "按最简单的方案做吧",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R5IR-023",
+    "group": "description-commitments",
+    "assistantText": "A. 保持同步接口 —— 当前最稳，影响很小\nB. 加缓存层 —— 实现最简单，改动少\nC. 切换异步接口 —— 最可靠，吞吐更高\n\n你选哪个方案？",
+    "userText": "就按你说的最稳那个方案来",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "R5IR-024",
+    "group": "description-commitments",
+    "assistantText": "A. 保持同步接口 —— 当前最稳，影响很小\nB. 加缓存层 —— 实现最简单，改动少\nC. 切换异步接口 —— 最可靠，吞吐更高\n\n你选哪个方案？",
+    "userText": "用那个最可靠的方案执行",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ]
+  },
+  {
+    "id": "R5IR-025",
+    "group": "trailing-reports",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\nTests were not run — which is expected for a draft.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-026",
+    "group": "trailing-reports",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\nTests were not run, which is fine for now.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-027",
+    "group": "trailing-reports",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\nTests were not run; which is expected.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-028",
+    "group": "trailing-reports",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\nNote: which of the tests ran is unknown.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-029",
+    "group": "trailing-reports",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\nStatus: pick up where we left off tomorrow.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-030",
+    "group": "trailing-reports",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\nTests were not run — pick-and-place logic untouched.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-031",
+    "group": "requests-in-notes",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nTests were not run — which one should I apply.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-032",
+    "group": "requests-in-notes",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nTests were not run: which of these should I apply.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-033",
+    "group": "requests-in-notes",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nTests were not run, pick one and I will proceed.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-034",
+    "group": "requests-in-notes",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\n未运行测试：请确认要做哪项。",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-035",
+    "group": "requests-in-notes",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\n未运行测试：please choose one.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-036",
+    "group": "independent-questions",
+    "assistantText": "1. Postgres or MySQL\n2. Redis or LRU\n\nPlease approve each.",
+    "userText": "Postgres, Redis",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedOptionCount": 0
+  },
+  {
+    "id": "R5IR-037",
+    "group": "independent-questions",
+    "assistantText": "1. Choose Postgres or MySQL\n2. Pick Redis or LRU\n\nPlease approve each.",
+    "userText": "Postgres, Redis",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedOptionCount": 0
+  },
+  {
+    "id": "R5IR-038",
+    "group": "independent-questions",
+    "assistantText": "**1. Postgres or MySQL**\n\n**2. Redis or LRU**\n\nPlease approve each.",
+    "userText": "Postgres, Redis",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedOptionCount": 0
+  },
+  {
+    "id": "R5IR-039",
+    "group": "single-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "批准这个范围。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-040",
+    "group": "single-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "可以，按这个范围做。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-041",
+    "group": "single-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "同意",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-042",
+    "group": "single-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "为什么选 8 秒？先解释一下，我还没批准。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-043",
+    "group": "single-action",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "只看一下当前超时值，暂时不改。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-044",
+    "group": "unmapped-read-only",
+    "assistantText": "1. Set timeout to eight seconds\n\n2. Add retry\n\nWhich change should I make?",
+    "userText": "只看一下当前超时值，暂时不改。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-045",
+    "group": "unmapped-read-only",
+    "assistantText": "1. Set timeout to eight seconds\n\n2. Add retry\n\nWhich change should I make?",
+    "userText": "只查看当前超时、暂不修改",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-046",
+    "group": "single-refusal",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "不要",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-047",
+    "group": "single-refusal",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "不继续",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-048",
+    "group": "single-refusal",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "否",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-049",
+    "group": "single-refusal",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "no",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-050",
+    "group": "single-refusal",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "拒绝",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-051",
+    "group": "single-refusal",
+    "assistantText": "本次只做一个改动：把请求超时设为 8 秒。\n\n请确认这个实施范围。",
+    "userText": "先不做",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-052",
+    "group": "english-or-description",
+    "assistantText": "1. Add retry: retry timeout or network errors\n2. Add logging: record client or server errors\n\nPlease approve each.",
+    "userText": "Do 1 and 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR-053",
+    "group": "v4-mechanism-progress",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "进度 2/3",
+    "decision": false,
+    "expectedSelected": [],
+    "maximumBand": "low"
+  },
+  {
+    "id": "R5IR-054",
+    "group": "v4-mechanism-progress",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "目前完成 2 项，仍有 1 项未完成",
+    "decision": false,
+    "expectedSelected": [],
+    "maximumBand": "low"
+  },
+  {
+    "id": "R5IR-055",
+    "group": "v4-mechanism-progress",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Progress: 2 of 3 complete",
+    "decision": false,
+    "expectedSelected": [],
+    "maximumBand": "low"
+  },
+  {
+    "id": "R5IR-056",
+    "group": "v4-mechanism-progress",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "The index checks finished: 2 passed, 1 failed",
+    "decision": false,
+    "expectedSelected": [],
+    "maximumBand": "low"
+  },
+  {
+    "id": "R5IR-057",
+    "group": "v4-mechanism-progress",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "index health looks normal",
+    "decision": false,
+    "expectedSelected": [],
+    "maximumBand": "medium",
+    "expectedBand": "any"
+  },
+  {
+    "id": "R5IR-058",
+    "group": "v4-mechanism-exclusions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "All except item two; defer item two.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-059",
+    "group": "v4-mechanism-exclusions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Everything except 2 for now.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-060",
+    "group": "v4-mechanism-exclusions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "All but the second, which can wait.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-061",
+    "group": "v4-mechanism-exclusions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Apart from 2, do the rest.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-062",
+    "group": "v4-mechanism-exclusions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Do everything other than step two; postpone step two.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-063",
+    "group": "v4-mechanism-exclusions",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Do all except 2, which should wait.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-064",
+    "group": "v4-mechanism-separators",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\n---\n\nTests were not run.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-065",
+    "group": "v4-mechanism-separators",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\n***\n\nTests were not run.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-066",
+    "group": "v4-mechanism-separators",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\n___\n\nTests were not run.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-067",
+    "group": "v4-mechanism-closing-request",
+    "assistantText": "Which approach should I use?\n\n1. Add an index\n2. Split the table\n\nBoth approaches have different maintenance costs.",
+    "userText": "2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR-068",
+    "group": "v4-mechanism-closing-confirmation",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?\n\nTests were not run; I will wait for your confirmation.",
+    "userText": "1 and 3",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-069",
+    "group": "v4-mechanism-report-control",
+    "assistantText": "Completed work:\n\n1. Add an index\n2. Split the table\n\nBoth checks passed.",
+    "userText": "1",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-070",
+    "group": "v4-mechanism-new-task-control",
+    "assistantText": "Which approach should I use?\n\n1. Add an index\n2. Split the table\n\nPlease provide the repository path.",
+    "userText": "2",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR-071",
+    "group": "v4-mechanism-excluding",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Everything excluding 2; 2 can wait until next week.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-072",
+    "group": "v4-mechanism-excluding",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "Everything excepting item two; defer item two until later.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R5IR-073",
+    "group": "v4-mechanism-mention-only-cap",
+    "assistantText": "Three changes:\n\n1. Add an index\n2. Split the table\n3. Add a cache\n\nWhich changes should I make?",
+    "userText": "The index concerns scalability",
+    "decision": false,
+    "expectedSelected": [],
+    "maximumBand": "medium",
+    "expectedBand": "any"
+  },
+  {
+    "id": "R5IR-074",
+    "group": "trial-commitment",
+    "assistantText": "A. SQLite\nB. PostgreSQL\nC. JSON 文件\n\n你选哪个？",
+    "userText": "SQLite 和 PostgreSQL 都试试",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ]
+  },
+  {
+    "id": "R5IR-075",
+    "group": "request-in-note-bare-modal",
+    "assistantText": "1. Add an index\n2. Split the table\n\nTests were not run — which should I apply.",
+    "userText": "1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR-076",
+    "group": "separator-scope-guard",
+    "assistantText": "我推荐 A（Pino），B（Winston）插件多。\n\n推荐 B 的条件：\n- 需要邮件输出\n- 已在使用 Winston\n\n---\n\n你选 A 还是 B？",
+    "userText": "A",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  }
+]

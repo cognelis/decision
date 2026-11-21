@@ -11,13 +11,15 @@ import {
   type RationaleQueueSnapshot,
 } from "@cognelis/decision-core";
 
-import type { ThemePreference } from "../shared/appearance.js";
-import type { CaptureClassifier } from "../shared/capture-classifier.js";
+import { DEFAULT_ACCENT, type AccentPreference, type ThemePreference } from "../shared/appearance.js";
+import { BUILT_IN_CLIENTS, clientSummary } from "@cognelis/decision-integrations";
+import { DEFAULT_CAPTURE_CLASSIFIER, type CaptureClassifier } from "../shared/capture-classifier.js";
 import type {
   AppSnapshot,
   AppHealth,
   DashboardSnapshot,
   DesktopPrimarySurface,
+  ClientSummary,
   IntegrationStatus,
   PendingRationaleSummary,
   PrimarySurface,
@@ -62,14 +64,19 @@ interface AppControllerOptions {
   health?: () => AppHealth;
   dashboard?: () => DashboardSnapshot;
   integrationStatus?: () => IntegrationStatus;
+  /** The clients the 接入 page lists, the reader's own among them; the built-in ones unless said. */
+  clients?: () => ClientSummary[];
   pendingRationales?: () => PendingRationaleSummary[];
   pendingRationaleCount?: () => number;
   semanticRecognition?: () => SemanticRecognitionStatus;
   modelTraceContentEnabled?: () => boolean;
+  modelProxyUrl?: () => string | null;
+  modelProxyEnvironmentOverride?: () => boolean;
   reviewRemindersEnabled?: () => boolean;
   localCredentialsEnabled?: () => boolean;
   captureClassifier?: () => CaptureClassifier;
   theme?: () => ThemePreference;
+  accent?: () => AccentPreference;
   onSnapshot?: (snapshot: AppSnapshot) => void;
 }
 
@@ -83,6 +90,7 @@ export class AppController {
   #candidateReviewSessionActive = false;
   #candidateReviewRationaleId: string | null = null;
   #candidateReviewProcessed = 0;
+  #candidateReviewSkipped = 0;
   #candidateReviewTotal = 0;
   #candidateAction: "confirm" | "ignore" | null = null;
   #failedCandidateAction: "confirm" | "ignore" | null = null;
@@ -191,6 +199,7 @@ export class AppController {
     this.#candidateReviewOpen = true;
     this.#candidateReviewRationaleId = null;
     this.#candidateReviewProcessed = 0;
+    this.#candidateReviewSkipped = 0;
     this.#candidateReviewTotal = this.#candidateSnapshot().count;
     this.#publish();
   }
@@ -208,6 +217,12 @@ export class AppController {
   async ignoreCandidate(candidateId: string): Promise<void> {
     const candidates = this.#requireCandidates();
     await this.#settleCandidate("ignore", () => candidates.ignore(candidateId));
+  }
+
+  skipCandidate(candidateId: string): void {
+    this.#requireCandidates().skip(candidateId);
+    this.#candidateReviewSkipped += 1;
+    this.#publish();
   }
 
   /** A retry that succeeds moves on as the action it retries would have: into the rationale, or to the next. */
@@ -281,7 +296,7 @@ export class AppController {
       throw errors[0];
     }
     if (errors.length > 1) {
-      throw new AggregateError(errors, "Decision shutdown failed");
+      throw new AggregateError(errors, "Paraself shutdown failed");
     }
   }
 
@@ -299,8 +314,10 @@ export class AppController {
       candidateReviewProgress:
         this.#candidateReviewSessionActive && this.#candidateReviewTotal > 0
           ? {
+              // Skipping moves through what remains and wraps round it: the same number on another question read as stuck.
               position: Math.min(
-                this.#candidateReviewProcessed + 1,
+                this.#candidateReviewProcessed + 1 +
+                  this.#candidateReviewSkipped % Math.max(this.#candidateSnapshot().count, 1),
                 this.#candidateReviewTotal,
               ),
               total: this.#candidateReviewTotal,
@@ -308,11 +325,11 @@ export class AppController {
           : null,
       decisionCandidates: this.#candidateSnapshot(),
       theme: this.#options.theme?.() ?? "auto",
+      accent: this.#options.accent?.() ?? DEFAULT_ACCENT,
       vaultPath: this.#options.vaultPath ?? null,
-      integrationStatus: this.#options.integrationStatus?.() ?? {
-        claudeCode: "unknown",
-        codex: "unknown",
-      },
+      clients: this.#options.clients?.() ?? BUILT_IN_CLIENTS.map(clientSummary),
+      integrationStatus: this.#options.integrationStatus?.() ??
+        Object.fromEntries(BUILT_IN_CLIENTS.map((client) => [client.id, "unknown" as const])),
       pendingRationales: this.#options.pendingRationales?.() ?? [],
       ...(this.#options.pendingRationaleCount === undefined
         ? {}
@@ -321,12 +338,13 @@ export class AppController {
         index: "healthy",
         recovery: "healthy",
       },
+      ...(this.#options.modelProxyUrl === undefined ? {} : { modelProxyUrl: this.#options.modelProxyUrl(), modelProxyEnvironmentOverride: this.#options.modelProxyEnvironmentOverride?.() ?? false }),
       modelTraceContentEnabled:
         this.#options.modelTraceContentEnabled?.() ?? true,
       localCredentialsEnabled: this.#options.localCredentialsEnabled?.() ?? false,
       reviewRemindersEnabled:
         this.#options.reviewRemindersEnabled?.() ?? true,
-      captureClassifier: this.#options.captureClassifier?.() ?? "rules",
+      captureClassifier: this.#options.captureClassifier?.() ?? DEFAULT_CAPTURE_CLASSIFIER,
       semanticRecognition: this.#options.semanticRecognition?.() ?? {
         provider: "rules",
         providerLabel: "规则识别",

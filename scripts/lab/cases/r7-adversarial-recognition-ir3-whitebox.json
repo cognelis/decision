@@ -1,0 +1,636 @@
+[
+  {
+    "id": "R7IR3-001",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second one was what I had in mind.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "用户指定的“was what I had in mind”描述式选择。"
+  },
+  {
+    "id": "R7IR3-002",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 was the plan all along.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "过去式描述目标，作为本题最终选择。"
+  },
+  {
+    "id": "R7IR3-003",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is what I had in mind.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "描述式表达预期选项。"
+  },
+  {
+    "id": "R7IR3-004",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second option was our target from day one.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "过去式目标描述当前决定。"
+  },
+  {
+    "id": "R7IR3-005",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 isn't negotiable.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "用否定式表示确定选项。"
+  },
+  {
+    "id": "R7IR3-006",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is too good a fit to pass up.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "is too… 结构表达明确偏向。"
+  },
+  {
+    "id": "R7IR3-007",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 needs to be the production default.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "needs 结构给出明确决定。"
+  },
+  {
+    "id": "R7IR3-008",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "List option 2 as the default.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "以 list 开头的配置指令。"
+  },
+  {
+    "id": "R7IR3-009",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Check option 2 off as the primary choice.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "check 开头的勾选指令。"
+  },
+  {
+    "id": "R7IR3-010",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is better than option 1.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "比较句作为直接选项答复。"
+  },
+  {
+    "id": "R7IR3-011",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 比 1 更好。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "中文比较句作为直接选项答复。"
+  },
+  {
+    "id": "R7IR3-012",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is preferred by me for this deployment.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "is…preferred by 形式表达本人偏好。"
+  },
+  {
+    "id": "R7IR3-013",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second one is what I meant.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "短句指回第二项。"
+  },
+  {
+    "id": "R7IR3-014",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 was always the route I had in mind.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "描述式确认目标方案。"
+  },
+  {
+    "id": "R7IR3-015",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second one; that is the direction.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "简短描述式决定。"
+  },
+  {
+    "id": "R7IR3-016",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is the one I had in mind for production.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "描述式指认目标项。"
+  },
+  {
+    "id": "R7IR3-017",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second one is very much the route forward.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "is very… 结构作方向性选择。"
+  },
+  {
+    "id": "R7IR3-018",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 needs to be our baseline.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "needs… 结构作明确决定。"
+  },
+  {
+    "id": "R7IR3-019",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is the one wired into our existing production path.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "is…wired into 结构作为选择描述。"
+  },
+  {
+    "id": "R7IR3-020",
+    "group": "noncommittal-shape-real-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The one already provisioned on the primary host.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "被动/描述式选项指认。"
+  },
+  {
+    "id": "R7IR3-021",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is currently used in production.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "现状陈述。"
+  },
+  {
+    "id": "R7IR3-022",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second option was deployed last year.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "过去已完成的部署说明。"
+  },
+  {
+    "id": "R7IR3-023",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 isn't compatible with ARM yet.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "不兼容状态。"
+  },
+  {
+    "id": "R7IR3-024",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is too expensive for this pilot.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "单纯评价。"
+  },
+  {
+    "id": "R7IR3-025",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Check option 2 against the logs before deciding.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "只要求检查。"
+  },
+  {
+    "id": "R7IR3-026",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "List option 2’s dependencies for the review.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "只要求列资料。"
+  },
+  {
+    "id": "R7IR3-027",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Look at option 2 and compare it with option 3.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "只要求比较。"
+  },
+  {
+    "id": "R7IR3-028",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 needs a restart window.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "提出约束，没有选择。"
+  },
+  {
+    "id": "R7IR3-029",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is faster than option 1; this is only the benchmark result.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "比较结果且明确只是报告。"
+  },
+  {
+    "id": "R7IR3-030",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Isn't option 2 better than option 1?",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "反问，不是选择。"
+  },
+  {
+    "id": "R7IR3-031",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "难道 2 比 1 更好？",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "反问比较。"
+  },
+  {
+    "id": "R7IR3-032",
+    "group": "noncommittal-shape-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 was tested by CI yesterday.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "已完成的测试说明。"
+  },
+  {
+    "id": "R7IR3-033",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is better than option 1. I’ll confirm with QA about the release window.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "偏好已回答选项，只待确认独立的发布窗口。"
+  },
+  {
+    "id": "R7IR3-034",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is better than option 1; that is the direction. Let’s validate the deployment manifest first.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "偏好明确，后句核验的是部署清单。"
+  },
+  {
+    "id": "R7IR3-035",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 比 1 更好。先确认一下发布时间，选项就按这个方向。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "决定已明示，确认的是日期。"
+  },
+  {
+    "id": "R7IR3-036",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is better than option 1; use that as the baseline, then check the release date.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "已给配置决定，后续只查发布日期。"
+  },
+  {
+    "id": "R7IR3-037",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is better than option 1, but let’s benchmark before we decide.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "明确在决定前继续测量。"
+  },
+  {
+    "id": "R7IR3-038",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is better, pending the benchmark results.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "明确等待基准结果。"
+  },
+  {
+    "id": "R7IR3-039",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 is better than 1; before we commit, let’s check the data.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "明确在承诺前检查数据。"
+  },
+  {
+    "id": "R7IR3-040",
+    "group": "preference-reservation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 is better than 1. I’ll confirm with the team before deciding.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "确认之后才决定。"
+  },
+  {
+    "id": "R7IR3-041",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Let me know which option you’d like.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "直接交权句式。"
+  },
+  {
+    "id": "R7IR3-042",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Reply with the number.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "简短编号交权。"
+  },
+  {
+    "id": "R7IR3-043",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Up to you.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "简短让用户决定。"
+  },
+  {
+    "id": "R7IR3-044",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "你来定。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "中文直接交权。"
+  },
+  {
+    "id": "R7IR3-045",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "回复编号即可。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "中文编号交权。"
+  },
+  {
+    "id": "R7IR3-046",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Tell me which option you want.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "tell me which 结构。"
+  },
+  {
+    "id": "R7IR3-047",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "So, let me know which one to use.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "允许前缀 so 的真实交权。"
+  },
+  {
+    "id": "R7IR3-048",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Let me know how you’d like to proceed.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "R6/R7 常见真实交权句。"
+  },
+  {
+    "id": "R7IR3-049",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Thanks, let me know which option you prefer.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "前置礼貌语之后交权，测试段首锚定。"
+  },
+  {
+    "id": "R7IR3-050",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "When ready, reply with the number you prefer.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "时间从句前缀后交权。"
+  },
+  {
+    "id": "R7IR3-051",
+    "group": "handover-nonrequest-mention",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "The template says: “Let me know which option you’d like.”",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "引用模板措辞，不是当前请求。"
+  },
+  {
+    "id": "R7IR3-052",
+    "group": "handover-nonrequest-mention",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "The note mentions that it is up to you, but the team already applied option 2.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "描述已完成结果，不请求用户选择。"
+  },
+  {
+    "id": "R7IR3-053",
+    "group": "question-then-real-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nI can apply whichever option you choose.",
+    "userText": "I can apply whichever option you choose.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "中性收尾后回找明确问题，应保留请求。"
+  },
+  {
+    "id": "R7IR3-054",
+    "group": "question-then-real-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nThe choice is yours; I can proceed after your answer.",
+    "userText": "The choice is yours; I can proceed after your answer.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "把选择交给用户，末段仍是请求。"
+  },
+  {
+    "id": "R7IR3-055",
+    "group": "question-then-real-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nI’ll make the change once you reply.",
+    "userText": "I’ll make the change once you reply.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "条件执行收尾。"
+  },
+  {
+    "id": "R7IR3-056",
+    "group": "question-then-real-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\n请回复后我再实施。",
+    "userText": "请回复后我再实施。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "条件实施收尾。"
+  },
+  {
+    "id": "R7IR3-057",
+    "group": "question-then-nonrequest-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nSummary: the team already chose option 2 yesterday; nothing remains to decide.",
+    "userText": "Summary: the team already chose option 2 yesterday; nothing remains to decide.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "总结已完成决定，不是新请求。"
+  },
+  {
+    "id": "R7IR3-058",
+    "group": "question-then-nonrequest-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nThe rollout is complete. This paragraph records the result only.",
+    "userText": "The rollout is complete. This paragraph records the result only.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "已完成说明，不是请求。"
+  },
+  {
+    "id": "R7IR3-059",
+    "group": "question-then-nonrequest-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nNever mind; I’ll take care of it myself.",
+    "userText": "Never mind; I’ll take care of it myself.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "助手撤回问题并自行处理。"
+  },
+  {
+    "id": "R7IR3-060",
+    "group": "question-then-nonrequest-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nI will go with option 2 and close this out.",
+    "userText": "I will go with option 2 and close this out.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "助手已自行决定。"
+  },
+  {
+    "id": "R7IR3-061",
+    "group": "question-then-nonrequest-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\n算了，我先不动，问题已经解决。",
+    "userText": "算了，我先不动，问题已经解决。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "助手自己撤回并解决。"
+  },
+  {
+    "id": "R7IR3-062",
+    "group": "question-then-nonrequest-close",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nStatus: the patch has been applied and the rollout finished.",
+    "userText": "Status: the patch has been applied and the rollout finished.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "收尾状态汇报。"
+  }
+]

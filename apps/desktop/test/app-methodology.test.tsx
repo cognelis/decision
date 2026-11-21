@@ -610,7 +610,7 @@ describe("methodology workspace", () => {
     expect(detail.getByText("当前版本")).toBeVisible();
     expect(detail.getByText("修订草案")).toBeVisible();
     await user.click(detail.getByRole("button", { name: "检查后应用修订" }));
-    expect(detail.getByText(/历史决策关联保持不变/u)).toBeVisible();
+    expect(detail.getByText(/过往决策关联保持不变/u)).toBeVisible();
     await user.click(detail.getByRole("button", { name: "确认应用修订" }));
     expect(api.setMethodologyStatus).toHaveBeenCalledWith(
       candidate.id,
@@ -623,7 +623,7 @@ describe("methodology workspace", () => {
     await user.click(detail.getByRole("button", { name: /版本 1/u }));
     expect(detail.getByText("应用修订前")).toBeVisible();
     await user.click(detail.getByRole("button", { name: "恢复此版本" }));
-    await user.click(detail.getByRole("button", { name: "确认恢复" }));
+    await user.click(detail.getByRole("button", { name: "恢复" }));
     expect(api.restoreMethodologyVersion).toHaveBeenCalledWith(original.id, 1);
   });
 
@@ -909,27 +909,24 @@ describe("methodology workspace", () => {
     const guide = await screen.findByRole("region", {
       name: "方法论建设进度",
     });
+    expect(within(guide).getByRole("heading", { name: "建设进度" })).toBeVisible();
     expect(
-      within(guide).getByText("把真实决策逐步变成可复用方法"),
+      within(guide).getByText(/把真实决策逐步变成可复用方法/u),
     ).toBeVisible();
-    expect(
-      (await within(guide).findByText("已记录决策")).parentElement,
-    ).toHaveTextContent("36");
-    expect(within(guide).getByText("完整复盘").parentElement).toHaveTextContent(
-      "18",
-    );
-    expect(
-      within(guide).getByText("已采纳原则").parentElement,
-    ).toHaveTextContent("3");
-    expect(
-      within(guide).getByText("已采纳实践").parentElement,
-    ).toHaveTextContent("2");
-    const path = within(guide).getByRole("list", {
+    // Each step carries its own counts: nothing the guide counted before is left out.
+    const path = await within(guide).findByRole("list", {
       name: "方法论建设路径",
     });
-    expect(within(path).getByText("18 条可用")).toBeVisible();
-    expect(within(path).getByText("3 条已采纳")).toBeVisible();
-    expect(within(path).getByText("2 条已采纳")).toBeVisible();
+    const [evidence, principles, practice] =
+      within(path).getAllByRole("listitem");
+    expect(evidence).toHaveTextContent("18 条完整复盘");
+    expect(evidence).toHaveTextContent(
+      "已记录 36 条决策 · 12 条待结果 · 6 条待复盘",
+    );
+    expect(principles).toHaveTextContent("3 条已采纳");
+    expect(principles).toHaveTextContent("1 条待确认，等人工审核");
+    expect(practice).toHaveTextContent("2 条已采纳");
+    expect(practice).toHaveTextContent("1 条技能或流程草案等待确认");
 
     await user.click(within(guide).getByRole("button", { name: "审核第一条" }));
     expect(
@@ -1524,7 +1521,7 @@ describe("methodology workspace", () => {
       principle: "先验证关键假设，再扩大不可逆投入。",
       appliesWhen: "结果仍有关键未知项时。",
       caution: "切换成本快速增长时重新评估。",
-      evidenceSummary: "从本地 Markdown 导入，尚未关联 Decision 中的复盘证据。",
+      evidenceSummary: "从本地 Markdown 导入，尚未关联 Paraself 中的复盘证据。",
       sourceDecisionIds: [],
       sourceDecisions: [],
       importSource: {
@@ -1631,7 +1628,7 @@ describe("methodology workspace", () => {
       screen.getByRole("dialog", { name: "审核方法论候选" }),
     );
     expect(dialog.getByText("Markdown 导入 · 尚未关联复盘证据")).toBeVisible();
-    expect(dialog.getByText(/不等同于经过 Decision 复盘验证/u)).toBeVisible();
+    expect(dialog.getByText(/不等同于经过 Paraself 复盘验证/u)).toBeVisible();
     expect(
       dialog.getByRole("region", { name: "Markdown 导入来源" }),
     ).toHaveTextContent("团队方法论.md");
@@ -3209,13 +3206,13 @@ describe("methodology workspace", () => {
       strongMatches: 8,
       possibleMatches: 4,
       durationMs: 70,
-      byClient: { claudeCode: 4, codex: 6 },
+      byClient: { "claude-code": 4, codex: 6 },
       feedback: {
         total: 5,
         helpful: 4,
         notHelpful: 1,
         misleading: 0,
-        bySource: { claudeCode: 2, codex: 2, preview: 1 },
+        bySource: { "claude-code": 2, codex: 2, preview: 1 },
         byResult: {
           strong: { total: 3, helpful: 3, notHelpful: 0, misleading: 0 },
           possible: { total: 1, helpful: 0, notHelpful: 1, misleading: 0 },
@@ -3318,6 +3315,15 @@ describe("methodology workspace", () => {
     expect(
       await within(preview).findByText(/已匿名计入质量校准/u),
     ).toBeVisible();
+    // A principle note not read this time (a sync conflict's copy beside it): said, not left as 没有找到 alone.
+    expect(within(preview).queryByText(/部分原则笔记这次没能读取/u)).toBeNull();
+    vi.mocked(api.previewDecisionConsultation).mockResolvedValueOnce({
+      consultationVersion: 1, requestId: "preview-2", status: "no_match", generatedBy: "deterministic_local_match",
+      feedback: null, matches: [], signals: [], principlesIncomplete: true,
+      boundary: { advisoryOnly: true, noDecisionWritten: true, noPrincipleApplied: true, noPreferencePromoted: true },
+    });
+    await user.click(within(preview).getByRole("button", { name: "重新试算" }));
+    expect(await within(preview).findByText(/部分原则笔记这次没能读取/u)).toBeVisible();
     await user.click(within(preview).getByRole("button", { name: "关闭" }));
     expect(screen.queryByRole("dialog", { name: "试算决策前核对" })).toBeNull();
 
@@ -3381,7 +3387,7 @@ describe("methodology workspace", () => {
             decisions: 4,
             previousDecisions: 1,
             rationaleCaptured: 3,
-            rationaleDeferred: 1,
+            rationaleDeferred: 1, recommendation: { offered: 0, followed: 0 },
             expectationMissing: 2,
             reviews: 2,
             previousReviews: 0,
@@ -3428,7 +3434,7 @@ describe("methodology workspace", () => {
             decisions: 0,
             previousDecisions: 3,
             rationaleCaptured: 0,
-            rationaleDeferred: 0,
+            rationaleDeferred: 0, recommendation: { offered: 0, followed: 0 },
             expectationMissing: 0,
             reviews: 0,
             previousReviews: 1,
@@ -3808,7 +3814,7 @@ describe("methodology workspace", () => {
             canPublish: true,
             canRollback: false,
             requiresOverwriteConfirmation: true,
-            message: "存在非 Decision 管理的同名技能，覆盖前需要确认",
+            message: "存在非 Paraself 管理的同名技能，覆盖前需要确认",
           },
         ];
       },
@@ -3908,7 +3914,7 @@ describe("methodology workspace", () => {
     expect(await dialog.findByText("已是最新版本")).toBeVisible();
     await user.click(dialog.getByRole("button", { name: "回滚" }));
     expect(dialog.getByText("回滚最近一次发布？")).toBeVisible();
-    await user.click(dialog.getByRole("button", { name: "确认回滚" }));
+    await user.click(dialog.getByRole("button", { name: "回滚发布" }));
     expect(api.rollbackPracticeAssetPublication).toHaveBeenCalledWith(
       "skill-1",
       "codex",
@@ -3919,7 +3925,7 @@ describe("methodology workspace", () => {
     vi.mocked(api.listPracticePublicationStatuses).mockRejectedValueOnce(
       new Error("客户端目录暂时无法读取"),
     );
-    await user.click(dialog.getByRole("button", { name: "确认覆盖" }));
+    await user.click(dialog.getByRole("button", { name: "覆盖" }));
     expect(api.publishPracticeAsset).toHaveBeenCalledWith(
       "skill-1",
       "claude-code",
@@ -4186,7 +4192,9 @@ describe("methodology workspace", () => {
       dialog.getByText("先通过可回退的小步改动验证效果，再扩大范围。"),
     ).toBeVisible();
     expect(dialog.getAllByText(source.principle)[0]).toBeVisible();
-    expect(dialog.getByRole("button", { name: "已发布" })).toBeDisabled();
+    // Nothing to publish is said in words, with no button to press (a disabled solid one read as an action).
+    expect(dialog.queryByRole("button", { name: "已发布" })).toBeNull();
+    expect(dialog.getByText("已发布")).toBeVisible();
     expect(dialog.getByRole("button", { name: "回滚" })).toBeEnabled();
     await user.click(dialog.getByRole("button", { name: "重新生成新草案" }));
     expect(api.regeneratePracticeAsset).toHaveBeenCalledWith(accepted.id);
@@ -4215,7 +4223,7 @@ describe("methodology workspace", () => {
     expect(dialog.getByText("应用新草案前")).toBeVisible();
     await user.click(dialog.getByRole("button", { name: "恢复此版本" }));
     expect(dialog.getByText("恢复版本 1？")).toBeVisible();
-    await user.click(dialog.getByRole("button", { name: "确认恢复" }));
+    await user.click(dialog.getByRole("button", { name: "恢复" }));
     expect(api.restorePracticeAssetVersion).toHaveBeenCalledWith(
       accepted.id,
       1,

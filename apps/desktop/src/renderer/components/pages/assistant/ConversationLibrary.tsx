@@ -1,6 +1,7 @@
 import { IconButton, ActionIcon } from "../../IconButton.js";
 import { useEffect, useRef, useState } from "react";
 import { isClearShortcut } from "../../../keyboard.js";
+import { relativeTime } from "../../../relative-time.js";
 import { byRecency, conversationTitle, type AssistantConversation } from "./assistant-session.js";
 
 export const ConversationLibrary = ({ active, conversations, disabled, onOpen, onRename, onFavorite }: {
@@ -18,6 +19,9 @@ export const ConversationLibrary = ({ active, conversations, disabled, onOpen, o
   // the window and Tab started over at its top.
   const listRef = useRef<HTMLUListElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  // Opened for renaming, the whole name is selected: typing replaces it, and the start of a long one is not out of view.
+  const renameRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editingId !== null) renameRef.current?.select(); }, [editingId]);
   const [renameEnded, setRenameEnded] = useState(0);
   useEffect(() => {
     if (renameEnded === 0) return;
@@ -32,7 +36,7 @@ export const ConversationLibrary = ({ active, conversations, disabled, onOpen, o
   const needle = query.trim().toLocaleLowerCase();
   const matches = byRecency(conversations).filter((conversation) =>
     (!favoritesOnly || conversation.favorite) &&
-    (!needle || [conversationTitle(conversation), conversation.draft, ...conversation.messages.map((message) => message.content)]
+    (!needle || [conversationTitle(conversation), conversation.draft, ...conversation.messages.map((message) => message.content), ...(conversation.onboarding?.entries.map((entry) => entry.text) ?? [])]
       .some((text) => text.toLocaleLowerCase().includes(needle))),
   ).sort((left, right) => Number(Boolean(right.favorite)) - Number(Boolean(left.favorite)));
 
@@ -55,13 +59,13 @@ export const ConversationLibrary = ({ active, conversations, disabled, onOpen, o
               const title = String(new FormData(event.currentTarget).get("title") ?? "").trim();
               if (title && title.length <= 200) { onRename(title); endRename(); }
             }}>
-              <input name="title" aria-label="当前会话名称" defaultValue={conversationTitle(active)} maxLength={200} required disabled={disabled} autoFocus onKeyDown={(event) => { if (isClearShortcut(event)) { event.stopPropagation(); endRename(); } }} />
+              <input name="title" aria-label="当前会话名称" defaultValue={conversationTitle(active)} maxLength={200} required disabled={disabled} autoFocus ref={renameRef} onKeyDown={(event) => { if (isClearShortcut(event)) { event.stopPropagation(); endRename(); } }} />
               <IconButton type="submit" aria-label="保存名称" disabled={disabled}><ActionIcon name="check" /></IconButton>
               <IconButton aria-label="取消重命名" onClick={endRename}><ActionIcon name="close" /></IconButton>
             </form> : <>
               <button type="button" className="assistant-conversation-row" data-conversation-id={conversation.id} disabled={disabled} aria-current={current ? "true" : undefined} onClick={() => { setEditingId(null); onOpen(conversation); }}>
-                <span className="assistant-conversation-title">{conversation.favorite ? <ActionIcon name="star" /> : null}<span>{conversationTitle(conversation)}</span></span>
-                <small>{current ? "当前" : `${conversation.messages.length} 条消息`}</small>
+                <span className="assistant-conversation-title">{conversation.favorite && !current ? <ActionIcon name="star" /> : null}{conversation.onboarding === undefined ? null : <span className="assistant-conversation-kind">接入</span>}<span>{conversationTitle(conversation)}</span></span>
+                <small>{[current ? "当前" : "", conversation.onboarding !== undefined ? (conversation.onboarding.ended === true ? "接入对话 · 已结束" : "接入对话") : conversation.messages.length ? `${conversation.messages.length} 条消息` : "", current ? "" : relativeTime(conversation.updatedAt)].filter(Boolean).join(" · ")}</small>
               </button>
               {current ? <div className="assistant-row-actions">
                 <IconButton aria-label="重命名" disabled={disabled} onClick={() => setEditingId(active.id)}><ActionIcon name="edit" /></IconButton>

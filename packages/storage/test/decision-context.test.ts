@@ -46,7 +46,7 @@ describe("DecisionContextRepository", () => {
     const repository = new DecisionContextRepository(vault);
     const snapshot = await repository.scan();
     expect(snapshot.documents).toEqual([expect.objectContaining({
-      id: "DEC-0001", kind: "historical_decision", project: "web", sessionId: "session-example",
+      id: "DEC-0001", kind: "summarized_decision", project: "web", sessionId: "session-example",
       supersedes: ["DEC-0000"], supersededBy: ["DEC-0002", "DEC-0003"],
       relativePath: "Decision Journal/summarize/DEC-0001-列表标识.md",
     })]);
@@ -58,13 +58,56 @@ describe("DecisionContextRepository", () => {
     expect(parseDecisionContextNote(note, "summarize")?.supersededBy).toEqual(["DEC-0002"]);
   });
 
+  it("reads the options a historical note presented and the constraints it found, and never sets a note aside for them", () => {
+    const note = (properties: Record<string, unknown>) => ({ relativePath: "Decision Journal/summarize/a.md", content: legacy(properties), contentHash: "hash", size: 100, modifiedAtMs: 0 });
+    expect(parseDecisionContextNote(note({ options_presented: ["Postgres 全文检索", " SQLite FTS5 "], constraints_revealed: ["只能在本机运行"] }), "summarize"))
+      .toMatchObject({ optionsPresented: ["Postgres 全文检索", "SQLite FTS5"], constraintsRevealed: ["只能在本机运行"] });
+    // Edited by hand into a value of another shape, or left out: none, the note read as before.
+    expect(parseDecisionContextNote(note({ options_presented: { first: "Postgres" }, constraints_revealed: 3 }), "summarize"))
+      .toMatchObject({ id: "DEC-0001", optionsPresented: [], constraintsRevealed: [] });
+    expect(parseDecisionContextNote(note({ options_presented: "只有一个", constraints_revealed: null }), "summarize"))
+      .toMatchObject({ optionsPresented: ["只有一个"], constraintsRevealed: [] });
+  });
+
+  it("says why an app decision's review was scheduled, cleared or not (IMP-123)", async () => {
+    const vault = await makeVault();
+    await new MarkdownRepository(vault).write(recordFixture({ question: "今天发版吗？", reviewDueDate: null, reviewScheduleReasons: ["release"] }));
+    const [document] = (await new DecisionContextRepository(vault).scan()).documents;
+    expect(document?.outcomeState).toMatchObject({ reviewDueDate: null, reviewScheduleReasons: ["release"] });
+  });
+
+  it("keeps when an app decision was made apart from when the App wrote it (R17)", async () => {
+    const vault = await makeVault();
+    await writeFile(join(vault, "Decision Journal/summarize/DEC-0001.md"), legacy());
+    const notes = new MarkdownRepository(vault);
+    await notes.write(recordFixture({ id: "told", question: "制品仓库方案", occurredAt: "2026-03-02T00:00:00Z" }));
+    await notes.write(recordFixture({ id: "asked", question: "制品仓库选型" }));
+    const byId = new Map((await new DecisionContextRepository(vault).scan()).documents.map((doc) => [doc.id, doc]));
+    expect(byId.get("told")).toMatchObject({ occurred: "2026-03-02T00:00:00Z" });
+    expect(byId.get("told")?.created).not.toBe("2026-03-02T00:00:00Z");
+    expect(byId.get("asked")).not.toHaveProperty("occurred");
+    expect(byId.get("DEC-0001")).not.toHaveProperty("occurred");
+  });
+
+  it("sets aside an app decision whose occurred_at is no time at all, counted, rather than dating it some other way", async () => {
+    const vault = await makeVault();
+    await new MarkdownRepository(vault).write(recordFixture({ id: "kept", question: "制品仓库选型" }));
+    await new MarkdownRepository(vault).write(recordFixture({ id: "unreadable", question: "制品仓库方案", occurredAt: "2026-03-02T00:00:00Z" }));
+    const directory = join(vault, "Decision Journal/decisions");
+    const path = join(directory, (await readdir(directory, { recursive: true })).find((file) => file.endsWith(".md") && file.includes("unreadable"))!);
+    await writeFile(path, (await readFile(path, "utf8")).replace(/^occurred_at: .*$/mu, "occurred_at: not-a-date"));
+    const snapshot = await new DecisionContextRepository(vault).scan();
+    expect(snapshot.documents.map((doc) => doc.id)).toEqual(["kept"]);
+    expect(snapshot.sources.find((source) => source.source === "decisions")).toMatchObject({ records: 1, skipped: 1, status: "partial" });
+  });
+
   it("rebuilds from current files so edits, removals and app records are visible", async () => {
     const vault = await makeVault();
     const path = join(vault, "Decision Journal/summarize/DEC-0001.md");
     const repository = new DecisionContextRepository(vault);
     await writeFile(path, legacy());
     await new MarkdownRepository(vault).write(recordFixture());
-    expect((await repository.scan()).documents.map((doc) => doc.kind).sort()).toEqual(["historical_decision", "recorded_decision"]);
+    expect((await repository.scan()).documents.map((doc) => doc.kind).sort()).toEqual(["recorded_decision", "summarized_decision"]);
     await writeFile(path, legacy({ selected_option: "改为固定顺序，记录例外。" }));
     expect((await repository.scan()).documents.find((doc) => doc.id === "DEC-0001")?.summary).toBe("改为固定顺序，记录例外。");
     await rm(path);

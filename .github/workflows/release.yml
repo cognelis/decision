@@ -61,7 +61,7 @@ jobs:
       - name: Upload verified Windows files
         uses: actions/upload-artifact@v7
         with:
-          name: decision-win32-x64-${{ github.sha }}
+          name: paraself-win32-x64-${{ github.sha }}
           path: out/release/*
           if-no-files-found: error
           retention-days: 7
@@ -95,7 +95,7 @@ jobs:
       - name: Upload verified macOS files
         uses: actions/upload-artifact@v7
         with:
-          name: decision-darwin-arm64-${{ github.sha }}
+          name: paraself-darwin-arm64-${{ github.sha }}
           path: out/release/*
           if-no-files-found: error
           retention-days: 7
@@ -132,7 +132,7 @@ jobs:
               exit 0
             fi
           else
-            gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "Decision $GITHUB_REF_NAME" --notes-file docs/release-notes.md
+            gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "Paraself $GITHUB_REF_NAME" --notes-file docs/release-notes.md
           fi
 
           mapfile -t EXISTING_ASSETS < <(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')
@@ -144,4 +144,4 @@ jobs:
           mkdir -p out/uploaded-release
           gh release download "$GITHUB_REF_NAME" --dir out/uploaded-release
           node scripts/verify-release-set.mjs --directory=out/uploaded-release --version="$VERSION" --tag="$GITHUB_REF_NAME" --source-commit="$GITHUB_SHA"
-          gh release edit "$GITHUB_REF_NAME" --title "Decision $GITHUB_REF_NAME" --notes-file docs/release-notes.md --draft=false
+          gh release edit "$GITHUB_REF_NAME" --title "Paraself $GITHUB_REF_NAME" --notes-file docs/release-notes.md --draft=false

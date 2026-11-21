@@ -124,6 +124,10 @@ interface VaultFilesystem {
   noFollowFlag: number | undefined;
 }
 
+/** The reader's exclusions in Obsidian: a note by its whole path; a folder only where every note under it is excluded. */
+interface ReaderExclusions { note(path: string): boolean; folder(path: string): boolean }
+const NO_EXCLUSIONS: ReaderExclusions = { note: () => false, folder: () => false };
+
 export class ObsidianVaultRepository {
   readonly #vaultPath: string;
   readonly #root: string;
@@ -162,23 +166,40 @@ export class ObsidianVaultRepository {
   }
 
   /**
-   * What the reader excluded in Obsidian (设置 › 文件与链接 › 排除的文件): its plain paths, as the prefixes Obsidian
-   * takes them for. Its regular expressions (/…/) are not followed. Read past, an excluded template or archive came
-   * back in every search as a note.
+   * What the reader excluded in Obsidian (设置 › 文件与链接 › 排除的文件), as Obsidian's own app.js takes it: each
+   * filter trimmed; one between slashes (/…/) a regular expression, any other a path prefix, both without regard to
+   * case and tested against a note's whole Vault-relative path; an expression that does not compile is passed over.
+   * Read past, an excluded template or archive came back in every search; its expressions passed over, a note one
+   * excluded was still read and searched. A folder is left unopened only by a plain prefix, which every note under it
+   * then matches: an expression says nothing of a folder (/^private$/ excludes no note in private/).
    */
-  async #excludedInObsidian(signal?: AbortSignal): Promise<string[]> {
+  async #excludedInObsidian(signal?: AbortSignal): Promise<ReaderExclusions> {
     throwIfAborted(signal);
     const settings = join(this.#root, ".obsidian", "app.json");
     try {
       // Obsidian's own settings, not a note: read beside the walk's own file access, a small file or none.
       const file = await lstat(settings);
-      if (!file.isFile() || file.size > 1024 * 1024) return [];
+      if (!file.isFile() || file.size > 1024 * 1024) return NO_EXCLUSIONS;
       const filters = (JSON.parse(await readFile(settings, "utf8")) as { userIgnoreFilters?: unknown } | null)?.userIgnoreFilters;
-      return Array.isArray(filters)
-        ? filters.filter((filter): filter is string => typeof filter === "string" && filter.length > 0 && !filter.startsWith("/"))
-        : [];
+      const expressions: RegExp[] = [];
+      const prefixes: RegExp[] = [];
+      for (const raw of Array.isArray(filters) ? filters : []) {
+        const filter = typeof raw === "string" ? raw.trim() : "";
+        if (!filter) continue;
+        try {
+          // "i" alone, as Obsidian: no "g", so no lastIndex carried from one path to the next.
+          if (filter.length > 2 && filter.startsWith("/") && filter.endsWith("/")) expressions.push(new RegExp(filter.slice(1, -1), "i"));
+          else prefixes.push(new RegExp(`^${filter.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}`, "i"));
+        } catch {
+          // Passed over, as Obsidian passes it over.
+        }
+      }
+      return {
+        note: (path) => prefixes.some((test) => test.test(path)) || expressions.some((test) => test.test(path)),
+        folder: (path) => prefixes.some((test) => test.test(`${path}/`)),
+      };
     } catch {
-      return [];
+      return NO_EXCLUSIONS;
     } finally {
       throwIfAborted(signal);
     }
@@ -246,7 +267,7 @@ export class ObsidianVaultRepository {
     directory: string,
     prefix: string,
     validatedParentPrefix: string | null,
-    root: { realPath: string | null; excluded?: readonly string[] },
+    root: { realPath: string | null; excluded?: ReaderExclusions },
     signal?: AbortSignal,
     cache?: NoteCache<ObsidianVaultScanEntry>,
     unchanged?: UnchangedNote,
@@ -284,8 +305,7 @@ export class ObsidianVaultRepository {
         // Moved off this Mac by iCloud ("Optimize Mac Storage"): its placeholder, .name.md.icloud, stands for a
         // note still in the vault, said as one not read (as the decision folders say it, evictedNote). Passed over
         // as a hidden file, the note left the whole-vault index and every search without a word.
-        const excludedByReader = (path: string): boolean =>
-          root.excluded?.some((filter) => path.startsWith(filter) || `${path}/`.startsWith(filter)) === true;
+        const excludedByReader = (path: string): boolean => root.excluded?.note(path) === true;
         // A folder's walk says it too: passed over there, a decision in iCloud left every search while the search said
         // its source was read in full.
         const evicted = entry.isFile() ? /^\.(.+\.md)\.icloud$/iu.exec(entry.name)?.[1] : undefined;
@@ -299,7 +319,7 @@ export class ObsidianVaultRepository {
           continue;
         }
         if (isExcluded(rel)) continue;
-        if (excludedByReader(rel)) continue;
+        if (entry.isDirectory() ? root.excluded?.folder(rel) === true : excludedByReader(rel)) continue;
         // Not followed, as it may lead out of the vault. In a folder's walk (a decision source) a note behind a link is said
         // as one not read, as a linked folder is, or a search over the folder said it was read in full; the whole vault's
         // walk reads the note a link inside it points to where it is.
@@ -493,6 +513,31 @@ export class ObsidianVaultRepository {
       if (missing) return false;
       throw unresolved;
     }
+  }
+
+  /**
+   * One note, read as the note index reads it (bounded, no links, checked to be the file opened throughout), and only
+   * one the walk itself would offer: not in a hidden or excluded folder, not the app's own Decision Journal, not
+   * what the reader excluded in Obsidian. Anything else, or a path that is not a plain Vault-relative Markdown path,
+   * is null: which of them is not said, so a guessed path tells nothing of what is there.
+   */
+  async readVisibleNote(relativePath: string, signal?: AbortSignal): Promise<ObsidianVaultNote | null> {
+    const segments = relativePath.split("/");
+    if (
+      !relativePath || !isMarkdown(relativePath) || isOutsideRelativePath(relativePath) || relativePath.includes("\\") ||
+      normalizedPath(relativePath) !== relativePath || segments.some((part) => !part || part === "." || part === "..") ||
+      isExcluded(relativePath) || isDecisionJournalPath(relativePath)
+    ) return null;
+    if ((await this.#excludedInObsidian(signal)).note(relativePath)) return null;
+    let rootReal: string;
+    try {
+      rootReal = await awaitFilesystem(signal, () => this.#fs.realpath(this.#root));
+    } catch (error) {
+      throwIfAbortError(error, signal);
+      return null;
+    }
+    const entry = await this.#readNote(join(this.#root, ...segments), relativePath, rootReal, signal);
+    return entry.kind === "note" ? entry.note : null;
   }
 
   async resolveNotePath(relativePath: string): Promise<string> {

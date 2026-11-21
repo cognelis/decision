@@ -1,3 +1,4 @@
+import { codexTextOnlyArguments, assertCodexTextOnlyEvents } from "../cli/codex-text-only.js";
 import {
   modelProviderProfileSchema,
   type ModelProviderProfile,
@@ -247,7 +248,7 @@ export class CodexCliAdapter {
     }
     this.#profile = parsed.data;
     this.#runner =
-      options.runner ?? new ManagedChildProcessRunner();
+      options.runner ?? new ManagedChildProcessRunner({ modelNetworkPolicy: "required" });
     this.#environment =
       options.environment ?? process.env;
   }
@@ -282,6 +283,8 @@ export class CodexCliAdapter {
     const stdin = `${semanticSystemPrompt}\n\n${userPrompt}`;
     try {
       const processResult = await this.#runner.run({
+        provider: this.#profile.kind,
+        model,
         executable: this.#profile.executablePath!,
         args: [
           "--ask-for-approval",
@@ -299,6 +302,14 @@ export class CodexCliAdapter {
           workspace.directory,
           "-c",
           "features.shell_tool=false",
+          "-c",
+          "features.plugins=false",
+          "-c",
+          "features.respect_system_proxy=false",
+          "-c",
+          "features.system_proxy_fallback=false",
+          "-c",
+          "features.apps=false",
           "-c",
           "tools.web_search=false",
           "-c",
@@ -362,7 +373,10 @@ export class CodexCliAdapter {
       this.#profile.model ?? "codex-default";
     const stdin = `${request.systemPrompt}\n\n${request.userPrompt}`;
     try {
+      const textOnly = request.purpose === "local-review" ? await codexTextOnlyArguments(this.#runner, this.#profile, workspace.directory, minimalClientEnvironment(this.#environment, [], this.#profile.proxy), signal) : [];
       const processResult = await this.#runner.run({
+        provider: this.#profile.kind,
+        model,
         executable: this.#profile.executablePath!,
         args: [
           "--ask-for-approval",
@@ -371,6 +385,7 @@ export class CodexCliAdapter {
           "--ephemeral",
           "--json",
           "--ignore-user-config",
+          ...textOnly,
           "--output-schema",
           workspace.schemaPath,
           "--sandbox",
@@ -380,6 +395,14 @@ export class CodexCliAdapter {
           workspace.directory,
           "-c",
           "features.shell_tool=false",
+          "-c",
+          "features.plugins=false",
+          "-c",
+          "features.respect_system_proxy=false",
+          "-c",
+          "features.system_proxy_fallback=false",
+          "-c",
+          "features.apps=false",
           "-c",
           "tools.web_search=false",
           "-c",
@@ -401,6 +424,7 @@ export class CodexCliAdapter {
         ),
         ...(signal === undefined ? {} : { signal }),
       });
+      if (request.purpose === "local-review") assertCodexTextOnlyEvents(processResult.stdout);
       const parsed = parseProcessOutput(processResult.stdout);
       return {
         // Unreadable, the call was still billed: what it cost goes with the failure.

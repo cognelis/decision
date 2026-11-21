@@ -28,6 +28,13 @@ const CAUTION_END = "<!-- decision:methodology-caution-end -->";
 const EVIDENCE_START = "<!-- decision:methodology-evidence-start -->";
 const EVIDENCE_END = "<!-- decision:methodology-evidence-end -->";
 
+/** The headings every principle note holds, whatever it says (as DECISION_NOTE_TEMPLATE is for a decision's). */
+export const METHODOLOGY_NOTE_TEMPLATE = {
+  headings: new Set(["## 原则", "## 适用条件", "## 注意事项", "## 证据摘要"]),
+  steps: new Set<string>(),
+  placeholders: new Set<string>(),
+} as const;
+
 const STATUSES: readonly MethodologyStatus[] = [
   "candidate",
   "accepted",

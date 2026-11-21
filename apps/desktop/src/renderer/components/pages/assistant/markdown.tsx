@@ -24,18 +24,23 @@ import { Fragment, type ReactNode } from "react";
 const INLINE =
   /(\*\*[^*]+\*\*|`[^`]+`|\*(?!\s)[^*\n]+(?<!\s)\*|(?<![\p{L}\p{N}_])_[^_\n]+_(?![\p{L}\p{N}_])|\[[^\]]+\]\([^)\s]+\)|\\\[\d+\]|\[\d+\])/u;
 
-const LINK = /^\[([^\]]+)\]\([^)\s]+\)$/u;
+const LINK = /^\[([^\]]+)\]\(([^)\s]+)\)$/u;
 
 type CitationLinks = { indexes: readonly number[]; onSelect(index: number): void };
+/**
+ * `linkTargets`: for text a person wrote on a platform (a PR's description, its comments), where a link's target is
+ * part of what was said. It is kept after the label as text, still nothing to click; a model's answer keeps the label only.
+ */
+type RenderOptions = { linkTargets?: boolean };
 
-const inline = (text: string, keyPrefix: string, citations?: CitationLinks): ReactNode[] =>
+const inline = (text: string, keyPrefix: string, citations?: CitationLinks, options: RenderOptions = {}): ReactNode[] =>
   text
     .split(INLINE)
     .filter((part) => part.length > 0)
     .map((part, index) => {
       const key = `${keyPrefix}:${index}`;
       if (part.startsWith("**") && part.endsWith("**")) {
-        return <strong key={key}>{inline(part.slice(2, -2), key, citations)}</strong>;
+        return <strong key={key}>{inline(part.slice(2, -2), key, citations, options)}</strong>;
       }
       if (part.startsWith("`") && part.endsWith("`")) {
         return <code key={key}>{part.slice(1, -1)}</code>;
@@ -44,16 +49,18 @@ const inline = (text: string, keyPrefix: string, citations?: CitationLinks): Rea
         (part.startsWith("*") && part.endsWith("*")) ||
         (part.startsWith("_") && part.endsWith("_"))
       ) {
-        return <em key={key}>{inline(part.slice(1, -1), key, citations)}</em>;
+        return <em key={key}>{inline(part.slice(1, -1), key, citations, options)}</em>;
       }
       // Keep a link's label, drop its target: an answer must not hand the user
       // a link whose destination the model chose.
       const link = LINK.exec(part);
-      if (link !== null) return <Fragment key={key}>{link[1]}</Fragment>;
+      if (link !== null) {
+        return <Fragment key={key}>{link[1]}{options.linkTargets ? <span className="markdown-link-target">（{link[2]}）</span> : null}</Fragment>;
+      }
       const marker = /^\[(\d+)\]$/u.exec(part);
       const citationIndex = marker === null ? -1 : Number(marker[1]);
       if (citations?.indexes.includes(citationIndex)) {
-        return <button key={key} type="button" className="assistant-inline-citation" aria-label={`查看引用 ${citationIndex}`} onClick={() => citations.onSelect(citationIndex)}>{part}</button>;
+        return <button key={key} type="button" className="assistant-inline-citation" aria-label={`查看引用 ${citationIndex}`} onClick={() => citations.onSelect(citationIndex)}><span className="sr-only">[</span>{citationIndex}<span className="sr-only">]</span></button>;
       }
       if (/^\\\[\d+\]$/u.test(part)) return <Fragment key={key}>{part.slice(1)}</Fragment>;
       return <Fragment key={key}>{part}</Fragment>;
@@ -89,7 +96,10 @@ const startsBlock = (line: string): boolean =>
   LIST_ITEM.test(line) ||
   ORDERED_ITEM.test(line);
 
-export const renderMarkdown = (source: string, citations?: CitationLinks): ReactNode[] => {
+/** One line's emphasis and code, for text that sits inside a label or a heading and can hold no blocks. */
+export const renderInlineMarkdown = (source: string): ReactNode[] => inline(source, "inline");
+
+export const renderMarkdown = (source: string, citations?: CitationLinks, options: RenderOptions = {}): ReactNode[] => {
   const lines = source.split("\n");
   const blocks: ReactNode[] = [];
   let cursor = 0;
@@ -123,7 +133,7 @@ export const renderMarkdown = (source: string, citations?: CitationLinks): React
 
     const heading = HEADING.exec(line);
     if (heading !== null) {
-      blocks.push(<h4 key={key++}>{inline(heading[2]!, `h${key}`, citations)}</h4>);
+      blocks.push(<h4 key={key++}>{inline(heading[2]!, `h${key}`, citations, options)}</h4>);
       cursor += 1;
       continue;
     }
@@ -138,7 +148,7 @@ export const renderMarkdown = (source: string, citations?: CitationLinks): React
       }
       blocks.push(
         <blockquote key={key++}>
-          {inline(quoted.join(" ").trim(), `q${key}`, citations)}
+          {inline(quoted.join(" ").trim(), `q${key}`, citations, options)}
         </blockquote>,
       );
       continue;
@@ -158,11 +168,11 @@ export const renderMarkdown = (source: string, citations?: CitationLinks): React
         <div key={tableKey} className="assistant-table">
           <table>
             <thead>
-              <tr>{header.map((cell, index) => <th key={index} scope="col">{inline(cell, `th${tableKey}:${index}`, citations)}</th>)}</tr>
+              <tr>{header.map((cell, index) => <th key={index} scope="col">{inline(cell, `th${tableKey}:${index}`, citations, options)}</th>)}</tr>
             </thead>
             <tbody>
               {rows.map((row, rowIndex) => (
-                <tr key={rowIndex}>{header.map((_, index) => <td key={index}>{inline(row[index] ?? "", `td${tableKey}:${rowIndex}:${index}`, citations)}</td>)}</tr>
+                <tr key={rowIndex}>{header.map((_, index) => <td key={index}>{inline(row[index] ?? "", `td${tableKey}:${rowIndex}:${index}`, citations, options)}</td>)}</tr>
               ))}
             </tbody>
           </table>
@@ -189,7 +199,7 @@ export const renderMarkdown = (source: string, citations?: CitationLinks): React
       blocks.push(
         <ul key={listKey}>
           {items.map((item, index) => (
-            <li key={index}>{inline(item, `ul${listKey}:${index}`, citations)}</li>
+            <li key={index}>{inline(item, `ul${listKey}:${index}`, citations, options)}</li>
           ))}
         </ul>,
       );
@@ -210,7 +220,7 @@ export const renderMarkdown = (source: string, citations?: CitationLinks): React
       blocks.push(
         <ol key={listKey} start={start}>
           {items.map((item, index) => (
-            <li key={index}>{inline(item, `ol${listKey}:${index}`, citations)}</li>
+            <li key={index}>{inline(item, `ol${listKey}:${index}`, citations, options)}</li>
           ))}
         </ol>,
       );
@@ -226,7 +236,7 @@ export const renderMarkdown = (source: string, citations?: CitationLinks): React
     const paragraphKey = key++;
     blocks.push(
       <p key={paragraphKey}>
-        {inline(paragraphLines.join("\n"), `p${paragraphKey}`, citations)}
+        {inline(paragraphLines.join("\n"), `p${paragraphKey}`, citations, options)}
       </p>,
     );
   }

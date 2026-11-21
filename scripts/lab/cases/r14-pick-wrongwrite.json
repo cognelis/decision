@@ -1,0 +1,1729 @@
+[
+  {
+    "id": "ww-defer-deferred-model-option",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export next quarter.",
+    "source": "R13-CR C-4 deferred-model-option",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-all-deferred-model-options",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "All snapshot jobs are deferred.",
+    "source": "R13-CR C-4 all-deferred-model-options",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-not-now-future-en",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Not now. Snapshot export next quarter.",
+    "source": "R13-CR C2-1 not-now-future-en",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-currently-on-hold",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is now on hold.",
+    "source": "R13-CR C2-1 currently-on-hold",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-deferral-pronoun",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export, defer it.",
+    "source": "R13-CR C3 deferral-pronoun",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-deferral-name-then-time",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Next quarter.",
+    "source": "R13-CR C3 deferral-name-then-time",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-direct-defer-control",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Defer Snapshot export.",
+    "source": "R13-CR C3 direct-defer-control",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-not-now-future-cn",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "现在先不做快照导出，以后再做。",
+    "source": "R13-CR C2-1 not-now-future-cn",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-defer-this-round-deferred",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出这次搁置。",
+    "source": "R13-CR C2-1 this-round-deferred",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-defer-deferral-cn-name-then-time",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出，下个季度再做。",
+    "source": "R13-CR C3 deferral-cn-name-then-time",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-defer-dotted-label",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Defer Cache v1.2 responses.",
+    "source": "R13-CR C3 deferral-dotted-label",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-defer-newly-located",
+    "group": "deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\n**Which of these do you approve?**\n\nI'll wait for your answer.",
+    "userText": "Snapshot export next quarter.",
+    "source": "R13-CR C-4 newly-located-deferred",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-ambiguous-family",
+    "group": "ambiguous-fragment",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot.",
+    "source": "R13-CR C-3 ambiguous-family",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-ambiguous-family-cn",
+    "group": "ambiguous-fragment",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照。",
+    "source": "R13-CR C-3 ambiguous-family-cn",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-hypo-consequent-en",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If we had time, I would ship Snapshot export.",
+    "source": "R13-CR C3-1 condition-consequent-en",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-hypo-consequent-cn",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果预算够，就采用快照导出。",
+    "source": "R13-CR C3 condition-consequent-cn",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-hypo-consequent-fragment",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Three cleanups are possible: Cache avatar images, Compress uploads, Remove the analytics SDK.\n\nPer your instruction I did not call tools.",
+    "userText": "If we had time, I would implement avatar caching.",
+    "source": "R13-CR C3-1 condition-consequent-fragment",
+    "probeLabels": [
+      "Cache avatar images",
+      "Compress uploads",
+      "Remove the analytics SDK"
+    ]
+  },
+  {
+    "id": "ww-hypo-v13-mech4",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A) SQLite；B) Postgres。现在选哪个？",
+    "userText": "如果团队翻倍我会用 Postgres；眼下先不定，由你们再评估。",
+    "source": "R14 relay v13-mechanisms 一.4 最小复现"
+  },
+  {
+    "id": "ww-neg-noun-take-cn",
+    "group": "negation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出不是我会做的事情。更合适的还没定。",
+    "source": "R13-CR C3-2 noun-take-cn",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-neg-negative-take-cannot-cn",
+    "group": "negation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出我不能批准。其他方案更合适。",
+    "source": "R13-CR C3-2 negative-take-cannot-cn",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-neg-negative-take-wont-cn",
+    "group": "negation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "我不会做快照导出。其他方案更合适。",
+    "source": "R13-CR C3-2 negative-take-wont-cn",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-neg-noun-method-undecided",
+    "group": "negation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "我还没决定用哪种做法；快照导出更合适。",
+    "source": "R13-CR C3-2 noun-method-undecided",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "ww-neg-negative-take-cant",
+    "group": "negation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't approve Snapshot export; another option makes more sense.",
+    "source": "R13-CR C3-2 negative-take-cant",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-neg-negative-take-cannot",
+    "group": "negation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot approve Snapshot export; another option makes more sense.",
+    "source": "R13-CR C3-2 negative-take-cannot",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "ww-category-or",
+    "group": "category-heading",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Storage: Postgres or SQLite\n2. Queue: Redis or SQS\n\nWhich two settings should I use?",
+    "userText": "Storage PostgreSQL; Queue Redis.",
+    "source": "R13-CR C3-3 categories-or",
+    "probeLabels": [
+      "Storage",
+      "Queue"
+    ],
+    "probeQuestion": "Which two settings should I use?"
+  },
+  {
+    "id": "ww-category-cn",
+    "group": "category-heading",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. 数据库：PostgreSQL 还是 MySQL\n2. 缓存：Redis 还是本地缓存\n\n你选哪个组合？",
+    "userText": "数据库 PostgreSQL，缓存 Redis。",
+    "source": "R13-CR C3 categories-cn；期望空集只对合成桩成立（选项是类别名「数据库」「缓存」）。4B 真分类给出叶选项 PostgreSQL、MySQL、Redis、本地缓存时，真值是 PostgreSQL 与 Redis（R15 holdout G 段），本地缓存是错项、PostgreSQL 是 main 的映射缺口",
+    "probeLabels": [
+      "数据库",
+      "缓存"
+    ],
+    "probeQuestion": "你选哪个组合？"
+  },
+  {
+    "id": "ww-category-v13-step",
+    "group": "category-heading",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "Step 1. Implement approved storage (A: SQLite; B: Postgres). Which storage?",
+    "userText": "SQLite, please.",
+    "source": "R14 relay v13-mechanisms 二.2 最小复现（选项抽取对了应选 SQLite；不能记成整条步骤）"
+  },
+  {
+    "id": "ww-state-redis-in-use",
+    "group": "current-state",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "The current architecture already uses Redis for audit logs. A future design might use PostgreSQL for persistence.\n\nPer your instruction I did not call tools.",
+    "userText": "Redis is already in use.",
+    "source": "R13-CR C3 current-state-short-label",
+    "probeLabels": [
+      "Redis",
+      "PostgreSQL"
+    ]
+  },
+  {
+    "id": "ww-handback-en-1",
+    "group": "hand-back-or-judge",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "I would use 2 but it's your call",
+    "source": "R13-AN B3 r2-guards-probe"
+  },
+  {
+    "id": "ww-handback-en-2",
+    "group": "hand-back-or-judge",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Pick is yours; 2 seems better",
+    "source": "R13-AN B3 r2-guards-probe"
+  },
+  {
+    "id": "ww-handback-en-3",
+    "group": "hand-back-or-judge",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "2 wins because we already use Redis",
+    "source": "R13-AN B3 r2-guards-probe"
+  },
+  {
+    "id": "ww-handback-zh-1",
+    "group": "judge-is-choice",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "2"
+    ],
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "2 更合适，因为大家都会用它",
+    "source": "R13-AN B3 r2-guards-probe；R14-AN A1 P3-9 改为正例"
+  },
+  {
+    "id": "ww-handback-zh-2",
+    "group": "judge-is-choice",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "2"
+    ],
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "这两个做起来都差不多，2 更合适",
+    "source": "R13-AN B3 r2-guards-probe；R14-AN A1 P3-9 改为正例"
+  },
+  {
+    "id": "ww-handback-zh-3",
+    "group": "judge-is-choice",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "2"
+    ],
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "怎么做都行，2 更好",
+    "source": "R13-AN B3 r2-guards-probe；R14-AN A1 P3-9 改为正例"
+  },
+  {
+    "id": "ww-handback-zh-4",
+    "group": "hand-back-or-judge",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "我倾向 2，但由你定",
+    "source": "v13-mechanisms 一.4 的「我倾向 A，但由你定」"
+  },
+  {
+    "id": "ww-handback-ab",
+    "group": "hand-back-or-judge",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Index markers\nB. Auto tagging\nC. Revision notes\n\nWhich of these should I ship?",
+    "userText": "B is better since the team can use it today",
+    "source": "R13-AN B3 r2-guards-probe；R14 收尾改为期望选 B：「B is better …」是表态偏好，按 semantic-v3 的定义算回答（与 handback-zh-1/2/3 同一裁定）"
+  },
+  {
+    "id": "ww-strip-sync-async",
+    "group": "put-off-substring",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1",
+      "2"
+    ],
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "Keep the sync API and add a cache; don't move to async yet.",
+    "source": "R13-AN B3 optionsPutOff sync/async"
+  },
+  {
+    "id": "ww-strip-no-later-than",
+    "group": "put-off-substring",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assistantText": "A. Index markers\nB. Auto tagging\nC. Revision notes\n\nWhich of these should I ship?",
+    "userText": "B now; A and C no later than Friday.",
+    "source": "R13-AN B3 optionsPutOff no later than"
+  },
+  {
+    "id": "ww-strip-ship-b-not-a",
+    "group": "put-off-substring",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Index markers\nB. Auto tagging\nC. Revision notes\n\nWhich of these should I ship?",
+    "userText": "Ship B and not A.",
+    "source": "R13-AN B3 Ship B and not A"
+  },
+  {
+    "id": "ww-partial-table-cn",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "D"
+    ],
+    "assistantText": "| 代号 | 改动 | 说明 |\n|---|---|---|\n| A | 导出分页 | 大表分页导出 |\n| B | 失败重试 | 网络抖动时重试 |\n| C | 暗色主题 | 跟随系统 |\n| D | 链接过期时间 | 下载链接可配置有效期 |\n\n这几项里你批准哪些？",
+    "userText": "导出分页和链接过期时间这两项做，其余先不动。",
+    "source": "R13-CR C positive / C2 choice-with-*"
+  },
+  {
+    "id": "ww-partial-table-reason",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "D"
+    ],
+    "assistantText": "| 代号 | 改动 | 说明 |\n|---|---|---|\n| A | 导出分页 | 大表分页导出 |\n| B | 失败重试 | 网络抖动时重试 |\n| C | 暗色主题 | 跟随系统 |\n| D | 链接过期时间 | 下载链接可配置有效期 |\n\n这几项里你批准哪些？",
+    "userText": "导出分页和链接过期时间这两项做，其余先不动。理由是能降低峰值内存。",
+    "source": "R13-CR C2-3 choice-with-reason"
+  },
+  {
+    "id": "ww-partial-now-control",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export now, compression next quarter.",
+    "source": "R13-CR C2 partial-now-control",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      1
+    ]
+  },
+  {
+    "id": "ww-v13-mech1",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "assistantText": "A) 加搜索框；B) 做自动归档；C) 加导出按钮。这轮先做哪些？",
+    "userText": "搜索框和导出按钮现在做，自动归档下个月再说。",
+    "source": "R14 relay v13-mechanisms 一.1 最小复现"
+  },
+  {
+    "id": "ww-v13-mech2",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "assistantText": "| ID | Feature |\n|---|---|\n| A | Search history |\n| B | Auto tags |\n| C | Export filters |\n\nWhich ship?",
+    "userText": "Ship search history and export filters; hold auto tags.",
+    "source": "R14 relay v13-mechanisms 一.2 最小复现"
+  },
+  {
+    "id": "ww-v13-mech3",
+    "group": "multi-question",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "D"
+    ],
+    "assistantText": "缓存用 A 内存还是 B 磁盘？日志保留 C 一周还是 D 一月？",
+    "userText": "日志用一个月；缓存先别定。",
+    "source": "R14 relay v13-mechanisms 一.3 最小复现"
+  },
+  {
+    "id": "ww-v13-faq-third",
+    "group": "faq-caveat",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "| 代号 | 可选功能 | 说明 |\n|---|---|---|\n| A | 离线搜索 | 需下载索引 |\n| B | 云端搜索 | 需联网 |\n\n选哪种？补充：若离线搜索失败，可在 FAQ 查看排障步骤。",
+    "userText": "选离线搜索。",
+    "source": "R14 relay v13-mechanisms 二.1 最小复现"
+  },
+  {
+    "id": "ww-hard-faq-unresolved-claude-sonnet-1",
+    "group": "faq-caveat",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "维护窗口安排一下,先说明几个常见问题:\n\n**Q: 周末能排吗?**\nA: 不行,周末不可用。\n\n**Q: 为什么周末不行?**\nA: 周末时段不在可维护范围内,暂不开放。\n\n那每周五下午可以吗?\n\n补充注意事项:\n- 维护期间相关服务可能短暂不可用,建议提前通知受影响方\n- 需确认具体时间段(几点到几点)和预计时长\n- 如遇节假日或大促周期,需额外确认是否顺延",
+    "userText": "选每周五下午维护。",
+    "source": "scripts/lab/cases/r13-adversarial-trailing.json hard-faq-unresolved-claude-sonnet-1（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-hard-faq-unresolved-claude-sonnet-3",
+    "group": "faq-caveat",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "维护窗口安排小 FAQ：\n\n**Q: 周末可以安排维护吗？**\nA: 不可以，周末不可用。\n\n**Q: 那什么时候比较合适？**\nA: 每周五下午可以吗？\n\n注意事项:\n- 维护开始前需提前通知相关业务方\n- 窗口期间服务可能短暂不可用，建议避开业务高峰时段\n- 需准备好回滚方案，避免出问题无法及时恢复\n\n这个时间您看是否可行，还是有其他偏好的时段？",
+    "userText": "选每周五下午维护。",
+    "source": "scripts/lab/cases/r13-adversarial-trailing.json hard-faq-unresolved-claude-sonnet-3（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-hard-faq-unresolved-claude-sonnet-4",
+    "group": "faq-caveat",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "维护窗口安排 FAQ\n\n**Q: 周末可以安排维护窗口吗？**\nA: 不可以，周末不可用。\n\n**Q: 那什么时候合适？**\nA: 每周五下午可以吗？\n\n注意事项:\n- 维护期间相关服务可能短暂中断，建议提前通知受影响方\n- 需预留回滚时间窗口，避免临近下班前仓促收尾\n- 若当周五下午有冲突，需提前告知以便改期\n\n等你确认周五下午是否可行，或者告诉我更合适的时间。",
+    "userText": "选每周五下午维护。",
+    "source": "scripts/lab/cases/r13-adversarial-trailing.json hard-faq-unresolved-claude-sonnet-4（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-numbered-questions-plan-codex-2",
+    "group": "category-heading",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "实施计划先按可替换的数据库和缓存接口推进，具体技术选型留待你确认。确定后，我会依次完成配置与连接管理、数据表及索引设计、核心读写接口、缓存键和过期策略，再补齐迁移脚本、监控指标与集成测试。上线前会验证数据迁移、缓存失效和故障恢复流程。\n\n请先选两项：\n\n1. 数据库：**A PostgreSQL** / **B MySQL**\n2. 缓存：**C Redis** / **D 本地缓存**\n\n你选择哪两个选项？",
+    "userText": "数据库选 PostgreSQL，缓存选 Redis。",
+    "source": "scripts/lab/cases/r13-adversarial-trailing.json numbered-questions-plan-codex-2（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-R6IR-112",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "如果要合并的话 2 更合适",
+    "source": "scripts/lab/cases/r6-recognition.json R6IR-112（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-R6IR-117",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "1. Keep the sync API\n2. Add a cache\n3. Move to async\n\nWhich should I implement?",
+    "userText": "I'd go 2 if we had time",
+    "source": "scripts/lab/cases/r6-recognition.json R6IR-117（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-R6IR-124",
+    "group": "evaluation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Two options for the queue:\n\n1. Postgres table: simple, no new service\n2. Redis streams: faster, one more service\n\nWhich one should I use?",
+    "userText": "2 wins on latency",
+    "source": "scripts/lab/cases/r6-recognition.json R6IR-124（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-R6IR-131",
+    "group": "evaluation",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "缓存层有三个方案：\n\n1. Redis：成熟，需要多一个服务\n2. 本地 LRU：零依赖，多实例不共享\n3. SQLite 表：复用现有库，性能一般\n\n你选哪个？",
+    "userText": "首选 2 的理由是快",
+    "source": "scripts/lab/cases/r6-recognition.json R6IR-131（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-R7IR-015",
+    "group": "current-state",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "上传测试不稳定，有三种处理方式：\n\n1. 给上传调用加重试\n2. 测试里 mock 存储客户端\n3. 把超时调到 30 秒\n\n你选哪个？",
+    "userText": "测试环境开着重试",
+    "source": "scripts/lab/cases/r7-recognition.json R7IR-015（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-R7IR-060",
+    "group": "no-request",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "发现三处可以清理：\n\n1. 删除没用的 legacyAuth 导出\n2. 把 loader 里的 cfg 改名为 config\n3. 删掉过期的 0042 迁移\n\n这几项风险都很低。",
+    "userText": "1 和 3",
+    "source": "scripts/lab/cases/r7-recognition.json R7IR-060（skeptic B5/B7、analyst B 所列）"
+  },
+  {
+    "id": "ww-wb-pick-c-negated-name-asks-explanation",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\nC. Keep the current cache.\n\nWhich implementation should we adopt?",
+    "userText": "I haven't picked A; I want to understand why B has lower latency before making a decision.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-c-defer-after-metrics",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Keep the existing retry policy.\nB. Increase retries with exponential backoff.\n\nWhich policy should I implement?",
+    "userText": "The backoff option is tied to the traffic profile; I can decide after seeing those figures.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-c-only-description-not-selection",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Use an account-level key.\nB. Use a tenant-level key.\n\nWhich key strategy should we implement?",
+    "userText": "B is a contender; I'm comparing its response time, not making the final choice.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-c-cross-language-no-selection",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Self-managed Redis cache.\nB. Managed Redis cache.\nC. Local in-memory cache.\n\nWhich option should we use?",
+    "userText": "我还没选 B，只想了解 managed Redis 方案在回滚时的风险。",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-d-fragment-in-ticket-not-choice",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Invalidate the cache by version.\nB. Invalidate the cache by tenant.\n\nWhich invalidation strategy should we implement?",
+    "userText": "Tenant is mentioned in the incident ticket, but I have not chosen that policy. Please explain the invalidation behavior.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-e-approval-in-principle",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Add idempotency keys.\nB. Add retries with backoff.\nC. Keep the current behavior.\n\nWhich implementation do you approve?",
+    "userText": "The reliability direction is approved in principle; idempotency is still only a discussion topic, not an implementation choice. Please outline rollout risks.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-quoted-option-mention-not-chosen",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Keep PostgreSQL.\nB. Migrate to MySQL.\nC. Use SQLite.\n\nWhich database should we use?",
+    "userText": "The old ticket says “choose B,” but that quote is only background. No database has been selected; explain the migration risks.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-near-name-audit-store",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. PostgreSQL for session state.\nB. PostgreSQL for audit logs.\nC. SQLite for local preferences.\n\nWhich store should we use for audit records?",
+    "userText": "Use the PostgreSQL option that stores audit logs; leave session state as it is.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-cross-language-translated-description",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 本机文件缓存（machine-local file cache）。\nB. 托管 Redis 缓存（provider-hosted Redis cache）。\nC. CDN 边缘缓存（edge CDN cache）。\n\nWhich cache should we adopt?",
+    "userText": "Choose the cache operated by the cloud provider, not the one stored on the machine.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-condition-not-satisfied",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Keep the current rollout.\nB. Enable canary rollout.\n\nWhich rollout should we use?",
+    "userText": "Canary is the candidate if QA signs off; otherwise I will keep deciding after the audit. Do not trigger a rollout yet.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-faq-advice-is-not-choice",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "维护窗口安排 FAQ\n\n**Q: 周末可以安排维护窗口吗？**\nA: 不可以，周末不可用。\n\n**Q: 那什么时候合适？**\nA: 每周五下午可以吗？\n\n注意事项:\n- 维护期间相关服务可能短暂中断，建议提前通知受影响方\n- 需预留回滚时间窗口，避免临近下班前仓促收尾\n- 若当周五下午有冲突，需提前告知以便改期\n\n等你确认周五下午是否可行，或者告诉我更合适的时间。",
+    "userText": "选每周五下午维护。",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-question-categories-are-not-options",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "实施计划先按可替换的数据库和缓存接口推进，具体技术选型留待你确认。确定后，我会依次完成配置与连接管理、数据表及索引设计、核心读写接口、缓存键和过期策略，再补齐迁移脚本、监控指标与集成测试。上线前会验证数据迁移、缓存失效和故障恢复流程。\n\n请先选两项：\n\n1. 数据库：**A PostgreSQL** / **B MySQL**\n2. 缓存：**C Redis** / **D 本地缓存**\n\n你选择哪两个选项？",
+    "userText": "数据库选 PostgreSQL，缓存选 Redis。",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-partial-approve-one-defer-one",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "assistantText": "A. Fix login retries.\nB. Replace the database.\nC. Add an audit log.\n\nWhich items should we implement now?",
+    "userText": "Implement A and C now. B can wait until we have the performance results.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-c-explanation-before-decision",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Use an in-memory cache.\nB. Use a Redis cache.\n\nWhich cache should I implement?",
+    "userText": "B is the example whose memory behavior I need explained before I can decide.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-e-approve-direction-not-implementation",
+    "group": "skeptic-whitebox",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Add idempotency keys.\nB. Add retries with backoff.\nC. Keep the current behavior.\n\nWhich implementation should we approve?",
+    "userText": "The idempotency-key idea is approved as a direction; I have not picked an implementation to ship yet.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-d-model-options-context-only-mentions-a",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "The current architecture already uses Redis for audit logs. For sessions, A would use Redis with a separate namespace, while B would use a local in-memory cache; which should I implement?",
+    "userText": "Use B, the local in-memory cache. Redis is already used for audit logs, so keep it out of session storage.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox-2.json（skeptic 白盒）"
+  },
+  {
+    "id": "ww-wb-pick-d-faq-title-word-is-not-an-option-choice",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "维护窗口安排一下,先说明几个常见问题:\n\n**Q: 周末能排吗?**\nA: 不行,周末不可用。\n\n**Q: 为什么周末不行?**\nA: 周末时段不在可维护范围内,暂不开放。\n\n那每周五下午可以吗?\n\n补充注意事项:\n- 维护期间相关服务可能短暂不可用,建议提前通知受影响方\n- 需确认具体时间段(几点到几点)和预计时长\n- 如遇节假日或大促周期,需额外确认是否顺延",
+    "userText": "选每周五下午维护。",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox-3.json（skeptic 白盒）"
+  },
+  {
+    "id": "cr-b1-if-command",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. QA has not signed off yet.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-tail-if",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export if QA signs off; its approval is still pending.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-colon-if",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Only after QA approval: Snapshot export. Approval has not arrived.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-pronoun-if",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is the candidate. Do it only if QA approves; QA has not replied.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-passive-if",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is to be shipped only after approval, which is still pending.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-zh-if-command",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "如果审计通过，做快照导出。目前审计还没通过。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr-b1-zh-tail-if",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出要等审计通过才做，目前还没过。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr-b1-zh-passive-if",
+    "group": "condition-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出只有在拿到批准后才被安排实施，现在没有批准。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr-b1-colon-skip",
+    "group": "negation-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Skip this feature: Snapshot export.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-colon-reject",
+    "group": "negation-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Reject this feature: Snapshot export.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-revoked",
+    "group": "negation-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I previously approved Snapshot export. That approval is withdrawn; no option is approved now.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-passive-negative",
+    "group": "negation-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is not approved for implementation by me.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-zh-revoked",
+    "group": "negation-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "之前批准的是快照导出，这个批准现在撤回。本轮没有选定方案。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr-b1-colon-postpone",
+    "group": "deferral-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Postpone this feature: Snapshot export.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-pronoun-postpone",
+    "group": "deferral-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is the one being discussed. Keep it on hold until the audit; do not implement it now.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-passive-postpone",
+    "group": "deferral-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export has been deferred until next year.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-schedule-not-go",
+    "group": "deferral-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is pencilled in for Q2, subject to approval. No go-ahead yet.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-zh-postpone",
+    "group": "deferral-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "快照导出明年再做，这次先不实施。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr-b1-colon-state",
+    "group": "current-state-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Currently deployed: Snapshot export. This is a status report, not a new choice.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-passive-state",
+    "group": "current-state-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export has been enabled in production since last year; no change is being authorized.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-historical-state",
+    "group": "current-state-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The old release used Snapshot export. I have not chosen anything for this release.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-zh-state",
+    "group": "current-state-scope",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "现网一直启用快照导出，这里只是在说明现状，并没有批准新的改动。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr-b1-handback-tail",
+    "group": "handback-evaluation-quote",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export would be my preference; which option to implement is your decision.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-handback-front",
+    "group": "handback-evaluation-quote",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The final choice is yours. My preference is Snapshot export, but I am not selecting it.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-praise-only",
+    "group": "handback-evaluation-quote",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export wins on usability. That is an evaluation, not an implementation approval.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-quoted-approval",
+    "group": "handback-evaluation-quote",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "QA wrote “ship Snapshot export”. Those are their words; I have not authorized any option.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-question-only",
+    "group": "handback-evaluation-quote",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Would Snapshot export beat Snapshot compression on memory use? Please compare them before I decide.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr-b1-zh-handback",
+    "group": "handback-evaluation-quote",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "我倾向快照导出。具体采用哪项仍由你决定，我没有拍板。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr-b1-control-timing",
+    "group": "positive-control",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Implement Snapshot export now; only the deployment time is your call.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      1
+    ]
+  },
+  {
+    "id": "cr-b1-control-condition-met",
+    "group": "positive-control",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "QA has signed off. Ship Snapshot export now.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      1
+    ]
+  },
+  {
+    "id": "cr-b1-control-other-condition",
+    "group": "positive-control",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export now. If compression needs more RAM, revisit that separately.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      1
+    ]
+  },
+  {
+    "id": "cr-b1-control-revoked-one",
+    "group": "positive-control",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "My earlier approval of Snapshot export is withdrawn. Implement Dark theme now.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      3
+    ]
+  },
+  {
+    "id": "cr-b1-control-quote-other",
+    "group": "positive-control",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Dark theme"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Implement Dark theme now. “Ship Snapshot export” is just an outdated example.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      3
+    ]
+  },
+  {
+    "id": "cr-b1-control-zh-timing",
+    "group": "positive-control",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "assistantText": "可以添加快照导出、快照压缩和暗色主题。\n\n按你的要求，我没有调用工具。",
+    "userText": "现在就做快照导出，具体部署时间你定；快照压缩留到下轮。",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ],
+    "expectedPositions": [
+      1
+    ]
+  },
+  {
+    "id": "cr-b1-near-name-passive",
+    "group": "same-family-passive",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot compression"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Only Snapshot compression is approved. Snapshot export remains deferred.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      2
+    ]
+  },
+  {
+    "id": "cr-b1-punctuation-pronoun",
+    "group": "same-family-passive",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Snapshot compression"
+    ],
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export — not that one. Implement Snapshot compression instead.",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ],
+    "expectedPositions": [
+      2
+    ]
+  },
+  {
+    "id": "cr-b1-multi-role",
+    "group": "multi-question-role",
+    "source": "R14-CR-B1 独立合成；扩展 R13-CR C/C2/C3 与本轮 A3 的已公开机制",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "PostgreSQL for audit logs"
+    ],
+    "assistantText": "A. PostgreSQL for session state\nB. PostgreSQL for audit logs\nC. SQLite for preferences\n\nWhich store should we adopt for each role?",
+    "userText": "Use PostgreSQL for audit logs. Session storage is still undecided.",
+    "probeLabels": [
+      "PostgreSQL for session state",
+      "PostgreSQL for audit logs",
+      "SQLite for preferences"
+    ],
+    "expectedPositions": [
+      2
+    ]
+  },
+  {
+    "id": "ww-v13-mech1-stub",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "加搜索框",
+      "加导出按钮"
+    ],
+    "assistantText": "A) 加搜索框；B) 做自动归档；C) 加导出按钮。这轮先做哪些？",
+    "userText": "搜索框和导出按钮现在做，自动归档下个月再说。",
+    "source": "R14 relay v13-mechanisms 一.1 最小复现；R14-AN A1 P2-3 合成桩版（补 probeLabels）",
+    "probeLabels": [
+      "加搜索框",
+      "做自动归档",
+      "加导出按钮"
+    ],
+    "expectedPositions": [
+      1,
+      3
+    ]
+  },
+  {
+    "id": "ww-v13-mech1-rule",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "assistantText": "| 代号 | 改动 | 说明 |\n|---|---|---|\n| A | 加搜索框 | 顶栏搜索 |\n| B | 做自动归档 | 30 天自动归档 |\n| C | 加导出按钮 | 导出 CSV |\n\n这轮先做哪些？",
+    "userText": "搜索框和导出按钮现在做，自动归档下个月再说。",
+    "source": "R14 relay v13-mechanisms 一.1 最小复现；R14-AN A1 P2-3 规则可解析版"
+  },
+  {
+    "id": "ww-v13-mech2-stub",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "Search history",
+      "Export filters"
+    ],
+    "assistantText": "| ID | Feature |\n|---|---|\n| A | Search history |\n| B | Auto tags |\n| C | Export filters |\n\nWhich ship?",
+    "userText": "Ship search history and export filters; hold auto tags.",
+    "source": "R14 relay v13-mechanisms 一.2 最小复现；R14-AN A1 P2-3 合成桩版（补 probeLabels）",
+    "probeLabels": [
+      "Search history",
+      "Auto tags",
+      "Export filters"
+    ],
+    "expectedPositions": [
+      1,
+      3
+    ]
+  },
+  {
+    "id": "ww-v13-mech2-rule",
+    "group": "partial-with-deferral",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "assistantText": "A. Search history\nB. Auto tags\nC. Export filters\n\nWhich of these should ship?",
+    "userText": "Ship search history and export filters; hold auto tags.",
+    "source": "R14 relay v13-mechanisms 一.2 最小复现；R14-AN A1 P2-3 规则可解析版"
+  },
+  {
+    "id": "ww-v13-mech3-stub",
+    "group": "multi-question",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "一月"
+    ],
+    "assistantText": "缓存用 A 内存还是 B 磁盘？日志保留 C 一周还是 D 一月？",
+    "userText": "日志用一个月；缓存先别定。",
+    "source": "R14 relay v13-mechanisms 一.3 最小复现；R14-AN A1 P2-3 合成桩版（补 probeLabels）",
+    "probeLabels": [
+      "内存",
+      "磁盘",
+      "一周",
+      "一月"
+    ],
+    "expectedPositions": [
+      4
+    ]
+  },
+  {
+    "id": "ww-v13-mech3-rule",
+    "group": "multi-question",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "D"
+    ],
+    "assistantText": "| 代号 | 方案 | 说明 |\n|---|---|---|\n| A | 缓存用内存 | 快，重启丢失 |\n| B | 缓存用磁盘 | 慢，可持久 |\n| C | 日志保留一周 | 省空间 |\n| D | 日志保留一月 | 便于追查 |\n\n缓存选 A 还是 B？日志选 C 还是 D？",
+    "userText": "日志用一个月；缓存先别定。",
+    "source": "R14 relay v13-mechanisms 一.3 最小复现；R14-AN A1 P2-3 规则可解析版"
+  },
+  {
+    "id": "ww-hypo-v13-mech4-stub",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A) SQLite；B) Postgres。现在选哪个？",
+    "userText": "如果团队翻倍我会用 Postgres；眼下先不定，由你们再评估。",
+    "source": "R14 relay v13-mechanisms 一.4 最小复现；R14-AN A1 P2-3 合成桩版（补 probeLabels）",
+    "probeLabels": [
+      "SQLite",
+      "Postgres"
+    ]
+  },
+  {
+    "id": "ww-hypo-v13-mech4-rule",
+    "group": "hypothetical",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. SQLite\nB. Postgres\n\n现在选哪个？",
+    "userText": "如果团队翻倍我会用 Postgres；眼下先不定，由你们再评估。",
+    "source": "R14 relay v13-mechanisms 一.4 最小复现；R14-AN A1 P2-3 规则可解析版"
+  },
+  {
+    "id": "ww-category-v13-step-stub",
+    "group": "category-heading",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "assistantText": "Step 1. Implement approved storage (A: SQLite; B: Postgres). Which storage?",
+    "userText": "SQLite, please.",
+    "source": "R14 relay v13-mechanisms 二.2 最小复现（选项抽取对了应选 SQLite；不能记成整条步骤）；R14-AN A1 P2-3 合成桩版（补 probeLabels）",
+    "probeLabels": [
+      "SQLite",
+      "Postgres"
+    ],
+    "expectedPositions": [
+      1
+    ]
+  },
+  {
+    "id": "ww-category-v13-step-rule",
+    "group": "category-heading",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "Step 1 needs a storage choice.\n\nA. SQLite\nB. Postgres\n\nWhich one should I use?",
+    "userText": "SQLite, please.",
+    "source": "R14 relay v13-mechanisms 二.2 最小复现（选项抽取对了应选 SQLite；不能记成整条步骤）；R14-AN A1 P2-3 规则可解析版"
+  },
+  {
+    "id": "ww-wb-pick-d-model-options-context-only-mentions-a-stub",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "local in-memory cache"
+    ],
+    "assistantText": "The current architecture already uses Redis for audit logs. For sessions, A would use Redis with a separate namespace, while B would use a local in-memory cache; which should I implement?",
+    "userText": "Use B, the local in-memory cache. Redis is already used for audit logs, so keep it out of session storage.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox-2.json（skeptic 白盒）；R14-AN A1 P2-3 合成桩版（补 probeLabels）",
+    "probeLabels": [
+      "Redis with a separate namespace",
+      "local in-memory cache"
+    ],
+    "expectedPositions": [
+      2
+    ]
+  },
+  {
+    "id": "ww-wb-pick-d-model-options-context-only-mentions-a-rule",
+    "group": "skeptic-whitebox",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "The current architecture already uses Redis for audit logs. For sessions:\n\nA. Redis with a separate namespace\nB. Local in-memory cache\n\nWhich should I implement?",
+    "userText": "Use B, the local in-memory cache. Redis is already used for audit logs, so keep it out of session storage.",
+    "source": "scripts/lab/cases/r13-adversarial-pick-whitebox-2.json（skeptic 白盒）；R14-AN A1 P2-3 规则可解析版"
+  },
+  {
+    "id": "ww-R7IR-060-stub",
+    "group": "no-request",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "发现三处可以清理：\n\n1. 删除没用的 legacyAuth 导出\n2. 把 loader 里的 cfg 改名为 config\n3. 删掉过期的 0042 迁移\n\n这几项风险都很低。",
+    "userText": "1 和 3",
+    "source": "scripts/lab/cases/r7-recognition.json R7IR-060（skeptic B5/B7、analyst B 所列）；R14-AN A1 P2-3 合成桩版（补 probeLabels）",
+    "probeLabels": [
+      "删除没用的 legacyAuth 导出",
+      "把 loader 里的 cfg 改名为 config",
+      "删掉过期的 0042 迁移"
+    ]
+  },
+  {
+    "id": "ww-R7IR-060-rule",
+    "group": "no-request",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "发现三处可以清理：\n\n| 代号 | 改动 | 说明 |\n|---|---|---|\n| A | 删除没用的 legacyAuth 导出 | 无引用 |\n| B | 把 loader 里的 cfg 改名为 config | 只改名 |\n| C | 删掉过期的 0042 迁移 | 已合并 |\n\n这几项风险都很低。",
+    "userText": "1 和 3",
+    "source": "scripts/lab/cases/r7-recognition.json R7IR-060（skeptic B5/B7、analyst B 所列）；R14-AN A1 P2-3 规则可解析版"
+  }
+]

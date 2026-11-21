@@ -171,6 +171,7 @@ export const useSuggestionInbox = ({
     deferredSuggestions,
     openSuggestionInbox,
     restoreSuggestion,
+    retrySuggestions: () => setSuggestionRevision((value) => value + 1),
     showSuggestions,
     suggestionActionError,
     suggestionActionId,

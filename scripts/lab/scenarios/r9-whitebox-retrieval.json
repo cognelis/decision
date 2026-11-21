@@ -1,0 +1,1085 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "r9-wb-outcome-rebind-current",
+      "description": "仅回填结果与复盘字段时，现行决定原有 scope 和替代关系继续有效，后继排在前面",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9310.md",
+            "content": "---\nid: \"D9310\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"同步轮询\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n旧队列方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n同步轮询\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWQjOatpei9ruivoiJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9311.md",
+            "content": "---\nid: \"D9311\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"事件队列推送\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n新队列方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n事件队列推送\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuS6i-S7tumYn-WIl-aOqOmAgSJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "old-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9310"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "new-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9311"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "scope-write",
+            "tool": "record_decision_scope",
+            "args": {
+              "source": "decisions",
+              "recordId": "D9311",
+              "expectedContentHash": {
+                "$ref": "new-read.context.results.0.sourceRef.contentHash"
+              },
+              "expectedRevision": 0,
+              "scope": {
+                "projects": [
+                  "lab"
+                ],
+                "layers": [
+                  "backend"
+                ]
+              },
+              "changeReason": "合成对抗：只应绑定到指定来源和版本。"
+            },
+            "expect": {
+              "equals": {
+                "scopeUpdate.status": "saved"
+              }
+            }
+          },
+          {
+            "id": "relation-write",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "decisions",
+                "recordId": "D9310",
+                "contentHash": {
+                  "$ref": "old-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "decisions",
+                "recordId": "D9311",
+                "contentHash": {
+                  "$ref": "new-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "supersedes",
+              "successor": "second",
+              "expectedRevision": 0,
+              "reason": "合成对抗：检查回填对人工关系版本的影响。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "review-new",
+          "tool": "record_decision_outcome",
+          "args": {
+            "source": "decisions",
+            "recordId": "D9311",
+            "expectedContentHash": {
+              "$ref": "new-read.context.results.0.sourceRef.contentHash"
+            },
+            "outcome": "合成复盘：事件队列可靠，继续采用。",
+            "review": {
+              "verdict": "as_expected",
+              "lesson": "合成复盘：保留原选择。"
+            }
+          },
+          "expect": {
+            "equals": {
+              "outcomeUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "after-review",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 8,
+            "offset": 0,
+            "query": "同步轮询改为事件队列后当前怎么派发任务？"
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9311",
+              "D9310"
+            ],
+            "mustFlag": [
+              {
+                "id": "D9311",
+                "path": "lifecycleState",
+                "equals": "current"
+              },
+              {
+                "id": "D9310",
+                "path": "lifecycleState",
+                "equals": "superseded"
+              },
+              {
+                "id": "D9311",
+                "path": "scopeState",
+                "equals": "current"
+              }
+            ],
+            "equals": {
+              "context.results.0.id": "D9311",
+              "context.results.1.id": "D9310",
+              "context.results.0.applicability.scope.projects": [
+                "lab"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-obsidian-edit-not-rebound",
+      "description": "Obsidian 外部编辑后再回填，原哈希关系必须留在待核对态",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9320.md",
+            "content": "---\nid: \"D9320\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"固定间隔重试\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n旧重试方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n固定间隔重试\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWbuuWumumXtOmalOmHjeivlSJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n原内容：固定间隔重试三次。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9321.md",
+            "content": "---\nid: \"D9321\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"指数退避\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n现行退避方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n指数退避\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuaMh-aVsOmAgOmBvyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "old-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9320"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "new-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9321"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "relation-write",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "decisions",
+                "recordId": "D9320",
+                "contentHash": {
+                  "$ref": "old-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "decisions",
+                "recordId": "D9321",
+                "contentHash": {
+                  "$ref": "new-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "supersedes",
+              "successor": "second",
+              "expectedRevision": 0,
+              "reason": "合成对抗：检查回填对人工关系版本的影响。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "external-edit",
+          "file": {
+            "path": "Decision Journal/decisions/2026/10/D9320.md",
+            "content": "---\nid: \"D9320\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"固定间隔重试\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n旧重试方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n固定间隔重试\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWbuuWumumXtOmalOmHjeivlSJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\nObsidian 外部改动：固定间隔重试三次，并增加退避上限说明。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        },
+        {
+          "id": "fresh-old-read",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 8,
+            "offset": 0,
+            "source": "decisions",
+            "recordId": "D9320"
+          },
+          "expect": {
+            "k": 8
+          }
+        },
+        {
+          "id": "review-edited-old",
+          "tool": "record_decision_outcome",
+          "args": {
+            "source": "decisions",
+            "recordId": "D9320",
+            "expectedContentHash": {
+              "$ref": "fresh-old-read.context.results.0.sourceRef.contentHash"
+            },
+            "outcome": "外部编辑后的合成结果。",
+            "review": {
+              "verdict": "as_expected",
+              "lesson": "合成复盘：保留原选择。"
+            }
+          },
+          "expect": {
+            "equals": {
+              "outcomeUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "edited-relation-state",
+          "tool": "search_decision_context",
+          "args": {
+            "source": "decisions",
+            "recordId": "D9320",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "D9320"
+            ],
+            "k": 8,
+            "mustFlag": [
+              {
+                "id": "D9320",
+                "path": "lifecycleState",
+                "equals": "uncertain"
+              },
+              {
+                "id": "D9320",
+                "path": "relations.0.state",
+                "equals": "stale"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-adopted-principle-scope-isolated",
+      "description": "采用原则与同 ID 决策分属不同来源，决策回填不能改绑原则范围",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/principles/R9-SK-P9330.md",
+            "content": "---\ntype: \"decision-methodology\"\nversion: 1\nid: \"R9-SK-P9330\"\ntitle: \"迁移回退原则\"\norigin: \"decision_evidence\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nupdated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"accepted\"\nconfirmed_at: \"2026-10-22T00:00:00.000Z\"\nconfidence: \"low\"\nsource_decisions: [\"synthetic-evidence\"]\ngeneration_request: \"synthetic\"\ngeneration_profile: \"synthetic\"\ngeneration_provider: \"synthetic\"\ngeneration_model: \"synthetic\"\n---\n# 迁移回退原则\n\n## 原则\n\n<!-- decision:methodology-principle-start -->迁移前验证回退路径。<!-- decision:methodology-principle-end -->\n\n## 适用条件\n\n<!-- decision:methodology-applies-start -->结构迁移。<!-- decision:methodology-applies-end -->\n\n## 注意事项\n\n<!-- decision:methodology-caution-start -->无回退时停止。<!-- decision:methodology-caution-end -->\n\n## 证据摘要\n\n<!-- decision:methodology-evidence-start -->合成证据。<!-- decision:methodology-evidence-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/R9-SK-P9330.md",
+            "content": "---\nid: \"R9-SK-P9330\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"先验证回退\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n迁移决定\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n先验证回退\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWFiOmqjOivgeWbnumAgCJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "principle-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "principles",
+              "recordId": "R9-SK-P9330"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "decision-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "R9-SK-P9330"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "principle-scope",
+            "tool": "record_decision_scope",
+            "args": {
+              "source": "principles",
+              "recordId": "R9-SK-P9330",
+              "expectedContentHash": {
+                "$ref": "principle-read.context.results.0.sourceRef.contentHash"
+              },
+              "expectedRevision": 0,
+              "scope": {
+                "projects": [
+                  "lab"
+                ],
+                "layers": [
+                  "backend"
+                ]
+              },
+              "changeReason": "合成对抗：只应绑定到指定来源和版本。"
+            },
+            "expect": {
+              "equals": {
+                "scopeUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "decision-outcome",
+          "tool": "record_decision_outcome",
+          "args": {
+            "source": "decisions",
+            "recordId": "R9-SK-P9330",
+            "expectedContentHash": {
+              "$ref": "decision-read.context.results.0.sourceRef.contentHash"
+            },
+            "outcome": "合成决策复盘结果，不改动采用原则。",
+            "review": {
+              "verdict": "as_expected",
+              "lesson": "合成复盘：保留原选择。"
+            }
+          },
+          "expect": {
+            "equals": {
+              "outcomeUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "principle-scope-after",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 8,
+            "offset": 0,
+            "source": "principles",
+            "recordId": "R9-SK-P9330"
+          },
+          "expect": {
+            "k": 8,
+            "mustFlag": [
+              {
+                "id": "R9-SK-P9330",
+                "path": "scopeState",
+                "equals": "current"
+              }
+            ],
+            "equals": {
+              "context.results.0.scopeRevision": 1,
+              "context.results.0.applicability.scope.projects": [
+                "lab"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-stale-concurrent-contender",
+      "description": "两个写入竞争同一 expectedContentHash 时，旧版本竞争者应冲突且不能二次改绑",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9340.md",
+            "content": "---\nid: \"D9340\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"单线程队列\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n旧并发方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n单线程队列\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWNlee6v-eoi-mYn-WIlyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9341.md",
+            "content": "---\nid: \"D9341\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"分区工作队列\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n现行并发方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n分区工作队列\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWIhuWMuuW3peS9nOmYn-WIlyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "old-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9340"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "new-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9341"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "relation-write",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "decisions",
+                "recordId": "D9340",
+                "contentHash": {
+                  "$ref": "old-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "decisions",
+                "recordId": "D9341",
+                "contentHash": {
+                  "$ref": "new-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "supersedes",
+              "successor": "second",
+              "expectedRevision": 0,
+              "reason": "合成对抗：检查回填对人工关系版本的影响。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "winner-write",
+          "tool": "record_decision_outcome",
+          "args": {
+            "source": "decisions",
+            "recordId": "D9341",
+            "expectedContentHash": {
+              "$ref": "new-read.context.results.0.sourceRef.contentHash"
+            },
+            "outcome": "合成写入一：保留现行并发策略。",
+            "review": {
+              "verdict": "as_expected",
+              "lesson": "合成复盘：保留原选择。"
+            }
+          },
+          "expect": {
+            "equals": {
+              "outcomeUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "stale-contender",
+          "tool": "record_decision_outcome",
+          "args": {
+            "source": "decisions",
+            "recordId": "D9341",
+            "expectedContentHash": {
+              "$ref": "new-read.context.results.0.sourceRef.contentHash"
+            },
+            "outcome": "合成写入二：使用旧版本竞争。",
+            "review": {
+              "verdict": "as_expected",
+              "lesson": "合成复盘：保留原选择。"
+            }
+          },
+          "expect": {
+            "equals": {
+              "outcomeUpdate.status": "source_changed"
+            }
+          }
+        },
+        {
+          "id": "after-competing-writes",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 8,
+            "offset": 0,
+            "query": "并发方案最终采用哪个？"
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9341",
+              "D9340"
+            ],
+            "mustFlag": [
+              {
+                "id": "D9341",
+                "path": "lifecycleState",
+                "equals": "current"
+              },
+              {
+                "id": "D9340",
+                "path": "lifecycleState",
+                "equals": "superseded"
+              }
+            ],
+            "equals": {
+              "context.results.0.id": "D9341",
+              "context.results.1.id": "D9340"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-revoked-relation-not-rebound",
+      "description": "已撤销的人工关系不会被后续结果回填重新激活",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9350.md",
+            "content": "---\nid: \"D9350\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"指数退避\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n旧重试实现\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n指数退避\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuaMh-aVsOmAgOmBvyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9351.md",
+            "content": "---\nid: \"D9351\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"固定延时队列\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n现行重试实现\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n固定延时队列\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWbuuWumuW7tuaXtumYn-WIlyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "old-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9350"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "new-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9351"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "supersede-write",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "decisions",
+                "recordId": "D9350",
+                "contentHash": {
+                  "$ref": "old-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "decisions",
+                "recordId": "D9351",
+                "contentHash": {
+                  "$ref": "new-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "supersedes",
+              "successor": "second",
+              "expectedRevision": 0,
+              "reason": "合成对抗：检查回填对人工关系版本的影响。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          },
+          {
+            "id": "revoke-write",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "decisions",
+                "recordId": "D9350",
+                "contentHash": {
+                  "$ref": "old-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "decisions",
+                "recordId": "D9351",
+                "contentHash": {
+                  "$ref": "new-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "revoked",
+              "successor": null,
+              "expectedRevision": 1,
+              "reason": "合成对抗：检查回填对人工关系版本的影响。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "review-current",
+          "tool": "record_decision_outcome",
+          "args": {
+            "source": "decisions",
+            "recordId": "D9351",
+            "expectedContentHash": {
+              "$ref": "new-read.context.results.0.sourceRef.contentHash"
+            },
+            "outcome": "合成复盘：撤销关系后两种实现独立。",
+            "review": {
+              "verdict": "as_expected",
+              "lesson": "合成复盘：保留原选择。"
+            }
+          },
+          "expect": {
+            "equals": {
+              "outcomeUpdate.status": "saved"
+            }
+          }
+        },
+        {
+          "id": "revoked-after-review",
+          "tool": "search_decision_context",
+          "args": {
+            "source": "decisions",
+            "recordId": "D9350",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "D9350"
+            ],
+            "k": 8,
+            "mustFlag": [
+              {
+                "id": "D9350",
+                "path": "relations.0.state",
+                "equals": "revoked"
+              },
+              {
+                "id": "D9350",
+                "path": "relations.0.disposition",
+                "equals": "revoked"
+              },
+              {
+                "id": "D9350",
+                "path": "lifecycleState",
+                "equals": "current"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-weak-semantic-cross-project",
+      "description": "弱关键词下语义前移不得抬高明确限定在另一项目的近义记录",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9360.md",
+            "content": "---\nid: \"D9360\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"alpha\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"付款暂时失败时最多重试三次\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n付款重试\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n付款暂时失败时最多重试三次\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuS7mOasvuaaguaXtuWksei0peaXtuacgOWkmumHjeivleS4ieasoSJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9361.md",
+            "content": "---\nid: \"D9361\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"beta\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"账单请求失败后采用指数退避\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n账单重试\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n账单请求失败后采用指数退避\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIui0puWNleivt-axguWksei0peWQjumHh-eUqOaMh-aVsOmAgOmBvyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "foreign-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9361"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "foreign-scope",
+            "tool": "record_decision_scope",
+            "args": {
+              "source": "decisions",
+              "recordId": "D9361",
+              "expectedContentHash": {
+                "$ref": "foreign-read.context.results.0.sourceRef.contentHash"
+              },
+              "expectedRevision": 0,
+              "scope": {
+                "projects": [
+                  "beta"
+                ],
+                "layers": [
+                  "backend"
+                ]
+              },
+              "changeReason": "合成对抗：只应绑定到指定来源和版本。"
+            },
+            "expect": {
+              "equals": {
+                "scopeUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "scoped-semantic",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 3,
+            "offset": 0,
+            "query": "How should payment requests recover after a temporary service outage?",
+            "project": "alpha"
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9360"
+            ],
+            "mustExclude": [
+              "D9361"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-successor-before-predecessor",
+      "description": "替代链仍返回并标记旧记录，现行后继应排在全部已替代前驱之前",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9370.md",
+            "content": "---\nid: \"D9370\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"本地文件缓存\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n第一代缓存策略\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n本地文件缓存\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuacrOWcsOaWh-S7tue8k-WtmCJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9371.md",
+            "content": "---\nid: \"D9371\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"SQLite 缓存\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n第二代缓存策略\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\nSQLite 缓存\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIlNRTGl0ZSDnvJPlrZgiXX0 -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9372.md",
+            "content": "---\nid: \"D9372\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"WAL SQLite 缓存\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n当前缓存策略\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\nWAL SQLite 缓存\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIldBTCBTUUxpdGUg57yT5a2YIl19 -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "a-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9370"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "b-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9371"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "c-read",
+            "tool": "search_decision_context",
+            "args": {
+              "limit": 8,
+              "offset": 0,
+              "source": "decisions",
+              "recordId": "D9372"
+            },
+            "expect": {
+              "k": 8
+            }
+          },
+          {
+            "id": "a-to-b",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "decisions",
+                "recordId": "D9370",
+                "contentHash": {
+                  "$ref": "a-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "decisions",
+                "recordId": "D9371",
+                "contentHash": {
+                  "$ref": "b-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "supersedes",
+              "successor": "second",
+              "expectedRevision": 0,
+              "reason": "合成对抗：检查回填对人工关系版本的影响。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          },
+          {
+            "id": "b-to-c",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "decisions",
+                "recordId": "D9371",
+                "contentHash": {
+                  "$ref": "b-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "decisions",
+                "recordId": "D9372",
+                "contentHash": {
+                  "$ref": "c-read.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "supersedes",
+              "successor": "second",
+              "expectedRevision": 0,
+              "reason": "合成对抗：检查回填对人工关系版本的影响。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "chain-order",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 8,
+            "offset": 0,
+            "query": "最终缓存策略以及之前的替代方案"
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9372",
+              "D9371",
+              "D9370"
+            ],
+            "mustFlag": [
+              {
+                "id": "D9370",
+                "path": "lifecycleState",
+                "equals": "superseded"
+              },
+              {
+                "id": "D9371",
+                "path": "lifecycleState",
+                "equals": "superseded"
+              },
+              {
+                "id": "D9372",
+                "path": "lifecycleState",
+                "equals": "current"
+              }
+            ],
+            "equals": {
+              "context.results.0.id": "D9372"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-pagination-stable-order",
+      "description": "limit 1 的前后页拼接顺序应与 limit 2 全页顺序一致，且不重复或漏项",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9380.md",
+            "content": "---\nid: \"D9380\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"rotate deploy keys monthly\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\nRelease key policy\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\nrotate deploy keys monthly\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbInJvdGF0ZSBkZXBsb3kga2V5cyBtb250aGx5Il19 -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\nRelease keys rotate monthly; this is a credential policy unrelated to artifact recovery.\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9381.md",
+            "content": "---\nid: \"D9381\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"制品传输恢复后指数退避重试\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n制品断网恢复\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n制品传输恢复后指数退避重试\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWItuWTgeS8oOi-k-aBouWkjeWQjuaMh-aVsOmAgOmBv-mHjeivlSJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n制品上传遇到网络中断后，连接恢复时指数退避并重试。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": []
+      },
+      "steps": [
+        {
+          "id": "page-first",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 1,
+            "offset": 0,
+            "query": "How should release recover after a temporary outage?"
+          },
+          "expect": {
+            "k": 1
+          }
+        },
+        {
+          "id": "page-second",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 1,
+            "offset": 1,
+            "query": "How should release recover after a temporary outage?"
+          },
+          "expect": {
+            "k": 1
+          }
+        },
+        {
+          "id": "page-full",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 2,
+            "offset": 0,
+            "query": "How should release recover after a temporary outage?"
+          },
+          "expect": {
+            "k": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-wb-startup-first-query-and-exit",
+      "description": "启动后首个弱词面查询与模型校验/同步并行，检查请求完成且隔离 App 有序退出",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/10/D9390.md",
+            "content": "---\nid: \"D9390\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"支付请求携带幂等键\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n支付幂等\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n支付请求携带幂等键\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuaUr-S7mOivt-axguaQuuW4puW5guetiemUriJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\nEvery payment request includes an idempotency key; retries return the first result.\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/10/D9391.md",
+            "content": "---\nid: \"D9391\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"短期令牌定时轮换\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n访问令牌轮换\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n短期令牌定时轮换\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuefreacn-S7pOeJjOWumuaXtui9ruaNoiJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\nShort-lived access tokens rotate hourly.\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ]
+      },
+      "beforeSeed": [
+        {
+          "id": "first-query",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 3,
+            "offset": 0,
+            "query": "How do we prevent a retry from charging a payment twice?",
+            "project": "lab"
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9390"
+            ],
+            "mustExclude": [
+              "D9391"
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "id": "after-start-index",
+          "tool": "search_decision_context",
+          "args": {
+            "limit": 3,
+            "offset": 0,
+            "query": "How do we prevent a retry from charging a payment twice?",
+            "project": "lab"
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9390"
+            ],
+            "mustExclude": [
+              "D9391"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

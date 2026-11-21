@@ -57,7 +57,7 @@ it("asks the reviewer for a line's side, and moves past a long line its page gav
 it("verifies a finding on an over-long line on the line cut, within the prompt's limit", async () => {
   const finding = { priority: "P2" as const, title: "常量过长", body: "这个常量应拆到数据文件里。", path: "src/blob.ts", side: "new" as const, line: 1, decisionIndexes: [] };
   const test = harness(["src/blob.ts"], diffOf("src/blob.ts", [`export const blob = "${"z".repeat(130_000)}";`]), (request) =>
-    request.promptVersion.startsWith("pr-review-verify") ? { verdicts: [{ id: 1, score: 20, reason: "只是数据。" }] } : { action: "finish_review", summary: "已核对", findings: [finding] });
+    request.promptVersion.startsWith("pr-review-verify") ? { verdicts: [{ id: 1, verdict: "rejected", reason: "只是数据。" }] } : { action: "finish_review", summary: "已核对", findings: [finding] });
   const report = await test.run();
   const verifying = test.requests.filter((request) => request.promptVersion.startsWith("pr-review-verify"));
   expect(verifying).toHaveLength(1);
@@ -74,7 +74,7 @@ it("lets a verifier read on in a line cut short, and scores with what it read", 
   const test = harness(["src/blob.ts"], diffOf("src/blob.ts", [`export const blob = "${"z".repeat(100_000)}SECRET_TAIL";`]), (request) => {
     if (!request.promptVersion.startsWith("pr-review-verify")) return { action: "finish_review", summary: "已核对", findings: [finding] };
     verifying.push(request.userPrompt);
-    return verifying.length === 1 ? { verdicts: [], reads: [{ path: "src/blob.ts", side: "new", line: 1, from: 99_000 }] } : { verdicts: [{ id: 1, score: 95, reason: "末尾确有密钥。" }] };
+    return verifying.length === 1 ? { verdicts: [], reads: [{ path: "src/blob.ts", side: "new", line: 1, from: 99_000 }] } : { verdicts: [{ id: 1, verdict: "confirmed", reason: "末尾确有密钥。" }] };
   });
   const report = await test.run();
   expect(verifying).toHaveLength(2);
@@ -104,7 +104,8 @@ it("lets a verifier read on while it reads something new, up to a group reviewer
   expect(JSON.parse(verifying.at(-1)!)).toMatchObject({ mustAnswer: true });
   // The reads so far go along, the line's next piece said for each.
   expect(JSON.parse(verifying[2]!).readResults).toMatchObject([{ from: 1_000, next: expect.any(Number) }, { from: 2_000, next: expect.any(Number) }]);
-  expect(report.warnings).toContain("1 条问题没能完成核验，按原样保留。");
+  expect(report.warnings).toContain("1 条问题没能完成核验，单独列为待核实，不当作已确认问题。");
+  expect({ findings: report.findings, waiting: report.needsContext?.map((item) => item.reason) }).toEqual({ findings: [], waiting: ["核验到补读上限仍没有给出结论。"] });
 });
 
 it("asks for the verdicts once a verifier only asks again for what it was given", async () => {
@@ -113,7 +114,7 @@ it("asks for the verdicts once a verifier only asks again for what it was given"
   const test = harness(["src/blob.ts"], diffOf("src/blob.ts", [`export const blob = "${"z".repeat(50_000)}";`]), (request) => {
     if (!request.promptVersion.startsWith("pr-review-verify")) return { action: "finish_review", summary: "已核对", findings: [finding] };
     verifying.push(request.userPrompt);
-    return "mustAnswer" in JSON.parse(request.userPrompt) ? { verdicts: [{ id: 1, score: 10, reason: "只是数据。" }], reads: null }
+    return "mustAnswer" in JSON.parse(request.userPrompt) ? { verdicts: [{ id: 1, verdict: "rejected", reason: "只是数据。" }], reads: null }
       : { verdicts: [], reads: [{ path: "src/blob.ts", side: "new", line: 1, from: 1_000 }] };
   });
   const report = await test.run();
@@ -132,7 +133,7 @@ it("gives back a read left out for room when the verifier asks for it again", as
     if (!request.promptVersion.startsWith("pr-review-verify")) return { action: "finish_review", summary: "已核对", findings: [finding] };
     verifying.push(request.userPrompt);
     return verifying.length === 1 ? { verdicts: [], reads: at([...early, ...late]) }
-      : verifying.length === 2 ? { verdicts: [], reads: at(early) } : { verdicts: [{ id: 1, score: 90, reason: "成立。" }], reads: null };
+      : verifying.length === 2 ? { verdicts: [], reads: at(early) } : { verdicts: [{ id: 1, verdict: "confirmed", reason: "成立。" }], reads: null };
   });
   await test.run();
   const [, second, third] = verifying.map((prompt) => JSON.parse(prompt) as { droppedReads?: number; mustAnswer?: boolean; readResults: Array<{ line: number }> });
@@ -171,9 +172,9 @@ it("keeps every verification call within a local model's budget, six reads on a 
     verifying.push(request.userPrompt);
     const reads = [10, 20, 30, 40, 50, 60, 100].map((line) => ({ path, side: "new", line, from: line === 100 ? verifying.length * 5_000 : null }));
     // Sure of the first at once, of the second after reading, of the third only when made to answer.
-    return verifying.length === 1 ? { verdicts: [{ id: 1, score: 90, reason: "成立。" }], reads }
-      : verifying.length === 2 ? { verdicts: [{ id: 2, score: 10, reason: "不成立。" }], reads }
-        : { verdicts: [{ id: 3, score: 90, reason: "成立。" }], reads: null };
+    return verifying.length === 1 ? { verdicts: [{ id: 1, verdict: "confirmed", reason: "成立。" }], reads }
+      : verifying.length === 2 ? { verdicts: [{ id: 2, verdict: "rejected", reason: "不成立。" }], reads }
+        : { verdicts: [{ id: 3, verdict: "confirmed", reason: "成立。" }], reads: null };
   });
   const report = await test.run();
   expect(verifying).toHaveLength(3);

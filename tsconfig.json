@@ -20,6 +20,15 @@
       "@cognelis/decision-core/journal-entry": [
         "./packages/core/src/journal-entry.ts"
       ],
+      "@cognelis/decision-core/todo": [
+        "./packages/core/src/todo.ts"
+      ],
+      "@cognelis/decision-core/historical-decision": [
+        "./packages/core/src/historical-decision.ts"
+      ],
+      "@cognelis/decision-core/recommendation": [
+        "./packages/core/src/recommendation.ts"
+      ],
       "@cognelis/decision-core/rationale-factors": [
         "./packages/core/src/rationale-factors.ts"
       ],

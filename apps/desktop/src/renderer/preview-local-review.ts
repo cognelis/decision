@@ -1,0 +1,96 @@
+import type { LocalReviewState, LocalReviewJob, ModelProviderProfile } from "@cognelis/decision-protocol";
+import type { DecisionApi } from "../shared/renderer-api.js";
+
+const repositoryId = "10000000-0000-4000-8000-000000000001", sessionId = "10000000-0000-4000-8000-000000000002";
+const snapshot = { path: "/preview/sample", headSha: "a".repeat(40), baseSha: "b".repeat(40), branch: "feature/request", dirty: true, author: { name: "示例用户", email: "example@example.invalid" } };
+const settings = { worker: "codex" as const, pushRemote: "origin", baseBranch: "main", reviewers: [] as string[] };
+const profile: ModelProviderProfile = { version: 1, profileId: "builtin-codex", kind: "codex-cli", label: "Codex CLI", enabled: true, priority: 0, timeoutMs: 120000, model: "gpt-6-luna", executablePath: "/preview/codex" };
+export const LOCAL_REVIEW_PREVIEW_CONTENT = "export async function request(url: string) {\n  return fetch(url);\n}\n\nexport interface RequestOptions {\n  timeoutMs?: number;\n  headers?: Record<string, string>;\n}\n\nconst DEFAULT_TIMEOUT_MS = 10_000;\n\nexport function requestHeaders(options: RequestOptions = {}) {\n  return {\n    Accept: \"application/json\",\n    ...options.headers,\n  };\n}\n\nexport function requestTimeout(options: RequestOptions = {}) {\n  return options.timeoutMs ?? DEFAULT_TIMEOUT_MS;\n}\n\nexport async function readResponse(response: Response) {\n  if (!response.ok) {\n    throw new Error(`Request failed: ${response.status}`);\n  }\n  return response.json();\n}\n\nexport function joinEndpoint(base: string, path: string) {\n  const endpoint = new URL(path, base);\n  return endpoint.toString();\n}\n";
+const annotation = { id: "10000000-0000-4000-8000-000000000003", path: "src/request.ts", startLine: 2, endLine: 2, side: "new" as const, lineText: "  return fetch(url);", body: "请求需要超时保护，超时后应取消上游连接。" };
+const emptyConversation = () => ({ conversation: { messages: [], nextSeq: 1, readSeq: 0 }, turns: [], executions: [] });
+export function createLocalReviewPreview(): Pick<DecisionApi, "getLocalReviewState" | "chooseLocalReviewRepository" | "startLocalReviewSession" | "saveLocalReviewSettings" | "clearLocalReviewDependencies" | "loadLocalReviewFiles" | "readLocalReviewFile" | "saveLocalReviewAnnotation" | "removeLocalReviewAnnotation" | "submitLocalReview" | "submitLocalReviewFromPr" | "actOnLocalReview" | "sendLocalReviewMessage" | "executeLocalReviewPlan" | "markLocalReviewRead" | "actOnLocalReviewConversation" | "onLocalReviewNavigate"> {
+  const state: LocalReviewState = { version: 1, repositories: [{ id: repositoryId, name: "示例工程", snapshot, settings }], sessions: [{ id: sessionId, repositoryId, snapshot, annotations: [annotation] }], jobs: [] };
+  const jobId = "10000000-0000-4000-8000-000000000010", groupId = "10000000-0000-4000-8000-000000000011";
+  state.jobs.push({ worker: "codex", id: jobId, repositoryId, sessionId, snapshot, annotations: [annotation], settings, profile, state: "finished", createdAt: "2026-11-05T08:00:00.000Z", updatedAt: "2026-11-05T08:10:00.000Z", pushUrl: "https://github.com/example/sample.git", connection: null, prUnavailable: null, pr: null, verdicts: [{ id: annotation.id, verdict: "accept", reason: "请求没有取消机制，意见成立。" }], originalGroups: null, fallback: null, planVersion: 1, rejectedPrGroupId: null, error: null, ...emptyConversation(), groups: [{ id: groupId, ordinal: 1, title: "补上请求取消并调整 CI 验证", reason: "同一修复的实现与验证放在一组。", annotationIds: [annotation.id], branch: `paraself/review-${jobId}-1`, state: "blocked", retryable: true, attemptId: "10000000-0000-4000-8000-000000000012", intent: null, artifact: { commitOid: "c".repeat(40), changes: [{ path: ".github/workflows/test.yml", oldMode: "100644", newMode: "100644", status: "M" }], diff: "diff --git a/.github/workflows/test.yml b/.github/workflows/test.yml\n--- a/.github/workflows/test.yml\n+++ b/.github/workflows/test.yml\n@@ -1 +1 @@\n-run: npm test\n+run: npm run check\n", risks: [".github/workflows/test.yml"] }, excludedFiles: [], fix: { changedFiles: ["src/request.ts"], outcomes: [{ id: annotation.id, outcome: "fixed", summary: "统一管理超时并取消上游请求。" }], commitTitle: "修复请求超时取消", verification: "npm test：通过。尚未验证真实远端 CI。" }, pushObservedSha: null, pr: null, authorization: null, error: null, cleanupError: null, origin: "evaluation" as const, requirements: "", commits: [] }] });
+  const seeded = state.jobs[0]!, seedTurn = "10000000-0000-4000-8000-000000000020", seedUser = "10000000-0000-4000-8000-000000000021", seedAt = "2026-11-05T08:12:00.000Z";
+  const seedUserMessage = { id: seedUser, seq: 1, role: "user" as const, createdAt: seedAt, body: `> src/request.ts:2（新版本）\n> ${annotation.body}\n\n这条为什么要动 CI？只想要超时取消，不想改流水线。`, references: [{ kind: "annotation" as const, id: annotation.id }, { kind: "group" as const, id: groupId }], turnId: seedTurn };
+  seeded.conversation = { nextSeq: 4, readSeq: 1, messages: [seedUserMessage, { id: "10000000-0000-4000-8000-000000000022", seq: 2, role: "worker", createdAt: seedAt, turnId: seedTurn, event: "reply", references: [], body: "**CI 改动是组 1 里顺带的**，与超时取消无关。\n\n- 建议拆开：先在新组里只做超时取消\n- 流水线改动保持待授权，不随这次推送\n\n```ts\nconst controller = new AbortController();\nsetTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);\n```\n\n详见 [说明](https://example.invalid/some/very/long/path/that/should/never/overflow/the/conversation/column/even/when/it/is/shown)。", plan: { target: { kind: "new", title: "只做请求超时取消" }, annotationIds: [annotation.id], requirements: "不要修改 .github 下的任何文件。", expectedChanges: "`src/request.ts` 增加 AbortController 超时取消。", reason: "与 CI 无关的修复单独成组，避免高风险授权。", planBaseOid: null, executable: true, invalidReason: null } }, { id: "10000000-0000-4000-8000-000000000023", seq: 3, role: "worker", createdAt: seedAt, turnId: seedTurn, event: "reply", references: [], body: "也可以直接追加到组 1，但该组正在等待风险授权。", plan: { target: { kind: "existing", groupId }, annotationIds: [annotation.id], requirements: "", expectedChanges: "在组 1 分支追加提交。", reason: "沿用已有分支。", planBaseOid: "c".repeat(40), executable: false, invalidReason: "组 1 正在等待风险授权，请先处理授权或丢弃。" } }] };
+  seeded.turns = [{ id: seedTurn, userMessageId: seedUser, state: "answered", attemptId: "10000000-0000-4000-8000-000000000024", attempts: 1, error: null, stats: null }];
+  const system = (job: LocalReviewJob, execution: { id: string; attemptId: string }, event: string, body: string) => { job.conversation.messages.push({ id: crypto.randomUUID(), seq: job.conversation.nextSeq++, role: "system", createdAt: new Date().toISOString(), body, references: [], turnId: null, executionId: execution.id, attemptId: execution.attemptId, event }); };
+  return {
+    getLocalReviewState: async () => structuredClone(state),
+    chooseLocalReviewRepository: async () => sessionId,
+    startLocalReviewSession: async () => { const id = crypto.randomUUID(); state.sessions.push({ id, repositoryId, snapshot, annotations: [] }); return id; },
+    clearLocalReviewDependencies: async () => undefined,
+    saveLocalReviewSettings: async input => { state.repositories.find(r => r.id === input.repositoryId)!.settings = input.settings; },
+    loadLocalReviewFiles: async () => ({ pushUrl: "https://github.com/example/sample.git", prUnavailable: null, files: [{ path: "src/request.ts", mode: "100644", type: "blob", oid: "c".repeat(40) }], diff: "diff --git a/src/request.ts b/src/request.ts\n--- a/src/request.ts\n+++ b/src/request.ts\n@@ -1,3 +1,33 @@\n export async function request(url: string) {\n-  return fetch(url);\n+  return fetch(url);\n }\n+\n+export interface RequestOptions {\n+  timeoutMs?: number;\n+  headers?: Record<string, string>;\n+}\n+\n+const DEFAULT_TIMEOUT_MS = 10_000;\n+\n+export function requestHeaders(options: RequestOptions = {}) {\n+  return {\n+    Accept: \"application/json\",\n+    ...options.headers,\n+  };\n+}\n+\n+export function requestTimeout(options: RequestOptions = {}) {\n+  return options.timeoutMs ?? DEFAULT_TIMEOUT_MS;\n+}\n+\n+export async function readResponse(response: Response) {\n+  if (!response.ok) {\n+    throw new Error(`Request failed: ${response.status}`);\n+  }\n+  return response.json();\n+}\n+\n+export function joinEndpoint(base: string, path: string) {\n+  const endpoint = new URL(path, base);\n+  return endpoint.toString();\n+}\n" }),
+    readLocalReviewFile: async () => LOCAL_REVIEW_PREVIEW_CONTENT,
+    saveLocalReviewAnnotation: async input => { const session = state.sessions.find(s => s.id === input.sessionId)!; const id = input.annotationId ?? crypto.randomUUID(); session.annotations = [...session.annotations.filter(a => a.id !== id), { id, path: input.path, side: input.side, startLine: input.startLine, endLine: input.endLine, lineText: LOCAL_REVIEW_PREVIEW_CONTENT.split("\n").slice(input.startLine - 1, input.endLine).join("\n"), body: input.body }]; return id; },
+    removeLocalReviewAnnotation: async input => { const session = state.sessions.find(s => s.id === input.sessionId)!; session.annotations = session.annotations.filter(a => a.id !== input.annotationId); },
+    submitLocalReview: async input => {
+      const session = state.sessions.find(s => s.id === input.sessionId)!, id = crypto.randomUUID(), now = new Date().toISOString();
+      const job: LocalReviewJob = { worker: input.worker ?? "codex", id, repositoryId, sessionId: session.id, snapshot, annotations: [...session.annotations], settings: state.repositories.find(repository => repository.id === input.repositoryId)!.settings, profile, state: "finished", createdAt: now, updatedAt: now, pushUrl: "https://github.com/example/sample.git", connection: null, prUnavailable: "预览只演示本地任务。", pr: null, verdicts: session.annotations.map(a => ({ id: a.id, verdict: "accept", reason: "缺少取消机制，意见成立。" })), originalGroups: null, fallback: null, planVersion: 1, groups: [], rejectedPrGroupId: null, error: null, ...emptyConversation() };
+      if (!session.annotations.length) throw new Error("请先添加审阅意见。");
+      const groupId = crypto.randomUUID();
+      job.groups = [{ id: groupId, ordinal: 1, title: "修复审阅意见", reason: "预览演示：相关意见放在一组。", annotationIds: session.annotations.map(a => a.id), branch: `paraself/review-${id}-1`, state: "pr_opened", retryable: true, attemptId: crypto.randomUUID(), intent: null, artifact: { commitOid: "c".repeat(40), changes: session.annotations.map(a => ({ path: a.path, oldMode: "100644", newMode: "100644", status: "M" })), diff: "预览示意，没有实际修改文件。", risks: [] }, excludedFiles: [], fix: { changedFiles: session.annotations.map(a => a.path), outcomes: session.annotations.map(a => ({ id: a.id, outcome: "fixed", summary: "预览示意：完成修复。" })), commitTitle: "修复审阅意见", verification: "预览没有运行真实模型、Git 或平台操作。" }, pushObservedSha: "c".repeat(40), pr: { id: "123", url: "https://github.com/example/sample/pull/123" }, authorization: null, error: null, cleanupError: null, origin: "evaluation" as const, requirements: "", commits: [] }];
+      job.rejectedPrGroupId = groupId;
+      state.jobs.unshift(job); session.annotations = []; return id;
+    },
+    // Synthetic: the preview PR's line comment fixed at once, waiting for the author's word to push; nothing is pushed.
+    submitLocalReviewFromPr: async input => {
+      const id = crypto.randomUUID(), now = new Date().toISOString(), groupId = crypto.randomUUID();
+      const annotations = input.commentIds.map(() => ({ id: crypto.randomUUID(), path: "src/request.ts", startLine: 12, endLine: 12, side: "new" as const, lineText: "  const timer = setTimeout(reject, timeoutMs);", body: "示例审阅人 A 在 PR 上的意见：\n超时后请求仍在运行。" }));
+      const job: LocalReviewJob = { worker: input.worker ?? "codex", id, repositoryId, sessionId: crypto.randomUUID(), snapshot, annotations, settings, profile, state: "finished", createdAt: now, updatedAt: now, pushUrl: "https://github.com/example/sample.git", connection: null, prUnavailable: null,
+        pr: { connectionId: input.connectionId, reference: input.reference, url: "https://code.example/pr/123", sourceBranch: "feature/request", headSha: "a".repeat(40), replied: [], described: false, followUpError: null,
+          comments: input.commentIds.map((commentId, index) => ({ annotationId: annotations[index]!.id, commentId, author: "示例审阅人 A", title: "超时后请求仍在运行" })) },
+        verdicts: annotations.map(a => ({ id: a.id, verdict: "accept" as const, reason: "预览演示：意见成立。" })), originalGroups: null, fallback: null, planVersion: 1, rejectedPrGroupId: null, error: null, ...emptyConversation(),
+        groups: [{ id: groupId, ordinal: 1, title: "回应 PR 上的意见", reason: "预览演示：意见放在一组。", annotationIds: annotations.map(a => a.id), branch: "feature/request", state: "blocked", retryable: true, attemptId: crypto.randomUUID(), intent: null,
+          artifact: { commitOid: "d".repeat(40), changes: [{ path: "src/request.ts", oldMode: "100644", newMode: "100644", status: "M" }], diff: "diff --git a/src/request.ts b/src/request.ts\n--- a/src/request.ts\n+++ b/src/request.ts\n@@ -12,1 +12,2 @@\n-  const timer = setTimeout(reject, timeoutMs);\n+  const timer = setTimeout(() => controller.abort(), timeoutMs);\n+  signal.addEventListener(\"abort\", () => clearTimeout(timer));\n", risks: [] },
+          excludedFiles: [], fix: { changedFiles: ["src/request.ts"], outcomes: annotations.map(a => ({ id: a.id, outcome: "fixed" as const, summary: "超时改为取消底层请求。" })), commitTitle: "fix: 超时后取消底层请求", verification: "预览演示：没有运行任何命令。" },
+          pushObservedSha: null, pr: null, authorization: null, error: null, cleanupError: null, origin: "evaluation", requirements: "", commits: [] }] };
+      state.jobs.unshift(job); return id;
+    },
+    actOnLocalReview: async input => {
+      const job = state.jobs.find(j => j.id === input.jobId); if (!job) throw new Error("审阅任务不存在。");
+      if (job.pr && input.action === "approve") { const group = job.groups[0]!; group.state = "pr_opened"; group.pushObservedSha = group.artifact?.commitOid ?? null; group.pr = { id: "123", url: job.pr.url }; job.pr.replied = job.pr.comments.map(c => c.commentId); job.pr.described = true; return; }
+      if (input.action === "cancel") { job.state = "cancelled"; for (const group of job.groups) if (["pending", "fixing", "committed"].includes(group.state)) group.state = "cancelled"; }
+      const group = job.groups.find(g => g.id === input.groupId);
+      if (group && input.action === "discard") group.state = "cancelled";
+      if (group && (input.action === "approve" || input.action === "retry")) { group.state = "pr_opened"; group.pushObservedSha = group.artifact?.commitOid ?? null; group.pr = { id: "124", url: "https://github.com/example/sample/pull/124" }; }
+    },
+    sendLocalReviewMessage: async input => {
+      const job = state.jobs.find(j => j.id === input.jobId); if (!job) throw new Error("审阅任务不存在。");
+      const turnId = crypto.randomUUID(), now = new Date().toISOString(), group = job.groups[0];
+      const user = { id: crypto.randomUUID(), seq: job.conversation.nextSeq++, role: "user" as const, createdAt: now, body: input.body, references: input.references, turnId };
+      job.conversation.messages.push(user);
+      job.turns.push({ id: turnId, userMessageId: user.id, state: "answered", attemptId: crypto.randomUUID(), attempts: 1, error: null, stats: null });
+      const plan = group && group.artifact ? { target: { kind: "existing" as const, groupId: group.id }, annotationIds: group.annotationIds, requirements: "", expectedChanges: "在同一分支追加提交，补充超时后的取消。", reason: "预览示意：沿用已有组。", planBaseOid: group.artifact.commitOid, executable: group.state === "pr_opened" || group.state === "pushed_no_pr", invalidReason: null } : undefined;
+      job.conversation.messages.push({ id: crypto.randomUUID(), seq: job.conversation.nextSeq++, role: "worker", createdAt: now, body: "这是**预览回答**。\n\n- 判断依据：请求没有取消机制\n- 建议：在原分支追加一个提交\n\n```ts\nconst controller = new AbortController();\n```", references: [], turnId, ...(plan ? { plan } : {}), event: "reply" });
+      return turnId;
+    },
+    executeLocalReviewPlan: async input => {
+      const job = state.jobs.find(j => j.id === input.jobId); if (!job) throw new Error("审阅任务不存在。");
+      const message = job.conversation.messages.find(m => m.id === input.messageId), existing = job.executions.find(e => e.messageId === input.messageId); if (existing) return existing.id;
+      if (!message?.plan) throw new Error("这条消息没有执行方案。"); if (!message.plan.executable) throw new Error(message.plan.invalidReason ?? "方案不可执行。");
+      const id = crypto.randomUUID(), now = new Date().toISOString(), isNew = message.plan.target.kind === "new";
+      let targetGroup = isNew ? crypto.randomUUID() : (message.plan.target as { groupId: string }).groupId;
+      if (isNew) job.groups.push({ id: targetGroup, ordinal: job.groups.length + 1, title: (message.plan.target as { title: string }).title, reason: "来自对话的方案。", annotationIds: message.plan.annotationIds as string[], branch: `paraself/review-${job.id}-${job.groups.length + 1}`, state: "pr_opened", retryable: true, attemptId: crypto.randomUUID(), intent: null, artifact: { commitOid: "e".repeat(40), changes: [], diff: "预览示意。", risks: [] }, excludedFiles: [], fix: null, pushObservedSha: "e".repeat(40), pr: { id: "125", url: "https://github.com/example/sample/pull/125" }, authorization: null, error: null, cleanupError: null, origin: "conversation", requirements: message.plan.requirements, commits: [{ oid: "e".repeat(40), executionId: id }] });
+      const execution = { id, messageId: message.id, turnId: message.turnId ?? id, groupId: targetGroup, kind: isNew ? "new" as const : "existing" as const, planBaseOid: message.plan.planBaseOid, annotationIds: message.plan.annotationIds as string[], requirements: message.plan.requirements, expectedChanges: message.plan.expectedChanges, state: "done" as const, intent: null, attemptId: crypto.randomUUID(), attempts: 0, newCommitOid: "d".repeat(40), fix: null, artifact: null, excludedFiles: [], pushed: true, comment: null, authorization: null, error: null, createdAt: now, updatedAt: now };
+      job.executions.push(execution);
+      system(job, execution, "execution_done", `${isNew ? "新组已创建并开 PR" : "追加完成"}（预览示意）：新提交 \`${"d".repeat(10)}\`。\n\nverification 原话：npm test 通过 https://example.invalid/${"very-long-segment/".repeat(8)}`);
+      return id;
+    },
+    markLocalReviewRead: async input => { const job = state.jobs.find(j => j.id === input.jobId); if (job) job.conversation.readSeq = Math.max(job.conversation.readSeq, Math.min(input.seq, job.conversation.nextSeq - 1)); },
+    actOnLocalReviewConversation: async input => {
+      const job = state.jobs.find(j => j.id === input.jobId); if (!job) throw new Error("审阅任务不存在。");
+      const turn = job.turns.find(t => t.id === input.turnId), execution = job.executions.find(e => e.id === input.executionId);
+      if (turn && input.action === "retry_turn") turn.state = "answered";
+      if (turn && input.action === "cancel_turn") turn.state = "cancelled";
+      if (execution) {
+        const next = input.action === "discard_execution" || input.action === "cancel_execution" ? "cancelled" as const : "done" as const;
+        execution.state = next; system(job, execution, `execution_${next}`, next === "done" ? "已完成（预览示意）。" : "本次追加已丢弃（预览示意）；组原有的 PR 和提交不受影响。");
+      }
+    },
+    onLocalReviewNavigate: () => () => undefined,
+  };
+}

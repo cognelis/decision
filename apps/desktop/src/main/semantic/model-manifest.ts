@@ -89,6 +89,9 @@ interface VerifyQwenEmbeddingModelOptions {
 }
 
 const verifiedFiles = new Set<string>();
+// The digest of a file being read, by its identity: the search's embedding and the knowledge page's each read the 609
+// MiB of the same model at a start, side by side, and the first search after a launch waited out both (R9).
+const hashing = new Map<string, Promise<string>>();
 
 const identityKey = (
   stats: Awaited<ReturnType<typeof lstat>>,
@@ -126,20 +129,51 @@ const hashFile = async (
       };
     }
 
-    const hash = createHash("sha256");
-    const stream = file.createReadStream({ autoClose: false });
-    for await (const chunk of stream) {
-      hash.update(chunk);
+    const pending = hashing.get(identity);
+    if (pending !== undefined) {
+      return { digest: await pending, identity, size: stats.size };
     }
-    return {
-      digest: hash.digest("hex"),
-      identity,
-      size: stats.size,
-    };
+    const reading = (async () => {
+      const hash = createHash("sha256");
+      const stream = file.createReadStream({ autoClose: false });
+      for await (const chunk of stream) {
+        hash.update(chunk);
+      }
+      return hash.digest("hex");
+    })();
+    hashing.set(identity, reading);
+    try {
+      return {
+        digest: await reading,
+        identity,
+        size: stats.size,
+      };
+    } finally {
+      hashing.delete(identity);
+    }
   } finally {
     await file.close();
   }
 };
+
+/** What is at a model's path, by one lstat: a regular file, nothing, or something that cannot be the model. */
+const modelFilePlaced = async (modelPath: string): Promise<"file" | "missing" | "other"> => {
+  try {
+    const pathStats = await lstat(modelPath);
+    return pathStats.isSymbolicLink() || !pathStats.isFile() ? "other" : "file";
+  } catch (error) {
+    return error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT"
+      ? "missing"
+      : "other";
+  }
+};
+
+/**
+ * Whether a model was never downloaded, as its check above reads it, without reading the file: asked before every
+ * captured turn (IMP-153), where a model not there is no failure, the hash is left to the call.
+ */
+export const qwenModelMissing = async (modelsDirectory: string, id: string): Promise<boolean> =>
+  (await modelFilePlaced(join(modelsDirectory, qwenModelManifest(id).fileName))) === "missing";
 
 const verifyModel = async ({
   modelsDirectory,
@@ -149,21 +183,9 @@ const verifyModel = async ({
   manifest: QwenModelManifest;
 }): Promise<QwenModelVerification> => {
   const modelPath = join(modelsDirectory, manifest.fileName);
-
-  try {
-    const pathStats = await lstat(modelPath);
-    if (pathStats.isSymbolicLink() || !pathStats.isFile()) {
-      return { availability: "checksum_failed" };
-    }
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      (error as NodeJS.ErrnoException).code === "ENOENT"
-    ) {
-      return { availability: "model_missing" };
-    }
-    return { availability: "checksum_failed" };
+  const placed = await modelFilePlaced(modelPath);
+  if (placed !== "file") {
+    return { availability: placed === "missing" ? "model_missing" : "checksum_failed" };
   }
 
   try {

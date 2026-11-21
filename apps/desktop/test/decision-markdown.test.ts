@@ -28,6 +28,14 @@ const base = {
 };
 
 describe("decisionMarkdown", () => {
+  it.each(["preset", "multiple"] as const)("includes the original %s reply in single and list exports", (kind) => {
+    const decision = { ...base, answer: { kind, values: [base.selectedAnswer], reply: "先拆入口，\n设置以后再收敛。" } };
+    for (const markdown of [decisionMarkdown(decision), decisionsMarkdown([decision])]) {
+      expect(markdown).toContain("\n\n原话：先拆入口，\n设置以后再收敛。\n");
+    }
+    expect(decisionMarkdown({ ...decision, answer: { ...decision.answer, kind: "custom" } })).not.toContain("原话：");
+  });
+
   it("writes only the parts the record holds", () => {
     expect(decisionMarkdown(base)).toBe(
       [

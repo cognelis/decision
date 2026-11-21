@@ -57,7 +57,16 @@ export const modelPurposeSchema = z.enum([
   "skill-drafting",
   "workflow-drafting",
   "retrieval-answer",
+  // The assistant's 接入新工具 conversation: its steps, not an answer from the reader's records.
+  "client-onboarding",
   "pr-review",
+  "local-review",
+  "pr-comment-recognition",
+  "context-summary",
+  // 整理与记忆（IMP-191）：只给选定材料、结构化输出，不写文件、不执行任务、不联网检索。
+  "memory-organization",
+  // A judgment asked of a decisions backend (jev): typed answers, never text, and never a generation purpose.
+  "structured-judgment",
 ]);
 
 export const modelBackendKindSchema = z.enum([
@@ -68,7 +77,19 @@ export const modelBackendKindSchema = z.enum([
   "openai-compatible",
   "codex-cli",
   "claude-code-cli",
+  // OpenRouter's Decisions API (jev): judges, generates nothing, so no generation route ever selects it (IMP-166).
+  "openrouter-decisions",
 ]);
+
+/** Profile-level generation capability shared by UI and host admission. */
+export function modelKindSupportsGeneration(kind: z.infer<typeof modelBackendKindSchema>): boolean {
+  const supported: Record<z.infer<typeof modelBackendKindSchema>, boolean> = {
+    apple: false, qwen: true, openai: true, anthropic: true,
+    "openai-compatible": true, "codex-cli": true, "claude-code-cli": true,
+    "openrouter-decisions": false,
+  };
+  return supported[kind] === true;
+}
 
 export const modelProviderKindSchema = modelBackendKindSchema;
 export const modelApiProtocolSchema = z.enum([
@@ -119,6 +140,12 @@ const modelProviderProfileBaseSchema = z
      * in tokens only.
      */
     pricing: modelPricingSchema.optional(),
+    /**
+     * The request shape a decisions backend takes: "systemone" (state and a map of questions: OpenRouter, TypeSafe,
+     * Fireworks and the like) or "openai" (input and a list of questions, OpenAI's /v1/decisions). Defaults to
+     * "systemone".
+     */
+    decisionsProtocol: z.enum(["systemone", "openai"]).optional(),
   })
   .strict();
 
@@ -128,6 +155,20 @@ const remoteKinds = new Set([
   "openai-compatible",
 ]);
 const cliKinds = new Set(["codex-cli", "claude-code-cli"]);
+/** The model a decisions backend asks: a name or a slug (vendor/model, or "~" for the latest version), no spaces. */
+const decisionsModelPattern = /^~?[A-Za-z0-9._:-]+(?:\/[A-Za-z0-9._:-]+)*$/u;
+
+/** Where a decisions backend with no address of its own is asked, as every one was before IMP-179. */
+export const OPENROUTER_DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions";
+
+/**
+ * A decisions backend's address is its whole endpoint, path and all: the services put theirs at different paths.
+ * Without a query or fragment, so a key can never ride in it into the call records that keep the address.
+ */
+const isDecisionsEndpoint = (value: string): boolean => {
+  const url = new URL(value);
+  return isSecureModelBaseUrl(value) && url.search.length === 0 && url.hash.length === 0;
+};
 
 const isSecureModelBaseUrl = (value: string): boolean => {
   const url = new URL(value);
@@ -159,12 +200,28 @@ const refineProviderProfile = (
       | undefined;
     credentialRef?: string | undefined;
     proxy?: ModelProxy | undefined;
+    jsonMode?: "schema" | "object" | undefined;
+    fallbackOnFailure?: boolean | undefined;
+    pricing?: ModelPricing | undefined;
+    decisionsProtocol?: "systemone" | "openai" | undefined;
   },
   context: z.RefinementCtx,
   credentialRequired: boolean,
 ): void => {
+  if (profile.kind === "openrouter-decisions") {
+    // Named for where it began. Its address is the whole endpoint (OpenRouter's when it has none), its cost read off
+    // each answer: nothing to set but the address, the request shape, the model, and whether a failure hands over.
+    if (profile.model === undefined || !decisionsModelPattern.test(profile.model)) context.addIssue({ code: "custom", path: ["model"], message: "请填写模型名，例如 typesafe/jev-1.14 或 gpt-6-luna" });
+    if (credentialRequired && profile.credentialRef === undefined) context.addIssue({ code: "custom", path: ["credentialRef"], message: "credentialRef is required for remote providers" });
+    if (profile.baseUrl !== undefined && !isDecisionsEndpoint(profile.baseUrl)) context.addIssue({ code: "custom", path: ["baseUrl"], message: "接口地址必须使用 HTTPS（本机回环地址可用 HTTP），不含账号密码、查询参数或片段" });
+    for (const field of ["apiProtocol", "executablePath", "jsonMode", "pricing"] as const) {
+      if (profile[field] !== undefined) context.addIssue({ code: "custom", path: [field], message: `decisions backends cannot configure ${field}` });
+    }
+    return;
+  }
   const remote = remoteKinds.has(profile.kind);
   const cli = cliKinds.has(profile.kind);
+  if (profile.decisionsProtocol !== undefined) context.addIssue({ code: "custom", path: ["decisionsProtocol"], message: "Only decisions backends take a decisions protocol" });
   if (profile.kind === "qwen" && !managedQwenModelIdSchema.safeParse(profile.model).success) context.addIssue({ code: "custom", path: ["model"], message: "请选择受支持的 2B 或 4B 本地模型" });
   if (!remote && !cli && profile.proxy !== undefined) context.addIssue({ code: "custom", path: ["proxy"], message: "Only remote and CLI providers support proxy settings" });
   if (!cli && profile.model === undefined) {
@@ -327,6 +384,7 @@ export const localModelClientStatusSchema = z
       "logged_out",
       "unsupported",
       "diagnostics_failed",
+      "proxy_required",
     ]),
     checkedAt: z.string().datetime(),
     modelsSource: z.enum(["server", "client", "cache"]).optional(),
@@ -354,6 +412,8 @@ export const modelInvocationErrorCodeSchema = z.enum([
   "cancelled",
   "authentication_failed",
   "authorization_failed",
+  // The provider's content moderation turned the request down: not the key, and another backend may well answer.
+  "content_refused",
   "rate_limited",
   "quota_exhausted",
   "provider_unavailable",
@@ -418,7 +478,7 @@ export const structuredGenerationRequestSchema = z
   })
   .strict()
   .superRefine((request, context) => {
-    if (request.purpose === "pr-review") return;
+    if (["pr-review", "local-review"].includes(request.purpose)) return;
     for (const key of ["systemPrompt", "userPrompt"] as const) {
       if (request[key].length > PROMPT_CHARS) context.addIssue({ code: "custom", path: [key], message: `Prompt exceeds ${PROMPT_CHARS} characters` });
     }
@@ -475,6 +535,25 @@ export const modelInvocationTraceSchema = z
     providerRequestId: boundedText(500).optional(),
     processExitCode: z.number().int().optional(),
     diagnosticExcerpt: boundedText(2_000).optional(),
+    /**
+     * A decisions backend's call (jev, IMP-166): what was asked of it and what came back besides the answers. Never a
+     * key or an Authorization header. `skipped` is a call not made: no jev, jev off, or no key for it.
+     */
+    decision: z.object({
+      // As long as a judge's address may be: one longer could be sent and its record then refused.
+      endpoint: z.string().url().max(2_000),
+      // Asked of OpenRouter only: no other service takes a request's say over what it keeps.
+      dataCollection: z.literal("deny").optional(),
+      source: boundedText(100),
+      correlationId: identifierSchema.optional(),
+      timeoutMs: z.number().int().min(1_000).max(120_000).optional(),
+      proxyMode: z.enum(["environment", "direct", "custom"]).optional(),
+      skipped: z.enum(["not_configured", "disabled", "no_credential", "input_too_large"]).optional(),
+      httpStatus: z.number().int().min(100).max(599).optional(),
+      responseId: boundedText(200).optional(),
+      responseModel: boundedText(200).optional(),
+      responseProvider: boundedText(200).optional(),
+    }).strict().optional(),
     request: z.object({
       clientExecutable: boundedText(2_000).optional(),
       configuredTimeoutMs: z.number().int().min(1_000).max(120_000),

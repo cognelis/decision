@@ -1,0 +1,1535 @@
+[
+  {
+    "id": "R1-SK-01",
+    "assistantText": "1. 本地方案\n2. 云端方案\n\n请选择一种方案",
+    "userText": "我会比较本地方案和云端方案后再决定",
+    "decision": false,
+    "group": "original"
+  },
+  {
+    "id": "R1-SK-02",
+    "assistantText": "1. 删除旧接口\n2. 保留旧接口\n\n请选择一种方案",
+    "userText": "旧接口目前被多少地方调用？",
+    "decision": false,
+    "group": "original"
+  },
+  {
+    "id": "R1-SK-03",
+    "assistantText": "服务当前运行在哪个端口？",
+    "userText": "8080",
+    "decision": false,
+    "group": "original"
+  },
+  {
+    "id": "R1-SK-04",
+    "assistantText": "1. 保持原接口\n2. 改为异步接口\n\n评审建议采用改为异步接口，以避免阻塞请求。",
+    "userText": "收到，我先检查一下调用方兼容性再决定",
+    "decision": false,
+    "group": "original"
+  },
+  {
+    "id": "R1-SK-05",
+    "assistantText": "配置读取来自环境变量还是配置文件？",
+    "userText": "当前生产使用环境变量",
+    "decision": false,
+    "group": "original"
+  },
+  {
+    "id": "AN-R01",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n没有特别偏好的话，我倾向 A。",
+    "userText": "B",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "AN-R02",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "目前先用方案 B",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "AN-R03",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "先用 A，之后再决定要不要迁移",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "AN-P04",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "别急，先解释一下为什么要拆成两个文件",
+    "decision": false,
+    "group": "an_precision"
+  },
+  {
+    "id": "AN-P05",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "不用担心，我来处理",
+    "decision": false,
+    "group": "an_precision"
+  },
+  {
+    "id": "AN-R06",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "第一时间先把流量切走再说",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "AN-P07",
+    "assistantText": "升级到 Node 22 需要改 CI 配置吗？",
+    "userText": "需要",
+    "decision": false,
+    "group": "an_precision"
+  },
+  {
+    "id": "AN-R08",
+    "assistantText": "日志文件放哪个目录比较好？",
+    "userText": "logs/",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "AN-P09",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "选项太多了，我看不懂区别",
+    "decision": false,
+    "group": "an_precision"
+  },
+  {
+    "id": "AN-R10",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n我建议 A，请选一个。\n\n未来可以再扩展到 B。",
+    "userText": "A",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "AN-P11",
+    "assistantText": "1. Rename variables\n2. Split the function\n3. Add types\n\nWhich of these should I do?",
+    "userText": "the first thing to check is whether the tests still pass",
+    "decision": false,
+    "group": "an_precision"
+  },
+  {
+    "id": "AN-P12",
+    "assistantText": "要不要由我来把发布分支合并进 main？",
+    "userText": "我们已经合并好了",
+    "decision": false,
+    "group": "an_precision"
+  },
+  {
+    "id": "AN-R13",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "就按 B 来，然后呢",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "AN-R14",
+    "assistantText": "这个函数需要修改吗？",
+    "userText": "需要，改成异步",
+    "decision": true,
+    "group": "an_recall"
+  },
+  {
+    "id": "V2-AN-V01",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "没问题",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V02",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "行",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V03",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "可以的",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V04",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "提交吧",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V05",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "等一下再提交，我先看看 diff",
+    "decision": false,
+    "group": "v2_an_precision"
+  },
+  {
+    "id": "V2-AN-V06",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "收到，选 B",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V07",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "收到，先不提交",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V08",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "用 A 还是 B 我再想想",
+    "decision": false,
+    "group": "v2_an_precision"
+  },
+  {
+    "id": "V2-AN-V09",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "先按第二个方向试，然后再看",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V10",
+    "assistantText": "要不要我加测试？",
+    "userText": "要，顺便更新文档",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V11",
+    "assistantText": "1. 保持原接口\n2. 改为异步接口\n\n评审意见：建议采用 2，你怎么看？",
+    "userText": "同意，改异步",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V12",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n我建议 A，请选一个。\n\n未运行测试，我就不保证通过。",
+    "userText": "A",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V13",
+    "assistantText": "1. 回滚\n2. 热修复\n3. 先观察\n\n这三项要做哪些？",
+    "userText": "做第一和第三",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "V2-AN-V14",
+    "assistantText": "1. Redis\n2. In-process LRU\n\nWhich one?",
+    "userText": "use a cache layer in front, the second one",
+    "decision": true,
+    "group": "v2_an_recall"
+  },
+  {
+    "id": "NEW-P01",
+    "assistantText": "目前部署的是哪个版本？",
+    "userText": "版本 2",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P02",
+    "assistantText": "这个函数需要修改吗？",
+    "userText": "当前没有复现异常，可以先观察。",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P03",
+    "assistantText": "这个服务现在正常吗？",
+    "userText": "是，健康检查返回 200。",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P04",
+    "assistantText": "哪些文件改了？",
+    "userText": "src/api.ts 和 index.ts",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P05",
+    "assistantText": "The log contains the sentence “Should I remove the old cache?” as a quoted example. I will leave the cache unchanged and continue the requested analysis.",
+    "userText": "Understood.",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P06",
+    "assistantText": "我先核对当前实现并整理结果。",
+    "userText": "ok",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P07",
+    "assistantText": "我会先解释风险，再给出建议。",
+    "userText": "第二个",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P08",
+    "assistantText": "1. 保持当前接口\n2. 改为异步接口\n\n评审意见：建议采用异步接口，避免请求阻塞。",
+    "userText": "收到，我会再核对调用方。",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P09",
+    "assistantText": "没有提交代码，也没有运行测试。",
+    "userText": "了解",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P10",
+    "assistantText": "Did the service finish deploying successfully?",
+    "userText": "No, one health check is still failing.",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-P11",
+    "assistantText": "Is this function currently enabled in production?",
+    "userText": "Currently, 5% of requests reach it.",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-R01",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n\n请选择一种方案。",
+    "userText": "目前先用方案 B",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R02",
+    "assistantText": "1. 立即迁移新存储\n2. 继续使用旧存储\n\n请选择一种方案",
+    "userText": "先用 A，之后再决定要不要迁移",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R03",
+    "assistantText": "1. TTL 缓存\n2. 主动失效\n\n请选择一种缓存策略。\n\n没有提交代码，也没有做额外判断。",
+    "userText": "第二个",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R04",
+    "assistantText": "要我现在提交吗？",
+    "userText": "不要，现在先观察",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R05",
+    "assistantText": "1. 先做缓存\n2. 先补观测\n\n请选择一个",
+    "userText": "第二个",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R06",
+    "assistantText": "Should I remove the temporary index now?",
+    "userText": "Yes.",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R07",
+    "assistantText": "是否现在发布？",
+    "userText": "不发布，先补监控",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R08",
+    "assistantText": "Which deployment path should we use?\n\n1. Blue-green\n2. Canary",
+    "userText": "The second one",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R09",
+    "assistantText": "要我修改这个函数吗？",
+    "userText": "要，修复空指针错误。",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R10",
+    "assistantText": "要我先做哪一项？\n1. 加超时\n2. 加重试",
+    "userText": "先加超时",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-R11",
+    "assistantText": "我建议采用 YAML（A）或 TOML（B）。你怎么看？",
+    "userText": "用 A",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "NEW-P12",
+    "assistantText": "The note says “currently, use option B.” It is only quoting the prior status; no choice is being requested now.",
+    "userText": "Understood.",
+    "decision": false,
+    "group": "precision"
+  },
+  {
+    "id": "NEW-R13",
+    "assistantText": "Should I keep the old endpoint or remove it?",
+    "userText": "Keep it for now.",
+    "decision": true,
+    "group": "recall"
+  },
+  {
+    "id": "IA2-P01",
+    "assistantText": "1. A：SQLite\n2. B：PostgreSQL\n\n请选择一种",
+    "userText": "用 A 还是 B 我再想想",
+    "decision": false,
+    "group": "ia2_precision"
+  },
+  {
+    "id": "IA2-R02",
+    "assistantText": "1. 灰度发布\n2. 全量发布\n\n请选择一个方向",
+    "userText": "先按第二个方向试，然后再看",
+    "decision": true,
+    "group": "ia2_recall"
+  },
+  {
+    "id": "IA2-R03",
+    "assistantText": "1. SQLite\n2. PostgreSQL\n\n请选择一个",
+    "userText": "收到，选 B",
+    "decision": true,
+    "group": "ia2_recall"
+  },
+  {
+    "id": "IA2-R04",
+    "assistantText": "要不要我加测试？",
+    "userText": "要，顺便更新文档",
+    "decision": true,
+    "group": "ia2_recall"
+  },
+  {
+    "id": "IA2-P05",
+    "assistantText": "现有调用都通过。这个函数需要修改吗？",
+    "userText": "目前只想确认是否需要，先不授权修改。",
+    "decision": false,
+    "group": "ia2_precision"
+  },
+  {
+    "id": "IA2-P06",
+    "assistantText": "1. 保持接口\n2. 改为异步\n\n评审意见：建议采用 B。",
+    "userText": "收到",
+    "decision": false,
+    "group": "ia2_precision"
+  },
+  {
+    "id": "IA2-R07",
+    "assistantText": "要不要我补测试？",
+    "userText": "要。",
+    "decision": true,
+    "group": "ia2_recall"
+  },
+  {
+    "id": "IA2-P08",
+    "assistantText": "1. A：本地\n2. B：远端\n\n请选择一个",
+    "userText": "收到",
+    "decision": false,
+    "group": "ia2_precision"
+  },
+  {
+    "id": "IA3-P01",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "收到，不过我还没想好",
+    "decision": false,
+    "group": "ia3_precision"
+  },
+  {
+    "id": "IA3-R02",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "收到，不过我想好了，按 2 做",
+    "decision": true,
+    "group": "ia3_recall"
+  },
+  {
+    "id": "IA3-R03",
+    "assistantText": "要不要我加测试？",
+    "userText": "行吧，那先不做",
+    "decision": true,
+    "group": "ia3_recall"
+  },
+  {
+    "id": "IA3-R04",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "好吧，就按 1 做",
+    "decision": true,
+    "group": "ia3_recall"
+  },
+  {
+    "id": "IA3-P05",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "1 还没看",
+    "decision": false,
+    "group": "ia3_precision"
+  },
+  {
+    "id": "IA3-P06",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "2 的话再议",
+    "decision": false,
+    "group": "ia3_precision"
+  },
+  {
+    "id": "IA3-R07",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "先按 1 做，3 等我确认",
+    "decision": true,
+    "group": "ia3_recall"
+  },
+  {
+    "id": "IA3-R08",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n这三项先做哪些？",
+    "userText": "1、2 先做，3 回头再说",
+    "decision": true,
+    "group": "ia3_recall"
+  },
+  {
+    "id": "IA3-P09",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "2 再说",
+    "decision": false,
+    "group": "ia3_precision"
+  },
+  {
+    "id": "IA3-P10",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "1 和 2 再说",
+    "decision": false,
+    "group": "ia3_precision"
+  },
+  {
+    "id": "V3-AN-W01",
+    "assistantText": "1. Redis\n2. 进程内 LRU\n3. 只用 HTTP 缓存头\n\n你选哪个？",
+    "userText": "Redis 太重了，LRU 又不共享，我再想想",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W02",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 看起来不错，2 和 3 之后再说",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W03",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 不行，2 也不行，再想想",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W04",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 有风险吗？2 不要",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W05",
+    "assistantText": "1. Redis\n2. 进程内 LRU\n3. 只用 HTTP 缓存头\n\n你选哪个？",
+    "userText": "再说，Redis 也更便宜，就它了",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W06",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "等 CI 过了再说",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W07",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "先用 A 再说",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W08",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "选 B，具体我再看看",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W09",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "好的我知道了",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W10",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "谢谢，不用了",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W11",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n我建议 B，你选哪个？",
+    "userText": "明白了，不过为什么选 B",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W12",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "收到，不用了，帮我看下 README 第三段",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W13",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "行吧，那先不做",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W14",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "行",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W15",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "没问题吗",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W16",
+    "assistantText": "1. 重命名变量\n2. 拆分函数\n3. 补类型\n\n这三项要做哪些？",
+    "userText": "1 先上，2 再说",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W17",
+    "assistantText": "1. Redis\n2. 进程内 LRU\n3. 只用 HTTP 缓存头\n\n你选哪个？",
+    "userText": "Redis 现在用着挺好，先不换",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W18",
+    "assistantText": "1. Redis\n2. 进程内 LRU\n3. 只用 HTTP 缓存头\n\n你选哪个？",
+    "userText": "LRU 之前试过不行，其他的我再看看",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W19",
+    "assistantText": "1. 重命名变量\n2. 拆分函数\n3. 补类型\n\n这三项要做哪些？",
+    "userText": "收到，1 和 3 做",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W20",
+    "assistantText": "给日志库选 A pino 还是 B winston？",
+    "userText": "了解，我看看",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W21",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 有点悬，2 稳一些，先观望一下",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W22",
+    "assistantText": "1. Redis\n2. 进程内 LRU\n3. 只用 HTTP 缓存头\n\n你选哪个？",
+    "userText": "Redis 太贵，LRU 太慢，都不理想",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "V3-AN-W23",
+    "assistantText": "1. 修复登录\n2. 升级依赖\n3. 重写文档\n\n这三个 PR 你看哪些可以合？",
+    "userText": "1 可以合，3 回头再看",
+    "decision": true,
+    "group": "v3_an_recall"
+  },
+  {
+    "id": "V3-AN-W24",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 感觉还行，再看看吧",
+    "decision": false,
+    "group": "v3_an_precision"
+  },
+  {
+    "id": "IA45-R01",
+    "assistantText": "要不要我加测试？",
+    "userText": "收到，这个就算了",
+    "decision": true,
+    "group": "ia45_recall"
+  },
+  {
+    "id": "IA45-R02",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "收到，B 太慢，用 A",
+    "decision": true,
+    "group": "ia45_recall"
+  },
+  {
+    "id": "IA45-P03",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "1 上次用过",
+    "decision": false,
+    "group": "ia45_precision"
+  },
+  {
+    "id": "IA45-P04",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "先按 2 的思路想想",
+    "decision": false,
+    "group": "ia45_precision"
+  },
+  {
+    "id": "IA45-P05",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "行",
+    "decision": false,
+    "group": "ia45_precision"
+  },
+  {
+    "id": "IA45-R06",
+    "assistantText": "要不要我加测试？",
+    "userText": "行",
+    "decision": true,
+    "group": "ia45_recall"
+  },
+  {
+    "id": "IA45-R07",
+    "assistantText": "现在要提交吗？",
+    "userText": "收到，马上提交",
+    "decision": true,
+    "group": "ia45_recall"
+  },
+  {
+    "id": "IA45-R08",
+    "assistantText": "现在要提交吗？",
+    "userText": "行吧，那先不做",
+    "decision": true,
+    "group": "ia45_recall"
+  },
+  {
+    "id": "IA45-P09",
+    "assistantText": "现在要提交吗？",
+    "userText": "收到，我先看下文档",
+    "decision": false,
+    "group": "ia45_precision"
+  },
+  {
+    "id": "IA45-P10",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "收到，A 看着不错",
+    "decision": false,
+    "group": "ia45_precision"
+  },
+  {
+    "id": "V4-AN-X01",
+    "assistantText": "1. Redis\n2. 进程内 LRU\n3. 只用 HTTP 缓存头\n\n你选哪个？",
+    "userText": "Redis 上手成本高，LRU 用起来麻烦，我再想想",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X02",
+    "assistantText": "1. 保留当前方案\n2. 切换到新方案\n3. 暂缓迁移\n\n你选哪一项？",
+    "userText": "2 改动太大，我再想想",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X03",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 要等很久，再看看",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X04",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "B 合规风险高，先不定",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X05",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 做不到，2 用不了，再想想",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X06",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "按理说 2 更好，但我再想想",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X07",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "B 定价贵，再看看吧",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X08",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "3 走不通，再想想",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X09",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "B 有点贵，但就它了",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X10",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "A 太贵了，选 B",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X11",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 不行，上 2",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X12",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "2 感觉更稳，就 2 吧",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X13",
+    "assistantText": "1. Redis\n2. 进程内 LRU\n3. 只用 HTTP 缓存头\n\n你选哪个？",
+    "userText": "Redis 吧",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X14",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "收到，就这么办",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X15",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "明白，照办",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X16",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "了解，发吧",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X17",
+    "assistantText": "分支已评审通过。\n\n现在就合并到 main 吗？",
+    "userText": "收到，合了",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X18",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "收到，你定吧",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X19",
+    "assistantText": "The migration is ready.\n\nShould I apply it now?",
+    "userText": "Got it, ship it",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X20",
+    "assistantText": "The migration is ready.\n\nShould I apply it now?",
+    "userText": "Got it, let's ship",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X21",
+    "assistantText": "The migration is ready.\n\nShould I apply it now?",
+    "userText": "Noted, go ahead",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X22",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "收到，马上提交",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X23",
+    "assistantText": "给内部工具选存储：\n\n- A：SQLite，单文件零运维。\n- B：PostgreSQL，并发好但要部署。\n- C：JSON 文件，最简单。\n\n你选哪个？",
+    "userText": "收到，B 看起来不错",
+    "decision": false,
+    "group": "v4_an_precision"
+  },
+  {
+    "id": "V4-AN-X24",
+    "assistantText": "1. Redis\n2. In-process LRU\n\nWhich one should I use?",
+    "userText": "Use 2 now and 1 later",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X25",
+    "assistantText": "1. 回滚到上个版本\n2. 热修复\n3. 先观察\n\n这三项要做哪一项？",
+    "userText": "1 现在做，2 之后处理",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X26",
+    "assistantText": "1. Redis\n2. In-process LRU\n\nWhich one should I use?",
+    "userText": "Go with Redis, we can revisit later",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "V4-AN-X27",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "好吧，那算了",
+    "decision": true,
+    "group": "v4_an_recall"
+  },
+  {
+    "id": "IA6-P01",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "2 号上周用过",
+    "decision": false,
+    "group": "ia6_precision"
+  },
+  {
+    "id": "IA6-P02",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "A 方案我们之前做过",
+    "decision": false,
+    "group": "ia6_precision"
+  },
+  {
+    "id": "IA6-P03",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "1 上次的方案已经合过",
+    "decision": false,
+    "group": "ia6_precision"
+  },
+  {
+    "id": "IA6-P04",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "B 之前用过",
+    "decision": false,
+    "group": "ia6_precision"
+  },
+  {
+    "id": "IA6-P05",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "先按 2 的思路想想",
+    "decision": false,
+    "group": "ia6_precision"
+  },
+  {
+    "id": "IA6-P06",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "2 号可以考虑，但还没定",
+    "decision": false,
+    "group": "ia6_precision"
+  },
+  {
+    "id": "IA6-R07",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "2 号就上",
+    "decision": true,
+    "group": "ia6_recall"
+  },
+  {
+    "id": "IA6-R08",
+    "assistantText": "针对这类需求，你想选哪种实现方式？",
+    "userText": "第 3 个先做",
+    "decision": true,
+    "group": "ia6_recall"
+  },
+  {
+    "id": "IA6-R09",
+    "assistantText": "这次是先回滚还是先做热修复？",
+    "userText": "2 号就上，1 号之后再说",
+    "decision": true,
+    "group": "ia6_recall"
+  },
+  {
+    "id": "IA6-R10",
+    "assistantText": "是先回滚、做热修复还是先观察？",
+    "userText": "第 3 个先做，2 号稍后处理",
+    "decision": true,
+    "group": "ia6_recall"
+  },
+  {
+    "id": "V5-AN-Y00",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "1 和 3 先做，2 之后再说",
+    "decision": true,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y01",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "2 号上周用过，先不定",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y02",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "上周用了 2，效果一般，再想想",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y03",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "用了 2 天改完了变量名，其他再想想",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y04",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "1 上周就做了，2 和 3 再说",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y05",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "改了 3 个文件，还没测，再看看",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y06",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "3 点开会再定",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y07",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "第 2 版上周发过了，这次先不动",
+    "decision": false,
+    "expectedBand": "any",
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y08",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "2 号那天上线的版本有问题，先回滚",
+    "decision": false,
+    "expectedBand": "any",
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y09",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "用了 2 天才跑通，先不提交",
+    "decision": true,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y10",
+    "assistantText": "改完了，测试通过。\n\n现在要提交吗？",
+    "userText": "用了 2 天才跑通，我再想想",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y11",
+    "assistantText": "分支已评审通过。\n\n现在就合并到 main 吗？",
+    "userText": "A merge now is risky, let's wait",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y12",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "A quick fix would do, I'll decide the rest later",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y13",
+    "assistantText": "The branch is approved.\n\nShould I merge the release branch into main now?",
+    "userText": "A hotfix first, then merge, decide later",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y14",
+    "assistantText": "The migration is ready.\n\nShould I apply it now?",
+    "userText": "A dry run first, apply later",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y15",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "Do 1 and 3, the rest later",
+    "decision": true,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y16",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "Take 2, skip 3",
+    "decision": true,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y17",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "Ship 1 and 3, hold 2",
+    "decision": true,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y18",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "E2E first, then decide",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y19",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "CI is red, do 1 later",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y20",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "A/B test first, decide later",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y21",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "1 还没看",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y22",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "第一个先上，其余以后再考虑",
+    "decision": true,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y23",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "2 的做法我们用过，不好用，先不做",
+    "decision": false,
+    "expectedBand": "any",
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y24",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "10 个文件要改，再看看",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y25",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "PR 2 上周就合了，先不动",
+    "decision": false,
+    "expectedBand": "any",
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y26",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "改了 3 个文件的变量名，还没测，再看看",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y27",
+    "assistantText": "**1. 重命名变量** —— 名字含糊。\n\n**2. 拆分函数** —— 函数太长。\n\n**3. 补类型** —— 缺返回类型。\n\n这三项你想做哪些？",
+    "userText": "用了 2 天拆分函数，其他的我再想想",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y28",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "A rename would do for now, I'll decide the rest later",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y29",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "A split of the function can wait, decide later",
+    "decision": false,
+    "group": "v5_an_y"
+  },
+  {
+    "id": "V5-AN-Y30",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "Use 2 days to add types first, then decide",
+    "decision": false,
+    "group": "v5_an_y",
+    "expectedBand": "any"
+  },
+  {
+    "id": "V5-AN-Y31",
+    "assistantText": "**1. Rename variables** — names are vague.\n\n**2. Split the function** — it is too long.\n\n**3. Add types** — return types are missing.\n\nWhich of these should I do?",
+    "userText": "B first, then decide on the rest",
+    "decision": false,
+    "expectedBand": "any",
+    "group": "v5_an_y"
+  },
+  {
+    "id": "R2-P01",
+    "assistantText": "实施步骤如下，请按顺序执行：\n1. 备份数据\n2. 运行迁移\n3. 校验结果\n\n先从第一步开始。",
+    "userText": "第二步已做完",
+    "decision": false,
+    "group": "r2_precision"
+  },
+  {
+    "id": "R2-P02",
+    "assistantText": "发布状态表：\n\n| 模块 | 状态 |\n|---|---|\n| A. Core API | 已发布 |\n| B. UI 重构 | 进行中 |\n\n目前哪个模块已经发布？",
+    "userText": "A. Core API 已发布",
+    "decision": false,
+    "group": "r2_precision"
+  },
+  {
+    "id": "R2-P03",
+    "assistantText": "这份方案文档先介绍方案 A 的历史，再说明方案 B 的升级背景。这里的“方案”只是叙述标签，不是让你选择。",
+    "userText": "方案 B 的背景还没读完",
+    "decision": false,
+    "group": "r2_precision"
+  },
+  {
+    "id": "R2-R04",
+    "assistantText": "部署策略：\n- A. 自建 Redis\n- B. 托管 PostgreSQL\n\n你选哪种？",
+    "userText": "托管",
+    "decision": true,
+    "group": "r2_recall"
+  },
+  {
+    "id": "R2-R05",
+    "assistantText": "执行步骤（固定顺序）：\n1. 备份\n2. 迁移\n3. 校验\n\n部署方式：\n- A. 蓝绿部署\n- B. 金丝雀发布\n\n你选择哪种发布方式？",
+    "userText": "选 B",
+    "decision": true,
+    "group": "r2_recall"
+  },
+  {
+    "id": "R2-P06",
+    "assistantText": "执行步骤（固定顺序）：\n1. 备份\n2. 迁移\n3. 校验\n\n部署方式：\n- A. 蓝绿部署\n- B. 金丝雀发布\n\n这张清单记录了执行顺序和可用部署方式。",
+    "userText": "迁移那一步还没做",
+    "decision": false,
+    "group": "r2_precision"
+  },
+  {
+    "id": "R2-R07",
+    "assistantText": "| 发布方式 | 说明 |\n|---|---|\n| A. 蓝绿部署 | 两套环境切换 |\n| B. 金丝雀发布 | 逐步放量 |\n\n从表格中选一个发布方式。",
+    "userText": "金丝雀发布",
+    "decision": true,
+    "group": "r2_recall"
+  },
+  {
+    "id": "R2-P08",
+    "assistantText": "日志如下：\n\n| 序号 | 级别 | 内容 |\n|---|---|---|\n| 1 | INFO | 服务启动 |\n| 2 | WARN | 重试请求 |\n\n你看到哪一级别？",
+    "userText": "第二行是 WARN",
+    "decision": false,
+    "group": "r2_precision"
+  },
+  {
+    "id": "R2-P09",
+    "assistantText": "存储选项：\n- A. SQLite\n- B. PostgreSQL\n\n部署选项：\n- A. 单机\n- B. 集群\n\n你选哪种部署方式？",
+    "userText": "SQLite",
+    "decision": false,
+    "group": "r2_precision"
+  },
+  {
+    "id": "R2-R10",
+    "assistantText": "| 方案 | 好处 |\n|---|---|\n| A. 单区 | 成本低 |\n| B. 多区 | 可用性高 |\n\n请选择一种方案。",
+    "userText": "多区",
+    "decision": true,
+    "group": "r2_recall"
+  },
+  {
+    "id": "R2-R11",
+    "assistantText": "部署方案：\n- A. 自建 Redis\n- B. PostgreSQL 高可用集群\n\n你选哪种？",
+    "userText": "高可用",
+    "decision": true,
+    "group": "r2_recall"
+  },
+  {
+    "id": "R2-V-AN-M01",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "Let's go with a managed Postgres instead",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M01b",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "Let's use a managed service instead",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M02",
+    "assistantText": "A. 现在合并\nB. 等 CI 跑完再合并\n\n你选哪个？",
+    "userText": "不合并，先等等",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M03",
+    "assistantText": "A. Merge now\nB. Wait for CI\n\nWhich one?",
+    "userText": "Don't merge yet",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M04",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "除了 1 都做",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M05",
+    "assistantText": "**A. SQLite**\n单文件。\n\n**B. PostgreSQL**\n要部署。\n\n选定之后的步骤：\n\n1. 改配置\n\n2. 跑迁移\n\n3. 更新文档\n\n你选哪个？",
+    "userText": "A",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M05b",
+    "assistantText": "**A. SQLite**\n单文件。\n\n**B. PostgreSQL**\n要部署。\n\n选定之后的步骤：\n\n1. 改配置\n\n2. 跑迁移\n\n3. 更新文档\n\n你选哪个？",
+    "userText": "B",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M06",
+    "assistantText": "计划如下：\n\n1. 先补测试\n\n2. 再改实现\n\n3. 最后更新文档\n\n现在开始吗？",
+    "userText": "可以，开始吧",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M06b",
+    "assistantText": "可以分三步：\n\n1. 先补测试\n\n2. 再改实现\n\n3. 最后更新文档\n\n你想从哪一步开始？",
+    "userText": "2",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M07",
+    "assistantText": "指标表：\n\n| 指标 | 现状 | 目标 |\n|---|---|---|\n| 延迟 | 120ms | 60ms |\n| 错误率 | 2% | 0.5% |\n\n要不要我先优化延迟？",
+    "userText": "先优化延迟",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M07b",
+    "assistantText": "| # | 任务 | 状态 |\n|---|---|---|\n| 1 | 修复登录 | 待办 |\n| 2 | 升级依赖 | 待办 |\n\n你想先做哪个？",
+    "userText": "1",
+    "decision": false,
+    "expectedBand": "any",
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M08",
+    "assistantText": "接口（A）和接口（B）都要改一下，顺序无所谓。\n\n现在要改吗？",
+    "userText": "改吧",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M09",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "Postgres",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M10",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "A 不行，B 吧",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M11",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "都要",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M12",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "A 和 B 都要，C 不要",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M13",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "B",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M14",
+    "assistantText": "**A. SQLite** — single file.\n**B. PostgreSQL** — strong concurrency.\n**C. Plain JSON files** — simplest.\n\nI recommend A. Which one, A/B/C?",
+    "userText": "I'd go with B",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M15",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "选第二个",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M16",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "SQLite 和 PostgreSQL 都试试",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M17",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "B 看起来不错，就它了",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M18",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "先 A 再说",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M19",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "不要 A，用 B",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M20",
+    "assistantText": "1. 重命名含糊的变量\n2. 拆分大函数\n3. 补类型注解\n\n这三项都要做吗？",
+    "userText": "1 和 3 做，2 不做",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M21",
+    "assistantText": "分支已评审通过。\n\n现在要把它合并到 main 吗？",
+    "userText": "先别合并，等 CI 跑完再说",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M22",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "不用 Redis 了，LRU 就行",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M23",
+    "assistantText": "The branch is approved.\n\nShould I merge the release branch into main now?",
+    "userText": "No merge until CI is green",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M24",
+    "assistantText": "1. 保留 Redis\n2. 改用进程内 LRU\n3. 使用 HTTP 缓存头\n\n你选哪一个？",
+    "userText": "保留现有逻辑，别动",
+    "decision": true,
+    "group": "r2_m"
+  },
+  {
+    "id": "R2-V-AN-M25",
+    "assistantText": "**A. SQLite** —— 单文件、零部署。\n**B. PostgreSQL** —— 并发强，要部署。\n**C. 纯 JSON 文件** —— 最简单。\n\n我推荐 A。你选 A/B/C 哪个？",
+    "userText": "用 A 的方式做 B",
+    "decision": true,
+    "group": "r2_m"
+  }
+]

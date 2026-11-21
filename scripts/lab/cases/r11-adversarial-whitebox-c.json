@@ -1,0 +1,407 @@
+[
+  {
+    "id": "c-calloff-proposal-cancelled",
+    "group": "r11-c-whitebox-callsoff",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. 立即合并补丁\nB. 等一周观察\n\n你选哪个？\n\n备注：这项提议已经取消，无需回复。",
+    "userText": "A。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-calloff-no-reply-needed-en",
+    "group": "r11-c-whitebox-callsoff",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "Would you approve the deployment plan?\n\nNote: the proposal was cancelled; no reply needed.",
+    "userText": "Yes.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-calloff-unrelated-cancelled-task",
+    "group": "r11-c-whitebox-callsoff",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. SQLite\nB. PostgreSQL\n\n你选哪种存储？\n\n备注：按你的要求，旧清理任务已经取消。",
+    "userText": "选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-calloff-negated-phrase",
+    "group": "r11-c-whitebox-callsoff",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 保留当前策略\nB. 改成指数退避\n\n你想选哪个？\n\n备注：并没有取消这项提议，等你决定。",
+    "userText": "B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-calloff-no-longer-needed-request",
+    "group": "r11-c-whitebox-callsoff",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "Do you want me to apply the cache change?\n\nStatus: this change is no longer needed; no response is required.",
+    "userText": "Apply it.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-view-only-cn",
+    "group": "r11-c-whitebox-view-split",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "日志如下：\n1. 服务启动\n2. 重试超限\n\n你看哪条日志？另外哪个文件需要打开？",
+    "userText": "先看第 2 条，再打开 config.yml。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-view-only-en",
+    "group": "r11-c-whitebox-view-split",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "Which file should I open? Which log should I inspect?",
+    "userText": "Open config.yml and inspect server.log.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-approve-then-view-cn",
+    "group": "r11-c-whitebox-view-split",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 合并补丁\nB. 先部署预发\n\n你批准哪项？另外想先看哪条日志？",
+    "userText": "批准 A；然后先看第 2 条日志。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-view-then-approve-en",
+    "group": "r11-c-whitebox-view-split",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "Which file should I open? Do you approve deploying the retry fix?",
+    "userText": "I approve deploying the retry fix.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-view-as-followup-question",
+    "group": "r11-c-whitebox-view-split",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这次要我把缓存切到 Redis 吗？你想先看哪条日志？",
+    "userText": "可以切换。日志先看第 2 条。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-option-row-named-owner",
+    "group": "r11-c-whitebox-status-header",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| Option | Description | Status |\n|---|---|---|\n| SQLite | Local file | Ready |\n| Owner | Shared responsibility model | Pilot |\n\nWhich option should we choose?",
+    "userText": "Owner。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-option-table-current-status-column",
+    "group": "r11-c-whitebox-status-header",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 方案 | 当前状态 | 说明 |\n|---|---|---|\n| SQLite | 已验证 | 单机存储 |\n| PostgreSQL | 待验证 | 多客户端 |\n\n你更倾向哪种方案？",
+    "userText": "PostgreSQL。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-option-table-emphasized-state-header",
+    "group": "r11-c-whitebox-status-header",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| **Option** | **Owner** | **State** |\n|---|---|---|\n| SQLite | Lin | Ready |\n| PostgreSQL | Mei | Planned |\n\nWhich option do you prefer?",
+    "userText": "PostgreSQL。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-real-status-table-owner-state",
+    "group": "r11-c-whitebox-status-header",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| Task | **Owner** | **State** |\n|---|---|---|\n| Export | Lin | Done |\n| Validation | Mei | Pending |\n\nWhich task is currently done?",
+    "userText": "Export.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-real-status-table-row-option-word",
+    "group": "r11-c-whitebox-status-header",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| Task | Owner | State |\n|---|---|---|\n| 负责人 | Lin | Active |\n| 发布 | Mei | Pending |\n\nWhich task is currently active?",
+    "userText": "负责人。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-header-not-option-column",
+    "group": "r11-c-whitebox-status-header",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| Task | Progress | Notes |\n|---|---|---|\n| SQLite migration | 80% | In review |\n| PostgreSQL migration | 20% | Blocked |\n\nWhich task is currently in review?",
+    "userText": "SQLite migration.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-name-act-clause-end",
+    "group": "r11-c-whitebox-acts-name",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. SQLite\nB. Redis\n\n你选哪个？",
+    "userText": "B，就按 Redis 来吧。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-name-act-label-suffix",
+    "group": "r11-c-whitebox-acts-name",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 远端 Redis 服务\nB. 本地内存缓存方案\n\n请选择方案。",
+    "userText": "就用内存缓存吧。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-name-act-comparison",
+    "group": "r11-c-whitebox-acts-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. 标准库\nB. 第三方依赖\n\n你准备选哪一个？",
+    "userText": "用标准库不如第三方依赖方便。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-name-act-cost-evaluation",
+    "group": "r11-c-whitebox-acts-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. 标准库\nB. 第三方依赖\n\n你准备选哪一个？",
+    "userText": "用标准库代价太高。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-name-act-needs-discussion",
+    "group": "r11-c-whitebox-acts-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. 标准库\nB. 第三方依赖\n\n你准备选哪一个？",
+    "userText": "用标准库尚需讨论。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-name-act-action-with-tail",
+    "group": "r11-c-whitebox-acts-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. Redis\nB. SQLite\n\n你选哪个？",
+    "userText": "先用 Redis，然后观察一周再决定。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-name-act-exact-label-and-verb",
+    "group": "r11-c-whitebox-acts-name",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 标准库\nB. 第三方依赖\n\n你选哪个？",
+    "userText": "就按标准库做。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-approval-object-before",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这个改动你批准吗？",
+    "userText": "批准。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-approval-object-after",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你批准这个改动吗？",
+    "userText": "批准。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-agree-my-action",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你同意我现在把 B 部署到预发吗？",
+    "userText": "同意。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-approve-past-le",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你批准了这个改动吗？",
+    "userText": "批准了，昨天已经合并。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-approve-past-guo",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你批准过上周的发布吗？",
+    "userText": "批准过，已经发布了。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-agree-past-guo",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你同意过这次测试通过吗？",
+    "userText": "同意过，测试结果已经确认。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-fact-test-passed",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你同意这次测试通过了吗？",
+    "userText": "同意，测试通过了。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-fact-expected-behavior",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你认可这是预期行为吗？",
+    "userText": "认可，这是当前系统的行为。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-rhetorical-nandao",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "难道你同意这个计划吗？",
+    "userText": "同意。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-rhetorical-mofei",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "莫非你批准这个发布计划吗？",
+    "userText": "批准。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-approval-objectless",
+    "group": "r11-c-whitebox-approval-object",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你同意吗？",
+    "userText": "同意。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-three-trailing-blocks-cn",
+    "group": "r11-c-whitebox-trailing-limit",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 保留当前策略\nB. 改为指数退避\n\n请选 A 或 B。\n\n我会等你回复。\n\n备注：没有执行代码。\n\nStatus: no changes.",
+    "userText": "选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-three-trailing-blocks-en",
+    "group": "r11-c-whitebox-trailing-limit",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "Would you approve the migration?\n\nI will wait for your answer.\n\nNote: no files were changed.\n\nStatus: no changes.",
+    "userText": "Yes, proceed.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-four-trailing-blocks-boundary",
+    "group": "r11-c-whitebox-trailing-limit",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A. SQLite\nB. PostgreSQL\n\nWhich one do you prefer?\n\nI will wait for your answer.\n\nNote: no files changed.\n\nStatus: no changes.\n\nAs requested, I did not run tools.",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-requested-note-cn",
+    "group": "r11-c-whitebox-requested-note",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你批准现在合并补丁吗？\n\n按你的要求，我没有调用任何工具。",
+    "userText": "批准，合并吧。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-requested-note-en",
+    "group": "r11-c-whitebox-requested-note",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "Would you approve applying the cache fix?\n\nPer your instructions, I did not use any tools.",
+    "userText": "I approve.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-requested-note-according",
+    "group": "r11-c-whitebox-requested-note",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 保持现有数据库\nB. 切换到 PostgreSQL\n\n你选哪项？\n\n依照你的指示，未改动任何文件。",
+    "userText": "B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "c-requested-prefix-not-disclaimer",
+    "group": "r11-c-whitebox-requested-note",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你批准我现在实施迁移吗？\n\n按你的要求，我建议先确认维护窗口。",
+    "userText": "批准在维护窗口实施。",
+    "source": "synthetic-handwritten"
+  }
+]

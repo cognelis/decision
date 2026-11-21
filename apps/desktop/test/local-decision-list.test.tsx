@@ -25,12 +25,28 @@ it("requires confirmation, preserves remaining selections after failure and neve
   await user.click(screen.getByRole("checkbox", { name: "选择 业务功能选择" }));
   await user.click(screen.getByRole("button", { name: "记录到知识库" }));
   expect(api.resolveLocalDecision).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "确认记录到知识库" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("已处理 1 条");
-  await waitFor(() => expect(screen.getByRole("button", { name: "确认记录到知识库" })).toBeEnabled());
-  await user.click(screen.getByRole("button", { name: "确认记录到知识库" }));
+  const confirmation = within(screen.getByRole("dialog", { name: "记录 2 条到知识库？" }));
+  await user.click(confirmation.getByRole("button", { name: "记录到知识库" }));
+  expect(await confirmation.findByRole("alert")).toHaveTextContent("已处理 1 条");
+  await waitFor(() => expect(within(screen.getByRole("dialog")).getByRole("button", { name: "记录到知识库" })).toBeEnabled());
+  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "记录到知识库" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(vi.mocked(api.resolveLocalDecision).mock.calls).toEqual([["018f-example-decision", "publish"], ["second-local", "publish"], ["second-local", "publish"]]);
+});
+
+// A row shows two lines of the question; two records that differ past them are told apart in the details.
+it("gives the whole question in a record's details, the row keeping two plain lines", async () => {
+  const { api } = apiFixture(rationaleSnapshot());
+  const question = "- **已完成**：全局页头改版。\n- **下一步**：发布到画布，再逐页实现。\n\n先做 A 组，还是先做设置四页？";
+  vi.mocked(api.listLocalDecisions).mockResolvedValue({ records: [recordFixture({ question })], total: 1 });
+  const user = userEvent.setup();
+  render(<LocalDecisionList api={api} />);
+  const row = (await screen.findByRole("checkbox", { name: /^选择 已完成：全局页头改版。下一步/u })).closest("li")!;
+  await user.click(within(row).getByText("查看问题全文、理由与上下文"));
+  const details = row.querySelector("details")!;
+  expect(within(details).getAllByRole("listitem")).toHaveLength(2);
+  expect(details).toHaveTextContent("先做 A 组，还是先做设置四页？");
+  expect(within(details).getByText("已完成").tagName).toBe("STRONG");
 });
 
 it("searches and paginates local records, and discards only after confirmation", async () => {
@@ -43,7 +59,9 @@ it("searches and paginates local records, and discards only after confirmation",
   await user.click(screen.getByRole("button", { name: "取消" }));
   expect(api.resolveLocalDecision).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "不保留" }));
-  await user.click(screen.getByRole("button", { name: "确认不保留" }));
+  const confirmation = within(screen.getByRole("dialog", { name: "不保留所选 1 条本机记录？" }));
+  expect(confirmation.getByRole("button", { name: "取消" })).toHaveFocus();
+  await user.click(confirmation.getByRole("button", { name: "不保留" }));
   expect(api.resolveLocalDecision).toHaveBeenCalledWith("0", "discard");
   await waitFor(() => expect(screen.getByRole("button", { name: "下一页" })).toBeEnabled());
   await user.click(screen.getByRole("button", { name: "下一页" }));

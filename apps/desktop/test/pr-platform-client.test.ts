@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HostedPrClient, ownsWebLink, prApiBase, PrPlatformError, prWebBase, type PrRead } from "../src/main/pr-platform-client.js";
 import { parseReviewDiff } from "../src/main/pr-review-diff.js";
-import { PR_REVIEW_MAX_FILES, prConnectionSchema, prListQuerySchema, type PrConnection } from "@cognelis/decision-protocol";
+import { PR_REVIEW_MAX_FILES, prConnectionSchema, prDiscussionCommentSchema, prListQuerySchema, type PrConnection } from "@cognelis/decision-protocol";
 
 const head = "a".repeat(40), base = "b".repeat(40);
 const connection = (platform: PrConnection["platform"], baseUrl = "https://code.example"): PrConnection => ({ id: randomUUID(), label: platform, platform, baseUrl });
@@ -19,18 +19,38 @@ const fixture = (config: PrConnection, responses: Record<string, unknown>) => {
   };
   return { client: new HostedPrClient(config, read), requests };
 };
+/** Pages by path, each with what its Link header says (`next`, and the `last` page it names), or the error read instead. */
+const paged = (config: PrConnection, pages: Record<string, { value: unknown; next?: boolean; last?: number } | Error>) => {
+  const requests: string[] = [];
+  const read: PrRead = async (path) => {
+    requests.push(path);
+    const page = pages[path];
+    if (page === undefined) throw new Error(`Unexpected endpoint: ${path}`);
+    if (page instanceof Error) throw page;
+    return { text: JSON.stringify(page.value), next: page.next ?? false, last: page.last };
+  };
+  return { client: new HostedPrClient(config, read), requests };
+};
 const bbRepo = (key: string) => ({ slug: "app", project: { key } });
 const bbPr = { id: 12, title: "修正请求", description: "检查", updatedDate: 1_790_000_000_000, author: { user: { displayName: "User" } }, fromRef: { latestCommit: head, repository: bbRepo("~author") }, toRef: { latestCommit: base, repository: bbRepo("AI") } };
 
 describe("existing PR comments", () => {
-  it("reads the newest review comments on each platform, links each to its page, and skips what it cannot place", async () => {
+  it("reads the newest comments on each platform, links each to its page, and skips what it cannot place", async () => {
     const github = fixture(connection("github", "https://github.com"), {
       "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc": [
         { id: 7, body: "这里超时后没有取消请求。", created_at: "2026-09-27T08:00:00Z", path: "src/a.ts", line: null, original_line: 3, user: { login: "bob" } },
         { unexpected: true },
       ],
+      // The conversation numbers its comments apart from the lines': 7 again is another comment, on no line.
+      "/repos/org/app/issues/12/comments?per_page=50": [
+        { id: 7, body: "超时统一放在请求层，按这个合并。", created_at: "2026-09-27T09:00:00Z", user: { login: "carol" } },
+        { id: 8, created_at: "2026-09-27T09:30:00Z", user: null },
+      ],
     });
-    expect(await github.client.comments("org/app#12")).toEqual([{ id: "7", url: "https://github.com/org/app/pull/12#discussion_r7", author: "bob", path: "src/a.ts", line: 3, body: "这里超时后没有取消请求。", createdAt: "2026-09-27T08:00:00Z" }]);
+    expect(await github.client.comments("org/app#12")).toEqual([
+      { id: "issuecomment-7", url: "https://github.com/org/app/pull/12#issuecomment-7", author: "carol", path: null, line: null, body: "超时统一放在请求层，按这个合并。", createdAt: "2026-09-27T09:00:00Z" },
+      { id: "7", url: "https://github.com/org/app/pull/12#discussion_r7", author: "bob", path: "src/a.ts", line: 3, body: "这里超时后没有取消请求。", createdAt: "2026-09-27T08:00:00Z" },
+    ]);
 
     const gitlab = fixture(connection("gitlab", "https://git.example/team"), {
       "/projects/group%2Fsub%2Fapp/merge_requests/7/notes?per_page=50&sort=desc&order_by=created_at": [
@@ -58,40 +78,345 @@ describe("existing PR comments", () => {
   });
 
   it("lists merged PRs as history and reads a long discussion page by page up to a cap", async () => {
-    const paged = (config: PrConnection, pages: Record<string, { value: unknown; next?: boolean }>) => {
-      const read: PrRead = async (path) => {
-        const page = pages[path];
-        if (page === undefined) throw new Error(`Unexpected endpoint: ${path}`);
-        return { text: JSON.stringify(page.value), next: page.next ?? false };
-      };
-      return new HostedPrClient(config, read);
-    };
-    const comment = (id: number) => ({ id, body: `第 ${id} 条`, created_at: "2026-09-01T00:00:00Z", user: { login: "bob" } });
-    const github = paged(connection("github", "https://github.com"), {
+    // Pages of 50, as GitHub fills them: 101 line comments, newest first.
+    const comment = (id: number) => ({ id, body: `第 ${id} 条`, created_at: new Date(Date.UTC(2026, 8, 1, 0, id)).toISOString(), user: { login: "bob" } });
+    const down = (from: number, count: number) => Array.from({ length: count }, (_, index) => from - index);
+    const { client: github } = paged(connection("github", "https://github.com"), {
       [`/search/issues?q=${encodeURIComponent("is:pr is:merged reviewed-by:@me")}&sort=updated&order=desc&per_page=30&page=1`]: { value: { incomplete_results: false, total_count: 1, items: [{ number: 12, title: "已合并", repository_url: "https://api.github.com/repos/org/app", user: { login: "author" }, updated_at: "2026-09-01T00:00:00Z" }] } },
-      "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc": { value: [comment(3)], next: true },
-      "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc&page=2": { value: [comment(2)], next: true },
+      "/repos/org/app/issues/12/comments?per_page=50": { value: [] },
+      "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc": { value: down(101, 50).map(comment), next: true },
+      "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc&page=2": { value: down(51, 50).map(comment), next: true },
       "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc&page=3": { value: [comment(1)] },
     });
+    const ids = (read: { comments: Array<{ id: string }> }) => read.comments.map((item) => Number(item.id));
     expect((await github.list({ connectionId: randomUUID(), filter: "review-requested", state: "merged", page: 1 })).items[0]?.reference).toBe("org/app#12");
-    expect(await github.commentPages("org/app#12", 10)).toMatchObject({ more: false, comments: [{ id: "3" }, { id: "2" }, { id: "1" }] });
+    const all = await github.commentPages("org/app#12", 10);
+    expect([ids(all), all.more]).toEqual([down(101, 101), false]);
     // A cap leaves older pages unread and says so; the review still reads only the newest page.
-    expect(await github.commentPages("org/app#12", 2)).toMatchObject({ more: true, comments: [{ id: "3" }, { id: "2" }] });
-    expect((await github.comments("org/app#12")).map((item) => item.id)).toEqual(["3"]);
+    const capped = await github.commentPages("org/app#12", 2);
+    expect([ids(capped), capped.more]).toEqual([down(101, 100), true]);
+    expect(ids({ comments: await github.comments("org/app#12") })).toEqual(down(101, 50));
 
-    const gitlab = paged(connection("gitlab", "https://git.example/team"), {
+    const { client: gitlab } = paged(connection("gitlab", "https://git.example/team"), {
       "/user": { value: { id: 5 } },
       "/merge_requests?scope=all&state=merged&author_id=5&order_by=updated_at&per_page=30&page=1": { value: [] },
     });
     expect((await gitlab.list({ connectionId: randomUUID(), filter: "created", state: "merged", page: 1 })).items).toEqual([]);
 
-    const bitbucket = paged(connection("bitbucket-server"), {
+    const { client: bitbucket } = paged(connection("bitbucket-server"), {
       "/rest/api/1.0/dashboard/pull-requests?role=REVIEWER&state=MERGED&limit=30&start=0": { value: { values: [bbPr], isLastPage: true } },
       "/rest/api/1.0/projects/AI/repos/app/pull-requests/12/activities?limit=50": { value: { values: [{ action: "COMMENTED", comment: { id: 9, text: "后来", createdDate: 2, author: { displayName: "Eve" } } }], isLastPage: false, nextPageStart: 50 } },
       "/rest/api/1.0/projects/AI/repos/app/pull-requests/12/activities?limit=50&start=50": { value: { values: [{ action: "COMMENTED", comment: { id: 4, text: "最早", createdDate: 1, author: { displayName: "Eve" } } }], isLastPage: true } },
     });
     expect((await bitbucket.list({ connectionId: randomUUID(), filter: "review-requested", state: "merged", page: 1 })).items[0]?.reference).toBe("AI/app#12");
     expect(await bitbucket.commentPages("AI/app#12", 10)).toMatchObject({ more: false, comments: [{ id: "9", body: "后来" }, { id: "4", body: "最早" }] });
+  });
+
+  it("lists Bitbucket replies after the comment opening their thread, and says which comment a GitHub reply answers", async () => {
+    const bitbucket = fixture(connection("bitbucket-server"), {
+      "/rest/api/1.0/projects/AI/repos/app/pull-requests/12/activities?limit=50": { values: [
+        // Replies have no activity of their own: they are inside the comment they answer, nested as they were made.
+        { action: "COMMENTED", commentAction: "ADDED", comment: { id: 5, text: "这里为什么不用 bulkWrite？", createdDate: Date.UTC(2026, 9, 1), author: { displayName: "Eve" }, comments: [
+          { id: 6, text: "数据量小，逐条更好排查。", createdDate: Date.UTC(2026, 9, 2), author: { displayName: "Dan" }, comments: [{ id: 7, text: "那就保留。", createdDate: Date.UTC(2026, 9, 3), author: { displayName: "Eve" } }] },
+          { unexpected: true },
+        ] }, commentAnchor: { path: "fix.js", line: 34, fileType: "TO" } },
+        { action: "COMMENTED", commentAction: "ADDED", comment: { id: 4, text: "删掉的这行还有调用方。", createdDate: Date.UTC(2026, 8, 30), author: { displayName: "Eve" } }, commentAnchor: { path: "fix.js", line: 3, fileType: "FROM" } },
+        { action: "COMMENTED", commentAction: "ADDED", comment: { id: 3, text: "整体可以。", createdDate: Date.UTC(2026, 8, 29), author: { displayName: "Eve" } } },
+      ] },
+    });
+    const placed = (comments: Array<{ id: string; replyTo: string | null; line: number | null; side: string | null }>) => comments.map(({ id, replyTo, line, side }) => ({ id, replyTo, line, side }));
+    expect(placed((await bitbucket.client.commentPages("AI/app#12", 10)).comments)).toEqual([
+      { id: "5", replyTo: null, line: 34, side: "new" }, { id: "6", replyTo: "5", line: 34, side: "new" }, { id: "7", replyTo: "5", line: 34, side: "new" },
+      { id: "4", replyTo: null, line: 3, side: "old" }, { id: "3", replyTo: null, line: null, side: null },
+    ]);
+    // The review is told of the replies too, in just the fields its snapshot cache keeps.
+    expect((await bitbucket.client.comments("AI/app#12"))[1]).toEqual({ id: "6", url: "https://code.example/projects/AI/repos/app/pull-requests/12/overview?commentId=6", author: "Dan", path: "fix.js", line: 34, body: "数据量小，逐条更好排查。", createdAt: "2026-10-02T00:00:00.000Z" });
+
+    const { client } = paged(connection("github", "https://github.com"), {
+      "/repos/org/app/issues/12/comments?per_page=50": { value: [] },
+      "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc": { value: [
+        { id: 9, body: "好，按这个改。", created_at: "2026-10-02T00:00:00Z", path: "a.ts", line: 4, side: "LEFT", in_reply_to_id: 8, user: { login: "dan" } },
+        { id: 8, body: "删掉的这行还有调用方。", created_at: "2026-10-01T00:00:00Z", path: "a.ts", line: 4, side: "LEFT", user: { login: "eve" } },
+        // Outdated: no line in the PR as it stands, so none to read code from.
+        { id: 7, body: "命名再斟酌。", created_at: "2026-09-30T00:00:00Z", path: "a.ts", line: null, original_line: 2, side: "RIGHT", user: { login: "eve" } },
+      ] },
+    });
+    expect(placed((await client.commentPages("org/app#12", 10)).comments)).toEqual([
+      { id: "9", replyTo: "8", line: 4, side: "old" }, { id: "8", replyTo: null, line: 4, side: "old" }, { id: "7", replyTo: null, line: 2, side: null },
+    ]);
+  });
+
+  it("gives each line comment of a discussion the lines around it, reading the PR once and each file once", async () => {
+    const test = fixture(connection("bitbucket-server"), {
+      "/rest/api/1.0/projects/AI/repos/app/pull-requests/12/activities?limit=50": { values: [
+        { action: "COMMENTED", comment: { id: 3, text: "用 bulkWrite。", createdDate: 3, author: { displayName: "Eve" }, comments: [{ id: 4, text: "好。", createdDate: 4, author: { displayName: "Dan" } }] }, commentAnchor: { path: "fix.js", line: 5, fileType: "TO" } },
+        { action: "COMMENTED", comment: { id: 2, text: "第一行。", createdDate: 2, author: { displayName: "Eve" } }, commentAnchor: { path: "fix.js", line: 1, fileType: "TO" } },
+        { action: "COMMENTED", comment: { id: 1, text: "删掉的。", createdDate: 1, author: { displayName: "Eve" } }, commentAnchor: { path: "old.js", line: 2, fileType: "FROM" } },
+        // A file that cannot be read, a line past the end of the file, a comment on no line, one whose line the PR no
+        // longer has (Bitbucket's orphaned anchor): none has code.
+        { action: "COMMENTED", comment: { id: 9, text: "文件读不到。", createdDate: 0, author: { displayName: "Eve" } }, commentAnchor: { path: "gone.js", line: 1, fileType: "TO" } },
+        { action: "COMMENTED", comment: { id: 8, text: "行号越界。", createdDate: 0, author: { displayName: "Eve" } }, commentAnchor: { path: "old.js", line: 9, fileType: "FROM" } },
+        { action: "COMMENTED", comment: { id: 7, text: "整体可以。", createdDate: 0, author: { displayName: "Eve" } } },
+        { action: "COMMENTED", comment: { id: 6, text: "这行后来改掉了。", createdDate: 0, author: { displayName: "Eve" } }, commentAnchor: { path: "fix.js", line: 2, fileType: "TO", orphaned: true } },
+      ] },
+      "/rest/api/1.0/projects/AI/repos/app/pull-requests/12": bbPr,
+      [`/rest/api/1.0/projects/AI/repos/app/raw/fix.js?at=${head}`]: `l1\nl2\nl3\nl4\n${"长".repeat(400)}\nl6\n`,
+      [`/rest/api/1.0/projects/AI/repos/app/raw/old.js?at=${base}`]: "o1\no2",
+    });
+    const { comments } = await test.client.discussion("AI/app#12", 10);
+    // The file's last line break ends its last line: no empty line after it is shown.
+    const fix = `l1\nl2\nl3\nl4\n${"长".repeat(299)}…\nl6`;
+    expect(comments.map(({ id, code }) => [id, code])).toEqual([
+      ["3", { kind: "file", side: "new", from: 1, text: fix }], ["4", { kind: "file", side: "new", from: 1, text: fix }],
+      ["2", { kind: "file", side: "new", from: 1, text: fix }], ["1", { kind: "file", side: "old", from: 1, text: "o1\no2" }],
+      ["9", null], ["8", null], ["7", null], ["6", null],
+    ]);
+    expect(test.requests.filter((path) => path.includes("/raw/")).sort()).toEqual([
+      `/rest/api/1.0/projects/AI/repos/app/raw/fix.js?at=${head}`, `/rest/api/1.0/projects/AI/repos/app/raw/gone.js?at=${head}`, `/rest/api/1.0/projects/AI/repos/app/raw/old.js?at=${base}`,
+    ]);
+    expect(test.requests.filter((path) => path.endsWith("/pull-requests/12"))).toHaveLength(1);
+  });
+
+  // Line n of a file, short or 150 characters wide: 13 of the wide ones fit in about 2,000 characters.
+  const numbered = (from: number, to: number, line = (n: number) => `l${n}`) => Array.from({ length: to - from + 1 }, (_, index) => line(from + index)).join("\n");
+  const wide = (n: number) => `${String(n).padStart(3, "0")}${"x".repeat(147)}`;
+  const wideAdded = (from: number, to: number) => numbered(from, to, (n) => `+${wide(n)}`);
+
+  it("reads the file around a comment no diff came with: ten lines above the first it is on, five below its last, about 2,000 characters in all", async () => {
+    const test = fixture(connection("github", "https://github.com"), {
+      "/repos/org/app/issues/12/comments?per_page=50": [],
+      // GitHub can send a line comment with an empty diff_hunk: its code is read from the file as the PR has it now.
+      "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc": [
+        { id: 4, body: "这三行合并。", created_at: "2026-10-04T00:00:00Z", path: "src/a.ts", start_line: 20, original_start_line: 20, start_side: "RIGHT", line: 22, original_line: 22, side: "RIGHT", diff_hunk: "", user: { login: "eve" } },
+        { id: 3, body: "文件末尾。", created_at: "2026-10-03T00:00:00Z", path: "src/a.ts", line: 58, original_line: 58, side: "RIGHT", diff_hunk: "", user: { login: "eve" } },
+        // Wide lines: one above and one below in turn, while they fit.
+        { id: 2, body: "这一行。", created_at: "2026-10-02T00:00:00Z", path: "src/wide.ts", line: 50, original_line: 50, side: "RIGHT", diff_hunk: "", user: { login: "eve" } },
+        // A range that alone runs past the room keeps its last lines.
+        { id: 1, body: "这一段。", created_at: "2026-10-01T00:00:00Z", path: "src/wide.ts", start_line: 10, original_start_line: 10, start_side: "RIGHT", line: 40, original_line: 40, side: "RIGHT", diff_hunk: "", user: { login: "eve" } },
+      ],
+      "/repos/org/app/pulls/12": { title: "修正", body: "", head: { sha: head, repo: { full_name: "org/app" } }, base: { sha: base, repo: { full_name: "org/app" } } },
+      [`/repos/org/app/contents/src/a.ts?ref=${head}`]: `${numbered(1, 60)}\n`,
+      [`/repos/org/app/contents/src/wide.ts?ref=${head}`]: numbered(1, 60, wide),
+    });
+    expect((await test.client.discussion("org/app#12", 10)).comments.map(({ id, code }) => [id, code])).toEqual([
+      ["4", { kind: "file", side: "new", from: 10, text: numbered(10, 27) }],
+      ["3", { kind: "file", side: "new", from: 48, text: numbered(48, 60) }],
+      ["2", { kind: "file", side: "new", from: 43, text: numbered(43, 55, wide) }],
+      ["1", { kind: "file", side: "new", from: 28, text: numbered(28, 40, wide) }],
+    ]);
+
+    // Bitbucket says where a comment over several lines starts on each side, or (9.2 and before) only where it starts, on
+    // the side of that line's type: a start on the other side (from a removed line to an added one) is no line of this one.
+    const bitbucket = fixture(connection("bitbucket-server"), {
+      "/rest/api/1.0/projects/AI/repos/app/pull-requests/12/activities?limit=50": { values: [
+        { action: "COMMENTED", comment: { id: 3, text: "从删掉的那行起。", createdDate: 3, author: { displayName: "Eve" } }, commentAnchor: { path: "a.js", line: 100, fileType: "TO", multilineMarker: { startLine: 40, startLineType: "REMOVED" } } },
+        { action: "COMMENTED", comment: { id: 2, text: "这几行。", createdDate: 2, author: { displayName: "Eve" } }, commentAnchor: { path: "a.js", line: 30, fileType: "FROM", multilineSpan: { srcSpanStart: 26, srcSpanEnd: 30, dstSpanStart: 0, dstSpanEnd: 0 } } },
+        { action: "COMMENTED", comment: { id: 1, text: "那几行。", createdDate: 1, author: { displayName: "Eve" } }, commentAnchor: { path: "a.js", line: 22, fileType: "TO", multilineMarker: { startLine: 18, startLineType: "ADDED" } } },
+      ] },
+      "/rest/api/1.0/projects/AI/repos/app/pull-requests/12": bbPr,
+      [`/rest/api/1.0/projects/AI/repos/app/raw/a.js?at=${head}`]: numbered(1, 120),
+      [`/rest/api/1.0/projects/AI/repos/app/raw/a.js?at=${base}`]: numbered(1, 60),
+    });
+    expect((await bitbucket.client.discussion("AI/app#12", 10)).comments.map(({ id, code }) => [id, code])).toEqual([
+      ["3", { kind: "file", side: "new", from: 90, text: numbered(90, 105) }],
+      ["2", { kind: "file", side: "old", from: 16, text: numbered(16, 35) }],
+      ["1", { kind: "file", side: "new", from: 8, text: numbered(8, 27) }],
+    ]);
+  });
+
+  // The change a reviewer saw, as unified diff: new lines 10–14 against old 10–12.
+  const change = ["@@ -10,6 +10,8 @@ export function run() {", " const a = 1;", "-const b = 2;", "+const b = 3;", "+const c = 4;", " const d = 5;", "+const e = 6;"];
+
+  it("gives a GitHub line comment the diff it was made on: around its line, over the whole of a range, an outdated one's too, without reading files", async () => {
+    // 30 wide lines added from line 1: 13 of them fit in about 2,000 characters.
+    const added = ["@@ -0,0 +1,30 @@", ...Array.from({ length: 30 }, (_, index) => `+${wide(index + 1)}`)];
+    const comment = (id: number, extra: Record<string, unknown>) => ({ id, body: `评论 ${id}`, created_at: `2026-10-0${id}T00:00:00Z`, path: "src/a.ts", side: "RIGHT", user: { login: "eve" }, ...extra });
+    const test = fixture(connection("github", "https://github.com"), {
+      "/repos/org/app/issues/12/comments?per_page=50": [],
+      // GitHub's diff_hunk stops at the comment's last line.
+      "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc": [
+        // Moved down six lines by later commits: placed as the change shown with it numbers it.
+        comment(7, { line: 20, original_line: 14, diff_hunk: change.join("\n") }),
+        comment(6, { line: 14, original_line: 14, diff_hunk: change.join("\n") }),
+        comment(5, { start_line: 11, original_start_line: 11, start_side: "RIGHT", line: 13, original_line: 13, diff_hunk: change.slice(0, 6).join("\n") }),
+        // Outdated: no line in the PR as it stands, the diff it was made on all the same.
+        comment(4, { line: null, original_line: 14, diff_hunk: change.join("\n") }),
+        comment(3, { line: 11, original_line: 11, side: "LEFT", diff_hunk: change.slice(0, 3).join("\n") }),
+        // A long change keeps what fits nearest the comment's line: above it, all GitHub gives.
+        comment(2, { path: "src/b.ts", line: 15, original_line: 15, diff_hunk: added.slice(0, 16).join("\n") }),
+      ],
+    });
+    const { comments: read } = await test.client.discussion("org/app#12", 10);
+    expect(read.map(({ id, line }) => [id, line])).toEqual([["7", 14], ["6", 14], ["5", 13], ["4", 14], ["3", 11], ["2", 15]]);
+    expect(read.map(({ id, side, code }) => [id, side, code])).toEqual([
+      ["7", "new", { kind: "hunk", side: "new", from: 10, text: ["@@ -10,3 +10,5 @@", ...change.slice(1)].join("\n") }],
+      ["6", "new", { kind: "hunk", side: "new", from: 10, text: ["@@ -10,3 +10,5 @@", ...change.slice(1)].join("\n") }],
+      ["5", "new", { kind: "hunk", side: "new", from: 10, text: ["@@ -10,3 +10,4 @@", ...change.slice(1, 6)].join("\n") }],
+      ["4", null, { kind: "hunk", side: "new", from: 10, text: ["@@ -10,3 +10,5 @@", ...change.slice(1)].join("\n") }],
+      ["3", "old", { kind: "hunk", side: "old", from: 10, text: ["@@ -10,2 +10,1 @@", ...change.slice(1, 3)].join("\n") }],
+      ["2", "new", { kind: "hunk", side: "new", from: 3, text: `@@ -0,0 +3,13 @@\n${wideAdded(3, 15)}` }],
+    ]);
+    // Every comment had its diff: neither the PR nor a file was read for code.
+    expect(test.requests).toEqual(["/repos/org/app/issues/12/comments?per_page=50", "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc"]);
+    // What the dialog is sent, through a schema that refuses any key it does not know.
+    const { comments } = await test.client.discussion("org/app#12", 10);
+    expect(comments.map(({ code }) => prDiscussionCommentSchema.shape.code.safeParse(code).success)).toEqual(comments.map(() => true));
+  });
+
+  it("takes a Bitbucket comment's diff from its activity, its replies with it, and reads the file for one whose activity has none to use", async () => {
+    // Bitbucket's diff of a comment's file around it: hunks of segments, each of added, removed or context lines.
+    const diff = { source: { toString: "a.js" }, destination: { toString: "a.js" }, truncated: false, hunks: [{ sourceLine: 18, sourceSpan: 4, destinationLine: 18, destinationSpan: 5, truncated: false, segments: [
+      { type: "CONTEXT", truncated: false, lines: [{ source: 18, destination: 18, line: "function f() {", truncated: false }, { source: 19, destination: 19, line: "  const a = 1;", truncated: false }] },
+      { type: "REMOVED", truncated: false, lines: [{ source: 20, destination: 20, line: "  return a;", truncated: false }] },
+      { type: "ADDED", truncated: false, lines: [{ source: 21, destination: 20, line: "  const b = 2;", truncated: false }, { source: 21, destination: 21, line: "  return a + b;", truncated: false }] },
+      { type: "CONTEXT", truncated: false, lines: [{ source: 21, destination: 22, line: "}", truncated: false }] },
+    ] }] };
+    const hunk = "@@ -18,4 +18,5 @@\n function f() {\n   const a = 1;\n-  return a;\n+  const b = 2;\n+  return a + b;\n }";
+    // 30 wide lines added: a comment on one in the middle keeps it there; one over lines 5 to 15 keeps all of them.
+    const widened = { hunks: [{ sourceLine: 0, sourceSpan: 0, destinationLine: 1, destinationSpan: 30, segments: [{ type: "ADDED", lines: Array.from({ length: 30 }, (_, index) => ({ source: 1, destination: index + 1, line: wide(index + 1) })) }] }] };
+    // Cut to the lines around the comment, a hunk can keep the whole hunk's header: each line says where it is itself.
+    const cut = { hunks: [{ sourceLine: 1, sourceSpan: 60, destinationLine: 1, destinationSpan: 62, segments: [
+      { type: "CONTEXT", lines: [{ source: 50, destination: 52, line: "a" }, { source: 51, destination: 53, line: "b" }] },
+      { type: "ADDED", lines: [{ source: 52, destination: 54, line: "c" }] },
+      { type: "CONTEXT", lines: [{ source: 52, destination: 55, line: "d" }] },
+    ] }] };
+    const test = fixture(connection("bitbucket-server"), {
+      "/rest/api/1.0/projects/AI/repos/app/pull-requests/12/activities?limit=50": { values: [
+        { action: "COMMENTED", comment: { id: 9, text: "加的这行。", createdDate: 9, author: { displayName: "Eve" } }, commentAnchor: { path: "d.js", line: 54, lineType: "ADDED", fileType: "TO" }, diff: cut },
+        { action: "COMMENTED", comment: { id: 8, text: "这一行。", createdDate: 8, author: { displayName: "Eve" } }, commentAnchor: { path: "c.js", line: 15, lineType: "ADDED", fileType: "TO" }, diff: widened },
+        { action: "COMMENTED", comment: { id: 7, text: "这一段。", createdDate: 7, author: { displayName: "Eve" } }, commentAnchor: { path: "c.js", line: 15, lineType: "ADDED", fileType: "TO", multilineSpan: { srcSpanStart: 0, srcSpanEnd: 0, dstSpanStart: 5, dstSpanEnd: 15 } }, diff: widened },
+        { action: "COMMENTED", comment: { id: 5, text: "这里用常量。", createdDate: 5, author: { displayName: "Eve" }, comments: [{ id: 6, text: "好。", createdDate: 6, author: { displayName: "Dan" } }] },
+          commentAnchor: { path: "a.js", line: 21, lineType: "ADDED", fileType: "TO" }, diff },
+        // Orphaned, its line gone from the PR as it stands: the diff it was made on still shows it.
+        { action: "COMMENTED", comment: { id: 4, text: "删掉的那行。", createdDate: 4, author: { displayName: "Eve" } }, commentAnchor: { path: "a.js", line: 20, lineType: "REMOVED", fileType: "FROM", orphaned: true }, diff },
+        // No diff with it, one of a shape not understood, one without the comment's line: read from the file.
+        { action: "COMMENTED", comment: { id: 3, text: "没有 diff。", createdDate: 3, author: { displayName: "Eve" } }, commentAnchor: { path: "b.js", line: 2, fileType: "TO" } },
+        { action: "COMMENTED", comment: { id: 2, text: "看不懂的 diff。", createdDate: 2, author: { displayName: "Eve" } }, commentAnchor: { path: "b.js", line: 1, fileType: "TO" }, diff: { hunks: "unexpected" } },
+        { action: "COMMENTED", comment: { id: 1, text: "别处的 diff。", createdDate: 1, author: { displayName: "Eve" } }, commentAnchor: { path: "b.js", line: 3, fileType: "TO" }, diff },
+      ] },
+      "/rest/api/1.0/projects/AI/repos/app/pull-requests/12": bbPr,
+      [`/rest/api/1.0/projects/AI/repos/app/raw/b.js?at=${head}`]: "b1\nb2\nb3",
+    });
+    expect((await test.client.discussion("AI/app#12", 10)).comments.map(({ id, code }) => [id, code])).toEqual([
+      ["9", { kind: "hunk", side: "new", from: 52, text: "@@ -50,3 +52,4 @@\n a\n b\n+c\n d" }],
+      ["8", { kind: "hunk", side: "new", from: 9, text: `@@ -0,0 +9,13 @@\n${wideAdded(9, 21)}` }],
+      ["7", { kind: "hunk", side: "new", from: 4, text: `@@ -0,0 +4,13 @@\n${wideAdded(4, 16)}` }],
+      ["5", { kind: "hunk", side: "new", from: 18, text: hunk }], ["6", { kind: "hunk", side: "new", from: 18, text: hunk }],
+      ["4", { kind: "hunk", side: "old", from: 18, text: hunk }],
+      ["3", { kind: "file", side: "new", from: 1, text: "b1\nb2\nb3" }], ["2", { kind: "file", side: "new", from: 1, text: "b1\nb2\nb3" }], ["1", { kind: "file", side: "new", from: 1, text: "b1\nb2\nb3" }],
+    ]);
+    expect(test.requests.filter((path) => path.includes("/raw/"))).toEqual([`/rest/api/1.0/projects/AI/repos/app/raw/b.js?at=${head}`]);
+  });
+
+  it("reads each GitLab note's diff from the MR version it was made on, and the file only for a note on the version as it is now", async () => {
+    const older = "c".repeat(40);
+    const endpoint = "/projects/group%2Fapp/merge_requests/7";
+    const at = (head_sha: string, extra: Record<string, unknown>) => ({ base_sha: base, start_sha: base, head_sha, position_type: "text", old_path: "a.js", new_path: "a.js", ...extra });
+    const gitlab = connection("gitlab", "https://git.example");
+    const responses = {
+      [`${endpoint}/notes?per_page=50&sort=desc&order_by=created_at`]: [
+        // Over lines 13 and 14 of the version as it is now.
+        { id: 5, body: "这两行合并。", created_at: "2026-10-05T00:00:00Z", author: { username: "carol" }, position: at(head, { new_line: 14, old_line: null, line_range: { start: { line_code: "x_0_13", type: "new", old_line: null, new_line: 13 }, end: { line_code: "x_0_14", type: "new", old_line: null, new_line: 14 } } }) },
+        // On an earlier push: that version's diff.
+        { id: 4, body: "改大写。", created_at: "2026-10-04T00:00:00Z", author: { username: "carol" }, position: at(older, { new_line: 2, old_line: null }) },
+        // GitLab gives no diff for a file too large: the file as it is now, the note made on that very version.
+        { id: 3, body: "大文件。", created_at: "2026-10-03T00:00:00Z", author: { username: "carol" }, position: at(head, { old_path: "big.js", new_path: "big.js", new_line: 2, old_line: 2 }) },
+        // On a version past those read, and without a diff to read, nothing is guessed from the file as it is now.
+        { id: 2, body: "很早的版本。", created_at: "2026-10-02T00:00:00Z", author: { username: "carol" }, position: at("d".repeat(40), { old_path: "big.js", new_path: "big.js", new_line: 2, old_line: 2 }) },
+        { id: 1, body: "整体可以。", created_at: "2026-10-01T00:00:00Z", author: { username: "carol" } },
+      ],
+      [`${endpoint}/versions?per_page=100`]: [
+        { id: 12, head_commit_sha: head, base_commit_sha: base, start_commit_sha: base, created_at: "2026-10-04T00:00:00Z", merge_request_id: 1, state: "collected", real_size: "2" },
+        { id: 11, head_commit_sha: older, base_commit_sha: base, start_commit_sha: base, created_at: "2026-10-01T00:00:00Z", merge_request_id: 1, state: "collected", real_size: "1" },
+      ],
+      [`${endpoint}/versions/12`]: { id: 12, diffs: [{ old_path: "a.js", new_path: "a.js", diff: `${change.join("\n")}\n`, new_file: false }, { old_path: "big.js", new_path: "big.js", diff: "", too_large: true }] },
+      [`${endpoint}/versions/11`]: { id: 11, diffs: [{ old_path: "a.js", new_path: "a.js", diff: "@@ -1,3 +1,3 @@\n a\n-b\n+B\n c\n" }] },
+      [endpoint]: { title: "修正", description: "", source_project_id: 5, target_project_id: 4, diff_refs: { head_sha: head, start_sha: base, base_sha: base } },
+      [`/projects/5/repository/files/big.js/raw?ref=${head}`]: "g1\ng2\ng3",
+    };
+    const test = fixture(gitlab, responses);
+    const read = async (client: HostedPrClient) => (await client.discussion("group/app#7", 10)).comments.map(({ id, side, code }) => [id, side, code]);
+    const expected = [
+      ["5", null, { kind: "hunk", side: "new", from: 10, text: ["@@ -10,3 +10,5 @@", ...change.slice(1)].join("\n") }],
+      ["4", null, { kind: "hunk", side: "new", from: 1, text: "@@ -1,3 +1,3 @@\n a\n-b\n+B\n c" }],
+      ["3", null, { kind: "file", side: "new", from: 1, text: "g1\ng2\ng3" }],
+      ["2", null, null], ["1", null, null],
+    ];
+    expect(await read(test.client)).toEqual(expected);
+    // The version list once, each version a note was made on once, the file once.
+    expect(test.requests.filter((path) => path.includes("/versions") || path.includes("/raw"))).toEqual([
+      `${endpoint}/versions?per_page=100`, `${endpoint}/versions/12`, `${endpoint}/versions/11`, `/projects/5/repository/files/big.js/raw?ref=${head}`,
+    ]);
+    // A version's diff never changes: opened again (each open with a client of its own), none is read a second time.
+    const again = fixture(gitlab, responses);
+    expect(await read(again.client)).toEqual(expected);
+    expect(again.requests.filter((path) => /\/versions\/\d+$/u.test(path))).toEqual([]);
+  });
+
+  const github = connection("github", "https://github.com");
+  const lines = "/repos/org/app/pulls/12/comments?per_page=50&sort=created&direction=desc";
+  const talk = "/repos/org/app/issues/12/comments?per_page=50";
+  const at = (minute: number) => new Date(Date.UTC(2026, 8, 1, 0, minute)).toISOString();
+  const said = (id: number) => ({ id, body: `对话 ${id}`, created_at: at(2 * id), user: { login: "carol" } });
+
+  it("reads GitHub's conversation from the last page its Link header names back, and merges it with the line comments newest first", async () => {
+    // 120 conversation comments, oldest first 50 a page (the newest 20 on page 3), one every 2 minutes; 30 line comments,
+    // newest first, one every 8 minutes in between.
+    const conversation = Array.from({ length: 120 }, (_, index) => said(index + 1));
+    const line = Array.from({ length: 30 }, (_, index) => ({ id: 30 - index, body: `行内 ${30 - index}`, created_at: at(8 * (30 - index) - 3), path: "src/a.ts", line: 1, user: { login: "bob" } }));
+    const { client, requests } = paged(github, {
+      [talk]: { value: conversation.slice(0, 50), next: true, last: 3 },
+      [`${talk}&page=2`]: { value: conversation.slice(50, 100), next: true, last: 3 },
+      [`${talk}&page=3`]: { value: conversation.slice(100) },
+      [lines]: { value: line },
+    });
+    const newestFirst = [...conversation.map((item) => [`issuecomment-${item.id}`, item.created_at]), ...line.map((item) => [String(item.id), item.created_at])]
+      .sort((a, b) => b[1]!.localeCompare(a[1]!)).map(([id]) => id);
+    const all = await client.commentPages("org/app#12", 10);
+    expect([all.comments.map((item) => item.id), all.more]).toEqual([newestFirst, false]);
+    expect(all.comments[0]).toEqual({ id: "issuecomment-120", url: "https://github.com/org/app/pull/12#issuecomment-120", author: "carol", path: null, line: null, body: "对话 120", createdAt: at(240), replyTo: null, side: null });
+    // The last page, then back; the first, read for its Link header, is not read again.
+    expect(requests).toEqual([talk, lines, `${talk}&page=3`, `${talk}&page=2`]);
+    // The review's page: the newest 50 of both, which reach into the conversation's page 2, older ones said to be left.
+    requests.length = 0;
+    const review = await client.commentPages("org/app#12", 1);
+    expect([review.comments.map((item) => item.id), review.more]).toEqual([newestFirst.slice(0, 50), true]);
+    expect(requests).toEqual([talk, lines, `${talk}&page=3`, `${talk}&page=2`]);
+  });
+
+  it("takes a GitHub conversation with no Link header as one page and an empty one as none, and refuses pages it cannot place", async () => {
+    // Nothing said in the conversation: the line comments alone.
+    const quiet = paged(github, { [talk]: { value: [] }, [lines]: { value: [{ id: 1, body: "行内", created_at: at(1), path: "a.ts", line: 1, user: { login: "bob" } }] } });
+    expect(await quiet.client.commentPages("org/app#12", 10)).toMatchObject({ more: false, comments: [{ id: "1", path: "a.ts" }] });
+    expect(quiet.requests).toEqual([talk, lines]);
+    // GitHub sends no Link header when everything fits on one page: a full page is all there is.
+    const full = paged(github, { [talk]: { value: Array.from({ length: 50 }, (_, index) => said(index + 1)) }, [lines]: { value: [] } });
+    const read = await full.client.commentPages("org/app#12", 10);
+    expect([read.comments.map((item) => item.id), read.more]).toEqual([Array.from({ length: 50 }, (_, index) => `issuecomment-${50 - index}`), false]);
+    expect(full.requests).toEqual([talk, lines]);
+    // More to follow and no last page named: which comments are the newest cannot be told.
+    const unplaced = paged(github, { [talk]: { value: [said(1)], next: true }, [lines]: { value: [] } });
+    await expect(unplaced.client.commentPages("org/app#12", 10)).rejects.toThrow(/分页信息缺失/u);
+    // Empty pages that keep saying there is more are read no further than the pages asked for and one, and said to be left.
+    const endless = paged(github, { [talk]: { value: [] }, ...Object.fromEntries(Array.from({ length: 10 }, (_, index) => [`${lines}${index ? `&page=${index + 1}` : ""}`, { value: [], next: true }])) });
+    expect(await endless.client.commentPages("org/app#12", 2)).toEqual({ comments: [], more: true, unparsed: 0 });
+    expect(endless.requests).toHaveLength(1 + 3);
+  });
+
+  it("fails a GitHub discussion either half of which is refused, and reads no further once cancelled", async () => {
+    // A list that looked whole would have been half of it.
+    await expect(paged(github, { [talk]: new PrPlatformError(401), [lines]: { value: [] } }).client.commentPages("org/app#12", 10)).rejects.toMatchObject({ status: 401 });
+    await expect(paged(github, { [talk]: { value: [] }, [lines]: new PrPlatformError(403) }).client.comments("org/app#12")).rejects.toMatchObject({ status: 403 });
+    // Cancelled while the conversation's last page is read: the page before it is never asked for.
+    const controller = new AbortController();
+    const requests: string[] = [];
+    const client = new HostedPrClient(github, async (path) => {
+      requests.push(path);
+      if (path === `${talk}&page=3`) controller.abort();
+      return path === talk ? { text: JSON.stringify([said(1)]), next: true, last: 3 } : { text: JSON.stringify(path === lines ? [] : [said(path.endsWith("3") ? 101 : 51)]), next: false };
+    });
+    await expect(client.commentPages("org/app#12", 10, controller.signal)).rejects.toMatchObject({ name: "AbortError" });
+    expect(requests).toEqual([talk, lines, `${talk}&page=3`]);
   });
 
   it("treats a link as the platform's only under that connection's web address", () => {
@@ -104,6 +429,8 @@ describe("existing PR comments", () => {
     expect(ownsWebLink(gitlab, "https://git.example/teams/app/-/merge_requests/7")).toBe(false);
     expect(ownsWebLink(gitlab, "https://git.example.evil/team/app")).toBe(false);
     expect(ownsWebLink(gitlab, "http://git.example/team/app")).toBe(false);
+    // A conversation comment's link opens as a line comment's does.
+    expect(ownsWebLink(connection("github", "https://git.example/context/api/v3"), "https://git.example/context/org/app/pull/12#issuecomment-7")).toBe(true);
   });
 });
 
@@ -165,6 +492,17 @@ describe("hosting-neutral PR API", () => {
     expect(await test.client.files("AI/app#12")).toEqual([{ path: "a.ts", status: "MODIFY" }]);
     expect(await test.client.diff("AI/app#12")).toBe("patch");
     expect(await test.client.readFile(await test.client.get("AI/app#12"), "a.ts", 1)).toBe("code");
+  });
+
+  it("counts a Bitbucket PR's comments from the dashboard, none where its properties leave the count out", async () => {
+    const config = connection("bitbucket-server");
+    const test = fixture(config, {
+      "/rest/api/1.0/dashboard/pull-requests?role=REVIEWER&state=OPEN&limit=30&start=0": { values: [
+        { ...bbPr, properties: { commentCount: 3 } }, { ...bbPr, id: 13, properties: { openTaskCount: 0 } }, { ...bbPr, id: 14 },
+      ], isLastPage: true },
+    });
+    // Without properties at all nothing is counted, and only the update time tells a PR moved.
+    expect((await test.client.list({ connectionId: config.id, filter: "review-requested", page: 1 })).items.map((item) => item.comments)).toEqual([3, 0, undefined]);
   });
 
   it("reads a Bitbucket PR head from the authorized target repository instead of requiring fork access", async () => {
@@ -505,5 +843,28 @@ it("takes GitHub's 403 for the limit it is when its body says so, and says how l
     error = await refusal();
     expect(error?.status).toBe(403);
     expect(error?.message).toMatch(/令牌授权/u);
+  } finally { server.close(); await once(server, "close"); }
+});
+
+it("takes the last page from GitHub's Link header, and reads a long conversation from there back with its own paths", async () => {
+  for (const name of ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]) vi.stubEnv(name, "");
+  const asked: string[] = [];
+  let origin = "";
+  const server = createServer((req, res) => {
+    asked.push(req.url ?? "");
+    const url = new URL(req.url ?? "/", origin);
+    res.setHeader("content-type", "application/json");
+    if (url.pathname.endsWith("/pulls/12/comments")) { res.end("[]"); return; }
+    // As GitHub answers: every page but the last names the next and the last one, by the repository's number.
+    const page = Number(url.searchParams.get("page") ?? 1);
+    if (page < 3) res.setHeader("link", `<${origin}/api/v3/repositories/9/issues/12/comments?per_page=50&page=${page + 1}>; rel="next", <${origin}/api/v3/repositories/9/issues/12/comments?per_page=50&page=3>; rel="last"`);
+    res.end(JSON.stringify([{ id: page, body: `第 ${page} 页`, created_at: `2026-09-0${page}T00:00:00Z`, user: { login: "carol" } }]));
+  });
+  server.listen(0, "127.0.0.1"); await once(server, "listening");
+  try {
+    origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    const client = HostedPrClient.create(connection("github", origin), "example-value");
+    expect((await client.commentPages("org/app#12", 10)).comments.map((item) => item.body)).toEqual(["第 3 页", "第 2 页", "第 1 页"]);
+    expect(asked.filter((path) => path.includes("/issues/"))).toEqual(["/api/v3/repos/org/app/issues/12/comments?per_page=50", "/api/v3/repos/org/app/issues/12/comments?per_page=50&page=3", "/api/v3/repos/org/app/issues/12/comments?per_page=50&page=2"]);
   } finally { server.close(); await once(server, "close"); }
 });

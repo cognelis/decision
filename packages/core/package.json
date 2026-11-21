@@ -6,7 +6,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./rationale-factors": "./src/rationale-factors.ts",
-    "./journal-entry": "./src/journal-entry.ts"
+    "./journal-entry": "./src/journal-entry.ts",
+    "./todo": "./src/todo.ts",
+    "./historical-decision": "./src/historical-decision.ts",
+    "./todo-dependencies": "./src/todo-dependencies.ts",
+    "./recommendation": "./src/recommendation.ts"
   },
   "dependencies": {
     "@cognelis/decision-protocol": "1.2.0"

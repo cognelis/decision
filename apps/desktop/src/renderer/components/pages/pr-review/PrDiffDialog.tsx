@@ -1,3 +1,5 @@
+import { ReviewFileLines } from "../../ReviewFileLines.js";
+import { ReviewFileDirectory as FileDirectory } from "../../ReviewFileDirectory.js";
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { Diff, Hunk, Decoration, findChangeByNewLineNumber, findChangeByOldLineNumber, getChangeKey, type ChangeData, type FileData, type HunkData } from "react-diff-view";
 import "react-diff-view/style/index.css";
@@ -7,27 +9,12 @@ import { ModalDialog } from "../../ModalDialog.js";
 import { ListWidthHandle } from "../../ListWidthHandle.js";
 import { ActionIcon, IconButton } from "../../IconButton.js";
 import { parsePrFileDiffs, visibleDiffHunks } from "./pr-diff-view.js";
+import { renderMarkdown } from "../assistant/markdown.js";
 import { platformMessage } from "./platform-message.js";
 
 type FileEntry = PrReviewSnapshot["files"][number];
 const STATUS: Record<string, string> = { added: "新增", add: "新增", ADD: "新增", deleted: "删除", delete: "删除", DELETE: "删除", removed: "删除", modified: "修改", modify: "修改", MODIFY: "修改", renamed: "重命名", rename: "重命名", MOVE: "重命名", copied: "复制", copy: "复制", COPY: "复制" };
 
-function FileDirectory({ files, prefix = "", selected, counts, onSelect }: { files: FileEntry[]; prefix?: string; selected: string; counts: Map<string, number>; onSelect(path: string): void }) {
-  const directories = new Map<string, FileEntry[]>();
-  const leaves: FileEntry[] = [];
-  for (const file of files) {
-    const remainder = file.path.slice(prefix.length);
-    const slash = remainder.indexOf("/");
-    if (slash < 0) leaves.push(file);
-    else {
-      const name = remainder.slice(0, slash);
-      const group = directories.get(name) ?? [];
-      group.push(file); directories.set(name, group);
-    }
-  }
-  return <ul>{[...directories].sort(([a], [b]) => a.localeCompare(b)).map(([name, children]) => <li key={`${prefix}${name}/`}><details open><summary aria-label={`${name}，${children.length} 个文件`}>{name}<small>{children.length}</small></summary><FileDirectory files={children} prefix={`${prefix}${name}/`} selected={selected} counts={counts} onSelect={onSelect} /></details></li>)}
-    {leaves.sort((a, b) => a.path.localeCompare(b.path)).map(file => { const count = counts.get(file.path) ?? 0; return <li key={file.path}><button title={file.path} aria-label={count ? `${file.path}（${count} 个问题）` : file.path} aria-current={file.path === selected ? "true" : undefined} onClick={() => onSelect(file.path)}><span>{file.path.slice(prefix.length)}</span>{count ? <em className="pr-diff-file-findings">{count} 个问题</em> : null}<small>{STATUS[file.status] ?? file.status}</small></button></li>; })}</ul>;
-}
 
 /** The directory's order: folders before files at each level, then by name. */
 const treeOrder = (left: string, right: string): number => {
@@ -52,7 +39,7 @@ const changesThrough = (hunks: HunkData[], target: ChangeData) => {
 function FindingNote({ finding }: { finding: PrReviewFinding }) {
   return <article className="pr-diff-finding" aria-label={`评审问题：${finding.title}`}>
     <header><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span><strong>{finding.title}</strong><span>第 {finding.line} 行 · {finding.side === "new" ? "新版本" : "旧版本"}</span></header>
-    <p>{finding.body}</p>
+    <div className="assistant-answer">{renderMarkdown(finding.body)}</div>
   </article>;
 }
 
@@ -60,27 +47,20 @@ function FileContent({ api, request, focusLine }: { api: Pick<DecisionApi, "load
   const [result, setResult] = useState<PrReviewFileResponse | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [limit, setLimit] = useState(2000);
-  const focused = useRef<HTMLLIElement>(null);
-  // A finding's line outside the diff is found here instead: shown, marked and scrolled to.
-  useEffect(() => { focused.current?.scrollIntoView?.({ block: "center" }); }, [result, focusLine]);
   const { connectionId, reference, sourceCommit, destinationCommit, path, side } = request;
   useEffect(() => {
     let disposed = false;
-    setResult(null); setError(""); setLimit(2000);
+    setResult(null); setError("");
     void api.loadPrReviewFile({ connectionId, reference, sourceCommit, destinationCommit, path, side })
       .then(value => { if (!disposed) setResult(value); })
       .catch(cause => { if (!disposed) setError(platformMessage(cause, "读取文件失败。")); });
     return () => { disposed = true; };
   }, [api, connectionId, reference, sourceCommit, destinationCommit, path, side, attempt]);
-  if (error) return <div className="pr-diff-notice" role="alert"><p>{error}</p><button className="secondary-button" onClick={() => setAttempt(value => value + 1)}>重试读取文件</button></div>;
+  if (error) return <div className="load-failure"><span role="alert">{error}</span><button type="button" className="secondary-button" onClick={() => setAttempt(value => value + 1)}>重试读取文件</button></div>;
   if (!result) return <p className="pr-diff-notice" role="status">正在读取文件内容…</p>;
   if (result.binary) return <p className="pr-diff-notice">二进制文件，无法展示文本内容。</p>;
   if (!result.content) return <p className="pr-diff-notice">这是一个空文件。</p>;
-  const lines = result.content.split("\n");
-  if (result.content.endsWith("\n")) lines.pop();
-  const shown = Math.max(limit, focusLine ?? 0);
-  return <><ol className="pr-file-lines" aria-label="文件内容">{lines.slice(0, shown).map((line, index) => <li key={index} {...(index + 1 === focusLine ? { ref: focused, "aria-current": "true" as const, "data-focus": "" } : {})}><code>{line || " "}</code></li>)}</ol>{lines.length > shown ? <div className="pr-diff-notice"><p>已显示前 {shown} / {lines.length} 行。</p><button className="secondary-button" onClick={() => setLimit(value => value + 2000)}>显示更多内容</button></div> : null}</>;
+  return <ReviewFileLines content={result.content} focusLine={focusLine} />;
 }
 
 /** Where a finding lands: the dialog opens on its file and highlights its line. */
@@ -191,7 +171,7 @@ export function PrDiffDialog({ api, snapshot, connectionId, reviewModel, focus, 
   return <ModalDialog title="PR 详情" size="workspace" onClose={onClose} onKeyDown={walkByKey}>
     <div className="pr-diff-dialog">
       <header className="pr-diff-summary"><h3>{snapshot.title}</h3><p>{snapshot.reference} · {snapshot.files.length} 个文件</p>
-        <details><summary>说明与提交信息</summary><p>项目：{snapshot.project}</p>{reviewModel ? <p>评审模型：{reviewModel}</p> : null}<p className="review-text">{snapshot.description || "未填写说明"}</p><p>源提交 <code>{snapshot.sourceCommit}</code></p><p>目标提交 <code>{snapshot.destinationCommit}</code></p>{snapshot.baseCommit ? <p>分叉点 <code>{snapshot.baseCommit}</code></p> : null}{snapshot.warnings.map(warning => <p key={warning}>{warning}</p>)}</details>
+        <details><summary>说明与提交信息</summary><p>项目：{snapshot.project}</p>{reviewModel ? <p>评审模型：{reviewModel}</p> : null}{snapshot.description ? <div className="assistant-answer">{renderMarkdown(snapshot.description, undefined, { linkTargets: true })}</div> : <p>未填写说明</p>}<p>源提交 <code>{snapshot.sourceCommit}</code></p><p>目标提交 <code>{snapshot.destinationCommit}</code></p>{snapshot.baseCommit ? <p>分叉点 <code>{snapshot.baseCommit}</code></p> : null}{snapshot.warnings.map(warning => <p key={warning}>{warning}</p>)}</details>
       </header>
       <div className="pr-diff-workspace">
         <aside id="pr-diff-files" className="pr-diff-files" aria-label="变更目录"><input type="search" aria-label="搜索变更文件" placeholder="搜索文件路径…" value={query} onChange={event => setQuery(event.target.value)} />{counts.size ? <label className="pr-diff-only-findings"><input type="checkbox" checked={onlyFindings} onChange={event => setOnlyFindings(event.currentTarget.checked)} />只看有问题的文件（{counts.size}）</label> : null}<nav aria-label="变更文件"><FileDirectory files={filtered} selected={selectedPath} counts={counts} onSelect={path => { setSelectedPath(path); setLimit(2000); }} />{!filtered.length ? <p>没有匹配的文件。</p> : null}</nav></aside>
@@ -203,7 +183,7 @@ export function PrDiffDialog({ api, snapshot, connectionId, reviewModel, focus, 
               <span>{at < 0 ? `${ordered.length} 个问题` : `问题 ${at + 1} / ${ordered.length}`}</span>
               <IconButton aria-label="下一个问题" aria-keyshortcuts="N" disabled={ordered.length < 2 && at === 0} onClick={() => step(1)}><ActionIcon name="next" /></IconButton>
             </div> : null}<div className="pr-diff-modes" role="group" aria-label="文件查看方式"><button aria-pressed={view === "diff"} onClick={() => setView("diff")}>变更</button><button aria-pressed={view === "file"} onClick={() => setView("file")}>文件内容</button></div>
-            {view === "file" ? <select aria-label="文件提交版本" value={effectiveSide} onChange={event => setSide(event.target.value as typeof side)}><option value="new" disabled={diff?.type === "delete"}>源提交 · {snapshot.sourceCommit.slice(0, 8)}</option><option value="old" disabled={diff?.type === "add"}>{snapshot.baseCommit ? "分叉点" : "目标提交"} · {(snapshot.baseCommit ?? snapshot.destinationCommit).slice(0, 8)}</option></select> : <div className="pr-diff-modes" role="group" aria-label="Diff 展示方式"><button aria-pressed={mode === "unified"} onClick={() => setDiffMode("unified")}>Unified</button><button aria-pressed={mode === "split"} onClick={() => setDiffMode("split")}>Side-by-Side</button></div>}</div>
+            {view === "file" ? <select aria-label="文件提交版本" value={effectiveSide} onChange={event => setSide(event.target.value as typeof side)}><option value="new" disabled={diff?.type === "delete"}>源提交 · {snapshot.sourceCommit.slice(0, 8)}</option><option value="old" disabled={diff?.type === "add"}>{snapshot.baseCommit ? "分叉点" : "目标提交"} · {(snapshot.baseCommit ?? snapshot.destinationCommit).slice(0, 8)}</option></select> : <div className="pr-diff-modes" role="group" aria-label="变更展示方式"><button aria-pressed={mode === "unified"} onClick={() => setDiffMode("unified")}>单栏</button><button aria-pressed={mode === "split"} onClick={() => setDiffMode("split")}>并排</button></div>}</div>
           </div>
           {view === "diff" && files && placed.outside.length ? <ul className="pr-diff-outside" aria-label="未显示在 diff 中的评审问题">{placed.outside.map(({ finding, later }, index) => <li key={index}>
             <span>{later ? "后面尚未显示" : "diff 之外"}</span><span className="pr-diff-finding-priority" data-priority={finding.priority}>{finding.priority}</span><strong>第 {finding.line} 行 · {finding.title}</strong>
@@ -212,7 +192,7 @@ export function PrDiffDialog({ api, snapshot, connectionId, reviewModel, focus, 
               : <button type="button" className="review-note-link" onClick={() => { setTarget({ path: finding.path, side: finding.side, line: finding.line }); setSide(finding.side); setView("file"); }}>在文件内容中查看</button>}
           </li>)}</ul> : null}
           <div className="pr-diff-code" key={selectedPath} ref={code} tabIndex={0} aria-label={`${selectedPath || "PR"} 变更内容`}>
-            {!connectionId ? <p className="pr-diff-notice">这条历史记录未保存平台连接。请从 PR 列表重新选择，查看最新变更。</p> : error ? <div className="pr-diff-notice" role="alert"><p>{error}</p><button className="secondary-button" onClick={() => setAttempt(value => value + 1)}>重试读取变更</button></div> : files === null ? <p className="pr-diff-notice" role="status">正在读取文件变更…</p> : !selected ? <p className="pr-diff-notice">此 PR 没有变更文件。</p> : view === "file" ? diff?.isBinary ? <p className="pr-diff-notice">二进制文件，无法展示文本内容。</p> : <FileContent key={`${filePath}:${effectiveSide}`} api={api} focusLine={focusing && effectiveSide === target.side ? target.line : undefined} request={{ connectionId, reference: snapshot.reference, sourceCommit: snapshot.sourceCommit, destinationCommit: snapshot.destinationCommit, path: filePath, side: effectiveSide }} /> : !diff ? <p className="pr-diff-notice">平台未返回此文件的可展示 diff，可能是二进制文件、仅元数据变更或内容被截断。</p> : diff.isBinary ? <p className="pr-diff-notice">二进制文件，无法展示文本差异。</p> : !total ? <p className="pr-diff-notice">此文件没有文本差异（可能仅重命名、权限变化或空文件变更）。</p> : <>
+            {!connectionId ? <p className="pr-diff-notice">这条历史记录未保存平台连接。请从 PR 列表重新选择，查看最新变更。</p> : error ? <div className="load-failure"><span role="alert">{error}</span><button type="button" className="secondary-button" onClick={() => setAttempt(value => value + 1)}>重试读取变更</button></div> : files === null ? <p className="pr-diff-notice" role="status">正在读取文件变更…</p> : !selected ? <p className="pr-diff-notice">此 PR 没有变更文件。</p> : view === "file" ? diff?.isBinary ? <p className="pr-diff-notice">二进制文件，无法展示文本内容。</p> : <FileContent key={`${filePath}:${effectiveSide}`} api={api} focusLine={focusing && effectiveSide === target.side ? target.line : undefined} request={{ connectionId, reference: snapshot.reference, sourceCommit: snapshot.sourceCommit, destinationCommit: snapshot.destinationCommit, path: filePath, side: effectiveSide }} /> : !diff ? <p className="pr-diff-notice">平台未返回此文件的可展示 diff，可能是二进制文件、仅元数据变更或内容被截断。</p> : diff.isBinary ? <p className="pr-diff-notice">二进制文件，无法展示文本差异。</p> : !total ? <p className="pr-diff-notice">此文件没有文本差异（可能仅重命名、权限变化或空文件变更）。</p> : <>
               <div className="pr-diff-side-labels" data-mode={mode}><span>变更前</span><span>变更后</span></div>
               <Diff viewType={mode} diffType={diff.type} hunks={visible} selectedChanges={focused} optimizeSelection widgets={placed.widgets}
                 // Split rows pass a missing side as null despite the type.

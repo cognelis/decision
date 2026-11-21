@@ -88,8 +88,8 @@ export const queryCliModels = async (
       ...request,
       timeoutMs: 8_000,
       maximumStdoutBytes: 1024 * 1024,
-      args: client === "codex" ? ["app-server", "--listen", "stdio://"] : ["-p", "--safe-mode", "--tools", "", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--no-session-persistence", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose"],
-      stdin: client === "codex" ? wire({ id: 1, method: "initialize", params: { clientInfo: { name: "decision_model_catalog", title: "Decision", version: "1.0.0" } } }) : wire({ type: "control_request", request_id: "catalog-init", request: { subtype: "initialize" } }),
+      args: client === "codex" ? ["-c", "features.respect_system_proxy=false", "-c", "features.system_proxy_fallback=false", "-c", "features.plugins=false", "-c", "features.apps=false", "app-server", "--listen", "stdio://"] : ["-p", "--safe-mode", "--setting-sources", "", "--tools", "", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--no-session-persistence", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose"],
+      stdin: client === "codex" ? wire({ id: 1, method: "initialize", params: { clientInfo: { name: "paraself_model_catalog", title: "Paraself", version: "1.0.0" } } }) : wire({ type: "control_request", request_id: "catalog-init", request: { subtype: "initialize" } }),
       conversation,
     });
     conversation(result.stdout);

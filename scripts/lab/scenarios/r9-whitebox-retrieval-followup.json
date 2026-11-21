@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "r9-wb-pagination-known-semantic-hit",
+      "description": "复用主集已证实可召回的中英同义主题，同时加入一个弱词面结果，对照 limit 1 分页与 limit 2 全页顺序",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9400.md",
+            "content": "---\nid: D9400\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"Order changes and event publication use the transactional outbox pattern\"\nproject: \"orders-cn\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# Order event delivery\n\nOrder changes and event publication use the transactional outbox pattern to reliably notify downstream services.\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9401.md",
+            "content": "---\nid: D9401\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"订单通知每周五发送\"\nproject: \"orders-cn\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 订单通知排期\n\n订单通知每周五发送一次。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "page-first",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "订单状态变化怎样可靠地通知下游？",
+            "project": "orders-cn",
+            "limit": 1,
+            "offset": 0
+          }
+        },
+        {
+          "id": "page-second",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "订单状态变化怎样可靠地通知下游？",
+            "project": "orders-cn",
+            "limit": 1,
+            "offset": 1
+          }
+        },
+        {
+          "id": "page-full",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "订单状态变化怎样可靠地通知下游？",
+            "project": "orders-cn",
+            "limit": 2,
+            "offset": 0
+          }
+        }
+      ]
+    }
+  ],
+  "startupProbe": {
+    "files": [
+      {
+        "path": "Decision Journal/decisions/2026/10/D9390.md",
+        "content": "---\nid: \"D9390\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"支付请求携带幂等键\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n支付幂等\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n支付请求携带幂等键\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuaUr-S7mOivt-axguaQuuW4puW5guetiemUriJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\nEvery payment request includes an idempotency key; retries return the first result.\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+      },
+      {
+        "path": "Decision Journal/decisions/2026/10/D9391.md",
+        "content": "---\nid: \"D9391\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"短期令牌定时轮换\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n访问令牌轮换\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n短期令牌定时轮换\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuefreacn-S7pOeJjOWumuaXtui9ruaNoiJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\nShort-lived access tokens rotate hourly.\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+      }
+    ],
+    "query": {
+      "query": "How do we prevent a retry from charging a payment twice?",
+      "project": "lab",
+      "limit": 3
+    }
+  },
+  "concurrentProbe": {
+    "files": [
+      {
+        "path": "Decision Journal/decisions/2026/10/D9340.md",
+        "content": "---\nid: \"D9340\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"单线程队列\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n旧并发方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n单线程队列\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWNlee6v-eoi-mYn-WIlyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+      },
+      {
+        "path": "Decision Journal/decisions/2026/10/D9341.md",
+        "content": "---\nid: \"D9341\"\ncreated: \"2026-10-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-10-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"分区工作队列\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n现行并发方案\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n分区工作队列\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuWIhuWMuuW3peS9nOmYn-WIlyJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：用于检验生命周期和检索关系。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：当前选择可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+      }
+    ],
+    "oldId": "D9340",
+    "newId": "D9341",
+    "writes": [
+      {
+        "outcome": "同时写入 A：验证连接稳定。",
+        "review": {
+          "verdict": "as_expected",
+          "lesson": "并发写入 A 的合成经验。"
+        }
+      },
+      {
+        "outcome": "同时写入 B：验证连接稳定。",
+        "review": {
+          "verdict": "better",
+          "lesson": "并发写入 B 的合成经验。"
+        }
+      }
+    ]
+  }
+}

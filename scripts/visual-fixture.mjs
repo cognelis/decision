@@ -13,10 +13,10 @@ const repositoryRoot = process.cwd();
 const appPath = join(
   repositoryRoot,
   "out",
-  "Decision-darwin-arm64",
-  "Decision.app",
+  "Paraself-darwin-arm64",
+  "Paraself.app",
 );
-const executable = join(appPath, "Contents", "MacOS", "Decision");
+const executable = join(appPath, "Contents", "MacOS", "Paraself");
 const root = await mkdtemp(join(tmpdir(), "decision-visual-"));
 const runtimeFile = join(root, "runtime.json");
 const vault = join(root, "vault");
@@ -25,12 +25,14 @@ const userData = join(root, "user-data");
 const child = spawn(executable, [], {
   env: {
     ...process.env,
-    DECISION_SMOKE: "1",
-    DECISION_VAULT_PATH: vault,
-    DECISION_USER_DATA: userData,
-    DECISION_RUNTIME_FILE: runtimeFile,
+    PARASELF_SMOKE: "1",
+    // Here to be looked at: up behind the app in front, unfocused.
+    PARASELF_SMOKE_SHOW_WINDOW: "1",
+    PARASELF_VAULT_PATH: vault,
+    PARASELF_USER_DATA: userData,
+    PARASELF_RUNTIME_FILE: runtimeFile,
     ...(mode === "settings"
-      ? { DECISION_START_SETTINGS: "1" }
+      ? { PARASELF_START_SETTINGS: "1" }
       : {}),
   },
   stdio: ["ignore", "ignore", "inherit"],

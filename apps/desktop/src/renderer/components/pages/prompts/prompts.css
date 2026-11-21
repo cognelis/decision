@@ -1,0 +1,70 @@
+/* 提示词：左栏搜索加列表，右边是选中那条的正文。写法沿用待办页的两栏（todos.css）。 */
+.prompt-panel { position: relative; display: flex; height: 100%; min-height: 0; flex-direction: column; overflow: hidden; }
+.prompt-panel .prompt-header-actions { display: flex; flex: none; align-items: center; gap: 14px; }
+.prompt-panel .prompt-create-button { gap: 6px; white-space: nowrap; }
+.prompt-panel :is(.prompt-create-button, .prompt-detail-actions .secondary-button, .prompt-search) svg {
+  width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.prompt-panel .prompt-workspace {
+  position: relative; display: grid; grid-template-columns: var(--list-width, 248px) 0 minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  flex: 1; min-height: 0; overflow: hidden; border-top: 1px solid var(--border);
+}
+.prompt-panel .prompt-workspace-single { display: flex; align-items: flex-start; justify-content: center; padding: 48px var(--page-padding-inline); }
+.prompt-panel .prompt-load-error { max-width: 560px; }
+.prompt-panel .prompt-muted { margin: 0; color: var(--muted); font-size: var(--t-base); }
+
+.prompt-panel .prompt-sidebar { display: flex; min-width: 0; min-height: 0; flex-direction: column; border-right: 1px solid var(--border); }
+.prompt-panel .prompt-search {
+  display: flex; min-width: 0; min-height: 28px; align-items: center; gap: 6px; margin: 12px 12px 8px; padding: 0 8px;
+  border: 1px solid var(--border-strong); border-radius: var(--r-md); background: var(--surface); color: var(--muted);
+}
+.prompt-panel .prompt-search:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.prompt-panel .prompt-search input {
+  width: 100%; min-width: 0; min-height: 0; padding: 5px 0; border: 0; background: transparent; box-shadow: none;
+  color: var(--text); font: inherit; font-size: var(--t-base);
+}
+.prompt-panel .prompt-search input:focus, .prompt-panel .prompt-search input:focus-visible { border: 0; outline: none; box-shadow: none; }
+
+.prompt-panel .prompt-list { display: grid; min-height: 0; flex: 1; align-content: start; gap: 2px; margin: 0; padding: 0 8px 12px; overflow-y: auto; list-style: none; }
+.prompt-panel .prompt-row {
+  position: relative; display: grid; width: 100%; gap: 3px; padding: 8px 10px; border: 1px solid transparent; border-radius: var(--r-md);
+  background: transparent; color: var(--text); cursor: pointer; font: inherit; text-align: left; overflow-wrap: anywhere;
+}
+.prompt-panel .prompt-row:hover { background: var(--surface-hover); }
+.prompt-panel .prompt-row[aria-current="true"] { border-color: var(--border-strong); background: var(--surface-raised); }
+.prompt-panel .prompt-row:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: -2px; }
+.prompt-panel .prompt-row strong { font-size: var(--t-base); font-weight: 600; line-height: 1.45; }
+.prompt-panel .prompt-row span { overflow: hidden; color: var(--muted); font-size: var(--t-body); line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-panel .prompt-no-match { display: grid; justify-items: start; gap: 4px; padding: 8px 20px; color: var(--muted); font-size: var(--t-base); }
+.prompt-panel .prompt-no-match p { margin: 0; }
+
+.prompt-panel .prompt-detail { display: flex; min-width: 0; min-height: 0; flex-direction: column; background: var(--surface); }
+.prompt-panel .prompt-detail-head {
+  display: flex; flex: none; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px;
+  padding: 12px 20px 10px; border-bottom: 1px solid var(--border-muted);
+}
+.prompt-panel .prompt-detail-head h2 {
+  min-width: 0; flex: 1 1 200px; margin: 2px 0 0; color: var(--text); font-size: var(--t-lead); font-weight: 600; line-height: 1.4; overflow-wrap: anywhere;
+}
+.prompt-panel .prompt-detail-actions { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.prompt-panel .prompt-detail-actions .secondary-button { gap: 5px; }
+.prompt-panel .prompt-copy-notice { color: var(--ok); font-size: var(--t-body); }
+.prompt-panel .prompt-copy-notice.prompt-copy-failed { color: var(--danger); }
+/* 正文按原样显示：缩进和换行在复制给 agent 时都有用。 */
+.prompt-panel .prompt-body {
+  min-height: 0; flex: 1; margin: 0; padding: 14px 20px 24px; overflow: auto; color: var(--text);
+  font-family: var(--font-ui); font-size: var(--t-base); line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text;
+}
+
+.prompt-panel .prompt-empty { display: grid; justify-items: center; gap: 8px; color: var(--muted); text-align: center; }
+.prompt-panel .prompt-empty h2 { margin: 0; color: var(--text); font-family: var(--font-display); font-size: var(--t-title); font-weight: 600; }
+.prompt-panel .prompt-empty p { margin: 0 0 4px; font-size: var(--t-base); line-height: 1.8; }
+
+.prompt-editor textarea { font-family: var(--font-mono); font-size: var(--t-base); line-height: 1.6; resize: vertical; }
+.prompt-discard-question { margin-right: auto; color: var(--text); font-size: var(--t-base); }
+
+@container (max-width: 620px) {
+  .prompt-panel .prompt-workspace:not(.prompt-workspace-single) { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 40%) minmax(0, 1fr); }
+  .prompt-panel .prompt-sidebar { border-right: 0; border-bottom: 1px solid var(--border); }
+}

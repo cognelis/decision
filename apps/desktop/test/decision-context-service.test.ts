@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { DecisionContextService } from "../src/main/decision-context-service.js";
 
 const document = (id: string, overrides: Partial<DecisionContextDocument> = {}): DecisionContextDocument => ({
-  id, source: "summarize", kind: "historical_decision", title: `${id}-列表稳定标识`, project: "web", status: "accepted",
+  id, source: "summarize", kind: "summarized_decision", title: `${id}-列表稳定标识`, project: "web", status: "accepted",
   created: "2026-09-01", summary: "可排序列表采用稳定的业务标识，不使用数组下标。", appliesWhen: null, caution: null,
   tags: ["React"], supersedes: [], supersededBy: [], relativePath: `Decision Journal/summarize/${id}.md`,
   client: "claude_code", sessionId: "session-example", body: "# 列表标识\n\n## 决策\n使用稳定业务标识。", bodyStartLine: 12, ...overrides,
@@ -36,7 +36,7 @@ describe("DecisionContextService", () => {
     const search = service([document("DEC-0001"), document("DEC-0002", { project: "server" })]);
     const result = await search.search(query({ query: "列表使用什么标识", project: "web" }));
     expect(result).toMatchObject({ status: "matched", coverage: "complete", total: 1 });
-    expect(result.results[0]).toMatchObject({ id: "DEC-0001", kind: "historical_decision", current: true, sourceRef: { relativePath: "Decision Journal/summarize/DEC-0001.md", sessionId: "session-example" } });
+    expect(result.results[0]).toMatchObject({ id: "DEC-0001", kind: "summarized_decision", current: true, sourceRef: { relativePath: "Decision Journal/summarize/DEC-0001.md", sessionId: "session-example" } });
     expect((await search.search(query({ recordId: "DEC-0002", project: "web" }))).results[0]?.warnings).toContain("按编号找到的记录属于其它项目，请核对适用范围。");
     expect((await search.search(query({ query: "支付凭证加密" }))).status).toBe("no_match");
   });
@@ -111,6 +111,46 @@ describe("DecisionContextService", () => {
     expect(result.sourceRef.truncated).toBe(true);
     const start = result.sourceRef.excerptStartLine - doc.bodyStartLine;
     expect(body.split("\n").slice(start).join("\n").slice(0, 3_000)).toBe(result.sourceRef.excerpt);
-    expect(result.kind).toBe("historical_decision");
+    expect(result.kind).toBe("summarized_decision");
+  });
+  // A wrong write deleted (IMP-121) left the decision it named as its successor "uncertain", after every current record.
+  it("ranks a record whose successor was deleted as current, and doubts it only while that successor may be unread", async () => {
+    const records = [
+      document("OLD", { supersededBy: ["WRONG"], title: "OLD-列表稳定标识", summary: "列表稳定标识用业务主键。" }),
+      document("OTHER", { title: "OTHER-表格", summary: "表格列表的稳定排序", body: "# 表格\n\n列表稳定排序" }),
+    ];
+    const deleted = await service(records).search(query({ query: "列表稳定标识" }));
+    expect(deleted.results.map((result) => [result.id, result.lifecycleState])).toEqual([["OLD", "current"], ["OTHER", "current"]]);
+    expect(deleted.results[0]!.warnings).toContain("记录的后继已不存在（已删除或从未记录），替代不再成立；请核对这条是否仍然有效。");
+    const unread = await service(records, { setAside: new Map([["summarize", new Set(["WRONG"])]]) }).search(query({ query: "列表稳定标识" }));
+    expect(unread.results.map((result) => [result.id, result.lifecycleState])).toEqual([["OTHER", "current"], ["OLD", "uncertain"]]);
+  });
+  // The successor that stands, said on the record it replaced: named by its id alone, it was a second search away.
+  it("says on a replaced record which record stands in its place and what it chose", async () => {
+    const records = [
+      document("OLD", { supersededBy: ["NEW"], summary: "列表用数组下标。" }),
+      document("NEW", { title: "NEW-列表稳定标识", summary: "列表改用业务主键。" }),
+    ];
+    const old = (await service(records).search(query({ source: "summarize", recordId: "OLD" }))).results[0]!;
+    expect(old.warnings).toContain("后继记录 summarize/NEW 仍然有效，当前有效的是 summarize/NEW《NEW-列表稳定标识》：列表改用业务主键。（Decision Journal/summarize/NEW.md）。");
+  });
+  it("doubts a record its own note marks replaced once its successor is gone, and says so", async () => {
+    const records = [document("OLD", { status: "superseded", supersededBy: ["GONE"] })];
+    const old = (await service(records).search(query({ source: "summarize", recordId: "OLD" }))).results[0]!;
+    expect(old.lifecycleState).toBe("uncertain");
+    expect(old.warnings).toContain("这条记录自己标为已替代，但后继已不存在，请核对是否仍然有效。");
+    expect(old.warnings.join("\n")).not.toMatch(/已被替代或退役|替代不再成立/u);
+  });
+  // A successor of another project, there by a slip of the id: said to stand here, it vouched for an unrelated choice.
+  it("says which record stands in its place only when it is of the same project or in scope for the query", async () => {
+    const records = [
+      document("OLD", { project: "payments", supersededBy: ["NEW"], summary: "支付写入使用请求序号防止重复扣款。" }),
+      document("NEW", { project: "analytics", summary: "报表压缩使用列式存储。" }),
+    ];
+    const old = (await service(records).search(query({ source: "summarize", recordId: "OLD" }))).results[0]!;
+    expect(old.warnings.join("\n")).not.toContain("当前有效的是");
+    expect(old.warnings).toContain("后继记录 summarize/NEW 属于其他项目（analytics），未确认是否适用于这里。");
+    const asked = (await service(records).search(query({ source: "summarize", recordId: "OLD", project: "analytics" }))).results[0]!;
+    expect(asked.warnings.join("\n")).toContain("当前有效的是 summarize/NEW");
   });
 });

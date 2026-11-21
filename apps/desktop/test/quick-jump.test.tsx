@@ -21,7 +21,7 @@ import {
   matchPrinciples,
   type QuickJumpApi,
 } from "../src/renderer/components/QuickJumpDialog.js";
-import { saveReviewHistory } from "../src/renderer/components/pages/pr-review/review-history.js";
+import { previewReviewHistory, saveReviewHistory } from "../src/renderer/components/pages/pr-review/review-history.js";
 import { emptyConversation, saveSessions } from "../src/renderer/components/pages/assistant/assistant-session.js";
 
 /**
@@ -117,6 +117,7 @@ const journalFixture = (): JournalEntry => ({
 });
 
 const apiFixture = (overrides: Partial<QuickJumpApi> = {}): QuickJumpApi => ({
+  ...previewReviewHistory,
   listDecisions: vi.fn(async () => [decisionFixture()]),
   listJournalEntries: vi.fn(async () => [journalFixture()]),
   searchObsidian: vi.fn(async ({ query }) => ({

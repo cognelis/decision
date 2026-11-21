@@ -9,7 +9,7 @@ import { detectIntegrationStatus } from "../src/main/integration-status.js";
 
 const passiveHook = (
   client: "claude-code" | "codex",
-  marker = "DECISION_HOOK=1",
+  marker = "PARASELF_HOOK=1",
 ) => ({
   hooks: {
     PostToolUse: [
@@ -82,7 +82,7 @@ describe("detectIntegrationStatus", () => {
         codexHooksPath: codex,
       }),
     ).resolves.toEqual({
-      claudeCode: "installed",
+      "claude-code": "installed",
       codex: "installed",
     });
   });
@@ -93,12 +93,12 @@ describe("detectIntegrationStatus", () => {
     await writeFile(claude, JSON.stringify({ ...passiveHook("claude-code"), disableAllHooks: true }), "utf8");
 
     await expect(detectIntegrationStatus({ claudeSettingsPath: claude, codexHooksPath: join(root, "absent.json") }))
-      .resolves.toEqual({ claudeCode: "disabled", codex: "not-installed" });
+      .resolves.toEqual({ "claude-code": "disabled", codex: "not-installed" });
 
     // Set with none of this app's hooks there (a reader who only ever connected Codex): never connected, not off.
     await writeFile(claude, JSON.stringify({ disableAllHooks: true, model: "opus" }), "utf8");
     await expect(detectIntegrationStatus({ claudeSettingsPath: claude, codexHooksPath: join(root, "absent.json") }))
-      .resolves.toEqual({ claudeCode: "not-installed", codex: "not-installed" });
+      .resolves.toEqual({ "claude-code": "not-installed", codex: "not-installed" });
   });
 
   it("asks to reconnect hooks that run a bridge this app no longer keeps there", async () => {
@@ -109,28 +109,51 @@ describe("detectIntegrationStatus", () => {
     await writeFile(codex, JSON.stringify(passiveHook("codex")), "utf8");
     const paths = { claudeSettingsPath: claude, codexHooksPath: codex };
 
-    await expect(detectIntegrationStatus(paths, "'/app/bridge'")).resolves.toEqual({ claudeCode: "installed", codex: "installed" });
+    await expect(detectIntegrationStatus(paths, "'/app/bridge'")).resolves.toEqual({ "claude-code": "installed", codex: "installed" });
     // The app moved, or upgraded into a new folder: the hooks still name the old bridge.
-    await expect(detectIntegrationStatus(paths, "'/Applications/Decision.app/Contents/Resources/bridge/decision-bridge'"))
-      .resolves.toEqual({ claudeCode: "upgrade-required", codex: "upgrade-required" });
+    await expect(detectIntegrationStatus(paths, "'/Applications/Paraself.app/Contents/Resources/bridge/paraself-bridge'"))
+      .resolves.toEqual({ "claude-code": "upgrade-required", codex: "upgrade-required" });
   });
 
   it("knows Windows hooks in the form both clients run, and asks to reconnect the cmd-syntax ones", async () => {
     const root = await mkdtemp(join(tmpdir(), "decision-status-"));
-    const bridge = "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd";
+    const bridge = "C:\\Program Files\\Paraself\\resources\\bridge\\paraself-bridge.cmd";
     const claude = join(root, "claude.json");
     const codex = join(root, "codex.json");
     const paths = { claudeSettingsPath: claude, codexHooksPath: codex };
     await writeFile(claude, JSON.stringify(mergeClaudeSettings({}, bridge, "win32")), "utf8");
     await writeFile(codex, JSON.stringify(mergeCodexHooks({}, bridge, "win32")), "utf8");
     await expect(detectIntegrationStatus(paths, hookBridgeReference(bridge, "win32"), "win32"))
-      .resolves.toEqual({ claudeCode: "installed", codex: "installed" });
+      .resolves.toEqual({ "claude-code": "installed", codex: "installed" });
 
     // Written before in cmd's syntax, which Claude Code's Git Bash or PowerShell never ran.
     await writeFile(claude, JSON.stringify(passiveHook("claude-code", 'set "DECISION_HOOK=1" &&')), "utf8");
     await writeFile(codex, JSON.stringify(passiveHook("codex", 'set "DECISION_HOOK=1" &&')), "utf8");
     await expect(detectIntegrationStatus(paths, hookBridgeReference(bridge, "win32"), "win32"))
-      .resolves.toEqual({ claudeCode: "upgrade-required", codex: "upgrade-required" });
+      .resolves.toEqual({ "claude-code": "upgrade-required", codex: "upgrade-required" });
+  });
+
+  it("asks to reconnect hooks Decision wrote, marked DECISION_HOOK=, whatever bridge they run", async () => {
+    const root = await mkdtemp(join(tmpdir(), "paraself-status-"));
+    const claude = join(root, "claude.json");
+    const codex = join(root, "codex.json");
+    await writeFile(claude, JSON.stringify(passiveHook("claude-code", "DECISION_HOOK=1")), "utf8");
+    await writeFile(codex, JSON.stringify(passiveHook("codex", "DECISION_HOOK=1")), "utf8");
+    const paths = { claudeSettingsPath: claude, codexHooksPath: codex };
+
+    await expect(detectIntegrationStatus(paths, "'/app/bridge'")).resolves.toEqual({ "claude-code": "upgrade-required", codex: "upgrade-required" });
+    await expect(detectIntegrationStatus(paths)).resolves.toEqual({ "claude-code": "upgrade-required", codex: "upgrade-required" });
+  });
+
+  it("does not take a reader's hook that only has the marker inside a word of its own for this app's", async () => {
+    const root = await mkdtemp(join(tmpdir(), "paraself-status-"));
+    const claude = join(root, "claude.json");
+    const codex = join(root, "codex.json");
+    await writeFile(claude, JSON.stringify(passiveHook("claude-code", "SKIP_PARASELF_HOOK=1")), "utf8");
+    await writeFile(codex, JSON.stringify(passiveHook("codex", "SKIP_DECISION_HOOK=1")), "utf8");
+
+    await expect(detectIntegrationStatus({ claudeSettingsPath: claude, codexHooksPath: codex }))
+      .resolves.toEqual({ "claude-code": "not-installed", codex: "not-installed" });
   });
 
   it("reports complete legacy hooks as requiring an upgrade", async () => {
@@ -154,7 +177,7 @@ describe("detectIntegrationStatus", () => {
         codexHooksPath: codex,
       }),
     ).resolves.toEqual({
-      claudeCode: "upgrade-required",
+      "claude-code": "upgrade-required",
       codex: "upgrade-required",
     });
   });
@@ -176,7 +199,7 @@ describe("detectIntegrationStatus", () => {
         codexHooksPath: path,
       }),
     ).resolves.toEqual({
-      claudeCode: "not-installed",
+      "claude-code": "not-installed",
       codex: "not-installed",
     });
   });
@@ -211,7 +234,7 @@ describe("detectIntegrationStatus", () => {
         codexHooksPath: legacy,
       }),
     ).resolves.toEqual({
-      claudeCode: "not-installed",
+      "claude-code": "not-installed",
       codex: "not-installed",
     });
   });
@@ -229,7 +252,7 @@ describe("detectIntegrationStatus", () => {
         codexHooksPath: malformed,
       }),
     ).resolves.toEqual({
-      claudeCode: "not-installed",
+      "claude-code": "not-installed",
       codex: "unknown",
     });
   });

@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "note": "Synthetic scenarios. Labels were fixed before any run. turns[0] is the opening prompt for the agent, turns[1..] are the user's replies; expectations[i] judges the pair (assistant reply to turns[i], turns[i+1]).",
+  "scenarios": [
+    {
+      "id": "s01-options-letter-zh",
+      "locale": "zh-CN",
+      "shape": "multi-option with recommendation, reply is a letter",
+      "turns": [
+        "我在给一个内部工具选存储。请不要调用任何工具、不要改文件。直接在回答里把三个方案（A SQLite、B PostgreSQL、C 纯 JSON 文件）各用一两句话比较，给出你的推荐，然后让我从 A/B/C 里选一个，等我回答。",
+        "B"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "high", "choice": "B", "kind": "option" }
+      ]
+    },
+    {
+      "id": "s02-options-number-en",
+      "locale": "en",
+      "shape": "numbered options, reply is a digit",
+      "turns": [
+        "I'm choosing a caching strategy for a small web service. Do not call any tools or edit files. In your reply, lay out three numbered options (1. in-process LRU, 2. Redis, 3. HTTP cache headers only), say which you recommend, then ask me which number to go with and wait for my answer.",
+        "2"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "high", "choice": "2", "kind": "option" }
+      ]
+    },
+    {
+      "id": "s03-approve-commit-zh",
+      "locale": "zh-CN",
+      "shape": "approval question, user agrees",
+      "turns": [
+        "假设你刚改完一个小功能，所有测试都通过了。请不要调用任何工具。只用文字告诉我改了什么（编一个具体的小改动即可），然后问我要不要现在提交，等我回答。",
+        "可以，提交吧"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "medium", "choice": "approve", "kind": "approval" }
+      ]
+    },
+    {
+      "id": "s04-reject-merge-zh",
+      "locale": "zh-CN",
+      "shape": "approval question, user refuses with a reason",
+      "turns": [
+        "假设你有一个已经评审通过的分支。请不要调用任何工具。只用文字告诉我分支情况，然后问我是否现在就合并到 main，等我回答。",
+        "先别合并，等 CI 的集成测试跑完再说"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "medium", "choice": "reject", "kind": "approval" }
+      ]
+    },
+    {
+      "id": "s05-partial-approval-zh",
+      "locale": "zh-CN",
+      "shape": "numbered list, partial approval",
+      "turns": [
+        "假设你审查了一个模块，发现三处可以改进：1 重命名含糊的变量，2 把一个大函数拆成两个，3 给公共函数补类型注解。请不要调用任何工具。用编号列表把这三项列给我，问我哪些要做，等我回答。",
+        "1 和 3 做，2 不做"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "medium", "choice": "partial:1,3", "kind": "partial-approval" }
+      ]
+    },
+    {
+      "id": "s06-status-not-approval-zh",
+      "locale": "zh-CN",
+      "shape": "assistant asks, user only reports status",
+      "turns": [
+        "假设你准备好了一个发布分支。请不要调用任何工具。只用文字问我：要不要由你来把它合并进 main？然后等我回答。",
+        "已经合并了"
+      ],
+      "expectations": [
+        { "decision": false, "reason": "The reply states that the merge already happened; it neither approves nor rejects the question, so no choice was made." }
+      ]
+    },
+    {
+      "id": "s07-topic-switch-zh",
+      "locale": "zh-CN",
+      "shape": "user ignores the question and starts a new task",
+      "turns": [
+        "我在选日志库。请不要调用任何工具。给我两个方案（A pino、B winston）的简短比较和推荐，然后让我选 A 或 B，等我回答。",
+        "先不管这个。帮我看一下 README 第三段有没有错别字"
+      ],
+      "expectations": [
+        { "decision": false, "reason": "The reply starts an unrelated task and gives no answer to the logging-library question." }
+      ]
+    },
+    {
+      "id": "s08-approve-with-question-en",
+      "locale": "en",
+      "shape": "approval plus a follow-up question",
+      "turns": [
+        "Pretend you've prepared a database schema migration that adds one nullable column. Do not call any tools. Describe it in a few sentences, then ask me whether to go ahead and apply it, and wait.",
+        "Yes, go ahead. How long do you expect it to take on a table with a few million rows?"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "medium", "choice": "approve", "kind": "approval" }
+      ]
+    },
+    {
+      "id": "s09-options-prose-reply-en",
+      "locale": "en",
+      "shape": "lettered options, reply in prose with a reason",
+      "turns": [
+        "I need to pick a state management approach for a mid-size React app. Do not call any tools. Compare options A (Redux Toolkit), B (Zustand), C (React context only) briefly, give a recommendation, then ask me to choose and wait.",
+        "Let's go with Zustand. The team is small and we don't want the boilerplate."
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "high", "choice": "B", "kind": "option", "hasReason": true }
+      ]
+    },
+    {
+      "id": "s10-long-message-zh",
+      "locale": "zh-CN",
+      "shape": "long reply: options in the middle, notes after",
+      "turns": [
+        "我们要给一个批处理任务选并发方式。请不要调用任何工具。先写一大段（至少 300 字）背景分析，然后在中段给出三个方案（A 线程池、B 异步 IO、C 多进程）的对比和你的推荐，再接着写一段至少 150 字的补充说明和风险提示，最后只简短提醒一句“请告诉我选哪个”，等我回答。",
+        "选 C"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "high", "choice": "C", "kind": "option" }
+      ]
+    },
+    {
+      "id": "s11-two-decisions-zh",
+      "locale": "zh-CN",
+      "shape": "two consecutive decisions in one session",
+      "turns": [
+        "我在做一个命令行工具。请不要调用任何工具。第一个问题：配置文件格式用 A（YAML）还是 B（TOML）？给出推荐，然后等我回答。",
+        "A。接着问我第二个问题：命令行参数解析要不要引入第三方库（是/否），给出你的建议，然后等我回答。",
+        "不引入，用标准库就行"
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "high", "choice": "A", "kind": "option" },
+        { "decision": true, "minBand": "medium", "choice": "reject", "kind": "approval" }
+      ]
+    },
+    {
+      "id": "s12-reject-continue-en",
+      "locale": "en",
+      "shape": "continue-or-stop question, user declines",
+      "turns": [
+        "Pretend you are halfway through deleting a set of stale feature-flag branches and noticed one of them has unmerged commits. Do not call any tools. Explain the situation briefly and ask me whether to continue deleting the rest, then wait.",
+        "No, stop here. Keep everything until I've looked at the unmerged one."
+      ],
+      "expectations": [
+        { "decision": true, "minBand": "medium", "choice": "reject", "kind": "approval" }
+      ]
+    },
+    {
+      "id": "s13-clarifying-question-zh",
+      "locale": "zh-CN",
+      "shape": "assistant asks a factual clarification, not a decision",
+      "turns": [
+        "假设我让你“改一下配置文件”，但没说是哪一个。请不要调用任何工具。只问我一句：你指的是哪个配置文件？然后等我回答。",
+        "是 config/app.yaml"
+      ],
+      "expectations": [
+        { "decision": false, "reason": "A factual clarification (which file), answered with a path. No alternatives were weighed, so it should not be recorded as a decision." }
+      ]
+    }
+  ]
+}

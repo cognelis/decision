@@ -9,7 +9,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { basename, dirname } from "node:path";
 
-export type RationaleSubmission =
+export type RationaleSubmission = (
   | {
       status: "captured";
       rationale?: string;
@@ -25,7 +25,8 @@ export type RationaleSubmission =
       expectedOutcome?: string;
     }
   | { status: "local_only"; rationale?: string; reasonFactors?: string[]; appliedPrincipleIds?: string[]; expectedOutcome?: string }
-  | { status: "not_recorded" };
+  | { status: "not_recorded" }
+) & { /** Persisted with the disposition so replay keeps the original confirmation time. */ confirmedAt?: string };
 
 export interface RationaleCandidate {
   status: "awaiting_rationale" | "completed";

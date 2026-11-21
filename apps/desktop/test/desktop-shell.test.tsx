@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DecisionApi } from "../src/shared/renderer-api.js";
@@ -30,6 +30,7 @@ const renderShell = (
       activeSurface={overrides.activeSurface ?? "decisions"}
       quickJumpApi={api}
       recordApi={api}
+      todoApi={api}
       reviewActivity={overrides.reviewActivity ?? null}
       onNavigate={vi.fn()}
       onRecorded={vi.fn()}
@@ -61,5 +62,17 @@ describe("DesktopShell", () => {
 
     expect(screen.getByRole("button", { name: /快速跳转/u })).toBeDisabled();
     expect(screen.getByRole("button", { name: /主动记录/u })).toBeDisabled();
+  });
+
+  it("opens quick add on shift-chord N only, and leaves the chord without shift to the manual record", () => {
+    renderShell();
+    fireEvent.keyDown(window, { key: "n", metaKey: true });
+    expect(screen.getByRole("dialog", { name: "主动记录" })).toBeVisible();
+    expect(screen.queryByRole("dialog", { name: "快速添加" })).toBeNull();
+    cleanup();
+    renderShell();
+    fireEvent.keyDown(window, { key: "N", metaKey: true, shiftKey: true });
+    expect(screen.getByRole("dialog", { name: "快速添加" })).toBeVisible();
+    expect(screen.queryByRole("dialog", { name: "主动记录" })).toBeNull();
   });
 });

@@ -1,0 +1,482 @@
+[
+  {
+    "id": "R7RV3-001",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "The team decided: “Switch to Render for hosting this release on Friday.”",
+    "expected": "schedule",
+    "attack": "真实发布和供应商决定整句置于弯引号中。"
+  },
+  {
+    "id": "R7RV3-002",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "Approved verbatim: \"We will enable the feature for all users next week.\"",
+    "expected": "schedule",
+    "attack": "真实全量开放决定写在直引号内。"
+  },
+  {
+    "id": "R7RV3-003",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "旧笔记“边读边转还是一次性批量转换”",
+    "expected": "schedule",
+    "attack": "关键迁移决定术语被引号包住。"
+  },
+  {
+    "id": "R7RV3-004",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "The chosen owner is `the search service` for the event schema.",
+    "expected": "schedule",
+    "attack": "架构决定的关键服务名被反引号包住。"
+  },
+  {
+    "id": "R7RV3-005",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "We agreed to “submit the desktop build to the app store on Friday.”",
+    "expected": "schedule",
+    "attack": "商店提交的真实决定只在引号里。"
+  },
+  {
+    "id": "R7RV3-006",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "The release call was “open the beta to all customers tomorrow.”",
+    "expected": "schedule",
+    "attack": "全量开放决定放在引号中。"
+  },
+  {
+    "id": "R7RV3-007",
+    "group": "quoted-text-not-decision",
+    "kind": "decision",
+    "text": "The banner shows “enable the feature for all users tomorrow” as sample copy.",
+    "expected": "no_schedule",
+    "attack": "界面示例文案，不是开放决定。"
+  },
+  {
+    "id": "R7RV3-008",
+    "group": "quoted-text-not-decision",
+    "kind": "decision",
+    "text": "The fixture includes `ship to production Friday` as a parser test string.",
+    "expected": "no_schedule",
+    "attack": "测试字符串，不是发布决定。"
+  },
+  {
+    "id": "R7RV3-009",
+    "group": "quoted-text-not-decision",
+    "kind": "decision",
+    "text": "A support ticket title is “Switch to Render for hosting”.",
+    "expected": "no_schedule",
+    "attack": "工单标题引用供应商措辞。"
+  },
+  {
+    "id": "R7RV3-010",
+    "group": "quoted-text-not-decision",
+    "kind": "decision",
+    "text": "The log message reads “the search service owns the event schema”.",
+    "expected": "no_schedule",
+    "attack": "日志引文描述当前归属。"
+  },
+  {
+    "id": "R7RV3-011",
+    "group": "quoted-text-not-decision",
+    "kind": "decision",
+    "text": "A design mock contains “open to all customers or a beta group”.",
+    "expected": "no_schedule",
+    "attack": "原型文案，不是范围决定。"
+  },
+  {
+    "id": "R7RV3-012",
+    "group": "quoted-text-not-decision",
+    "kind": "decision",
+    "text": "The release guide uses “submit the build to the store” as an example sentence.",
+    "expected": "no_schedule",
+    "attack": "指南中的示例句。"
+  },
+  {
+    "id": "R7RV3-013",
+    "group": "test-run-real-decision",
+    "kind": "decision",
+    "text": "CI passed; submit the desktop build to the app store on Friday.",
+    "expected": "schedule",
+    "attack": "CI 前置条件不应压掉真实商店提交时间。"
+  },
+  {
+    "id": "R7RV3-014",
+    "group": "test-run-real-decision",
+    "kind": "decision",
+    "text": "CI 通过后，周五提交商店。",
+    "expected": "schedule",
+    "attack": "题目指定的 CI 后真实提交决定。"
+  },
+  {
+    "id": "R7RV3-015",
+    "group": "test-run-real-decision",
+    "kind": "decision",
+    "text": "After validation, open the feature to all production users tomorrow.",
+    "expected": "schedule",
+    "attack": "validate 前置条件后仍有明确全量开放计划。"
+  },
+  {
+    "id": "R7RV3-016",
+    "group": "test-run-real-decision",
+    "kind": "decision",
+    "text": "The nightly pipeline passes; ship version 4.2 to production Monday.",
+    "expected": "schedule",
+    "attack": "nightly 流程完成后安排生产发布。"
+  },
+  {
+    "id": "R7RV3-017",
+    "group": "test-run-real-decision",
+    "kind": "decision",
+    "text": "Integration tests are green, so push the new release to production tonight.",
+    "expected": "schedule",
+    "attack": "测试通过后有真实生产发布安排。"
+  },
+  {
+    "id": "R7RV3-018",
+    "group": "test-run-real-decision",
+    "kind": "decision",
+    "text": "Validate signing first, then upload the release build to the App Store Friday.",
+    "expected": "schedule",
+    "attack": "签名校验前置条件后有真实商店发布决定。"
+  },
+  {
+    "id": "R7RV3-019",
+    "group": "test-run-nondecision",
+    "kind": "decision",
+    "text": "The CI job uploads a mock build to TestFlight to check signing.",
+    "expected": "no_schedule",
+    "attack": "测试管线上传假包。"
+  },
+  {
+    "id": "R7RV3-020",
+    "group": "test-run-nondecision",
+    "kind": "decision",
+    "text": "Nightly validation copies a fixture build to the app store sandbox.",
+    "expected": "no_schedule",
+    "attack": "夜间验证拷贝夹具到沙盒。"
+  },
+  {
+    "id": "R7RV3-021",
+    "group": "test-run-nondecision",
+    "kind": "decision",
+    "text": "The integration test validates a dummy release package; it never reaches users.",
+    "expected": "no_schedule",
+    "attack": "集成测试验证假包，无实际发布。"
+  },
+  {
+    "id": "R7RV3-022",
+    "group": "test-run-nondecision",
+    "kind": "decision",
+    "text": "CI checks whether the release metadata can be parsed.",
+    "expected": "no_schedule",
+    "attack": "CI 检查元数据，不安排发布。"
+  },
+  {
+    "id": "R7RV3-023",
+    "group": "test-run-nondecision",
+    "kind": "decision",
+    "text": "The nightly report lists the builds that were already shipped.",
+    "expected": "no_schedule",
+    "attack": "nightly 汇报已完成的版本。"
+  },
+  {
+    "id": "R7RV3-024",
+    "group": "test-run-nondecision",
+    "kind": "decision",
+    "text": "Validation is a test stage; no store upload is planned.",
+    "expected": "no_schedule",
+    "attack": "只说明验证阶段且明确没有提交计划。"
+  },
+  {
+    "id": "R7RV3-025",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "We should switch to Render.",
+    "expected": "schedule",
+    "attack": "Render 虽无用途补语，但语境是明确供应商切换决定。"
+  },
+  {
+    "id": "R7RV3-026",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Adopt Segment for the new product.",
+    "expected": "schedule",
+    "attack": "Segment 作为普通词供应商被直接采纳。"
+  },
+  {
+    "id": "R7RV3-027",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Choose Resend.",
+    "expected": "schedule",
+    "attack": "直接选择普通词同形供应商。"
+  },
+  {
+    "id": "R7RV3-028",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Let’s replace the current provider with Paddle.",
+    "expected": "schedule",
+    "attack": "用 Paddle 替换现有供应商。"
+  },
+  {
+    "id": "R7RV3-029",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Temporal or Restate for the workflow engine?",
+    "expected": "schedule",
+    "attack": "两个供应商对举，未重复说明用途。"
+  },
+  {
+    "id": "R7RV3-030",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Let’s go with Stripe.",
+    "expected": "schedule",
+    "attack": "直接采用 Stripe，省略服务用途。"
+  },
+  {
+    "id": "R7RV3-031",
+    "group": "plain-vendor-ordinary-word",
+    "kind": "decision",
+    "text": "Use Segment to divide this analytics paragraph into three segments.",
+    "expected": "no_schedule",
+    "attack": "Segment 作普通名词，即使同句提及 analytics。"
+  },
+  {
+    "id": "R7RV3-032",
+    "group": "plain-vendor-ordinary-word",
+    "kind": "decision",
+    "text": "Switch to Resend when the editor should send the email again.",
+    "expected": "no_schedule",
+    "attack": "Resend 是重新发送指令，同句 email 不代表供应商用途。"
+  },
+  {
+    "id": "R7RV3-033",
+    "group": "plain-vendor-ordinary-word",
+    "kind": "decision",
+    "text": "Adopt Temporal as an adjective in a sentence about workflows.",
+    "expected": "no_schedule",
+    "attack": "Temporal 是普通形容词，同句提及 workflows。"
+  },
+  {
+    "id": "R7RV3-034",
+    "group": "plain-vendor-ordinary-word",
+    "kind": "decision",
+    "text": "Use Paddle as the name of a striped payment icon in the mock.",
+    "expected": "no_schedule",
+    "attack": "Paddle 是普通词/图标名称，同句提及 payment。"
+  },
+  {
+    "id": "R7RV3-035",
+    "group": "plain-vendor-ordinary-word",
+    "kind": "decision",
+    "text": "Render the hosting page after the preview is ready.",
+    "expected": "no_schedule",
+    "attack": "Render 作动词；hosting 是页面内容语境。"
+  },
+  {
+    "id": "R7RV3-036",
+    "group": "plain-vendor-ordinary-word",
+    "kind": "decision",
+    "text": "The glossary uses “Stripe” to describe a striped payment card.",
+    "expected": "no_schedule",
+    "attack": "普通词义说明，不是采用 Stripe。"
+  },
+  {
+    "id": "R7RV3-037",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "旧笔记边读边转还是一次性批量转换？",
+    "expected": "schedule",
+    "attack": "新增边读边转迁移策略正例。"
+  },
+  {
+    "id": "R7RV3-038",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "Should the migration convert rows on read or run in one bulk pass?",
+    "expected": "schedule",
+    "attack": "按需转换与批处理的真实架构选择。"
+  },
+  {
+    "id": "R7RV3-039",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "会话数据由 core 模块还是 bridge 模块持有？",
+    "expected": "schedule",
+    "attack": "真实模块所有权选择。"
+  },
+  {
+    "id": "R7RV3-040",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "Which service should own the event contract going forward?",
+    "expected": "schedule",
+    "attack": "真实未来契约归属决策。"
+  },
+  {
+    "id": "R7RV3-041",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "Should the notification service own delivery receipts?",
+    "expected": "schedule",
+    "attack": "明确选择服务边界与数据归属。"
+  },
+  {
+    "id": "R7RV3-042",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "新功能开放给所有客户还是部分客户？",
+    "expected": "schedule",
+    "attack": "新增全部/部分客户发布范围选择。"
+  },
+  {
+    "id": "R7RV3-043",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "Should we open this feature to all customers or only a beta cohort?",
+    "expected": "schedule",
+    "attack": "英文全体/子集用户开放决策。"
+  },
+  {
+    "id": "R7RV3-044",
+    "group": "c6-narrow-positive",
+    "kind": "decision",
+    "text": "The search service should own the index data, not the API module.",
+    "expected": "schedule",
+    "attack": "明确建议并排除另一种模块归属。"
+  },
+  {
+    "id": "R7RV3-045",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "The image decoder reads a pixel and converts it immediately, then stores the result.",
+    "expected": "no_schedule",
+    "attack": "描述现有读时转换行为，不讨论迁移取舍。"
+  },
+  {
+    "id": "R7RV3-046",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "The core service owns the event schema and emits a snapshot on restart.",
+    "expected": "no_schedule",
+    "attack": "陈述现行模块职责，没有归属决策。"
+  },
+  {
+    "id": "R7RV3-047",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "The cache service owns session records at runtime; the API only reads them.",
+    "expected": "no_schedule",
+    "attack": "运行时事实陈述，不是选择服务归属。"
+  },
+  {
+    "id": "R7RV3-048",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "Access is open to all customers or a small beta cohort depending on the subscription tier.",
+    "expected": "no_schedule",
+    "attack": "描述权限当前取决于订阅等级，不是发布范围选择。"
+  },
+  {
+    "id": "R7RV3-049",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "The access report says the feature is enabled for all users in one region and a subset elsewhere.",
+    "expected": "no_schedule",
+    "attack": "区域现状汇报，不是开放范围决策。"
+  },
+  {
+    "id": "R7RV3-050",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "The import benchmark converts records as they are read; bulk conversion is disabled.",
+    "expected": "no_schedule",
+    "attack": "报告当前实现状态，不是迁移方案选择。"
+  },
+  {
+    "id": "R7RV3-051",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "During replay, the service held the event data until the batch closed.",
+    "expected": "no_schedule",
+    "attack": "过去发生的运行事实，不是模块归属决策。"
+  },
+  {
+    "id": "R7RV3-052",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "The service opens access to every customer by default; this is the current policy.",
+    "expected": "no_schedule",
+    "attack": "当前默认权限陈述，不是在安排发布。"
+  },
+  {
+    "id": "R7RV3-053",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "“Use Segment” for product analytics.",
+    "expected": "schedule",
+    "attack": "关键动作和普通词供应商名一同被引号包住。"
+  },
+  {
+    "id": "R7RV3-054",
+    "group": "quoted-real-decision",
+    "kind": "decision",
+    "text": "`Switch to Render` for hosting.",
+    "expected": "schedule",
+    "attack": "关键选择语句放在反引号内。"
+  },
+  {
+    "id": "R7RV3-055",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "性能日志显示，当前版本边读边转，旧版本还是一次性批量转换。",
+    "expected": "no_schedule",
+    "attack": "复盘报告比较两个版本既有实现，不是在选择迁移方式。"
+  },
+  {
+    "id": "R7RV3-056",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "当前开放给所有客户还是部分客户由许可证自动决定。",
+    "expected": "no_schedule",
+    "attack": "描述许可证决定的现状范围，不是新的开放排期。"
+  },
+  {
+    "id": "R7RV3-057",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Switch to Render for hosting.",
+    "expected": "schedule",
+    "attack": "普通词供应商有明确用途上下文时应保留选择。"
+  },
+  {
+    "id": "R7RV3-058",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Switch to Resend for email delivery.",
+    "expected": "schedule",
+    "attack": "普通词供应商有邮件用途上下文时应保留选择。"
+  },
+  {
+    "id": "R7RV3-059",
+    "group": "plain-vendor-real-decision",
+    "kind": "decision",
+    "text": "Adopt Segment for product analytics.",
+    "expected": "schedule",
+    "attack": "普通词供应商有分析用途上下文时应保留选择。"
+  },
+  {
+    "id": "R7RV3-060",
+    "group": "c6-narrow-negative",
+    "kind": "decision",
+    "text": "基准报告比较边读边转还是一次性批量转换的耗时；当前服务按文件大小决定实现路径。",
+    "expected": "no_schedule",
+    "attack": "性能报告比较现有实现，当前路径由文件大小自动决定，不是新的迁移决策。"
+  }
+]

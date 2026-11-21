@@ -26,7 +26,7 @@ it("browses directory files in unified and split views and handles deletion, ren
   expect(await screen.findByText("const value = 2;")).toBeVisible();
   expect(document.querySelector(".diff-unified")).toBeInTheDocument();
   expect(client.loadPrReviewDiff).toHaveBeenCalledWith(expect.objectContaining({ sourceCommit: snapshot.sourceCommit, destinationCommit: snapshot.destinationCommit }));
-  fireEvent.click(screen.getByRole("button", { name: "Side-by-Side" }));
+  fireEvent.click(screen.getByRole("button", { name: "并排" }));
   expect(document.querySelector(".diff-split")).toBeInTheDocument();
   expect(localStorage.getItem("decision.pr-review.diff-mode")).toBe("split");
   fireEvent.click(screen.getByRole("button", { name: "docs/old.md" }));

@@ -17,10 +17,8 @@ import type {
 const DEFAULT_RECEIPT_TTL_MS = 30 * 60 * 1_000;
 const DEFAULT_MAX_PENDING_RECEIPTS = 256;
 
-export type DecisionConsultationFeedbackSource =
-  | "claude-code"
-  | "codex"
-  | "preview";
+/** A client's id, or `preview`. */
+export type DecisionConsultationFeedbackSource = string;
 
 interface PendingFeedbackReceipt {
   source: DecisionConsultationFeedbackSource;

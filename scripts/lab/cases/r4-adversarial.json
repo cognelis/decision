@@ -1,0 +1,753 @@
+[
+  {
+    "id": "SK-001",
+    "group": "rhetorical-question",
+    "assistantText": "我先把现状和约束梳理一下：当前请求仍走同步路径，慢查询会占住工作线程；改成异步可以释放线程，但会扩大这次变更范围。若沿用同步实现，改动最少；若切到异步，后续吞吐更好。这里真正要确认的是这轮是否纳入接口迁移。我倾向先控制范围。",
+    "userText": "既然异步明显更好，为什么不现在直接改？",
+    "decision": false
+  },
+  {
+    "id": "SK-002",
+    "group": "rhetorical-question",
+    "assistantText": "我先把现状和约束梳理一下：当前请求仍走同步路径，慢查询会占住工作线程；改成异步可以释放线程，但会扩大这次变更范围。若沿用同步实现，改动最少；若切到异步，后续吞吐更好。这里真正要确认的是这轮是否纳入接口迁移。我倾向先控制范围。",
+    "userText": "这个收益足够大，为什么还要留在同步方案？",
+    "decision": false
+  },
+  {
+    "id": "SK-003",
+    "group": "rhetorical-question",
+    "assistantText": "我先把现状和约束梳理一下：当前请求仍走同步路径，慢查询会占住工作线程；改成异步可以释放线程，但会扩大这次变更范围。若沿用同步实现，改动最少；若切到异步，后续吞吐更好。这里真正要确认的是这轮是否纳入接口迁移。我倾向先控制范围。",
+    "userText": "要是范围能控制住，为什么不顺便一起迁？",
+    "decision": false
+  },
+  {
+    "id": "SK-004",
+    "group": "rhetorical-question",
+    "assistantText": "我先把现状和约束梳理一下：当前请求仍走同步路径，慢查询会占住工作线程；改成异步可以释放线程，但会扩大这次变更范围。若沿用同步实现，改动最少；若切到异步，后续吞吐更好。这里真正要确认的是这轮是否纳入接口迁移。我倾向先控制范围。",
+    "userText": "为什么不能先只迁这个入口？",
+    "decision": false
+  },
+  {
+    "id": "SK-005",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "先做 1 和 3，2 等幂等边界确认后再说。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "SK-006",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "这次只做 1，其他两项不动。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "SK-007",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "1、3 按这个范围实施；2 暂缓。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "SK-008",
+    "group": "rhetorical-question",
+    "assistantText": "我把本次可选改动列在这里，便于限定范围：\n1. 为读取请求增加超时\n2. 对幂等请求增加一次重试\n3. 为失败请求记录 request ID\n三项彼此独立。超时最能避免请求挂起；重试需要先确认幂等边界。你可以指定先做的编号，我再按范围修改。",
+    "userText": "我批准 1 和 3，先别加重试。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "SK-009",
+    "group": "topic-shift",
+    "assistantText": "我检查了导入流程，发现失败重试会重复写入部分记录。可选处理是先加幂等键，或把失败批次转入隔离队列。前者变更较小，后者运维更清楚。你希望我按哪种方式处理？",
+    "userText": "先别管导入了，帮我把登录页的截图裁一下。",
+    "decision": false
+  },
+  {
+    "id": "SK-010",
+    "group": "topic-shift",
+    "assistantText": "我检查了导入流程，发现失败重试会重复写入部分记录。可选处理是先加幂等键，或把失败批次转入隔离队列。前者变更较小，后者运维更清楚。你希望我按哪种方式处理？",
+    "userText": "我们先看一下今天的 PR 列表，导入策略稍后再定。",
+    "decision": false
+  },
+  {
+    "id": "SK-011",
+    "group": "topic-shift",
+    "assistantText": "我检查了导入流程，发现失败重试会重复写入部分记录。可选处理是先加幂等键，或把失败批次转入隔离队列。前者变更较小，后者运维更清楚。你希望我按哪种方式处理？",
+    "userText": "换个话题：帮我查查本地 node 版本。",
+    "decision": false
+  },
+  {
+    "id": "SK-012",
+    "group": "topic-shift",
+    "assistantText": "我检查了导入流程，发现失败重试会重复写入部分记录。可选处理是先加幂等键，或把失败批次转入隔离队列。前者变更较小，后者运维更清楚。你希望我按哪种方式处理？",
+    "userText": "先暂停这个，继续把 README 的拼写修掉。",
+    "decision": false
+  },
+  {
+    "id": "SK-013",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "好，这轮只加稳定幂等键，隔离队列先不做。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "SK-014",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "按你建议的范围改：只加幂等键。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "SK-015",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "可以，本轮先实现幂等键。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "SK-016",
+    "group": "topic-shift",
+    "assistantText": "针对导入重复写入，我建议本轮只做一个安全改动：为每条记录使用稳定幂等键；隔离队列留到后续运维方案确认后再做。这样不会改变成功路径。你可以明确批准范围。",
+    "userText": "批准只加幂等键，其他留后续。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "SK-017",
+    "group": "count-progress",
+    "assistantText": "部署清单的当前进度如下（这里只汇报状态，没有执行新操作）：\n- 1/4：构建产物已生成\n- 2/4：校验和通过\n- 2/4：签名尚未生成\n- 4/4：灰度尚未开始\n签名和灰度需要单独确认后才能继续。",
+    "userText": "已经完成 2/4，剩下两步还没开始。",
+    "decision": false
+  },
+  {
+    "id": "SK-018",
+    "group": "count-progress",
+    "assistantText": "部署清单的当前进度如下（这里只汇报状态，没有执行新操作）：\n- 1/4：构建产物已生成\n- 2/4：校验和通过\n- 2/4：签名尚未生成\n- 4/4：灰度尚未开始\n签名和灰度需要单独确认后才能继续。",
+    "userText": "现在是 2/4，先记下进度即可。",
+    "decision": false
+  },
+  {
+    "id": "SK-019",
+    "group": "count-progress",
+    "assistantText": "部署清单的当前进度如下（这里只汇报状态，没有执行新操作）：\n- 1/4：构建产物已生成\n- 2/4：校验和通过\n- 2/4：签名尚未生成\n- 4/4：灰度尚未开始\n签名和灰度需要单独确认后才能继续。",
+    "userText": "签名还没生成，当前不能说发布完成。",
+    "decision": false
+  },
+  {
+    "id": "SK-020",
+    "group": "count-progress",
+    "assistantText": "部署清单的当前进度如下（这里只汇报状态，没有执行新操作）：\n- 1/4：构建产物已生成\n- 2/4：校验和通过\n- 2/4：签名尚未生成\n- 4/4：灰度尚未开始\n签名和灰度需要单独确认后才能继续。",
+    "userText": "比早上多完成了一步，其他状态不变。",
+    "decision": false
+  },
+  {
+    "id": "SK-021",
+    "group": "count-progress",
+    "assistantText": "发布前有三项可以独立处理：\n1. 更新版本号\n2. 生成变更摘要\n3. 校验安装包签名\n目前 1 和 2 已有自动化，3 需要本机密钥。你批准后我只执行你选的编号。",
+    "userText": "先把 1 和 2 做掉，3 等密钥准备好。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "SK-022",
+    "group": "count-progress",
+    "assistantText": "发布前有三项可以独立处理：\n1. 更新版本号\n2. 生成变更摘要\n3. 校验安装包签名\n目前 1 和 2 已有自动化，3 需要本机密钥。你批准后我只执行你选的编号。",
+    "userText": "同意现在更新版本号和变更摘要。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "SK-023",
+    "group": "count-progress",
+    "assistantText": "发布前有三项可以独立处理：\n1. 更新版本号\n2. 生成变更摘要\n3. 校验安装包签名\n目前 1 和 2 已有自动化，3 需要本机密钥。你批准后我只执行你选的编号。",
+    "userText": "1、2 本轮执行，签名校验暂缓。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "SK-024",
+    "group": "count-progress",
+    "assistantText": "发布前有三项可以独立处理：\n1. 更新版本号\n2. 生成变更摘要\n3. 校验安装包签名\n目前 1 和 2 已有自动化，3 需要本机密钥。你批准后我只执行你选的编号。",
+    "userText": "就做前两项，第三项别动。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "SK-025",
+    "group": "status-history",
+    "assistantText": "我从提交记录整理出几个历史状态，供你判断：\n- 1：缓存过期时间在上周已调到 10 分钟\n- 2：旧配置迁移在昨天完成\n- 3：过期键清理尚未部署\n这些是状态记录，不代表建议这轮再次修改。",
+    "userText": "第 1 项上周已经调过，确认一下没有重复改。",
+    "decision": false
+  },
+  {
+    "id": "SK-026",
+    "group": "status-history",
+    "assistantText": "我从提交记录整理出几个历史状态，供你判断：\n- 1：缓存过期时间在上周已调到 10 分钟\n- 2：旧配置迁移在昨天完成\n- 3：过期键清理尚未部署\n这些是状态记录，不代表建议这轮再次修改。",
+    "userText": "旧配置迁移昨天完成了，先记录为已完成。",
+    "decision": false
+  },
+  {
+    "id": "SK-027",
+    "group": "status-history",
+    "assistantText": "我从提交记录整理出几个历史状态，供你判断：\n- 1：缓存过期时间在上周已调到 10 分钟\n- 2：旧配置迁移在昨天完成\n- 3：过期键清理尚未部署\n这些是状态记录，不代表建议这轮再次修改。",
+    "userText": "现在 3 还没部署，仍然保持这个状态。",
+    "decision": false
+  },
+  {
+    "id": "SK-028",
+    "group": "status-history",
+    "assistantText": "我从提交记录整理出几个历史状态，供你判断：\n- 1：缓存过期时间在上周已调到 10 分钟\n- 2：旧配置迁移在昨天完成\n- 3：过期键清理尚未部署\n这些是状态记录，不代表建议这轮再次修改。",
+    "userText": "第 2 项确实已完成，我说的是历史状态。",
+    "decision": false
+  },
+  {
+    "id": "SK-029",
+    "group": "status-history",
+    "assistantText": "历史清理任务仍未启用。候选改动是：\n1. 增加过期键清理任务\n2. 保留现有手动清理方式\n3. 仅补充清理指标\n我建议先加指标再观察一周。你可以明确选择本轮要实施的改动。",
+    "userText": "这次批准 3，只补指标；清理任务先不启用。",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "SK-030",
+    "group": "status-history",
+    "assistantText": "历史清理任务仍未启用。候选改动是：\n1. 增加过期键清理任务\n2. 保留现有手动清理方式\n3. 仅补充清理指标\n我建议先加指标再观察一周。你可以明确选择本轮要实施的改动。",
+    "userText": "请按方案 3 执行，观察一周后再定是否自动清理。",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "SK-031",
+    "group": "status-history",
+    "assistantText": "历史清理任务仍未启用。候选改动是：\n1. 增加过期键清理任务\n2. 保留现有手动清理方式\n3. 仅补充清理指标\n我建议先加指标再观察一周。你可以明确选择本轮要实施的改动。",
+    "userText": "我决定先保留手动清理，暂时不改。",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "SK-032",
+    "group": "status-history",
+    "assistantText": "历史清理任务仍未启用。候选改动是：\n1. 增加过期键清理任务\n2. 保留现有手动清理方式\n3. 仅补充清理指标\n我建议先加指标再观察一周。你可以明确选择本轮要实施的改动。",
+    "userText": "选 3，其他两项保持原样。",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "SK-033",
+    "group": "english-table-partial",
+    "assistantText": "I reviewed the rollout choices and kept the scope to three independent changes:\n| ID | Change | Risk |\n|---|---|---|\n| A | Add a health check before traffic switch | Low |\n| B | Enable automatic rollback | Medium; needs an alert threshold |\n| C | Keep the previous build available for one day | Low |\nThe health check and retained build can ship independently. Automatic rollback should wait until the threshold is agreed. Which items should I implement in this pass?",
+    "userText": "Ship A and C now; leave B until we agree on the threshold.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "SK-034",
+    "group": "english-table-partial",
+    "assistantText": "I reviewed the rollout choices and kept the scope to three independent changes:\n| ID | Change | Risk |\n|---|---|---|\n| A | Add a health check before traffic switch | Low |\n| B | Enable automatic rollback | Medium; needs an alert threshold |\n| C | Keep the previous build available for one day | Low |\nThe health check and retained build can ship independently. Automatic rollback should wait until the threshold is agreed. Which items should I implement in this pass?",
+    "userText": "Please implement A and C. B stays out of this change.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "SK-035",
+    "group": "english-table-partial",
+    "assistantText": "I reviewed the rollout choices and kept the scope to three independent changes:\n| ID | Change | Risk |\n|---|---|---|\n| A | Add a health check before traffic switch | Low |\n| B | Enable automatic rollback | Medium; needs an alert threshold |\n| C | Keep the previous build available for one day | Low |\nThe health check and retained build can ship independently. Automatic rollback should wait until the threshold is agreed. Which items should I implement in this pass?",
+    "userText": "A/C approved for this pass; revisit B after threshold review.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "SK-036",
+    "group": "english-table-partial",
+    "assistantText": "I reviewed the rollout choices and kept the scope to three independent changes:\n| ID | Change | Risk |\n|---|---|---|\n| A | Add a health check before traffic switch | Low |\n| B | Enable automatic rollback | Medium; needs an alert threshold |\n| C | Keep the previous build available for one day | Low |\nThe health check and retained build can ship independently. Automatic rollback should wait until the threshold is agreed. Which items should I implement in this pass?",
+    "userText": "Do A plus C, and defer the automatic rollback.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "SK-037",
+    "group": "english-table-partial",
+    "assistantText": "I checked the release notes table below. These are current rollout facts, not proposed changes:\n| Stage | Status |\n|---|---|\n| A | Canary completed yesterday |\n| B | Full rollout is at 30% |\n| C | Rollback window closes at 18:00 |\nNo action has been requested yet. I can explain any row or prepare a separate rollout plan if needed.",
+    "userText": "A was completed yesterday; please don't rerun it.",
+    "decision": false
+  },
+  {
+    "id": "SK-038",
+    "group": "english-table-partial",
+    "assistantText": "I checked the release notes table below. These are current rollout facts, not proposed changes:\n| Stage | Status |\n|---|---|\n| A | Canary completed yesterday |\n| B | Full rollout is at 30% |\n| C | Rollback window closes at 18:00 |\nNo action has been requested yet. I can explain any row or prepare a separate rollout plan if needed.",
+    "userText": "B is currently at 30%, not a request to increase it.",
+    "decision": false
+  },
+  {
+    "id": "SK-039",
+    "group": "english-table-partial",
+    "assistantText": "I checked the release notes table below. These are current rollout facts, not proposed changes:\n| Stage | Status |\n|---|---|\n| A | Canary completed yesterday |\n| B | Full rollout is at 30% |\n| C | Rollback window closes at 18:00 |\nNo action has been requested yet. I can explain any row or prepare a separate rollout plan if needed.",
+    "userText": "Can you explain why C closes at 18:00?",
+    "decision": false
+  },
+  {
+    "id": "SK-040",
+    "group": "english-table-partial",
+    "assistantText": "I checked the release notes table below. These are current rollout facts, not proposed changes:\n| Stage | Status |\n|---|---|\n| A | Canary completed yesterday |\n| B | Full rollout is at 30% |\n| C | Rollback window closes at 18:00 |\nNo action has been requested yet. I can explain any row or prepare a separate rollout plan if needed.",
+    "userText": "Thanks, keep the current rollout status unchanged.",
+    "decision": false
+  },
+  {
+    "id": "SK-041",
+    "group": "english-numbered-partial",
+    "assistantText": "For the parser cleanup, I found three independent edits:\n1. Preserve the existing escape handling\n2. Reject malformed byte sequences\n3. Add a focused diagnostic message\nThe first two affect behavior; the diagnostic is safe to ship separately. I recommend doing 2 and 3 while leaving escape semantics unchanged. Which numbered items do you approve for this patch?",
+    "userText": "Implement 2 and 3; keep 1 unchanged.",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "SK-042",
+    "group": "english-numbered-partial",
+    "assistantText": "For the parser cleanup, I found three independent edits:\n1. Preserve the existing escape handling\n2. Reject malformed byte sequences\n3. Add a focused diagnostic message\nThe first two affect behavior; the diagnostic is safe to ship separately. I recommend doing 2 and 3 while leaving escape semantics unchanged. Which numbered items do you approve for this patch?",
+    "userText": "Please do steps 2 and 3 only.",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "SK-043",
+    "group": "english-numbered-partial",
+    "assistantText": "For the parser cleanup, I found three independent edits:\n1. Preserve the existing escape handling\n2. Reject malformed byte sequences\n3. Add a focused diagnostic message\nThe first two affect behavior; the diagnostic is safe to ship separately. I recommend doing 2 and 3 while leaving escape semantics unchanged. Which numbered items do you approve for this patch?",
+    "userText": "2/3 are approved, and 1 should remain as it is.",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "SK-044",
+    "group": "english-numbered-partial",
+    "assistantText": "For the parser cleanup, I found three independent edits:\n1. Preserve the existing escape handling\n2. Reject malformed byte sequences\n3. Add a focused diagnostic message\nThe first two affect behavior; the diagnostic is safe to ship separately. I recommend doing 2 and 3 while leaving escape semantics unchanged. Which numbered items do you approve for this patch?",
+    "userText": "Go ahead with items two and three; defer the escape change.",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "SK-045",
+    "group": "english-numbered-partial",
+    "assistantText": "I ran the requested checks and here is the current state:\n1. Typecheck passed on the current branch\n2. Unit suite has not been run\n3. Build artifact is from yesterday's commit\nThese numbered lines are a status summary. I have not changed the branch or started another build.",
+    "userText": "Step 1 passed; that's the result from the current branch.",
+    "decision": false
+  },
+  {
+    "id": "SK-046",
+    "group": "english-numbered-partial",
+    "assistantText": "I ran the requested checks and here is the current state:\n1. Typecheck passed on the current branch\n2. Unit suite has not been run\n3. Build artifact is from yesterday's commit\nThese numbered lines are a status summary. I have not changed the branch or started another build.",
+    "userText": "We still haven't run item 2, so don't mark validation complete.",
+    "decision": false
+  },
+  {
+    "id": "SK-047",
+    "group": "english-numbered-partial",
+    "assistantText": "I ran the requested checks and here is the current state:\n1. Typecheck passed on the current branch\n2. Unit suite has not been run\n3. Build artifact is from yesterday's commit\nThese numbered lines are a status summary. I have not changed the branch or started another build.",
+    "userText": "The artifact is yesterday's build; leave it as is for now.",
+    "decision": false
+  },
+  {
+    "id": "SK-048",
+    "group": "english-numbered-partial",
+    "assistantText": "I ran the requested checks and here is the current state:\n1. Typecheck passed on the current branch\n2. Unit suite has not been run\n3. Build artifact is from yesterday's commit\nThese numbered lines are a status summary. I have not changed the branch or started another build.",
+    "userText": "Can you clarify whether 1 includes generated files?",
+    "decision": false
+  },
+  {
+    "id": "R4A2-001",
+    "group": "listed-pick-paraphrase",
+    "assistantText": "目前可以选一种缓存策略：\nA. 保留进程内缓存 —— 最稳，改动范围小\nB. 切换 Redis —— 多实例共享，但增加依赖\nC. 去掉缓存 —— 行为最简单但会增加读取\n你想让我采用哪一种？",
+    "userText": "就按你说的那个稳的来。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "R4A2-002",
+    "group": "listed-pick-paraphrase",
+    "assistantText": "目前可以选一种缓存策略：\nA. 保留进程内缓存 —— 最稳，改动范围小\nB. 切换 Redis —— 多实例共享，但增加依赖\nC. 去掉缓存 —— 行为最简单但会增加读取\n你想让我采用哪一种？",
+    "userText": "按最省事的方案做吧。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "R4A2-003",
+    "group": "listed-pick-paraphrase",
+    "assistantText": "目前可以选一种缓存策略：\nA. 保留进程内缓存 —— 最稳，改动范围小\nB. 切换 Redis —— 多实例共享，但增加依赖\nC. 去掉缓存 —— 行为最简单但会增加读取\n你想让我采用哪一种？",
+    "userText": "我倾向风险最低的那个，照这个执行。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ]
+  },
+  {
+    "id": "R4A2-004",
+    "group": "listed-pick-paraphrase",
+    "assistantText": "目前可以选一种缓存策略：\nA. 保留进程内缓存 —— 最稳，改动范围小\nB. 切换 Redis —— 多实例共享，但增加依赖\nC. 去掉缓存 —— 行为最简单但会增加读取\n你想让我采用哪一种？",
+    "userText": "哪个方案最稳？我先比较一下再决定。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-005",
+    "group": "listed-pick-paraphrase",
+    "assistantText": "目前可以选一种缓存策略：\nA. 保留进程内缓存 —— 最稳，改动范围小\nB. 切换 Redis —— 多实例共享，但增加依赖\nC. 去掉缓存 —— 行为最简单但会增加读取\n你想让我采用哪一种？",
+    "userText": "先不选，我想确认一下依赖的运维成本。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-006",
+    "group": "listed-pick-paraphrase",
+    "assistantText": "目前可以选一种缓存策略：\nA. 保留进程内缓存 —— 最稳，改动范围小\nB. 切换 Redis —— 多实例共享，但增加依赖\nC. 去掉缓存 —— 行为最简单但会增加读取\n你想让我采用哪一种？",
+    "userText": "换个事，帮我把 README 的拼写检查一遍。",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-007",
+    "group": "english-trailing-request",
+    "assistantText": "I reviewed the patch and found three safe follow-ups:\n1. Add a timeout to the request\n2. Retry only idempotent calls\n3. Log the request ID\nNot tested yet — which of these should I do first?",
+    "userText": "Do 1 and 3 first; leave 2 for later.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R4A2-008",
+    "group": "english-trailing-request",
+    "assistantText": "I reviewed the proposed patch. The independent options are:\nA. Keep the current API\nB. Add a compatibility layer\nC. Remove the deprecated path\nNo tests — which changes do you want in this patch?",
+    "userText": "Keep A and add B; do not remove C.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ]
+  },
+  {
+    "id": "R4A2-009",
+    "group": "english-trailing-request",
+    "assistantText": "I can make these edits in order:\n1. Keep the old field\n2. Add the new field\n3. Remove the alias\nNo tests — which step should I take first?",
+    "userText": "Take step 2 now.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R4A2-010",
+    "group": "english-trailing-request",
+    "assistantText": "The rollout items are:\n1. Validate the artifact\n2. Deploy to staging\n3. Shift production traffic\nTesting was not run — which step should I do first?",
+    "userText": "Please do 1.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R4A2-011",
+    "group": "english-trailing-request",
+    "assistantText": "The three checks are listed above. Not tested yet; I have not run them.",
+    "userText": "Thanks for the status.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-012",
+    "group": "english-trailing-request",
+    "assistantText": "I haven't verified the rollout yet. No tests have been run.",
+    "userText": "Understood, wait for now.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-013",
+    "group": "which-task-step-change",
+    "assistantText": "The rollout can be split into three independent tasks:\n1. Add a health check\n2. Set the canary threshold\n3. Keep the previous build available\nWhich tasks should I handle in this change?",
+    "userText": "Do tasks 1 and 3; hold 2 until the threshold is agreed.",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "R4A2-014",
+    "group": "which-task-step-change",
+    "assistantText": "I can make these edits without changing the public API:\nA. Validate the response status\nB. Preserve the existing retry policy\nC. Add a timeout to the new request\nWhich changes would you like me to make?",
+    "userText": "Make A and C; leave B unchanged.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "R4A2-015",
+    "group": "which-task-step-change",
+    "assistantText": "The migration plan has three steps:\n1. Export current records\n2. Verify the export\n3. Import into the new store\nWhich steps should I run now?",
+    "userText": "Run step 1 only. Wait on 2 and 3.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R4A2-016",
+    "group": "which-task-step-change",
+    "assistantText": "I checked the checklist and have not changed anything. Which tasks are already complete?",
+    "userText": "Tasks 1 and 2 are complete; 3 is still waiting.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-017",
+    "group": "which-task-step-change",
+    "assistantText": "The deployment report is below. Which steps have already run?\n1. Build passed\n2. Staging deploy passed\n3. Production deploy pending",
+    "userText": "1 and 2 ran this morning.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-018",
+    "group": "which-task-step-change",
+    "assistantText": "I have made no changes yet. Which changes remain in the patch?",
+    "userText": "Only the timeout change is still missing.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-019",
+    "group": "past-state-plus-action",
+    "assistantText": "Please choose the follow-up for this patch:\n1. Update the API docs\n2. Add a migration note\n3. Add a compatibility check\nWhich items should I take?",
+    "userText": "1 is done, do 3.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R4A2-020",
+    "group": "past-state-plus-action",
+    "assistantText": "Please choose one of these follow-ups:\nA. Update the API docs\nB. Add a migration note\nC. Add a compatibility check\nWhich item should I take?",
+    "userText": "We already finished A; go with C now.",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ]
+  },
+  {
+    "id": "R4A2-021",
+    "group": "past-state-plus-action",
+    "assistantText": "The checklist is:\n1. Preserve the old key\n2. Add the new key\n3. Remove the alias\nWhich steps should I take next?",
+    "userText": "Step 1 was completed yesterday; please proceed with step 3.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "R4A2-022",
+    "group": "past-state-plus-action",
+    "assistantText": "Current migration status:\n1. Export complete\n2. Verification pending\n3. Import not started\nThis is only a status report.",
+    "userText": "1 is done; 3 is still pending.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-023",
+    "group": "past-state-plus-action",
+    "assistantText": "The release record says A was merged yesterday, B is in review, and C has not started. No new work was requested.",
+    "userText": "A is done and B is still in review.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-024",
+    "group": "past-state-plus-action",
+    "assistantText": "The current checklist is:\n1. Tests passed\n2. Docs pending\n3. Build not run\nI am reporting status only.",
+    "userText": "Step 1 was done yesterday.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-025",
+    "group": "topic-shift-option-name",
+    "assistantText": "For cache behavior, choose one:\nA. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\nWhich option should I implement?",
+    "userText": "Use Redis for this patch; also, what is the weather like in the build logs?",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R4A2-026",
+    "group": "topic-shift-option-name",
+    "assistantText": "For cache behavior, choose one:\nA. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\nWhich option should I implement?",
+    "userText": "Take B, then help me write a migration note.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R4A2-027",
+    "group": "topic-shift-option-name",
+    "assistantText": "For cache behavior, choose one:\nA. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\nWhich option should I implement?",
+    "userText": "I want the Redis option. Separately, can you summarize the PR?",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R4A2-028",
+    "group": "topic-shift-option-name",
+    "assistantText": "For cache behavior, choose one:\nA. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\nWhich option should I implement?",
+    "userText": "Can you explain cache invalidation? I am asking a separate question, not choosing a backend.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-029",
+    "group": "topic-shift-option-name",
+    "assistantText": "For cache behavior, choose one:\nA. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\nWhich option should I implement?",
+    "userText": "Before deciding, help me document the existing cache behavior.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-030",
+    "group": "topic-shift-option-name",
+    "assistantText": "For cache behavior, choose one:\nA. Keep the current in-memory cache\nB. Move entries to Redis\nC. Disable caching\nWhich option should I implement?",
+    "userText": "New task: search the project for the word cache and count the matches.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-031",
+    "group": "new-task-common-word-only",
+    "assistantText": "The three proposed changes are:\n1. Cache API responses for one minute\n2. Add cache metrics\n3. Remove the cache after the migration\nWhich changes should go into this patch?",
+    "userText": "Can you explain what a cache is to a new teammate?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-032",
+    "group": "new-task-common-word-only",
+    "assistantText": "The three proposed changes are:\n1. Cache API responses for one minute\n2. Add cache metrics\n3. Remove the cache after the migration\nWhich changes should go into this patch?",
+    "userText": "Please find every use of the word cache in the docs; do not change the code.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-033",
+    "group": "new-task-common-word-only",
+    "assistantText": "The three proposed changes are:\n1. Cache API responses for one minute\n2. Add cache metrics\n3. Remove the cache after the migration\nWhich changes should go into this patch?",
+    "userText": "Different question: how do I clear the local cache on macOS?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R4A2-034",
+    "group": "new-task-common-word-only",
+    "assistantText": "Three independent tasks are ready:\nA. Update the retry policy\nB. Add a queue depth metric\nC. Set a worker timeout\nWhich tasks should I do first?",
+    "userText": "Do B now, then separately help me draft a short queue operations note.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "R4A2-035",
+    "group": "new-task-common-word-only",
+    "assistantText": "Three independent tasks are ready:\nA. Update the retry policy\nB. Add a queue depth metric\nC. Set a worker timeout\nWhich tasks should I do first?",
+    "userText": "Only C is approved. After that, help me find the timeout docs.",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ]
+  },
+  {
+    "id": "R4A2-036",
+    "group": "new-task-common-word-only",
+    "assistantText": "Three independent tasks are ready:\nA. Update the retry policy\nB. Add a queue depth metric\nC. Set a worker timeout\nWhich tasks should I do first?",
+    "userText": "Add B; my unrelated next task is to explain what a queue is.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ]
+  }
+]

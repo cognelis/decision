@@ -1,0 +1,1574 @@
+[
+  {
+    "id": "PA-01",
+    "assistantText": "1. 缓存：用 Redis，跨进程共享\n2. 重试：增加指数退避\n3. 超时：设置请求上限\n\n这三项你想做哪些？",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-02",
+    "assistantText": "1. 缓存：用 Redis，跨进程共享\n2. 重试：增加指数退避\n3. 超时：设置请求上限\n\n这三项你想做哪些？",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-03",
+    "assistantText": "1. 缓存：用 Redis，跨进程共享\n2. 重试：增加指数退避\n3. 超时：设置请求上限\n\n这三项你想做哪些？",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-04",
+    "assistantText": "1. 缓存：用 Redis，跨进程共享\n2. 重试：增加指数退避\n3. 超时：设置请求上限\n\n这三项你想做哪些？",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-05",
+    "assistantText": "1. 缓存：用 Redis，跨进程共享\n2. 重试：增加指数退避\n3. 超时：设置请求上限\n\n这三项你想做哪些？",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-06",
+    "assistantText": "**A. SQLite** —— 单文件\n**B. PostgreSQL** —— 并发能力强\n**C. JSON 文件** —— 最简单\n\n请选择 A/B/C。",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-07",
+    "assistantText": "**A. SQLite** —— 单文件\n**B. PostgreSQL** —— 并发能力强\n**C. JSON 文件** —— 最简单\n\n请选择 A/B/C。",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-08",
+    "assistantText": "**A. SQLite** —— 单文件\n**B. PostgreSQL** —— 并发能力强\n**C. JSON 文件** —— 最简单\n\n请选择 A/B/C。",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-09",
+    "assistantText": "**A. SQLite** —— 单文件\n**B. PostgreSQL** —— 并发能力强\n**C. JSON 文件** —— 最简单\n\n请选择 A/B/C。",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-10",
+    "assistantText": "**A. SQLite** —— 单文件\n**B. PostgreSQL** —— 并发能力强\n**C. JSON 文件** —— 最简单\n\n请选择 A/B/C。",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-11",
+    "assistantText": "**1. 重命名变量** —— 名字含糊\n\n**2. 拆分函数** —— 函数太长\n\n**3. 补类型** —— 缺返回类型\n\n要做哪些？",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-12",
+    "assistantText": "**1. 重命名变量** —— 名字含糊\n\n**2. 拆分函数** —— 函数太长\n\n**3. 补类型** —— 缺返回类型\n\n要做哪些？",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-13",
+    "assistantText": "**1. 重命名变量** —— 名字含糊\n\n**2. 拆分函数** —— 函数太长\n\n**3. 补类型** —— 缺返回类型\n\n要做哪些？",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-14",
+    "assistantText": "**1. 重命名变量** —— 名字含糊\n\n**2. 拆分函数** —— 函数太长\n\n**3. 补类型** —— 缺返回类型\n\n要做哪些？",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-15",
+    "assistantText": "**1. 重命名变量** —— 名字含糊\n\n**2. 拆分函数** —— 函数太长\n\n**3. 补类型** —— 缺返回类型\n\n要做哪些？",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-16",
+    "assistantText": "| 选项 | 方案 |\n|---|---|\n| A | 蓝绿发布 |\n| B | 金丝雀发布 |\n| C | 滚动更新 |\n\n选一种或多种发布方式。",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-17",
+    "assistantText": "| 选项 | 方案 |\n|---|---|\n| A | 蓝绿发布 |\n| B | 金丝雀发布 |\n| C | 滚动更新 |\n\n选一种或多种发布方式。",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-18",
+    "assistantText": "| 选项 | 方案 |\n|---|---|\n| A | 蓝绿发布 |\n| B | 金丝雀发布 |\n| C | 滚动更新 |\n\n选一种或多种发布方式。",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-19",
+    "assistantText": "| 选项 | 方案 |\n|---|---|\n| A | 蓝绿发布 |\n| B | 金丝雀发布 |\n| C | 滚动更新 |\n\n选一种或多种发布方式。",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-20",
+    "assistantText": "| 选项 | 方案 |\n|---|---|\n| A | 蓝绿发布 |\n| B | 金丝雀发布 |\n| C | 滚动更新 |\n\n选一种或多种发布方式。",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-21",
+    "assistantText": "- [ ] 1. 补单元测试\n- [ ] 2. 更新文档\n- [ ] 3. 增加监控\n\n哪些先做？",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-22",
+    "assistantText": "- [ ] 1. 补单元测试\n- [ ] 2. 更新文档\n- [ ] 3. 增加监控\n\n哪些先做？",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-23",
+    "assistantText": "- [ ] 1. 补单元测试\n- [ ] 2. 更新文档\n- [ ] 3. 增加监控\n\n哪些先做？",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-24",
+    "assistantText": "- [ ] 1. 补单元测试\n- [ ] 2. 更新文档\n- [ ] 3. 增加监控\n\n哪些先做？",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-25",
+    "assistantText": "- [ ] 1. 补单元测试\n- [ ] 2. 更新文档\n- [ ] 3. 增加监控\n\n哪些先做？",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-26",
+    "assistantText": "### 方案 A：保留同步接口\n保持现有调用方式。\n\n### 方案 B：改为异步接口\n避免阻塞请求。\n\n### 方案 C：暂时不改\n\n你决定哪些？",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-27",
+    "assistantText": "### 方案 A：保留同步接口\n保持现有调用方式。\n\n### 方案 B：改为异步接口\n避免阻塞请求。\n\n### 方案 C：暂时不改\n\n你决定哪些？",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-28",
+    "assistantText": "### 方案 A：保留同步接口\n保持现有调用方式。\n\n### 方案 B：改为异步接口\n避免阻塞请求。\n\n### 方案 C：暂时不改\n\n你决定哪些？",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-29",
+    "assistantText": "### 方案 A：保留同步接口\n保持现有调用方式。\n\n### 方案 B：改为异步接口\n避免阻塞请求。\n\n### 方案 C：暂时不改\n\n你决定哪些？",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-30",
+    "assistantText": "### 方案 A：保留同步接口\n保持现有调用方式。\n\n### 方案 B：改为异步接口\n避免阻塞请求。\n\n### 方案 C：暂时不改\n\n你决定哪些？",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-31",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Keep current cache\n\nWhich changes should I make?",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-32",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Keep current cache\n\nWhich changes should I make?",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-33",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Keep current cache\n\nWhich changes should I make?",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-34",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Keep current cache\n\nWhich changes should I make?",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-35",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Keep current cache\n\nWhich changes should I make?",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-36",
+    "assistantText": "**A. Redis** — shared cache\n**B. In-process LRU** — simple and local\n**C. HTTP cache headers** — no server state\n\nWhich options should we take?",
+    "userText": "1 和 3 先做，2 你再评估一下",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-37",
+    "assistantText": "**A. Redis** — shared cache\n**B. In-process LRU** — simple and local\n**C. HTTP cache headers** — no server state\n\nWhich options should we take?",
+    "userText": "除了 2 都做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-38",
+    "assistantText": "**A. Redis** — shared cache\n**B. In-process LRU** — simple and local\n**C. HTTP cache headers** — no server state\n\nWhich options should we take?",
+    "userText": "先做 1、3，2 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-39",
+    "assistantText": "**A. Redis** — shared cache\n**B. In-process LRU** — simple and local\n**C. HTTP cache headers** — no server state\n\nWhich options should we take?",
+    "userText": "A 和 C 批准，B 先不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-40",
+    "assistantText": "**A. Redis** — shared cache\n**B. In-process LRU** — simple and local\n**C. HTTP cache headers** — no server state\n\nWhich options should we take?",
+    "userText": "Do 1 and 3; leave 2 for later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "PA-X01",
+    "assistantText": "1. 备份\n2. 迁移\n3. 校验\n\n请选步骤。",
+    "userText": "1 和 3 做，2 不做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-X02",
+    "assistantText": "A. SQLite：轻量\nB. PostgreSQL：并发强\nC. JSON：简单\n\n你选哪些？",
+    "userText": "收到，B 做，A 先保留",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "B",
+      "A"
+    ]
+  },
+  {
+    "id": "PA-X03",
+    "assistantText": "**1. 保留接口**\n**2. 删除旧接口**\n**3. 加兼容层**\n\n哪些批准？",
+    "userText": "好的，批准 1，3 推迟",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "PA-X04",
+    "assistantText": "| ID | 操作 |\n|---|---|\n| 1 | 加缓存 |\n| 2 | 加队列 |\n| 3 | 加限流 |\n\n请选择。",
+    "userText": "排除 2，其余先做",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-X05",
+    "assistantText": "- [ ] A. 更新依赖\n- [ ] B. 改 CI\n- [ ] C. 跑迁移\n\n选哪些？",
+    "userText": "A 和 C 先做，B 你再评估",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-X06",
+    "assistantText": "### 1. Keep Redis\n### 2. Use local LRU\n### 3. Add HTTP caching\n\nWhich should I implement?",
+    "userText": "All but 2, please",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-X07",
+    "assistantText": "1. 加审计日志\n2. 增加告警\n3. 保持现状\n\n你希望怎样安排？",
+    "userText": "先做告警，日志也做，现状方案不用",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "2",
+      "1"
+    ]
+  },
+  {
+    "id": "PA-X08",
+    "assistantText": "1. Rename fields\n2. Split module\n3. Add validation\n\nPick any approved items.",
+    "userText": "Ship 1 and 3, reject 2",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "PA-X09",
+    "assistantText": "- [ ] 1. 补测试\n- [ ] 2. 更新 README\n- [ ] 3. 修 lint\n\n要做哪些？",
+    "userText": "1 先做，2 我批准，3 暂缓",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "id": "PA-X10",
+    "assistantText": "A. Blue-green\nB. Canary\nC. Rolling\n\nWhich deployment choices?",
+    "userText": "Canary yes, rolling no; blue-green later",
+    "decision": true,
+    "group": "partial-approved",
+    "expectedSelected": [
+      "B"
+    ]
+  },
+  {
+    "id": "NM-01",
+    "assistantText": "1. 缓存\n2. 重试\n3. 超时\n\n哪些做？",
+    "userText": "改了 3 个文件，还没测，再看看",
+    "decision": false,
+    "group": "count-or-history"
+  },
+  {
+    "id": "NM-02",
+    "assistantText": "1. Redis\n2. LRU\n\n选哪个？",
+    "userText": "2 天前已经切到 LRU 了",
+    "decision": false,
+    "group": "historical"
+  },
+  {
+    "id": "NM-03",
+    "assistantText": "1. 备份\n2. 迁移\n3. 校验\n\n选步骤",
+    "userText": "第二步已做完",
+    "decision": false,
+    "group": "status"
+  },
+  {
+    "id": "NM-04",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "为什么 2 的成本更高？",
+    "decision": false,
+    "group": "question"
+  },
+  {
+    "id": "NM-05",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "你觉得哪个更合适？",
+    "decision": false,
+    "group": "rhetorical-question"
+  },
+  {
+    "id": "NM-06",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "收到",
+    "decision": false,
+    "group": "acknowledgement"
+  },
+  {
+    "id": "NM-07",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "好的，了解",
+    "decision": false,
+    "group": "acknowledgement"
+  },
+  {
+    "id": "NM-08",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "先不决定，等评审后再说",
+    "decision": false,
+    "group": "defer-all"
+  },
+  {
+    "id": "NM-09",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "我都先不选，之后再定",
+    "decision": false,
+    "group": "defer-all"
+  },
+  {
+    "id": "NM-10",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "改聊一下发布计划",
+    "decision": false,
+    "group": "topic-shift"
+  },
+  {
+    "id": "NM-11",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "先别管这个，帮我看 README",
+    "decision": false,
+    "group": "topic-shift"
+  },
+  {
+    "id": "NM-12",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "目前生产用的是 A",
+    "decision": false,
+    "group": "current-state"
+  },
+  {
+    "id": "NM-13",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "B 已经在上周发布了",
+    "decision": false,
+    "group": "historical"
+  },
+  {
+    "id": "NM-14",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "A 看起来不错，但我还没想好",
+    "decision": false,
+    "group": "evaluation-only"
+  },
+  {
+    "id": "NM-15",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "2 不太理想，我再考虑一下",
+    "decision": false,
+    "group": "evaluation-only"
+  },
+  {
+    "id": "NM-16",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "2 是不是更快？",
+    "decision": false,
+    "group": "question"
+  },
+  {
+    "id": "NM-17",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "部署现在运行正常吗？",
+    "decision": false,
+    "group": "status-question"
+  },
+  {
+    "id": "NM-18",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "版本 2 正在生产运行",
+    "decision": false,
+    "group": "count-or-status"
+  },
+  {
+    "id": "NM-19",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "A 和 B 的区别是什么？",
+    "decision": false,
+    "group": "question"
+  },
+  {
+    "id": "NM-20",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "我先比较一下，再决定",
+    "decision": false,
+    "group": "defer-all"
+  },
+  {
+    "id": "NM-21",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "确认收到，我会核对调用方",
+    "decision": false,
+    "group": "ack-plus-no-choice"
+  },
+  {
+    "id": "NM-22",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "第二项的延迟数据是多少？",
+    "decision": false,
+    "group": "question"
+  },
+  {
+    "id": "NM-23",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "我更喜欢 A 的名字，但还要讨论",
+    "decision": false,
+    "group": "evaluation-only"
+  },
+  {
+    "id": "NM-24",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "The second option was used last year.",
+    "decision": false,
+    "group": "historical"
+  },
+  {
+    "id": "NM-25",
+    "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+    "userText": "How many services currently use option B?",
+    "decision": false,
+    "group": "question"
+  },
+  {
+    "id": "PA2-01",
+    "assistantText": "背景：这次调整针对存储选择。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**1. 准备阶段建立临时目录并保留旧缓存**\n\n准备阶段建立临时目录并保留旧缓存，以便回滚。\n\n**2. 实现读取路径切换**\n\n实现读取路径切换，并加入兼容分支。\n\n**3. 补充启动检查**\n\n补充启动检查，发现缺失文件时给出提示。\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\n你希望我执行哪些项目？\n\nNo files were changed.",
+    "userText": "1 和 3 先做，2 放到下个迭代",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-02",
+    "assistantText": "背景：这次调整针对代码维护。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| A | SQLite keeps the local prototype self-contained and easy to back up. | SQLite keeps the local prototype self-contained and easy to back up. |\n| B | PostgreSQL supports concurrent writers but needs a service. | PostgreSQL supports concurrent writers but needs a service. |\n| C | JSON is simple to inspect but has no transactional updates. | JSON is simple to inspect but has no transactional updates. |\n\n实施前我会核对相关模块的边界、兼容要求和观测方式；如果某项依赖尚未满足，会停在该项而不扩大改动范围。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\n你希望我执行哪些项目？\n\n未修改文件，也未运行验证。",
+    "userText": "The rest can wait until usage is clearer.",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-03",
+    "assistantText": "背景：这次调整针对请求稳定性。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\n1. 将解析逻辑独立出来\n   - 将解析逻辑独立出来，保留现有输入输出。\n2. 加入结构化日志\n   - 加入结构化日志，记录请求 ID。\n3. 整理错误码并更新调用方文档。\n   - 整理错误码并更新调用方文档。\n\n落地时将记录变更涉及的入口、失败时的恢复方式和需要人工确认的条件，方便后续复盘实际效果。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\n你希望我执行哪些项目？",
+    "userText": "只做 2，其他先放一放",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-04",
+    "assistantText": "背景：这次调整针对发布流程。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**1. 为上传请求增加大小上限**\n\n为上传请求增加大小上限，避免异常大文件占用内存。\n\n**2. 增加重试策略**\n\n增加重试策略，只重试临时网络错误。\n\n**3. 将超时值放入设置**\n\n将超时值放入设置，方便部署环境调整。\n\n开始前会确认当前行为和已有监控，完成后对照同一组输入检查结果，避免只凭代码改动推断行为正确。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\nWhich items should I implement?\n\n未运行测试。",
+    "userText": "都做，按 1 到 3 的顺序",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-05",
+    "assistantText": "背景：这次调整针对兼容性治理。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| A | 蓝绿发布保留完整回滚路径 | 蓝绿发布保留完整回滚路径，但需要两套环境。 |\n| B | 金丝雀先让少量流量验证 | 金丝雀先让少量流量验证，排查范围较小。 |\n| C | 滚动更新资源开销低 | 滚动更新资源开销低，回滚要额外协调。 |\n\n这些候选项可以分别评估；我会先确认依赖关系和回退路径，再按你批准的范围安排实现顺序。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\n你希望我执行哪些项目？\n\nNo files were changed.",
+    "userText": "先选前两个，C 留给下次评审",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-06",
+    "assistantText": "背景：这次调整针对后台任务。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\n1. 修正导入边界条件\n   - 修正导入边界条件，并为缺失字段加默认值。\n2. 补上两个回归用例\n   - 补上两个回归用例，覆盖空数组和重复键。\n3. 在 README 说明兼容行为。\n   - 在 README 说明兼容行为。\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\n你希望我执行哪些项目？\n\n未修改文件，也未运行验证。",
+    "userText": "最后一个先别动，1 和 2 可以推进",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-07",
+    "assistantText": "背景：这次调整针对权限边界。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**A. 保留统一队列可避免两套消费状态。**\n\n保留统一队列可避免两套消费状态。\n\n**B. 按租户拆分队列便于限流**\n\n按租户拆分队列便于限流，但会增加运维对象。\n\n**C. 先用单队列加租户标签**\n\n先用单队列加租户标签，迁移成本较低。\n\n实施前我会核对相关模块的边界、兼容要求和观测方式；如果某项依赖尚未满足，会停在该项而不扩大改动范围。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\n你希望我执行哪些项目？",
+    "userText": "选择最后一个方案，前面两个暂缓",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-08",
+    "assistantText": "背景：这次调整针对离线数据准备。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| 1 | 收紧 token 校验并拒绝过期凭证。 | 收紧 token 校验并拒绝过期凭证。 |\n| 2 | 为刷新失败增加一次退避重试。 | 为刷新失败增加一次退避重试。 |\n| 3 | 输出不含敏感字段的诊断日志。 | 输出不含敏感字段的诊断日志。 |\n\n落地时将记录变更涉及的入口、失败时的恢复方式和需要人工确认的条件，方便后续复盘实际效果。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\nWhich items should I implement?\n\n未运行测试。",
+    "userText": "先做 1-3，安全检查通过后上线",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-09",
+    "assistantText": "背景：这次调整针对存储选择。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\nA. Rename the public field only after adding a compatibility alias.\n   - Rename the public field only after adding a compatibility alias.\nB. Keep the field and document its intended meaning.\n   - Keep the field and document its intended meaning.\nC. Introduce a new field and deprecate the old one gradually.\n   - Introduce a new field and deprecate the old one gradually.\n\n开始前会确认当前行为和已有监控，完成后对照同一组输入检查结果，避免只凭代码改动推断行为正确。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\n你希望我执行哪些项目？\n\nNo files were changed.",
+    "userText": "Take A and C; the rest can wait for the next sprint.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-10",
+    "assistantText": "背景：这次调整针对代码维护。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**1. 替换重复的日期解析代码**\n\n替换重复的日期解析代码，统一时区处理。\n\n**2. 增加异常输入的校验信息。**\n\n增加异常输入的校验信息。\n\n**3. 将解析器封装成共享模块。**\n\n将解析器封装成共享模块。\n\n这些候选项可以分别评估；我会先确认依赖关系和回退路径，再按你批准的范围安排实现顺序。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\n你希望我执行哪些项目？\n\n未修改文件，也未运行验证。",
+    "userText": "只批准名称片段“日期解析”和校验这两项",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-11",
+    "assistantText": "背景：这次调整针对请求稳定性。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| 1 | 保留请求顺序 | 保留请求顺序，避免变更外部可见行为。 |\n| 2 | 并行加载互不依赖的配置片段。 | 并行加载互不依赖的配置片段。 |\n| 3 | 加入耗时指标 | 加入耗时指标，后续据此调优。 |\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\n你希望我执行哪些项目？",
+    "userText": "2 做；1 和 3 回头再说",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-12",
+    "assistantText": "背景：这次调整针对发布流程。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\nA. Use a bounded worker pool so peak traffic cannot create unbounded tasks.\n   - Use a bounded worker pool so peak traffic cannot create unbounded tasks.\nB. Keep serial processing for deterministic ordering.\n   - Keep serial processing for deterministic ordering.\nC. Move work to a durable queue for restart recovery.\n   - Move work to a durable queue for restart recovery.\n\n实施前我会核对相关模块的边界、兼容要求和观测方式；如果某项依赖尚未满足，会停在该项而不扩大改动范围。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\nWhich items should I implement?\n\n未运行测试。",
+    "userText": "Let me know which of these you'd like me to tackle: A and C only.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-13",
+    "assistantText": "背景：这次调整针对兼容性治理。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**1. 给每次迁移写入唯一批次号**\n\n给每次迁移写入唯一批次号，便于定位部分失败。\n\n**2. 迁移完成后校验记录数与校验和。**\n\n迁移完成后校验记录数与校验和。\n\n**3. 清理旧字段需要单独的回滚窗口。**\n\n清理旧字段需要单独的回滚窗口。\n\n落地时将记录变更涉及的入口、失败时的恢复方式和需要人工确认的条件，方便后续复盘实际效果。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\n你希望我执行哪些项目？\n\nNo files were changed.",
+    "userText": "1 和 3，不过 3 先跟 PM 确认",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-14",
+    "assistantText": "背景：这次调整针对后台任务。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| A | The local index is quick to rebuild and does not add a service dependency. | The local index is quick to rebuild and does not add a service dependency. |\n| B | The remote index shares state across workers but needs credentials and monitoring. | The remote index shares state across workers but needs credentials and monitoring. |\n| C | A hybrid approach keeps recent items local and archives older entries remotely. | A hybrid approach keeps recent items local and archives older entries remotely. |\n\n开始前会确认当前行为和已有监控，完成后对照同一组输入检查结果，避免只凭代码改动推断行为正确。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\n你希望我执行哪些项目？\n\n未修改文件，也未运行验证。",
+    "userText": "I recommend C for the current rollout. Want me to go ahead with all of them, or just some?",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ],
+    "group": "pa2-partial",
+    "expectedBand": "any"
+  },
+  {
+    "id": "PA2-15",
+    "assistantText": "背景：这次调整针对权限边界。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\n1. 将查询拆为只读和写入两个权限域。\n   - 将查询拆为只读和写入两个权限域。\n2. 加入审计事件并移除请求正文。\n   - 加入审计事件并移除请求正文。\n3. 补充轮换密钥的操作说明。\n   - 补充轮换密钥的操作说明。\n\n这些候选项可以分别评估；我会先确认依赖关系和回退路径，再按你批准的范围安排实现顺序。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\n你希望我执行哪些项目？",
+    "userText": "除了 2 以外先做，2 暂缓",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-16",
+    "assistantText": "背景：这次调整针对离线数据准备。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**A. 把新布局写入独立目录**\n\n把新布局写入独立目录，保留旧目录直到校验结束。\n\n**B. 在启动时检测旧数据并提示迁移进度。**\n\n在启动时检测旧数据并提示迁移进度。\n\n**C. 迁移后检查附件引用是否仍然有效。**\n\n迁移后检查附件引用是否仍然有效。\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\nWhich items should I implement?\n\n未运行测试。",
+    "userText": "先批准 A，B 和 C 放到下一个迭代",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-17",
+    "assistantText": "背景：这次调整针对存储选择。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| 1 | 分别记录连接和响应超时 | 分别记录连接和响应超时，错误信息可以指出失败阶段。 |\n| 2 | 为本机服务保留更短的连接超时。 | 为本机服务保留更短的连接超时。 |\n| 3 | 避免重试非幂等写请求。 | 避免重试非幂等写请求。 |\n\n实施前我会核对相关模块的边界、兼容要求和观测方式；如果某项依赖尚未满足，会停在该项而不扩大改动范围。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\n你希望我执行哪些项目？\n\nNo files were changed.",
+    "userText": "都做，尤其是 1 和 3",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-18",
+    "assistantText": "背景：这次调整针对代码维护。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\nA. Blue-green requires a second environment but makes rollback immediate.\n   - Blue-green requires a second environment but makes rollback immediate.\nB. Canary limits exposure while metrics are being observed.\n   - Canary limits exposure while metrics are being observed.\nC. Rolling deploy is cheaper when the service is stateless.\n   - Rolling deploy is cheaper when the service is stateless.\n\n落地时将记录变更涉及的入口、失败时的恢复方式和需要人工确认的条件，方便后续复盘实际效果。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\n你希望我执行哪些项目？\n\n未修改文件，也未运行验证。",
+    "userText": "Do the first two; put the rest on hold until the dashboard is ready.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-19",
+    "assistantText": "背景：这次调整针对请求稳定性。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**1. 新增索引前先确认查询计划确实使用它。**\n\n新增索引前先确认查询计划确实使用它。\n\n**2. 保留旧索引一周用于快速回退。**\n\n保留旧索引一周用于快速回退。\n\n**3. 之后再用生产指标决定是否删除旧索引。**\n\n之后再用生产指标决定是否删除旧索引。\n\n开始前会确认当前行为和已有监控，完成后对照同一组输入检查结果，避免只凭代码改动推断行为正确。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\n你希望我执行哪些项目？",
+    "userText": "先做 2，其他先不动",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-20",
+    "assistantText": "背景：这次调整针对发布流程。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| A | 将短期凭证放在系统钥匙串中 | 将短期凭证放在系统钥匙串中，并限定访问组。 |\n| B | 使用环境变量便于容器部署 | 使用环境变量便于容器部署，但要控制诊断输出。 |\n| C | 开发环境继续使用本地忽略文件 | 开发环境继续使用本地忽略文件，不进入版本库。 |\n\n这些候选项可以分别评估；我会先确认依赖关系和回退路径，再按你批准的范围安排实现顺序。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\nWhich items should I implement?\n\n未运行测试。",
+    "userText": "只做 C，A 和 B 下个迭代再评估",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-21",
+    "assistantText": "背景：这次调整针对兼容性治理。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\n1. 把事件 ID 贯穿入口、队列和消费者日志。\n   - 把事件 ID 贯穿入口、队列和消费者日志。\n2. 对同一事件的重复投递做幂等处理。\n   - 对同一事件的重复投递做幂等处理。\n3. 失败事件进入隔离队列并提供重放操作。\n   - 失败事件进入隔离队列并提供重放操作。\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\n你希望我执行哪些项目？\n\nNo files were changed.",
+    "userText": "区间 1-3 都批准",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-22",
+    "assistantText": "背景：这次调整针对后台任务。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**A. 保留原有响应字段**\n\n保留原有响应字段，避免老客户端解析失败。\n\n**B. 新增字段采用可选值**\n\n新增字段采用可选值，并同步更新类型定义。\n\n**C. 在后续主版本再移除废弃字段。**\n\n在后续主版本再移除废弃字段。\n\n实施前我会核对相关模块的边界、兼容要求和观测方式；如果某项依赖尚未满足，会停在该项而不扩大改动范围。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\n你希望我执行哪些项目？\n\n未修改文件，也未运行验证。",
+    "userText": "名称“可选值”这一项批准，其他以后再说",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-23",
+    "assistantText": "背景：这次调整针对权限边界。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| 1 | 为并发更新加入版本检查 | 为并发更新加入版本检查，冲突时返回可操作提示。 |\n| 2 | 把冲突记录到不含正文的审计事件。 | 把冲突记录到不含正文的审计事件。 |\n| 3 | 增加并发压力场景的验证。 | 增加并发压力场景的验证。 |\n\n落地时将记录变更涉及的入口、失败时的恢复方式和需要人工确认的条件，方便后续复盘实际效果。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\n你希望我执行哪些项目？",
+    "userText": "先做 1 和 3，但 3 需先问 QA 排期",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-24",
+    "assistantText": "背景：这次调整针对离线数据准备。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n按以下步骤处理：\n\nA. Cache the authorization result briefly to reduce repeated policy reads.\n   - Cache the authorization result briefly to reduce repeated policy reads.\nB. Keep authorization uncached for immediate revocation.\n   - Keep authorization uncached for immediate revocation.\nC. Cache only public metadata and always recheck permissions.\n   - Cache only public metadata and always recheck permissions.\n\n开始前会确认当前行为和已有监控，完成后对照同一组输入检查结果，避免只凭代码改动推断行为正确。\n\n推荐：这些项目可以分开推进，依赖项会在实施前再核对。\n\nWhich items should I implement?\n\n未运行测试。",
+    "userText": "Pick B; the remaining options are deferred to a later review.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-25",
+    "assistantText": "背景：这次调整针对存储选择。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n**1. 将路径规范化后再比较**\n\n将路径规范化后再比较，避免相对路径产生重复条目。\n\n**2. 对符号链接记录目标路径**\n\n对符号链接记录目标路径，保留原始路径供展示。\n\n**3. 遇到权限不足时跳过并汇总提示。**\n\n遇到权限不足时跳过并汇总提示。\n\n这些候选项可以分别评估；我会先确认依赖关系和回退路径，再按你批准的范围安排实现顺序。\n\n推荐：先交付风险较低且能独立回滚的部分。\n\n你希望我执行哪些项目？\n\nNo files were changed.",
+    "userText": "第 2 项批准，1 和 3 暂时搁置",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "PA2-26",
+    "assistantText": "背景：这次调整针对代码维护。现状已经能工作，但后续扩展会遇到边界问题；我把候选工作拆成可分别批准的项目，避免把所有改动绑在一起。\n\n| ID | 工作项 | 说明 |\n|---|---|---|\n| A | 为批量写入增加事务边界 | 为批量写入增加事务边界，任何一项失败时回滚整批。 |\n| B | 将大批次切成固定大小的块 | 将大批次切成固定大小的块，避免长事务。 |\n| C | 在每块后保存游标 | 在每块后保存游标，支持中断后继续。 |\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：我倾向先完成能减少运行风险的组合，再依据观测决定后续范围。\n\n你希望我执行哪些项目？\n\n未修改文件，也未运行验证。",
+    "userText": "都做，先按 A、B、C 逐步落地",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "group": "pa2-partial"
+  },
+  {
+    "id": "NM2-01",
+    "assistantText": "背景：我梳理了这次可能涉及的发布方案。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| 1 | 检查响应体上限 | 需要结合运行条件确认 |\n| 2 | 增加流式读取 | 需要结合运行条件确认 |\n| 3 | 记录超限指标 | 需要结合运行条件确认 |\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "服务当前限制是 2 MB 吗？我先确认配置。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "question"
+  },
+  {
+    "id": "NM2-02",
+    "assistantText": "背景：我梳理了这次可能涉及的配置维护。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| A | 本地缓存 | 需要结合运行条件确认 |\n| B | 远端缓存 | 需要结合运行条件确认 |\n| C | 不缓存 | 需要结合运行条件确认 |\n\n实施前我会核对相关模块的边界、兼容要求和观测方式；如果某项依赖尚未满足，会停在该项而不扩大改动范围。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "收到，等我看完压测结果再决定。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "ack-defer"
+  },
+  {
+    "id": "NM2-03",
+    "assistantText": "背景：我梳理了这次可能涉及的服务稳定性。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| 1 | 保留字段 | 需要结合运行条件确认 |\n| 2 | 删除字段 | 需要结合运行条件确认 |\n| 3 | 新增兼容字段 | 需要结合运行条件确认 |\n\n落地时将记录变更涉及的入口、失败时的恢复方式和需要人工确认的条件，方便后续复盘实际效果。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "2 个客户端目前还在用旧字段。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "count-status"
+  },
+  {
+    "id": "NM2-04",
+    "assistantText": "背景：我梳理了这次可能涉及的兼容策略。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| A | Blue-green deploy | 需要结合运行条件确认 |\n| B | Canary rollout | 需要结合运行条件确认 |\n| C | Rolling update | 需要结合运行条件确认 |\n\n开始前会确认当前行为和已有监控，完成后对照同一组输入检查结果，避免只凭代码改动推断行为正确。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "Can you explain how option B handles rollback?",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "question"
+  },
+  {
+    "id": "NM2-05",
+    "assistantText": "背景：我梳理了这次可能涉及的请求边界。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| 1 | 增加超时 | 需要结合运行条件确认 |\n| 2 | 增加重试 | 需要结合运行条件确认 |\n| 3 | 加入熔断 | 需要结合运行条件确认 |\n\n这些候选项可以分别评估；我会先确认依赖关系和回退路径，再按你批准的范围安排实现顺序。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "都先不做，等下个迭代再评估。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "defer-all"
+  },
+  {
+    "id": "NM2-06",
+    "assistantText": "背景：我梳理了这次可能涉及的发布方案。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| A | 保留旧 API | 需要结合运行条件确认 |\n| B | 迁移到新 API | 需要结合运行条件确认 |\n| C | 双写过渡 | 需要结合运行条件确认 |\n\n具体执行时会先检查调用链和现有配置，保留可回滚点，并把可能影响线上行为的变化与纯文档调整分开记录。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "B 看起来比较复杂，我还没读完方案。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "evaluation-only"
+  },
+  {
+    "id": "NM2-07",
+    "assistantText": "背景：我梳理了这次可能涉及的配置维护。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| 1 | 更新依赖 | 需要结合运行条件确认 |\n| 2 | 改 CI | 需要结合运行条件确认 |\n| 3 | 刷新锁文件 | 需要结合运行条件确认 |\n\n实施前我会核对相关模块的边界、兼容要求和观测方式；如果某项依赖尚未满足，会停在该项而不扩大改动范围。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "版本 3 上周已经发布。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "historical"
+  },
+  {
+    "id": "NM2-08",
+    "assistantText": "背景：我梳理了这次可能涉及的服务稳定性。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| A | SQLite | 需要结合运行条件确认 |\n| B | PostgreSQL | 需要结合运行条件确认 |\n| C | JSON | 需要结合运行条件确认 |\n\n落地时将记录变更涉及的入口、失败时的恢复方式和需要人工确认的条件，方便后续复盘实际效果。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "先帮我看一下这段 SQL 的执行计划。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "topic-shift"
+  },
+  {
+    "id": "NM2-09",
+    "assistantText": "背景：我梳理了这次可能涉及的兼容策略。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| 1 | 加健康检查 | 需要结合运行条件确认 |\n| 2 | 调整重启策略 | 需要结合运行条件确认 |\n| 3 | 增加告警 | 需要结合运行条件确认 |\n\n开始前会确认当前行为和已有监控，完成后对照同一组输入检查结果，避免只凭代码改动推断行为正确。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "第一项具体会检查哪些端点？",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "clarification"
+  },
+  {
+    "id": "NM2-10",
+    "assistantText": "背景：我梳理了这次可能涉及的请求边界。以下选项列出可采取的方向，当前信息还不足以替你作决定。\n\n| ID | 候选工作 | 当前说明 |\n|---|---|---|\n| A | Keep the current timeout | 需要结合运行条件确认 |\n| B | Raise it to 30 seconds | 需要结合运行条件确认 |\n| C | Make it configurable | 需要结合运行条件确认 |\n\n这些候选项可以分别评估；我会先确认依赖关系和回退路径，再按你批准的范围安排实现顺序。\n\n推荐：先核对现有配置和实际运行证据，再决定是否采取其中任何一项。\n\n你想选哪一项？如果暂时无法判断，也可以先说明还缺什么信息。\n\nNo files were changed.",
+    "userText": "The service is currently using option A in production.",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "current-state"
+  },
+  {
+    "id": "PA3-01",
+    "assistantText": "背景：离线列表的首屏加载慢，候选项分别改变缓存内容和缓存位置。\n\n**A. 进程内列表缓存** —— 当前窗口复用结果，退出后清空。\n\n**B. 远端列表缓存** —— 多个窗口共享，但要处理失效。\n\n**C. 不缓存列表** —— 每次都从数据库读取。\n\n推荐：我倾向选共享能力更强的方案，同时保留简单回退。\n\n你想采用哪一个？",
+    "userText": "远端列表先上，进程内那种放一放。",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "group": "pa3-name-fragment"
+  },
+  {
+    "id": "PA3-02",
+    "assistantText": "背景：这里的「镜像」同时出现在缓存和代理方案中，区别在于它是否主动拉取。\n\n**A. 镜像缓存** —— 保存已经请求过的镜像层。\n\n**B. 容器镜像代理** —— 在下载时校验来源并转发。\n\n**C. 镜像同步任务** —— 定时复制指定仓库。\n\n推荐：代理更符合目前的下载链路，其他两种先维持现状。\n\n选哪个组件？",
+    "userText": "容器代理做，镜像缓存先不动。",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "group": "pa3-name-fragment"
+  },
+  {
+    "id": "PA3-03",
+    "assistantText": "背景：三种导出都强调「安全」，但安全分别指权限、传输和文件保留周期。\n\n**A. 安全导出目录** —— 限制本地目录权限。\n\n**B. 安全传输通道** —— 上传时加密。\n\n**C. 安全清理策略** —— 定期删除旧副本。\n\n推荐：我暂时不建议只凭这个共同词决定，最好确认你关心的风险。\n\n你选哪个安全方案？",
+    "userText": "先做安全的那个。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-common-fragment"
+  },
+  {
+    "id": "PA3-04",
+    "assistantText": "背景：旧字段仍有外部客户端使用，重复字段则只由内部脚本读取。\n\n**A. 保留旧字段** —— 继续兼容已发布客户端。\n\n**B. 删除重复字段** —— 减少内部响应体。\n\n**C. 重命名新字段** —— 保持旧字段一段时间。\n\n推荐：可以先处理明确不影响外部调用的变更。\n\n这几项你希望怎么安排？\n\n未运行测试。",
+    "userText": "重复字段删掉，旧字段保留。",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "group": "pa3-action-word"
+  },
+  {
+    "id": "PA3-05",
+    "assistantText": "背景：前面的讨论确定了范围，下面把可选实现分开写，方便单独批准。\n\n**A. 请求入口限流**\n在 API 层按租户限制并发。\n\n**B. worker 侧限流**\n在消费队列时控制处理速率。\n\n**C. 存储侧限流**\n限制单个租户的写入频率。\n\n推荐：建议先采用入口保护，其他位置可以按观测再补。\n\n你想先落在哪一层？",
+    "userText": "请求入口限流先做。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "group": "pa3-cross-paragraph"
+  },
+  {
+    "id": "PA3-06",
+    "assistantText": "背景：下面是部署流程的两个可拆分调整，影响点不同。\n\n**1. 增加健康检查等待**\n让新实例通过检查后再接收流量。\n\n**2. 延长回滚观察期**\n保留上一版本以便快速切回。\n\n推荐：这两项都可以独立交付。\n\n选择要做的项。",
+    "userText": "2 先上。另外帮我把 changelog 的标题也改一下。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "group": "pa3-cross-paragraph"
+  },
+  {
+    "id": "PA3-07",
+    "assistantText": "背景：为了让发布评审聚焦，我把背景、结论和风险分别列出，结论部分包含两个互斥路径。\n\n**背景**\n当前作业在应用启动时同步执行。\n\n**结论 A：启动时执行**\n改动较小，但会延长启动时间。\n\n**结论 B：后台执行**\n启动更快，需要额外状态展示。\n\n**风险**\n后台执行可能在退出时中断。\n\n推荐：我倾向 B，因为任务有明确进度。\n\n在这两个结论里选哪个？\n\nNo files were changed.",
+    "userText": "结论 B。",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "group": "pa3-bold-headings"
+  },
+  {
+    "id": "PA3-08",
+    "assistantText": "背景：我已逐项确认这些改动都不触碰持久化格式；第 2 项需要另外评估跨平台路径。\n\n**1. 统一错误提示** —— 仅改界面文本。\n\n**2. 改用系统路径 API** —— 覆盖 Windows 和 macOS。\n\n**3. 补一个空目录用例** —— 固定当前边界。\n\n推荐：建议先完成无平台依赖的项目。\n\n哪些可以开始？\n\n未运行测试。",
+    "userText": "我已逐项确认，1 和 3 可以做，2 暂缓。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "group": "pa3-self-check"
+  },
+  {
+    "id": "PA3-09",
+    "assistantText": "背景：请求日志里包含完整正文的风险已确认，需要选择最小可行的脱敏方式。\n\n1. 仅屏蔽 token\n2. 屏蔽认证头和 cookie\n3. 丢弃完整请求正文\n4. 为每项加可配置开关\n\n推荐：如果先解决高风险字段，后续再扩大覆盖也可以。\n\n想先做哪些？",
+    "userText": "2 和 3 做，1 先留着。",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ],
+    "group": "pa3-partial-floor"
+  },
+  {
+    "id": "PA3-10",
+    "assistantText": "背景：代码里有两处重复校验，候选清理方式都能独立实施，但历史清单不一定会被识别成结构化选项。\n\n可以先去掉调用方里重复的空值判断，也可以统一校验器的错误格式；第三种做法是更新错误说明。\n\n推荐：我建议从实际重复的校验开始，再单独讨论文案。\n\n你想先采用哪一种？",
+    "userText": "空值判断先去掉；错误说明以后再说。",
+    "decision": true,
+    "expectedSelected": [],
+    "group": "pa3-partial-floor"
+  },
+  {
+    "id": "PA3-11",
+    "assistantText": "背景：启动时间预算有限，以下依赖准备工作可以分开安排。\n\n1. 固定本地模型路径\n2. 增加模型缺失提示\n3. 增加首次下载进度\n\n推荐：需要先覆盖最影响启动的部分。\n\n你要批准哪几项？",
+    "userText": "除了第一个，其他先做。",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ],
+    "group": "pa3-exclusion"
+  },
+  {
+    "id": "PA3-12",
+    "assistantText": "背景：合并前有五项清理候选，前三项触及旧接口，后两项只改善可读性。\n\n1. 删除旧导出\n2. 移除旧事件名\n3. 拆掉兼容转换\n4. 统一局部变量名\n5. 整理注释\n\n推荐：前三项风险更高，必要时可以单独放弃。\n\n哪些可以合并？\n\n未运行测试。",
+    "userText": "前三个都不要，后两个由你来做。",
+    "decision": true,
+    "expectedSelected": [
+      "4",
+      "5"
+    ],
+    "group": "pa3-exclusion"
+  },
+  {
+    "id": "PA3-13",
+    "assistantText": "背景：备份校验需要三块工作，顺序影响回滚窗口。\n\n1. 生成校验清单\n2. 对照目标库记录\n3. 保存校验报告\n4. 删除旧临时文件\n\n推荐：我建议把验证和清理分开批准。\n\n这四项怎么排？",
+    "userText": "最后两个先做，前两个稍后再评估。",
+    "decision": true,
+    "expectedSelected": [
+      "3",
+      "4"
+    ],
+    "group": "pa3-position-boundary"
+  },
+  {
+    "id": "PA3-14",
+    "assistantText": "背景：五个界面调整互不依赖，前两项不改变交互，后三项会触及导航。\n\nA. 调整按钮间距\nB. 统一空状态图标\nC. 移动详情导航\nD. 合并两个菜单项\nE. 修改默认筛选\n\n推荐：可以先提交一段范围。\n\n哪些项目你会批准？\n\nNo files were changed.",
+    "userText": "前两个先做，其他以后说。",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "group": "pa3-position-boundary"
+  },
+  {
+    "id": "PA3-15",
+    "assistantText": "背景：迁移脚本分成五步，前三步只是准备，后两步会写入生产数据。\n\n1. 检查重复键\n2. 生成迁移计划\n3. 导出回滚点\n4. 写入目标结构\n5. 校验总数\n\n推荐：写入前可以先完成准备和校验。\n\n从哪些步骤开始？",
+    "userText": "1-3 先做，4 和 5 等维护窗口。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ],
+    "group": "pa3-position-boundary"
+  },
+  {
+    "id": "PA3-16",
+    "assistantText": "背景：代码评审标记了两个项目，其中第 3 项涉及产品文案，需要 PM 确认措辞。\n\n1. 加载失败时保留旧数据\n2. 对空结果显示明确状态\n3. 调整空结果的产品文案\n\n推荐：前两项没有产品依赖，第三项先走评审。\n\n你批准哪些？\n\n未运行测试。",
+    "userText": "1 和 3，不过 3 先跟 PM 确认。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ],
+    "group": "pa3-conditional"
+  },
+  {
+    "id": "PA3-17",
+    "assistantText": "背景：这两个任务都已经拆好，权限不同：第一项需要修改工作区，第二项只需读文档。\n\n**A. 更新生成脚本** —— 改动落在工作区。\n\n**B. 核对安装说明** —— 只检查文档内容。\n\n推荐：分工可以由你指定。\n\n这两项如何分配？",
+    "userText": "A 你来做，B 我自己来。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "group": "pa3-delegation"
+  },
+  {
+    "id": "PA3-18",
+    "assistantText": "背景：剩余工作只有格式化和补一个边界用例，均可独立完成。\n\n1. 格式化配置文件\n2. 增加空值边界用例\n3. 更新操作手册\n\n推荐：先把低风险的两个收尾。\n\n你想选什么？",
+    "userText": "1 和 2 先做；另外帮我查一下上周的构建记录。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ],
+    "group": "pa3-mixed"
+  },
+  {
+    "id": "PA3-19",
+    "assistantText": "背景：服务恢复方案中有两个都含「回滚」字样的选项，动作范围不同。\n\n**A. 回滚应用版本** —— 恢复上一构建。\n\n**B. 回滚数据库迁移** —— 需要停写并校验数据。\n\n**C. 保持现状并观察** —— 暂不修改状态。\n\n推荐：应用回滚可快速恢复服务，数据库操作要谨慎。\n\n你批准哪个动作？",
+    "userText": "回滚应用，数据库那项不要动。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "group": "pa3-name-action"
+  },
+  {
+    "id": "PA3-20",
+    "assistantText": "背景：本次有三条配置需要确认，分别属于网络、超时和重试；回复可能不会沿用编号。\n\n1. 只允许内网地址\n2. 缩短连接超时\n3. 为只读请求增加重试\n\n推荐：先做安全边界和超时，重试策略可以留待观察后再定。\n\n哪些先执行？\n\n未运行测试。",
+    "userText": "内网限制和连接超时先做。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ],
+    "group": "pa3-partial-fallback"
+  },
+  {
+    "id": "PA3-21",
+    "assistantText": "背景：这轮设计评审有多个独立问题，每项都需要分别回答，不是互斥方案。\n\n1. 登录页是否要支持 passkey？\n2. 新建项目默认是否私有？\n3. 错误页是否展示 trace ID？\n4. 搜索框是否保留历史记录？\n\n推荐：我已逐项检查，这些问题之间没有先后依赖。\n\n请分别给出你的意见。\n\nNo files were changed.",
+    "userText": "第二个问题先设为私有，其他我还要看设计稿。",
+    "decision": true,
+    "expectedSelected": [],
+    "group": "pa3-independent-questions"
+  },
+  {
+    "id": "PA3-22",
+    "assistantText": "背景：上传修复需要同步更新校验、提示和文档。\n\n1. 限制单文件大小\n2. 显示超限原因\n3. 更新上传说明\n\n推荐：这三项应保持一致，建议同一批完成。\n\n要我全做吗？",
+    "userText": "都做。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ],
+    "group": "pa3-all"
+  },
+  {
+    "id": "PA3-23",
+    "assistantText": "背景：客户端兼容层现在只剩三项清理工作。\n\nA. 移除废弃别名\nB. 删除重复转换\nC. 保留迁移提示\n\n推荐：A 会影响旧插件，B/C 可先处理。\n\n可以先做哪些？",
+    "userText": "排除 A，其余都做。",
+    "decision": true,
+    "expectedSelected": [
+      "B",
+      "C"
+    ],
+    "group": "pa3-exclusion"
+  },
+  {
+    "id": "PA3-24",
+    "assistantText": "背景：队列观测分为五个独立指标，后两个依赖监控平台的标签支持。\n\n1. 记录队列深度\n2. 记录等待时间\n3. 记录重试次数\n4. 记录租户维度\n5. 增加告警阈值\n\n推荐：基础指标可以先上，标签和告警后续接入。\n\n你选哪些？\n\n未运行测试。",
+    "userText": "区间 1 到 3 先做。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2",
+      "3"
+    ],
+    "group": "pa3-range"
+  },
+  {
+    "id": "PA3-25",
+    "assistantText": "背景：选项名称共用「缓存」和「本地」两个词，具体差别在生命周期。\n\nA. 本地缓存最近结果，进程退出即清空\nB. 本地磁盘缓存，保留至下次启动\nC. 远端缓存，多个实例共享\n\n推荐：我倾向先明确需要的保留时间。\n\n选哪种缓存？",
+    "userText": "磁盘那种，别选内存缓存。",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "group": "pa3-common-word"
+  },
+  {
+    "id": "PA3-26",
+    "assistantText": "背景：三项维护中只有一项会改变外部接口，其他都可以独立完成。\n\n**1. 保留旧 API** —— 增加弃用告警。\n\n**2. 删除无调用的内部适配器** —— 不影响外部接口。\n\n**3. 改名公开参数** —— 需要客户端迁移。\n\n推荐：建议先清理内部适配器。\n\n哪些可执行？",
+    "userText": "把内部适配器删掉，其他不变。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "group": "pa3-action"
+  },
+  {
+    "id": "PA3-27",
+    "assistantText": "背景：上线计划把观测和扩容分开，避免一次改动影响容量。\n\n1. 增加错误率看板\n2. 提高 worker 数量\n3. 设定自动扩缩容\n\n推荐：可以先选范围，也可以再讨论。\n\n你要我现在做哪些？",
+    "userText": "先把看板做了，另外两项下周再说。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ],
+    "group": "pa3-late-reply"
+  },
+  {
+    "id": "PA3-28",
+    "assistantText": "背景：两个选项都能减少重复请求，但需要先确认资源成本。\n\nA. 增加本地短缓存\nB. 增加共享缓存\nC. 先只补充命中率指标\n\n推荐：我建议从可观测性开始，缓存策略等数据回来再决定。\n\n你现在想批准哪些？\n\n未运行测试。",
+    "userText": "先做 C；A 可以做，但先问问同事；B 暂缓。",
+    "decision": true,
+    "expectedSelected": [
+      "C"
+    ],
+    "group": "pa3-conditional"
+  },
+  {
+    "id": "NM3-01",
+    "assistantText": "背景：三类通知都包含同一组字段，但触发时机不同。\n\nA. 登录通知\nB. 登录失败通知\nC. 登录设备变更通知\n\n推荐：如果你关注的是安全，可以进一步说明希望覆盖哪种场景。\n\n要选哪个登录通知？",
+    "userText": "登录相关的都可以。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-common"
+  },
+  {
+    "id": "NM3-02",
+    "assistantText": "背景：以下动作名称都包含「清理」，实际对象和风险不同。\n\n1. 清理临时文件\n2. 清理旧笔记\n3. 清理索引缓存\n\n推荐：删除前需要确认保留期限与可恢复方式。\n\n你批准哪个清理？",
+    "userText": "清理一下就好。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-action"
+  },
+  {
+    "id": "NM3-03",
+    "assistantText": "背景：刚才列出两个缓存方案供选择，另一个新任务与缓存决策无关。\n\n**A. 请求级缓存** —— 仅复用当前请求内的计算。\n\n**B. 进程级缓存** —— 多个请求复用内存结果。\n\n推荐：两种做法都可行，取决于一致性要求。\n\n你选 A 还是 B？",
+    "userText": "先帮我把登录页的截图整理一下。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-new-task"
+  },
+  {
+    "id": "NM3-04",
+    "assistantText": "背景：下面以背景、结论和风险三个粗体标题总结评审，不包含方案清单。\n\n**背景**\n现在每晚会执行一次检查。\n\n**结论**\n是否要改为每小时执行，需要先看峰值负载。\n\n**风险**\n频率提高会增加数据库读取。\n\n推荐：目前没有足够数据支持直接调整。\n\n背景和风险看完后你选哪个？\n\n未运行测试。",
+    "userText": "我还没看监控图，先不决定。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-bold-context"
+  },
+  {
+    "id": "NM3-05",
+    "assistantText": "背景：我已逐项确认三条迁移记录的状态，以下只是检查结果，不是需要批准的变更。\n\n1. 用户表迁移已完成\n2. 项目表迁移仍在排队\n3. 索引校验等待下一轮任务\n\n推荐：建议等所有状态收齐后再讨论处理方案。\n\n你要我执行哪项？",
+    "userText": "第二项现在还在排队。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-self-check"
+  },
+  {
+    "id": "NM3-06",
+    "assistantText": "背景：这是 IMP-101 类的独立设计问题列表，每一条都在询问自身需求，不代表选项。\n\n1. 账户页是否展示最近登录地点？\n2. 会话过期后是否保留草稿？\n3. 通知是否允许按项目静音？\n4. 新用户是否默认订阅更新？\n\n推荐：这些问题需要各自结合产品目标讨论。\n\n你想选其中哪项方案？",
+    "userText": "第三个问题可以先问产品同事，别的还没决定。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-independent-questions"
+  },
+  {
+    "id": "NM3-07",
+    "assistantText": "背景：本周尚未确认发布范围，下面的提议都只是待讨论项。\n\nA. 本周发布\nB. 下周发布\nC. 先延长观察\n\n推荐：我会等你确认窗口后再准备发布。\n\n选 A、B 还是 C？\n\nNo files were changed.",
+    "userText": "晚点再告诉你。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-late"
+  },
+  {
+    "id": "NM3-08",
+    "assistantText": "背景：候选项会影响数据保留，先找相关同事核实合规要求比较稳妥。\n\n1. 保留 30 天\n2. 保留 90 天\n3. 由项目自定义\n\n推荐：当前没有统一期限，最好先拿到合规意见。\n\n你希望采用哪种保留方式？\n\n未运行测试。",
+    "userText": "我先问问同事，确定后再说。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-coworker"
+  },
+  {
+    "id": "NM3-09",
+    "assistantText": "背景：两个待办分别需要代码权限和产品确认，目前的对话只是在说明责任边界。\n\nA. 更新导出实现\nB. 决定导出默认格式\n\n推荐：代码项我可以处理，默认格式需要产品确认。\n\n要我做哪个？",
+    "userText": "你来做吧，我自己来处理其他事。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-you-do"
+  },
+  {
+    "id": "NM3-10",
+    "assistantText": "背景：回复里出现的数字只是描述已经发生的情况。\n\n1. 保留旧配置\n2. 更新新配置\n3. 删除迁移脚本\n\n推荐：目前 2 个环境已经升级，另 1 个环境还没安排。\n\n你选哪个动作？",
+    "userText": "第 2 个环境昨天升级了。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-number-history"
+  },
+  {
+    "id": "NM3-11",
+    "assistantText": "背景：两种策略都需要根据失败率决定，当前还缺少近期数据。\n\nA. 遇错立即重试\nB. 只重试幂等请求\nC. 不自动重试\n\n推荐：我可以先把数据取出来供你判断。\n\n选哪种重试方式？",
+    "userText": "B 的失败率是多少？",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-question"
+  },
+  {
+    "id": "NM3-12",
+    "assistantText": "背景：界面迁移选项已经列出，但本周还有未完成的用户访谈。\n\n1. 先切换导航\n2. 先替换图标\n3. 暂不改动\n\n推荐：访谈结果可能改变导航结构。\n\n你想现在确定范围吗？\n\n未运行测试。",
+    "userText": "等访谈结束再说，先不定。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-defer-all"
+  },
+  {
+    "id": "NM3-13",
+    "assistantText": "背景：三个实现都能提高「稳定性」，但分别增加副本、重试或熔断。\n\nA. 多副本\nB. 自动重试\nC. 熔断保护\n\n推荐：要结合故障类型才能决定。\n\n选一个稳定方案？",
+    "userText": "稳定优先。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-generic"
+  },
+  {
+    "id": "NM3-14",
+    "assistantText": "背景：我逐项核对了部署清单并记录进度，下面的编号是完成状态。\n\n1. DNS 已切换\n2. 新实例已启动\n3. 旧实例尚未关闭\n\n推荐：关闭旧实例前还需要确认请求都已迁出。\n\n你想选择哪个步骤？\n\nNo files were changed.",
+    "userText": "1 和 2 都已经完成，3 还没做。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-status"
+  },
+  {
+    "id": "PA3-29",
+    "assistantText": "背景：这次评审汇总了七个相互独立的产品设计问题，而非七个互斥方案。\n\n1. 新建项目是否默认私有？\n2. 邀请链接是否设置过期时间？\n3. 删除成员后是否保留操作记录？\n4. 空间名称是否允许重复？\n5. 搜索是否记住上次筛选？\n6. 导出文件是否包含来源链接？\n7. 通知是否按项目单独关闭？\n\n推荐：这些问题都需要分别回答，彼此没有依赖关系。\n\n可以先给出已经明确的设计决定。",
+    "userText": "第 2 个问题先设为 7 天过期，第 6 个也要保留来源链接，其余还要讨论。",
+    "decision": true,
+    "expectedSelected": [],
+    "group": "pa3-imp101"
+  },
+  {
+    "id": "PA3-30",
+    "assistantText": "背景：我已逐项确认三处日志调整都能独立上线，建议先完成隐私风险较高的两项。\n\n- [ ] A. 移除请求正文\n- [ ] B. 屏蔽认证字段\n- [ ] C. 保留请求耗时\n\n推荐：先处理正文与凭证，耗时字段之后再观察。\n\n你批准哪些改动？",
+    "userText": "A 和 B 先做，C 等下一轮。",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "group": "pa3-75-floor"
+  },
+  {
+    "id": "PA3-31",
+    "assistantText": "背景：这两项分别是代码工作和业务核对，不要求由同一个人完成。\n\n**1. 调整缓存过期时间** —— 更新默认值。\n\n**2. 核对展示文案** —— 与产品定义保持一致。\n\n推荐：代码可以先推进，文案需要你确认。\n\n如何安排这两项？",
+    "userText": "缓存时间你来改，文案我自己确认。",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ],
+    "group": "pa3-role"
+  },
+  {
+    "id": "PA3-32",
+    "assistantText": "背景：候选方案都出现「增量」一词，差别是更新索引、备份还是同步文件。\n\nA. 增量索引更新\nB. 增量备份\nC. 增量文件同步\n\n推荐：只有索引更新能解决本次查询延迟。\n\n选哪种增量处理？\n\n未运行测试。",
+    "userText": "索引更新做，文件同步暂时不要。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "group": "pa3-common-fragment"
+  },
+  {
+    "id": "PA3-33",
+    "assistantText": "背景：五项发布准备里，只有最后两项会联系外部服务。\n\n1. 检查版本号\n2. 生成变更清单\n3. 保存回滚指针\n4. 通知监控服务\n5. 更新发布状态\n\n推荐：可以先完成前三项准备。\n\n哪些可以执行？",
+    "userText": "除了前三个都不要，先只做 1 和 2。",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "2"
+    ],
+    "group": "pa3-exclusion"
+  },
+  {
+    "id": "PA3-34",
+    "assistantText": "背景：两个版本兼容项都已评审，安全检查只覆盖第一项。\n\nA. 保留旧事件名\nB. 新增事件版本号\nC. 删除旧消费者\n\n推荐：先做向后兼容的变更，删除消费者要额外确认。\n\n批准哪些？",
+    "userText": "A 先做，B 等我下周回复，C 先问问同事。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "group": "pa3-late-boundary"
+  },
+  {
+    "id": "PA3-35",
+    "assistantText": "背景：三种调度都包含「延迟」字样，分别对应重试、队列和任务启动。\n\nA. 延迟重试 —— 失败后等待再试\nB. 延迟队列 —— 到期后再消费\nC. 延迟启动 —— 服务启动后等待\n\n推荐：本次是避免消息过早消费。\n\n选哪一种延迟？\n\nNo files were changed.",
+    "userText": "队列那种先上。",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "group": "pa3-name-fragment"
+  },
+  {
+    "id": "PA3-36",
+    "assistantText": "背景：这批变更里字母标识用于存储方案，数字标识用于迁移步骤。\n\nA. SQLite 本地库\nB. PostgreSQL 服务\n1. 导出现有记录\n2. 校验导出文件\n\n推荐：需要先定目标库，再准备数据。\n\n你希望批准哪些？\n\n未运行测试。",
+    "userText": "先用 B，步骤 1 做，2 等校验工具就绪。",
+    "decision": true,
+    "expectedSelected": [
+      "B",
+      "1"
+    ],
+    "group": "pa3-mixed-id"
+  },
+  {
+    "id": "NM3-15",
+    "assistantText": "背景：独立问题清单中的数字是问题编号；回答一个问题不会选中其他设计项。\n\n1. 是否需要离线模式？\n2. 是否允许访客查看？\n3. 是否要支持导出？\n4. 是否记录最近打开时间？\n\n推荐：每个问题分别评估成本和用户价值。\n\n选择哪些功能？",
+    "userText": "先不选，离线模式要再跟同事讨论。",
+    "decision": false,
+    "expectedSelected": [],
+    "group": "nm3-independent-questions"
+  }
+]

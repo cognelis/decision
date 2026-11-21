@@ -1,3 +1,4 @@
+import { BUILT_IN_CLIENTS, clientSummary } from "@cognelis/decision-integrations";
 import type { AppSnapshot } from "../src/shared/renderer-api.js";
 import { describe, expect, it, vi } from "vitest";
 
@@ -14,7 +15,6 @@ import { adaptWindow } from "../src/main/window-adapter.js";
 import { serverCaptureFixture } from "./fixtures.js";
 
 class FakeWindow implements BrowserWindowLike {
-  nativeGlassActive = false;
   readonly webContents = {
     on: vi.fn(),
     setWindowOpenHandler: vi.fn(),
@@ -23,9 +23,9 @@ class FakeWindow implements BrowserWindowLike {
   };
   readonly maximize = vi.fn();
   readonly show = vi.fn();
+  readonly showInactive = vi.fn();
   readonly focus = vi.fn();
   readonly hide = vi.fn();
-  readonly setNativeSurfaceMode = vi.fn();
   readonly loadURL = vi.fn(async () => undefined);
   readonly loadFile = vi.fn(async () => undefined);
   readonly on = vi.fn();
@@ -52,10 +52,12 @@ const snapshot = (values: Partial<AppSnapshot> = {}): AppSnapshot => ({
   candidateReviewProgress: null,
   decisionCandidates: { current: null, count: 0 },
   theme: "auto",
+  accent: "blue",
   vaultPath: "/vault",
   health: { index: "healthy", recovery: "healthy" },
+  clients: BUILT_IN_CLIENTS.map(clientSummary),
   integrationStatus: {
-    claudeCode: "installed",
+    "claude-code": "installed",
     codex: "installed",
   },
   pendingRationales: [],
@@ -79,8 +81,9 @@ const createManager = (
     platform?: NodeJS.Platform;
     renderer?: { kind: "url"; value: string } | { kind: "file"; value: string };
     onOptions?: (value: BrowserWindowOptionsLike) => void;
+    presentation?: "visible" | "inactive" | "hidden";
   } = {},
-  hooks: { onRendererGone?: (reason: string) => void; onPageLeft?: () => void } = {},
+  hooks: { onRendererGone?: (reason: string) => void; onPageLeft?: () => void; onCloseRequested?: () => void } = {},
 ) =>
   new WindowManager({
     ...hooks,
@@ -100,6 +103,7 @@ const createManager = (
       value: "/app/index.html",
     },
     platform: options.platform ?? "darwin",
+    ...(options.presentation === undefined ? {} : { presentation: options.presentation }),
   });
 
 describe("WindowManager", () => {
@@ -123,7 +127,6 @@ describe("WindowManager", () => {
       frame: true,
       titleBarStyle: "hiddenInset",
       trafficLightPosition: { x: 16, y: 18 },
-      transparent: true,
       roundedCorners: true,
       alwaysOnTop: false,
       skipTaskbar: false,
@@ -131,8 +134,6 @@ describe("WindowManager", () => {
       maximizable: true,
       fullscreenable: true,
       show: false,
-      vibrancy: "under-window",
-      visualEffectState: "active",
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -140,7 +141,9 @@ describe("WindowManager", () => {
         preload: "/app/preload.js",
       },
     });
-    expect(window.setNativeSurfaceMode).toHaveBeenCalledWith("desktop");
+    expect(created).not.toHaveProperty("transparent");
+    expect(created).not.toHaveProperty("vibrancy");
+    expect(created).not.toHaveProperty("visualEffectState");
 
     const navigationHandler = window.webContents.on.mock.calls[0]?.[1] as
       ((event: { preventDefault(): void }) => void) | undefined;
@@ -182,7 +185,6 @@ describe("WindowManager", () => {
     expect(window.focus).toHaveBeenCalledOnce();
     expect(window.hide).not.toHaveBeenCalled();
     expect(window.webContents.send).toHaveBeenCalledTimes(7);
-    expect(window.setNativeSurfaceMode).toHaveBeenCalledTimes(1);
   });
 
   it("hides only when no desktop surface or active task is open", async () => {
@@ -310,7 +312,7 @@ describe("WindowManager", () => {
     };
     // macOS: the app hidden with ⌘H is asked of the app, not of the window.
     let hidden = false;
-    const manager = createManager(adaptWindow(electron as never, null, () => hidden));
+    const manager = createManager(adaptWindow(electron as never, () => hidden));
     await manager.create();
     manager.publish(snapshot());
     electron.show.mockClear();
@@ -375,6 +377,111 @@ describe("WindowManager", () => {
     expect(closeEvent.preventDefault).toHaveBeenCalledOnce();
     expect(window.hide).toHaveBeenCalledOnce();
     expect(closeRequested).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ["on macOS, where a closed window still reads as in view (only ⌘H does not)", false],
+    ["where a closed window reads as out of view", true],
+  ])("stays closed on the capture it was closed on, and comes back for the next one or when asked, %s", async (_where, closedReadsHidden) => {
+    const window = new FakeWindow();
+    let visible = false;
+    window.show.mockImplementation(() => { visible = true; });
+    window.hide.mockImplementation(() => { visible = false; });
+    if (closedReadsHidden) window.isVisible.mockImplementation(() => visible);
+    const event = serverCaptureFixture();
+    const waiting = (candidateId: string, primarySurface: AppSnapshot["primarySurface"] = "hidden") => snapshot({
+      primarySurface,
+      current: { status: "awaiting_rationale", candidateId, candidateKey: `key-${candidateId}`, event, question: event.questions[0]! },
+    });
+    const reviewing = snapshot({
+      primarySurface: "hidden",
+      candidateReviewOpen: true,
+      decisionCandidates: { current: { candidateId: "candidate-1" } as AppSnapshot["decisionCandidates"]["current"], count: 1 },
+    });
+    let closedSnapshot = waiting("capture-1");
+    // As the app controller does: the close hides the primary surface, and publishes at once.
+    const manager: WindowManager = createManager(window, {}, { onCloseRequested: () => manager.publish(closedSnapshot) });
+    await manager.create();
+    const close = () => (window.on.mock.calls.find(([name]) => name === "close")?.[1] as (event: { preventDefault(): void }) => void)({ preventDefault: vi.fn() });
+
+    manager.publish(waiting("capture-1", "dashboard"));
+    expect(visible).toBe(true);
+    // Shown again at once, focus taken: it could not be put away while a capture waited, nor while 待处理 was open.
+    close();
+    manager.publish(waiting("capture-1"));
+    expect(visible).toBe(false);
+    expect(window.show).toHaveBeenCalledOnce();
+
+    manager.publish(waiting("capture-2"));
+    expect(visible).toBe(true);
+    closedSnapshot = waiting("capture-2");
+    close();
+    expect(visible).toBe(false);
+    // The Dock, the tray, a second launch: each shows the window before asking for a page.
+    manager.show();
+    manager.publish(waiting("capture-2", "dashboard"));
+    expect(visible).toBe(true);
+
+    manager.publish(reviewing);
+    closedSnapshot = reviewing;
+    close();
+    manager.publish(reviewing);
+    expect(visible).toBe(false);
+    // The 待处理 session ending meanwhile (its last candidate expired) puts back the page it was opened from: the
+    // window came up on it with nothing to do, focus taken.
+    manager.publish(snapshot({ primarySurface: "dashboard" }));
+    expect(visible).toBe(false);
+    manager.publish(waiting("capture-3", "dashboard"));
+    expect(visible).toBe(true);
+  });
+
+  it.each([
+    ["on macOS, where a closed window still reads as in view (only ⌘H does not)", false],
+    ["where a closed window reads as out of view", true],
+  ])("comes back once when the save it was closed on fails, %s", async (_where, closedReadsHidden) => {
+    const window = new FakeWindow();
+    let visible = false;
+    let minimized = false;
+    window.show.mockImplementation(() => { visible = true; });
+    window.hide.mockImplementation(() => { visible = false; });
+    window.isMinimized.mockImplementation(() => minimized);
+    window.restore.mockImplementation(() => { minimized = false; });
+    if (closedReadsHidden) window.isVisible.mockImplementation(() => visible);
+    const event = serverCaptureFixture();
+    const saved = (persistenceStatus: "saving" | "failed", primarySurface: AppSnapshot["primarySurface"] = "hidden") => snapshot({
+      primarySurface,
+      current: { status: "completed", candidateId: "capture-1", candidateKey: "key-capture-1", event, question: event.questions[0]! },
+      persistenceStatus,
+    });
+    let closedSnapshot = saved("saving");
+    // As the app controller does: the close hides the primary surface, and publishes at once.
+    const manager: WindowManager = createManager(window, {}, { onCloseRequested: () => manager.publish(closedSnapshot) });
+    await manager.create();
+    const close = () => (window.on.mock.calls.find(([name]) => name === "close")?.[1] as (event: { preventDefault(): void }) => void)({ preventDefault: vi.fn() });
+
+    manager.publish(saved("saving", "dashboard"));
+    close();
+    expect(visible).toBe(false);
+    // Failed with the window closed: why was said in the window alone, and the one that failed held the queue, so no
+    // capture came up to bring it back.
+    manager.publish(saved("failed"));
+    expect(visible).toBe(true);
+    expect(window.focus).toHaveBeenCalledTimes(2);
+    // Closed on the failure itself, it stays closed through that failure's refreshes.
+    closedSnapshot = saved("failed");
+    close();
+    manager.publish(saved("failed"));
+    expect(visible).toBe(false);
+
+    // Minimized while a retry is written, and that fails too: brought forward once.
+    manager.show();
+    manager.publish(saved("saving", "dashboard"));
+    minimized = true;
+    manager.publish(saved("failed", "dashboard"));
+    expect(window.restore).toHaveBeenCalledOnce();
+    minimized = true;
+    manager.publish(saved("failed", "dashboard"));
+    expect(window.restore).toHaveBeenCalledOnce();
   });
 
   it("counts a renderer lost a minute on as a new minute's, though the clock was set back meanwhile", async () => {
@@ -444,23 +551,6 @@ describe("WindowManager", () => {
     expect(left).toHaveBeenCalledTimes(2);
   });
 
-  it("marks the renderer when native glass is active", async () => {
-    const window = new FakeWindow();
-    window.nativeGlassActive = true;
-    const manager = createManager(window, {
-      renderer: {
-        kind: "url",
-        value: "http://localhost:5173/?preview=dashboard",
-      },
-    });
-
-    await manager.create();
-
-    expect(window.loadURL).toHaveBeenCalledWith(
-      "http://localhost:5173/?preview=dashboard&nativeGlass=1",
-    );
-  });
-
   it("omits macOS chrome options on other platforms", async () => {
     let created: BrowserWindowOptionsLike | undefined;
     const manager = createManager(new FakeWindow(), {
@@ -472,6 +562,7 @@ describe("WindowManager", () => {
 
     await manager.create();
 
+    expect(created).not.toHaveProperty("transparent");
     expect(created).not.toHaveProperty("vibrancy");
     expect(created).not.toHaveProperty("visualEffectState");
     expect(created).not.toHaveProperty("titleBarStyle");
@@ -492,4 +583,49 @@ it("maximizes only the first presentation and preserves later manual resizing", 
   manager.show();
   manager.publish(snapshot());
   expect(window.maximize).toHaveBeenCalledTimes(1);
+});
+
+describe("a window for a run started by a script", () => {
+  const capture = () => {
+    const event = serverCaptureFixture();
+    return snapshot({
+      primarySurface: "hidden",
+      current: {
+        status: "awaiting_rationale",
+        candidateId: "candidate-script",
+        candidateKey: "candidate-key",
+        event,
+        question: event.questions[0]!,
+      },
+    });
+  };
+
+  it("never comes on screen, not at start, nor for a capture, nor when asked for, its page loaded all the same", async () => {
+    const window = new FakeWindow();
+    const manager = createManager(window, { presentation: "hidden" });
+    await manager.create();
+    manager.publish(snapshot());
+    manager.publish(capture());
+    manager.show();
+
+    expect(window.loadFile).toHaveBeenCalledOnce();
+    expect(window.show).not.toHaveBeenCalled();
+    expect(window.showInactive).not.toHaveBeenCalled();
+    expect(window.maximize).not.toHaveBeenCalled();
+    expect(window.focus).not.toHaveBeenCalled();
+    expect(window.restore).not.toHaveBeenCalled();
+  });
+
+  it("asked to be seen, comes up behind the app in front, as it is, unfocused", async () => {
+    const window = new FakeWindow();
+    const manager = createManager(window, { presentation: "inactive" });
+    await manager.create();
+    manager.publish(snapshot());
+    manager.publish(capture());
+
+    expect(window.showInactive).toHaveBeenCalled();
+    expect(window.show).not.toHaveBeenCalled();
+    expect(window.maximize).not.toHaveBeenCalled();
+    expect(window.focus).not.toHaveBeenCalled();
+  });
 });

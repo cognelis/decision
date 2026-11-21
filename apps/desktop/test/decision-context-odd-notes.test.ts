@@ -66,7 +66,7 @@ describe("decisions note whose 决策点 text was deleted", () => {
 // successor, and the page it is on fails as a whole.
 describe("record with many replaced successors", () => {
   const document = (id: string, overrides: Partial<DecisionContextDocument> = {}): DecisionContextDocument => ({
-    id, source: "summarize", kind: "historical_decision", title: `${id} 列表稳定标识`, project: "web", status: "accepted",
+    id, source: "summarize", kind: "summarized_decision", title: `${id} 列表稳定标识`, project: "web", status: "accepted",
     created: "2026-09-01", summary: "可排序列表采用稳定的业务标识。", appliesWhen: null, caution: null,
     tags: [], supersedes: [], supersededBy: [], relativePath: `Decision Journal/summarize/${id}.md`,
     client: null, sessionId: null, body: "# 列表标识\n\n使用稳定业务标识。", bodyStartLine: 4, ...overrides,

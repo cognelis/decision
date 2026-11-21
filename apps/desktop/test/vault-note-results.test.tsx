@@ -117,8 +117,11 @@ describe("VaultNoteResults", () => {
     expect(api.getObsidianSearchStatus).toHaveBeenCalledTimes(1);
     expect(within(page).getByRole("heading", { name: "Vault 笔记" })).toBeVisible();
     expect(within(page).getByText("检索仅在本机处理")).toBeVisible();
-    expect(within(page).getByRole("status")).toHaveTextContent(
-      "尚未建立全库索引",
+    // The status arrives after the region renders: read at once, a loaded suite still showed 正在读取全库索引状态….
+    await waitFor(() =>
+      expect(within(page).getByRole("status")).toHaveTextContent(
+        "尚未建立全库索引",
+      ),
     );
     expect(
       within(page).getByText("上方的关键词同时搜索决策与笔记。"),

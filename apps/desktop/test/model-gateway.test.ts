@@ -7,6 +7,10 @@ import type {
   StructuredGenerationRequest,
 } from "@cognelis/decision-protocol";
 import type {
+  CapturedDecisionCandidate,
+  CapturedDecisionEvent,
+} from "@cognelis/decision-protocol";
+import type {
   CaptureAuditRecordInput,
   CaptureAuditSummary,
   ModelTraceRecordInput,
@@ -33,6 +37,8 @@ import {
   type QwenRuntimeModule,
 } from "../src/main/semantic/qwen-provider.js";
 import { QWEN_MODEL_MANIFEST } from "../src/main/semantic/model-manifest.js";
+import { SemanticDecisionCoordinator } from "../src/main/semantic/semantic-coordinator.js";
+import { semanticPairFixture } from "./fixtures.js";
 import type {
   SemanticClassifier,
   SemanticClassifierInput,
@@ -200,6 +206,9 @@ const setup = (options: {
     traceInputs,
   };
 };
+
+// The rules alone answered: their own detector version, whichever it is now, with no model routing (`+semantic-…`) in it.
+const RULES_ONLY = expect.stringMatching(/^rules-v\d+$/);
 
 describe("StructuredModelGateway", () => {
   it("records unavailable Apple and the successful Qwen fallback as separate attempts", async () => {
@@ -468,6 +477,9 @@ const profiled = (
       credentialRef: `${profileId}-key`,
     };
   }
+  if (kind === "openrouter-decisions") {
+    return { ...common, model: "typesafe/jev-1.14", credentialRef: `${profileId}-key` };
+  }
   if (kind === "apple" || kind === "qwen") {
     return {
       ...common,
@@ -520,8 +532,11 @@ const profiledGateway = (options: {
     profile: ModelProviderProfile,
   ) => SemanticClassifier;
   unattendedGenerationMs?: number;
+  onDeviceClassificationOnly?: () => boolean;
+  onDeviceModelMissing?: (profile: ModelProviderProfile) => Promise<boolean>;
 }) => {
   const traceInputs: ModelTraceRecordInput[] = [];
+  const auditInputs: unknown[] = [];
   const auditFingerprint = vi.fn(async (value: string) =>
     value === "profiled-turn" ? "c".repeat(64) : "d".repeat(64),
   );
@@ -544,15 +559,195 @@ const profiledGateway = (options: {
     },
     audit: {
       fingerprint: auditFingerprint,
-      record: vi.fn(async () => ({})),
+      record: vi.fn(async (value: unknown) => { auditInputs.push(value); return {}; }),
       summary: vi.fn(async () => emptySummary()),
     },
     now: () => new Date("2026-07-30T00:00:00.000Z"),
     idFactory: () => `profiled-id-${sequence++}`,
     ...(options.unattendedGenerationMs === undefined ? {} : { unattendedGenerationMs: options.unattendedGenerationMs }),
+    ...(options.onDeviceClassificationOnly === undefined ? {} : { onDeviceClassificationOnly: options.onDeviceClassificationOnly }),
+    ...(options.onDeviceModelMissing === undefined ? {} : { onDeviceModelMissing: options.onDeviceModelMissing }),
   });
-  return { auditFingerprint, gateway, traceInputs };
+  return { auditFingerprint, auditInputs, gateway, traceInputs };
 };
+
+// R12-DEF (synthetic): the default capture classifier asks this machine's Qwen 4B and nothing else (IMP-153).
+describe("ProfiledModelGateway on this machine only", () => {
+  const qwen4b = (enabled = true): ModelProviderProfile => ({ ...profiled("builtin-qwen", "qwen", 10, enabled), model: "qwen3.5-4b-q4-k-m" });
+  // Everything else a reader could have on the chain, a remote one put before Qwen among them.
+  const others = [profiled("builtin-apple", "apple", 0), profiled("remote-first", "openai", 1), profiled("builtin-codex", "codex-cli", 20), profiled("builtin-claude-code", "claude-code-cli", 30), profiled("remote-last", "anthropic", 40)];
+  const chain = (qwenProfile: ModelProviderProfile | undefined, qwen: SemanticClassifier = profiledProvider("qwen"), modelMissing = false) => {
+    const providers = new Map<string, SemanticClassifier>(others.map((profile) => [profile.profileId, profiledProvider(profile.kind)]));
+    const factory = vi.fn((profile: ModelProviderProfile) => (profile.kind === "qwen" ? qwen : providers.get(profile.profileId)!));
+    const onDeviceModelMissing = vi.fn(async () => modelMissing);
+    const { auditInputs, gateway, traceInputs } = profiledGateway({
+      load: async () => [...others, ...(qwenProfile === undefined ? [] : [qwenProfile])],
+      factory,
+      onDeviceClassificationOnly: () => true,
+      onDeviceModelMissing,
+    });
+    const otherCalls = () => [...providers.values()].reduce((sum, provider) => sum + vi.mocked(provider.invoke).mock.calls.length + vi.mocked(provider.status).mock.calls.length, 0);
+    return { auditInputs, gateway, factory, onDeviceModelMissing, otherCalls, traceInputs };
+  };
+
+  // As main/index.ts wires the coordinator on the default.
+  const coordinated = (gateway: ProfiledModelGateway) => {
+    const events: CapturedDecisionEvent[] = [];
+    const audits: Array<Record<string, unknown>> = [];
+    const coordinator = new SemanticDecisionCoordinator({
+      runtime: {
+        ingest: vi.fn(async (event: CapturedDecisionEvent) => { events.push(event); }),
+        ingestCandidate: vi.fn(async (candidate: CapturedDecisionCandidate) => { events.push(candidate.event); }),
+      },
+      audit: { record: vi.fn(async (value: Record<string, unknown>) => { audits.push(value); return {}; }) },
+      classifier: gateway,
+      modelEnabled: () => gateway.onDeviceClassifierInstalled(),
+      now: () => new Date("2026-07-27T00:05:00.000Z"),
+    });
+    const turn = () => coordinator.process(semanticPairFixture({
+      assistantText: "前者风险小，后者速度快。\n\n1. 前者\n2. 后者\n\n你希望选择哪一种？",
+      userText: "1",
+      capturedAt: "2026-07-27T00:04:00.000Z",
+      expiresAt: "2026-08-03T00:04:00.000Z",
+    }));
+    return { audits, events, turn };
+  };
+
+  it("says the on-device classifier is there only for an enabled Qwen set to 4B with its model downloaded, probing no backend", async () => {
+    const cases: Array<[ModelProviderProfile | undefined, boolean, boolean]> = [
+      [qwen4b(), false, true],
+      [qwen4b(), true, false],
+      [profiled("builtin-qwen", "qwen", 10), false, false],
+      [qwen4b(false), false, false],
+      [undefined, false, false],
+    ];
+    for (const [qwenProfile, missing, installed] of cases) {
+      const qwen = profiledProvider("qwen");
+      const { gateway, factory, otherCalls } = chain(qwenProfile, qwen, missing);
+      await expect(gateway.onDeviceClassifierInstalled()).resolves.toBe(installed);
+      expect(factory).not.toHaveBeenCalled();
+      expect(qwen.status).not.toHaveBeenCalled();
+      expect(otherCalls()).toBe(0);
+    }
+  });
+
+  it.each([
+    ["not downloaded", qwen4b(), true],
+    ["set to 2B", profiled("builtin-qwen", "qwen", 10), false],
+    ["turned off", qwen4b(false), false],
+  ] as const)("reads a turn as the rules alone do, with no trace and no failure, when Qwen 4B is %s", async (_case, qwenProfile, missing) => {
+    const qwen = profiledProvider("qwen");
+    const { auditInputs, gateway, factory, otherCalls, traceInputs } = chain(qwenProfile, qwen, missing);
+    const { audits, events, turn } = coordinated(gateway);
+    await turn();
+    await turn();
+    expect(events.map((event) => event.detection?.detectorVersion)).toEqual([RULES_ONLY, RULES_ONLY]);
+    expect(events.map((event) => event.detection?.band)).toEqual(["high", "high"]);
+    expect(audits.filter((audit) => audit.stage === "failed")).toEqual([]);
+    expect(traceInputs).toEqual([]);
+    expect(auditInputs).toEqual([]);
+    expect(factory).not.toHaveBeenCalled();
+    expect(qwen.invoke).not.toHaveBeenCalled();
+    expect(otherCalls()).toBe(0);
+  });
+
+  it.each([
+    ["times out", () => profiledProvider("qwen", vi.fn(async () => { throw new QwenProviderError("timeout", "Qwen inference timed out"); })), "classification_timeout"],
+    ["fails", () => profiledProvider("qwen", vi.fn(async () => { throw new QwenProviderError("runtime_unavailable", "helper crashed"); })), "provider_unavailable"],
+    ["has its process down", () => provider("qwen", "runtime_unavailable", vi.fn()), "provider_unavailable"],
+  ] as const)("still files it when a downloaded Qwen 4B %s, asking no other backend", async (_case, qwen, errorCode) => {
+    const { gateway, otherCalls, traceInputs } = chain(qwen4b(), qwen());
+    const { audits, events, turn } = coordinated(gateway);
+    await turn();
+    expect(audits.filter((audit) => audit.stage === "failed")).toEqual([expect.objectContaining({ errorCode })]);
+    expect(traceInputs.map((trace) => trace.profile.profileId)).toEqual(["builtin-qwen"]);
+    expect(events.map((event) => event.detection?.detectorVersion)).toEqual([RULES_ONLY]);
+    expect(otherCalls()).toBe(0);
+  });
+
+  it("classifies on Qwen 4B without building any other backend", async () => {
+    const { gateway, factory, otherCalls, traceInputs } = chain(qwen4b());
+    await expect(gateway.classify(input)).resolves.toMatchObject({ provider: "qwen" });
+    expect(factory.mock.calls.map(([profile]) => profile.profileId)).toEqual(["builtin-qwen"]);
+    expect(otherCalls()).toBe(0);
+    expect(traceInputs.map((trace) => trace.profile.profileId)).toEqual(["builtin-qwen"]);
+  });
+
+  it.each([
+    ["not installed", () => provider("qwen", "model_missing", vi.fn()), "provider_unavailable"],
+    ["timed out", () => profiledProvider("qwen", vi.fn(async () => { throw new QwenProviderError("timeout", "Qwen inference timed out"); })), "timeout"],
+    ["failing", () => profiledProvider("qwen", vi.fn(async () => { throw new QwenProviderError("runtime_unavailable", "helper crashed"); })), "provider_unavailable"],
+    ["unable to check its file", () => { const qwen = profiledProvider("qwen"); vi.mocked(qwen.status).mockRejectedValue(new Error("process gone")); return qwen; }, "provider_unavailable"],
+  ] as const)("ends with no reading and calls no other backend when Qwen 4B is %s", async (_case, qwen, failureCode) => {
+    const { gateway, factory, otherCalls } = chain(qwen4b(), qwen());
+    await expect(gateway.classify(input)).rejects.toMatchObject({ code: "provider_unavailable", failureCode });
+    expect(factory.mock.calls.map(([profile]) => profile.profileId)).toEqual(["builtin-qwen"]);
+    expect(otherCalls()).toBe(0);
+  });
+
+  it.each([
+    ["set to 2B", profiled("builtin-qwen", "qwen", 10)],
+    ["turned off", qwen4b(false)],
+    ["not there at all", undefined],
+  ] as const)("asks no backend at all when Qwen is %s", async (_case, qwenProfile) => {
+    const qwen = profiledProvider("qwen");
+    const { gateway, factory, otherCalls } = chain(qwenProfile, qwen);
+    await expect(gateway.classify(input)).rejects.toMatchObject({ code: "provider_unavailable" });
+    expect(factory).not.toHaveBeenCalled();
+    expect(qwen.invoke).not.toHaveBeenCalled();
+    expect(otherCalls()).toBe(0);
+  });
+
+  it("names Qwen 4B as the engine, or the rules, without probing any other backend", async () => {
+    const ready = chain(qwen4b());
+    await expect(ready.gateway.status()).resolves.toMatchObject({ provider: "qwen", mode: "hybrid" });
+    const twoB = chain(profiled("builtin-qwen", "qwen", 10));
+    await expect(twoB.gateway.status()).resolves.toMatchObject({ provider: "rules", mode: "rules_only", unavailableModels: [] });
+    expect(ready.otherCalls() + twoB.otherCalls()).toBe(0);
+    expect(twoB.factory).not.toHaveBeenCalled();
+  });
+
+  it("leaves the rules to answer a turn Qwen 4B could not, with no other backend asked", async () => {
+    for (const failing of [
+      () => provider("qwen", "model_missing", vi.fn()),
+      () => profiledProvider("qwen", vi.fn(async () => { throw new QwenProviderError("timeout", "Qwen inference timed out"); })),
+    ]) {
+      const { gateway, otherCalls } = chain(qwen4b(), failing());
+      const events: CapturedDecisionEvent[] = [];
+      const coordinator = new SemanticDecisionCoordinator({
+        runtime: {
+          ingest: vi.fn(async (event: CapturedDecisionEvent) => { events.push(event); }),
+          ingestCandidate: vi.fn(async (candidate: CapturedDecisionCandidate) => { events.push(candidate.event); }),
+        },
+        audit: { record: vi.fn(async () => ({})) },
+        classifier: gateway,
+        modelEnabled: () => true,
+        now: () => new Date("2026-07-27T00:05:00.000Z"),
+      });
+      await coordinator.process(semanticPairFixture({
+        assistantText: "前者风险小，后者速度快。\n\n1. 前者\n2. 后者\n\n你希望选择哪一种？",
+        userText: "1",
+        capturedAt: "2026-07-27T00:04:00.000Z",
+        expiresAt: "2026-08-03T00:04:00.000Z",
+      }));
+      expect(events.map((event) => event.detection?.detectorVersion)).toEqual([RULES_ONLY]);
+      expect(otherCalls()).toBe(0);
+    }
+  });
+
+  it("goes down the whole chain again when the reader picks 规则加模型", async () => {
+    let onDevice = true;
+    const providers = new Map(others.map((profile) => [profile.profileId, profiledProvider(profile.kind)]));
+    const { gateway } = profiledGateway({
+      load: async () => [...others, qwen4b()],
+      factory: (profile) => (profile.kind === "qwen" ? profiledProvider("qwen") : providers.get(profile.profileId)!),
+      onDeviceClassificationOnly: () => onDevice,
+    });
+    await expect(gateway.classify(input)).resolves.toMatchObject({ provider: "qwen" });
+    onDevice = false;
+    await expect(gateway.classify(input)).resolves.toMatchObject({ provider: "apple" });
+  });
+});
 
 describe("ProfiledModelGateway", () => {
   it("preserves structured failure codes when the provider chain ends", async () => {
@@ -631,6 +826,60 @@ describe("ProfiledModelGateway", () => {
     expect(generate).toHaveBeenCalledOnce();
   });
 
+  it("gives a record's context to no API or CLI backend, even one put first or named, only to one on this machine", async () => {
+    const summaryRequest: StructuredGenerationRequest = { ...draftRequest, requestId: "summary-request", purpose: "context-summary" };
+    const providers = {
+      openai: Object.assign(profiledProvider("openai"), { generate: vi.fn(async (request: StructuredGenerationRequest) => drafted(request)) }),
+      "claude-code-cli": Object.assign(profiledProvider("claude-code-cli"), { generate: vi.fn(async (request: StructuredGenerationRequest) => drafted(request)) }),
+      qwen: Object.assign(profiledProvider("qwen"), { generate: vi.fn(async (request: StructuredGenerationRequest) => drafted(request)) }),
+    };
+    const factory = vi.fn((profile: ModelProviderProfile) => providers[profile.kind as keyof typeof providers]);
+    const { gateway, traceInputs } = profiledGateway({
+      load: async () => [profiled("remote-first", "openai", 0), profiled("cli-second", "claude-code-cli", 1), profiled("qwen-last", "qwen", 10)],
+      factory,
+    });
+
+    await expect(gateway.generate(summaryRequest, (value) => value)).resolves.toMatchObject({ profileId: "qwen-last" });
+    await expect(gateway.generate(summaryRequest, (value) => value, undefined, "remote-first")).rejects.toMatchObject({ failureCode: "provider_unavailable" });
+    expect(providers.openai.generate).not.toHaveBeenCalled();
+    expect(providers["claude-code-cli"].generate).not.toHaveBeenCalled();
+    expect(factory.mock.calls.map(([profile]) => profile.kind)).toEqual(["qwen"]);
+    expect(traceInputs.map((trace) => [trace.purpose, trace.profile.profileId, trace.status])).toEqual([["context-summary", "qwen-last", "succeeded"]]);
+    // Any other purpose still goes to the backend put first.
+    await expect(gateway.generate(draftRequest, (value) => value)).resolves.toMatchObject({ profileId: "remote-first" });
+  });
+
+  it("ends a chain with what went wrong on the backend that tried, not the skip of one after it that cannot generate", async () => {
+    const failing = (fail: (provider: SemanticClassifier & { generate: ReturnType<typeof vi.fn> }) => void) => {
+      const qwen = Object.assign(profiledProvider("qwen"), { generate: vi.fn(async (request: StructuredGenerationRequest) => drafted(request)) });
+      fail(qwen);
+      // Qwen put before Apple, which stays enabled for capture and is passed over here.
+      const { gateway } = profiledGateway({ load: async () => [profiled("qwen-first", "qwen", 0), profiled("apple-after", "apple", 10)], factory: (profile) => profile.kind === "apple" ? profiledProvider("apple") : qwen });
+      return gateway.generate(draftRequest, (value) => value);
+    };
+    await expect(failing((qwen) => vi.mocked(qwen.status).mockResolvedValue({ id: "qwen", availability: "model_missing", promptVersion: "semantic-v1" })))
+      .rejects.toMatchObject({ failureCode: "provider_unavailable" });
+    await expect(failing((qwen) => qwen.generate.mockRejectedValue(new QwenProviderError("timeout", "Qwen inference timed out"))))
+      .rejects.toMatchObject({ failureCode: "timeout" });
+    // Refused for its shape, the answer goes with its failure: the reader can see what it said.
+    await expect(failing((qwen) => qwen.generate.mockRejectedValue(new ModelProviderError("invalid_output", "Model output failed validation", { visibleOutput: "{\"title\":" }))))
+      .rejects.toMatchObject({ failureCode: "invalid_output", output: "{\"title\":" });
+    // With nothing that could generate, that is the failure.
+    const { gateway } = profiledGateway({ load: async () => [profiled("apple-only", "apple", 0)], factory: () => profiledProvider("apple") });
+    await expect(gateway.generate(draftRequest, (value) => value)).rejects.toMatchObject({ failureCode: "unsupported_client" });
+  });
+
+  it("ends a context summary with no backend on this machine enabled without calling the remote one there is", async () => {
+    const remote = Object.assign(profiledProvider("openai"), { generate: vi.fn(async (request: StructuredGenerationRequest) => drafted(request)) });
+    const factory = vi.fn(() => remote);
+    const { gateway, traceInputs } = profiledGateway({ load: async () => [profiled("remote-only", "openai", 0)], factory });
+
+    await expect(gateway.generate({ ...draftRequest, purpose: "context-summary" }, (value) => value)).rejects.toMatchObject({ failureCode: "provider_unavailable" });
+    expect(factory).not.toHaveBeenCalled();
+    expect(remote.generate).not.toHaveBeenCalled();
+    expect(traceInputs).toEqual([]);
+  });
+
   it("lets a capture wait its turn on the bundled model rather than time out behind the reader's own answer", async () => {
     // Qwen takes one call at a time. Timed from the call, a capture classified while it wrote an answer was
     // filed as Qwen's timeout and went down the chain, its text to a remote backend.
@@ -706,6 +955,70 @@ describe("ProfiledModelGateway", () => {
     // Unbounded, the knowledge page's button turned until the app quit.
     await expect(gateway.generate(draftRequest, (value) => value)).rejects.toMatchObject({ failureCode: "timeout" });
     expect(stuck.generate).not.toHaveBeenCalled();
+  });
+
+  it("files a draft its own bound cut short as timed out, while its backend was checked or called", async () => {
+    // Nobody stopped it: it was filed as 已取消 while the caller was told 超时, and cut off during the check, not at all.
+    const stuckCheck = Object.assign(profiledProvider("qwen"), { queuesCalls: true, status: vi.fn(() => new Promise<never>(() => undefined)), generate: vi.fn() });
+    const stuckCall = Object.assign(profiledProvider("openai"), { generate: vi.fn(() => new Promise<never>(() => undefined)) });
+    for (const [kind, stuck] of [["qwen", stuckCheck], ["openai", stuckCall]] as const) {
+      const { gateway, traceInputs } = profiledGateway({ load: async () => [profiled("only", kind, 0)], factory: () => stuck, unattendedGenerationMs: 50 });
+
+      await expect(gateway.generate(draftRequest, (value) => value)).rejects.toMatchObject({ failureCode: "timeout" });
+      expect(traceInputs).toEqual([expect.objectContaining({ status: "timed_out", errorCode: "timeout" })]);
+    }
+  });
+
+  it("files a call its caller's deadline cut short as timed out and one the reader stopped as cancelled, falling back from neither", async () => {
+    // The capture's overall budget aborts with a TimeoutError: the app's own deadline, not a stop.
+    const deadline = () => new DOMException("Semantic classification timed out", "TimeoutError");
+    for (const [stage, reason, status] of [
+      ["call", deadline(), "timed_out"],
+      ["check", deadline(), "timed_out"],
+      ["call", undefined, "cancelled"],
+    ] as const) {
+      const controller = new AbortController();
+      const hang = vi.fn(() => new Promise<never>(() => undefined));
+      const first = profiledProvider("qwen", stage === "call" ? hang : undefined);
+      if (stage === "check") Object.assign(first, { queuesCalls: true, status: hang });
+      const { gateway, traceInputs } = profiledGateway({
+        load: async () => [profiled("first", "qwen", 0), profiled("second", "openai", 1)],
+        factory: (profile) => (profile.kind === "qwen" ? first : profiledProvider("openai")),
+      });
+
+      const pending = gateway.classify(input, controller.signal);
+      await vi.waitFor(() => expect(hang).toHaveBeenCalledOnce());
+      controller.abort(reason);
+
+      await expect(pending).rejects.toBeInstanceOf(Error);
+      expect(traceInputs).toEqual([expect.objectContaining({ attemptIndex: 0, status, errorCode: status === "timed_out" ? "timeout" : "cancelled" })]);
+    }
+  });
+
+  it("files how long its backend was checked when a deadline ends the check", async () => {
+    // Filed as taking 0 ms, a check the capture's budget cut off read 超时 · 0 ms and pulled the average down.
+    let clock = 1_000;
+    const now = vi.spyOn(performance, "now").mockImplementation(() => clock);
+    try {
+      for (const call of ["classify", "generate"] as const) {
+        const controller = new AbortController();
+        const hang = vi.fn(() => new Promise<never>(() => undefined));
+        const stuck = Object.assign(profiledProvider("qwen"), { queuesCalls: true, status: hang, generate: vi.fn() });
+        const { gateway, traceInputs } = profiledGateway({ load: async () => [profiled("first", "qwen", 0)], factory: () => stuck });
+
+        const pending = call === "classify"
+          ? gateway.classify(input, controller.signal)
+          : gateway.generate(draftRequest, (value) => value, controller.signal);
+        await vi.waitFor(() => expect(hang).toHaveBeenCalledOnce());
+        clock += 30_000;
+        controller.abort(new DOMException("Semantic classification timed out", "TimeoutError"));
+
+        await expect(pending).rejects.toBeInstanceOf(Error);
+        expect(traceInputs).toEqual([expect.objectContaining({ status: "timed_out", timing: expect.objectContaining({ providerMs: 30_000, totalMs: 30_000 }) })]);
+      }
+    } finally {
+      now.mockRestore();
+    }
   });
 
   it("still times the settings test of the bundled model while it writes the reader's answer", async () => {
@@ -851,6 +1164,19 @@ describe("ProfiledModelGateway", () => {
       const pending = gateway.classify(input); await vi.advanceTimersByTimeAsync(1001); await pending;
       expect(attemptSignal?.aborted).toBe(true); expect(traceInputs[0]).toMatchObject({ errorCode: "timeout", status: "timed_out" }); expect(traceInputs[1]).toMatchObject({ status: "succeeded", attemptIndex: 1 });
     } finally { vi.useRealTimers(); }
+  });
+  it("ends a chain whose backend ran out of time as a timeout, and one with nothing ready as unavailable", async () => {
+    vi.useFakeTimers();
+    try {
+      const slow = { ...profiled("slow", "openai", 0), timeoutMs: 1000 };
+      const { gateway } = profiledGateway({ load: async () => [slow], factory: () => profiledProvider("openai", async () => new Promise(() => undefined)) });
+      const pending = gateway.classify(input);
+      const ended = expect(pending).rejects.toMatchObject({ code: "provider_unavailable", failureCode: "timeout" });
+      await vi.advanceTimersByTimeAsync(1001);
+      await ended;
+    } finally { vi.useRealTimers(); }
+    const { gateway } = profiledGateway({ load: async () => [profiled("local", "qwen", 0)], factory: () => provider("qwen", "model_missing", vi.fn()) });
+    await expect(gateway.classify(input)).rejects.toMatchObject({ code: "provider_unavailable", failureCode: "provider_unavailable" });
   });
   it("gives a generation longer than the classification budget the profile sets", async () => {
     vi.useFakeTimers();
@@ -1318,5 +1644,56 @@ describe("ProfiledModelGateway", () => {
       diagnosticExcerpt:
         "Qwen output reached the 512-token limit before completing valid JSON",
     });
+  });
+});
+
+// R15-JEVSET: a decisions backend (jev) writes no text; no generation route may reach it, however it is set (IMP-166).
+describe("ProfiledModelGateway never routes to a decisions backend", () => {
+  const jev = profiled("jev-first", "openrouter-decisions", 0);
+  const generation = (purpose: StructuredGenerationRequest["purpose"]): StructuredGenerationRequest => ({
+    requestId: `request-${purpose}`, purpose, promptVersion: "test", schemaVersion: "test", locale: "zh-CN",
+    systemPrompt: "JSON", userPrompt: "test", outputSchema: { type: "object" }, maxOutputTokens: 100,
+  });
+  const setupWith = (profiles: ModelProviderProfile[], onDevice = false) => {
+    const generate = vi.fn(async (request: StructuredGenerationRequest) => ({
+      parsedOutput: {}, visibleOutput: "{}", usage: { source: "runtime_measured" as const }, providerDurationMs: 1,
+      traceInput: { systemPrompt: request.systemPrompt, userPrompt: request.userPrompt, outputSchema: request.outputSchema, clientSystemPromptVisibility: "visible" as const },
+    }));
+    const factory = vi.fn((profile: ModelProviderProfile) => Object.assign(profiledProvider(profile.kind), { generate }));
+    const { gateway } = profiledGateway({ load: async () => profiles, factory, onDeviceClassificationOnly: () => onDevice });
+    return { gateway, factory };
+  };
+
+  it("leaves it out of the classification chain under 规则加模型, and leaves the rules alone when it is the only one", async () => {
+    const withQwen = setupWith([jev, { ...profiled("qwen-later", "qwen", 10), model: "qwen3.5-4b-q4-k-m" }]);
+    await expect(withQwen.gateway.classify(input)).resolves.toMatchObject({ provider: "qwen" });
+    expect(withQwen.factory.mock.calls.map(([profile]) => profile.kind)).toEqual(["qwen"]);
+    const alone = setupWith([jev]);
+    await expect(alone.gateway.classify(input)).rejects.toThrow();
+    await expect(alone.gateway.status()).resolves.toMatchObject({ mode: "rules_only" });
+    expect(alone.factory).not.toHaveBeenCalled();
+  });
+
+  it("never picks it for any generation purpose, put first or named", async () => {
+    const { gateway, factory } = setupWith([jev, profiled("qwen-later", "qwen", 10)]);
+    for (const purpose of ["methodology-extraction", "skill-drafting", "workflow-drafting", "retrieval-answer", "pr-review", "pr-comment-recognition", "context-summary"] as const) {
+      await expect(gateway.generate(generation(purpose), (value) => value)).resolves.toMatchObject({ profileId: "qwen-later" });
+      await expect(gateway.generate(generation(purpose), (value) => value, undefined, "jev-first")).rejects.toThrow("not enabled");
+    }
+    await expect(gateway.generate(generation("structured-judgment"), (value) => value)).rejects.toMatchObject({ code: "invalid_configuration" });
+    expect(factory.mock.calls.every(([profile]) => profile.kind === "qwen")).toBe(true);
+  });
+
+  it("is not among the backends PR review, answers and summaries choose from, on either capture setting", async () => {
+    for (const onDevice of [false, true]) {
+      const { gateway } = setupWith([jev, profiled("remote", "openai", 10)], onDevice);
+      expect((await gateway.listGenerationProfiles()).map((profile) => profile.profileId)).toEqual(["remote"]);
+    }
+  });
+
+  it("will not build a generation provider for it from the test path either", async () => {
+    const { gateway, factory } = setupWith([jev]);
+    await expect(gateway.testProfile("jev-first")).resolves.toMatchObject({ ok: false, errorCode: "invalid_configuration" });
+    expect(factory).not.toHaveBeenCalled();
   });
 });

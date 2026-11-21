@@ -8,19 +8,31 @@ import { defaultExclude, defineConfig } from "vitest/config";
  * shipped on because the failure scrolled past — so these run one at a time.
  */
 const ELECTRON_SUITES = [
+  "apps/desktop/test/local-review-layout.test.ts",
   "apps/desktop/test/electron-check-cleanup.test.ts",
   "apps/desktop/test/dashboard-layout.test.ts",
   "apps/desktop/test/knowledge-layout.test.ts",
   "apps/desktop/test/rationale-layout.test.ts",
   "apps/desktop/test/settings-layout.test.ts",
   "apps/desktop/test/surface-overflow.test.ts",
+  "apps/desktop/test/prompt-editor-electron.test.ts",
 ];
 
 export default defineConfig({
   resolve: {
     alias: {
+      "@cognelis/decision-core/historical-decision": new URL("./packages/core/src/historical-decision.ts", import.meta.url).pathname,
+      "@cognelis/decision-core/todo-dependencies": new URL("./packages/core/src/todo-dependencies.ts", import.meta.url).pathname,
       "@cognelis/decision-core/journal-entry": new URL(
         "./packages/core/src/journal-entry.ts",
+        import.meta.url,
+      ).pathname,
+      "@cognelis/decision-core/todo": new URL(
+        "./packages/core/src/todo.ts",
+        import.meta.url,
+      ).pathname,
+      "@cognelis/decision-core/recommendation": new URL(
+        "./packages/core/src/recommendation.ts",
         import.meta.url,
       ).pathname,
       "@cognelis/decision-core/rationale-factors": new URL(
@@ -46,6 +58,7 @@ export default defineConfig({
     },
   },
   test: {
+    globalSetup: ["./scripts/test/setup-review-fs.mjs"],
     coverage: {
       reporter: ["text", "html"],
     },
@@ -56,7 +69,7 @@ export default defineConfig({
           name: "unit",
           environment: "node",
           testTimeout: 20_000,
-          exclude: [...defaultExclude, ".claude/worktrees/**", ...ELECTRON_SUITES],
+          exclude: [...defaultExclude, ".claude/worktrees/**", ".worktrees/**", ...ELECTRON_SUITES],
         },
       },
       {

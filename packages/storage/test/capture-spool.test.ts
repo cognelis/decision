@@ -23,6 +23,18 @@ import {
   captureQuestionKey,
 } from "../src/index.js";
 
+it.each(["captured", "skipped"] as const)("keeps %s confirmation time across recovery and rejects invalid time", async (status) => {
+  const root = await mkdtemp(join(tmpdir(), "decision-spool-"));
+  const event = captureFixture();
+  const spool = new CaptureSpool(root);
+  const submission = { status, rationale: "原因", confirmedAt: "2026-11-16T10:00:00.000Z" };
+  await spool.saveDisposition(event, 0, submission);
+  expect(await new CaptureSpool(root).loadDisposition(event, 0)).toMatchObject({ status, confirmedAt: submission.confirmedAt });
+  await expect(spool.replaceDisposition(event, 0, { ...submission, confirmedAt: "invalid" })).rejects.toThrow(/confirmation time/u);
+  await writeFile(join(root, "dispositions", `${captureQuestionKey(event, 0)}.json`), JSON.stringify({ ...submission, confirmedAt: 123 }));
+  await expect(spool.loadDisposition(event, 0)).rejects.toBeInstanceOf(CaptureDispositionCorruptError);
+});
+
 const questionFixture = (questionIndex = 0): CapturedQuestion => ({
   questionIndex,
   header: "Storage",

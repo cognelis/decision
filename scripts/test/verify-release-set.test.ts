@@ -30,14 +30,14 @@ const makeReleaseSet = async (): Promise<string> => {
     {
       platform: "win32",
       arch: "x64",
-      name: `Decision-${version}-win-x64-Setup.exe`,
+      name: `Paraself-${version}-win-x64-Setup.exe`,
       signature: "unsigned",
       body: Buffer.from("MZwindows-installer"),
     },
     {
       platform: "darwin",
       arch: "arm64",
-      name: `Decision-darwin-arm64-${version}.zip`,
+      name: `Paraself-darwin-arm64-${version}.zip`,
       signature: "ad-hoc",
       body: Buffer.from("macos-zip"),
     },
@@ -51,10 +51,10 @@ const makeReleaseSet = async (): Promise<string> => {
       "utf8",
     );
     await writeFile(
-      join(directory, `decision-${target.platform}-${target.arch}.json`),
+      join(directory, `paraself-${target.platform}-${target.arch}.json`),
       `${JSON.stringify({
         schemaVersion: 2,
-        product: "Decision",
+        product: "Paraself",
         version,
         platform: target.platform,
         arch: target.arch,
@@ -92,7 +92,7 @@ describe("complete release set", () => {
       "scripts/release-artifact.mjs",
       "scripts/release-security-rules.mjs",
       "scripts/verify-release-set.mjs",
-      "config/decision-environment.mjs",
+      "config/paraself-environment.mjs",
     ]) {
       await copyFile(path, join(directory, path));
     }
@@ -116,24 +116,24 @@ describe("complete release set", () => {
       version,
       sourceCommit,
       artifacts: [
-        `Decision-${version}-win-x64-Setup.exe`,
-        `Decision-darwin-arm64-${version}.zip`,
+        `Paraself-${version}-win-x64-Setup.exe`,
+        `Paraself-darwin-arm64-${version}.zip`,
       ],
     });
   });
 
   it("rejects a missing Windows sidecar", async () => {
     const directory = await makeReleaseSet();
-    await rm(join(directory, "decision-win32-x64.json"));
+    await rm(join(directory, "paraself-win32-x64.json"));
 
     await expect(
       verifyReleaseSet({ directory, version, tag: `v${version}` }),
-    ).rejects.toThrow(/missing.*decision-win32-x64/iu);
+    ).rejects.toThrow(/missing.*paraself-win32-x64/iu);
   });
 
   it("rejects mismatched source commits", async () => {
     const directory = await makeReleaseSet();
-    const path = join(directory, "decision-win32-x64.json");
+    const path = join(directory, "paraself-win32-x64.json");
     const manifest = JSON.parse(await readFile(path, "utf8"));
     manifest.sourceCommit = "c".repeat(40);
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
@@ -158,7 +158,7 @@ describe("complete release set", () => {
 
   it("accepts semantically identical manifests with reordered keys", async () => {
     const directory = await makeReleaseSet();
-    const path = join(directory, "decision-win32-x64.json");
+    const path = join(directory, "paraself-win32-x64.json");
     const manifest = JSON.parse(await readFile(path, "utf8"));
     const reordered = {
       sourceCommit: manifest.sourceCommit,

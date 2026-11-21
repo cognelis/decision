@@ -1,0 +1,836 @@
+[
+  {
+    "id": "reply-0",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "可以先解释一下缓存吗？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-1",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "不要重试会怎样？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-2",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "要选缓存的理由是什么？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-3",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "先不管缓存，帮我改测试",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-4",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "换个话题，重试日志在哪里？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-5",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "改了 3 个文件",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-6",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "2 个测试还没过",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-7",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 已经合了",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-8",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 合了",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-9",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 改好了",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-10",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "重试已经做了",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-11",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "测试还剩 2 个",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-12",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "改了缓存",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-13",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "缓存改完了",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "reply-14",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "已经改了缓存，2 做",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "reply-15",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 可以，另外 2 个测试还没过",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "reply-16",
+    "group": "reply",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 做，2 暂缓。为什么要加测试？",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "english-0-0",
+    "group": "english",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Run schema migration\n\nWhich steps should I run?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-0-1",
+    "group": "english",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Run schema migration\n\nPlease approve or defer each step.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-0-2",
+    "group": "english",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Run schema migration\n\nWhich steps do you approve?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-0-3",
+    "group": "english",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Run schema migration\n\nWhich steps should we execute?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-0-4",
+    "group": "english",
+    "assistantText": "1. Add request timeout\n2. Retry transient errors\n3. Run schema migration\n\nPlease approve the steps individually.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-1-0",
+    "group": "english",
+    "assistantText": "| Step | Change |\n| --- | --- |\n| 1 | Add request timeout |\n| 2 | Retry transient errors |\n| 3 | Run schema migration |\n\nWhich steps should I run?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-1-1",
+    "group": "english",
+    "assistantText": "| Step | Change |\n| --- | --- |\n| 1 | Add request timeout |\n| 2 | Retry transient errors |\n| 3 | Run schema migration |\n\nPlease approve or defer each step.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-1-2",
+    "group": "english",
+    "assistantText": "| Step | Change |\n| --- | --- |\n| 1 | Add request timeout |\n| 2 | Retry transient errors |\n| 3 | Run schema migration |\n\nWhich steps do you approve?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-1-3",
+    "group": "english",
+    "assistantText": "| Step | Change |\n| --- | --- |\n| 1 | Add request timeout |\n| 2 | Retry transient errors |\n| 3 | Run schema migration |\n\nWhich steps should we execute?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-1-4",
+    "group": "english",
+    "assistantText": "| Step | Change |\n| --- | --- |\n| 1 | Add request timeout |\n| 2 | Retry transient errors |\n| 3 | Run schema migration |\n\nPlease approve the steps individually.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-2-0",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A | add request timeout |\n| B | retry transient errors |\n| C | run schema migration |\n\nWhich steps should I run?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-2-1",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A | add request timeout |\n| B | retry transient errors |\n| C | run schema migration |\n\nPlease approve or defer each step.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-2-2",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A | add request timeout |\n| B | retry transient errors |\n| C | run schema migration |\n\nWhich steps do you approve?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-2-3",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A | add request timeout |\n| B | retry transient errors |\n| C | run schema migration |\n\nWhich steps should we execute?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-2-4",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A | add request timeout |\n| B | retry transient errors |\n| C | run schema migration |\n\nPlease approve the steps individually.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-3-0",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A add request timeout | Timeout |\n| B retry transient errors | Retry |\n| C run schema migration | Schema |\n\nWhich steps should I run?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-3-1",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A add request timeout | Timeout |\n| B retry transient errors | Retry |\n| C run schema migration | Schema |\n\nPlease approve or defer each step.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-3-2",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A add request timeout | Timeout |\n| B retry transient errors | Retry |\n| C run schema migration | Schema |\n\nWhich steps do you approve?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-3-3",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A add request timeout | Timeout |\n| B retry transient errors | Retry |\n| C run schema migration | Schema |\n\nWhich steps should we execute?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-3-4",
+    "group": "english",
+    "assistantText": "| Option | Change |\n| --- | --- |\n| A add request timeout | Timeout |\n| B retry transient errors | Retry |\n| C run schema migration | Schema |\n\nPlease approve the steps individually.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-4-0",
+    "group": "english",
+    "assistantText": "1. Choose the timeout limit\n2. Choose the retry policy\n3. Run schema migration\n\nWhich steps should I run?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-4-1",
+    "group": "english",
+    "assistantText": "1. Choose the timeout limit\n2. Choose the retry policy\n3. Run schema migration\n\nPlease approve or defer each step.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-4-2",
+    "group": "english",
+    "assistantText": "1. Choose the timeout limit\n2. Choose the retry policy\n3. Run schema migration\n\nWhich steps do you approve?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-4-3",
+    "group": "english",
+    "assistantText": "1. Choose the timeout limit\n2. Choose the retry policy\n3. Run schema migration\n\nWhich steps should we execute?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-4-4",
+    "group": "english",
+    "assistantText": "1. Choose the timeout limit\n2. Choose the retry policy\n3. Run schema migration\n\nPlease approve the steps individually.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "q-refusal",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "不要重试会怎样？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "q-approval",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "可以用缓存的原因是什么？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "q-directional",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "采用缓存是否有风险？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "q-mixed",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "可以，为什么要加缓存？",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "q-mixed-en",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "Yes, go ahead. Why do we need a cache?",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "topic-names",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "先不管重试，帮我看下测试",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "topic-selected",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "先不管 2，1 做",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "progress-past",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "用 1 改了 3 个文件",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "progress-units",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "缓存改了 2 处",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "progress-left",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "测试还剩两个",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "progress-partial",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 已经合了，3 做",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ]
+  },
+  {
+    "id": "imperative-ba",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "先把 1 改了，2 暂缓",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "approval-and-progress",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 可以，2 已经合了",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "rest-select",
+    "group": "boundaries",
+    "assistantText": "1. 缓存\n2. 重试\n3. 测试\n\n你选择做哪些？",
+    "userText": "1 不要，剩余的都做",
+    "decision": true,
+    "expectedSelected": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "id": "table-column",
+    "group": "english",
+    "assistantText": "| Tradeoff | A add timeout | B add retry | C run migration |\n| --- | --- | --- | --- |\n| Effort | Low | Medium | High |\n\nWhich options should I apply?",
+    "userText": "Approve A and C; defer B",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "steps-questions",
+    "group": "independent-questions",
+    "assistantText": "1. Which storage option do you prefer?\n2. Should I enable logging?\n\nPlease answer each item.",
+    "userText": "1 yes, 2 no",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "table-status",
+    "group": "status-table",
+    "assistantText": "| Option | Status |\n| --- | --- |\n| A add timeout | Done |\n| B add retry | Pending |\n\nShould I merge now?",
+    "userText": "Yes",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "prose-article",
+    "group": "prose",
+    "assistantText": "**A quick fix**\n\n**Bigger changes**\n\nShould I merge now?",
+    "userText": "Yes",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "count-unlisted",
+    "group": "count-no-options",
+    "assistantText": "都要做吗？",
+    "userText": "2 个测试还没过",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "count-binary",
+    "group": "count-no-options",
+    "assistantText": "现在要提交吗？",
+    "userText": "2 个测试还没过",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "count-english",
+    "group": "count-no-options",
+    "assistantText": "Should I proceed?",
+    "userText": "2 tests have not passed yet",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-0",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich of these should I implement?",
+    "userText": "A different matter: the documentation needs attention.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-1",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich of these should I implement?",
+    "userText": "Moving to something else, the dashboard has a rendering problem.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-2",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich of these should I implement?",
+    "userText": "Before that, tell me about deployment permissions.",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-3",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "1. 队列\n2. 缓存\n3. 索引\n\n这三项你想做哪些？",
+    "userText": "这次动了 3 个模块，耗时半小时",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-4",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "1. 队列\n2. 缓存\n3. 索引\n\n这三项你想做哪些？",
+    "userText": "之前跑过 2 次，结果一样",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-5",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "1. 队列\n2. 缓存\n3. 索引\n\n这三项你想做哪些？",
+    "userText": "修改涉及 3 处，一共花了半小时",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-6",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "1. 队列\n2. 缓存\n3. 索引\n\n这三项你想做哪些？",
+    "userText": "2 个测试没通过，进度到一半",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "mechanism-negative-7",
+    "group": "ho-mechanism-synthetic",
+    "assistantText": "A（稳定策略）还是 B（稳定路径）？请选择一个。",
+    "userText": "不讨论稳定了，帮我看看 README 的排版",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "english-trailer-0-0",
+    "group": "english-trailers",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich tasks get your approval?\n\nTests were not run.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-trailer-0-1",
+    "group": "english-trailers",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich tasks get your approval?\n\nValidation: not performed.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-trailer-0-2",
+    "group": "english-trailers",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich tasks get your approval?\n\nNo tests were executed.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-trailer-0-3",
+    "group": "english-trailers",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich tasks get your approval?\n\nTesting was skipped.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-trailer-0-4",
+    "group": "english-trailers",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich tasks get your approval?\n\nTests have not been run.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-trailer-0-5",
+    "group": "english-trailers",
+    "assistantText": "1. Queue jobs\n2. Add a cache\n3. Add an index\n\nWhich tasks get your approval?\n\nTests haven't been run.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "english-trailer-1-0",
+    "group": "english-trailers",
+    "assistantText": "| ID | Change |\n| --- | --- |\n| A | Queue jobs |\n| B | Add a cache |\n| C | Add an index |\n\nWhich tasks get your approval?\n\nTests were not run.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-trailer-1-1",
+    "group": "english-trailers",
+    "assistantText": "| ID | Change |\n| --- | --- |\n| A | Queue jobs |\n| B | Add a cache |\n| C | Add an index |\n\nWhich tasks get your approval?\n\nValidation: not performed.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-trailer-1-2",
+    "group": "english-trailers",
+    "assistantText": "| ID | Change |\n| --- | --- |\n| A | Queue jobs |\n| B | Add a cache |\n| C | Add an index |\n\nWhich tasks get your approval?\n\nNo tests were executed.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-trailer-1-3",
+    "group": "english-trailers",
+    "assistantText": "| ID | Change |\n| --- | --- |\n| A | Queue jobs |\n| B | Add a cache |\n| C | Add an index |\n\nWhich tasks get your approval?\n\nTesting was skipped.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-trailer-1-4",
+    "group": "english-trailers",
+    "assistantText": "| ID | Change |\n| --- | --- |\n| A | Queue jobs |\n| B | Add a cache |\n| C | Add an index |\n\nWhich tasks get your approval?\n\nTests have not been run.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-trailer-1-5",
+    "group": "english-trailers",
+    "assistantText": "| ID | Change |\n| --- | --- |\n| A | Queue jobs |\n| B | Add a cache |\n| C | Add an index |\n\nWhich tasks get your approval?\n\nTests haven't been run.",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "C"
+    ]
+  },
+  {
+    "id": "english-aside",
+    "group": "english-aside",
+    "assistantText": "| 编号 | 任务 |\n| --- | --- |\n| 1 | 加索引 (index) |\n| 2 | 执行迁移 (migration) |\n| 3 | 增加缓存 (cache) |\n\nWhich of these should we execute?",
+    "userText": "Everything except the migration; hold the migration",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  },
+  {
+    "id": "cross-language-unmapped",
+    "group": "preserve-uncertain",
+    "assistantText": "1. 队列\n2. 缓存\n3. 索引\n\n这三项你想做哪些？",
+    "userText": "all but the migration",
+    "decision": true,
+    "expectedSelected": []
+  },
+  {
+    "id": "unmapped-name",
+    "group": "preserve-uncertain",
+    "assistantText": "A. SQLite\nB. PostgreSQL\nC. JSON files\n\nWhich one?",
+    "userText": "Postgres",
+    "decision": true,
+    "expectedSelected": [],
+    "note": "R14 holdout 复核（G 段）：用户这一轮其实选定了第 2 项「PostgreSQL」；空选是 main 的已知映射缺口，这里锁的是现状，修映射时一起改。"
+  },
+  {
+    "id": "trailer-contains-request",
+    "group": "english-trailers",
+    "assistantText": "1. Add timeout\n2. Add retry\n3. Add logs\n\nTests were not run, which tasks should we execute?",
+    "userText": "Approve 1 and 3; defer 2",
+    "decision": true,
+    "expectedSelected": [
+      "1",
+      "3"
+    ]
+  }
+]

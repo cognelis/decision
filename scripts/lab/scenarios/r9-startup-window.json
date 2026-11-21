@@ -1,0 +1,441 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "description": "R9-RT 启动窗口：App 重启后立即按含义查询（全部合成）。查询与笔记没有共享主题词，只能靠语义补充找到；超时即失败。",
+  "scenarios": [
+    {
+      "id": "startup-window",
+      "description": "向量已建好，重启后立即连续查询四次。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/S9001.md",
+            "content": "---\nid: S9001\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 瞬时故障恢复\n\n## 决策\n网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9002.md",
+            "content": "---\nid: S9002\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"支付写操作采用幂等键与去重令牌，防止重复执行。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付幂等键\n\n## 决策\n支付写操作采用幂等键与去重令牌，防止重复执行。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9003.md",
+            "content": "---\nid: S9003\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"应用日志在本机保留十四天，之后压缩归档。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 日志保留\n\n## 决策\n应用日志在本机保留十四天，之后压缩归档。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9004.md",
+            "content": "---\nid: S9004\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"页面级状态放在组件内，跨页面共享的才进全局存储。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端状态管理\n\n## 决策\n页面级状态放在组件内，跨页面共享的才进全局存储。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "restart-1",
+          "restart": true
+        },
+        {
+          "id": "a-q1-en",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "For transient network failures, retry at most three times with doubled waiting intervals and randomized jitter",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9001"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "a-q2-zh",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "怎样保证同一笔交易只会结算一次",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9002"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "a-q3-en",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "how long do we keep application logs on the machine",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9003"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "a-q4-zh",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "保证同一笔交易只结算一次的做法",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9002"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "startup-window-backlog",
+      "description": "App 运行时新增 24 篇历史沉淀（没有检索，向量未建），重启后启动同步要嵌入它们，同时立即查询。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/S9001.md",
+            "content": "---\nid: S9001\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 瞬时故障恢复\n\n## 决策\n网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9002.md",
+            "content": "---\nid: S9002\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"支付写操作采用幂等键与去重令牌，防止重复执行。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付幂等键\n\n## 决策\n支付写操作采用幂等键与去重令牌，防止重复执行。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9003.md",
+            "content": "---\nid: S9003\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"应用日志在本机保留十四天，之后压缩归档。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 日志保留\n\n## 决策\n应用日志在本机保留十四天，之后压缩归档。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9004.md",
+            "content": "---\nid: S9004\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"页面级状态放在组件内，跨页面共享的才进全局存储。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端状态管理\n\n## 决策\n页面级状态放在组件内，跨页面共享的才进全局存储。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9500.md",
+            "content": "---\nid: S9500\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"构建缓存按团队约定处理，细节见正文第 1 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 构建缓存\n\n## 决策\n构建缓存按团队约定处理，细节见正文第 1 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9501.md",
+            "content": "---\nid: S9501\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"数据库连接池按团队约定处理，细节见正文第 2 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 数据库连接池\n\n## 决策\n数据库连接池按团队约定处理，细节见正文第 2 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9502.md",
+            "content": "---\nid: S9502\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"接口版本号按团队约定处理，细节见正文第 3 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 接口版本号\n\n## 决策\n接口版本号按团队约定处理，细节见正文第 3 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9503.md",
+            "content": "---\nid: S9503\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"配置热更新按团队约定处理，细节见正文第 4 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 配置热更新\n\n## 决策\n配置热更新按团队约定处理，细节见正文第 4 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9504.md",
+            "content": "---\nid: S9504\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"邮件模板按团队约定处理，细节见正文第 5 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 邮件模板\n\n## 决策\n邮件模板按团队约定处理，细节见正文第 5 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9505.md",
+            "content": "---\nid: S9505\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"图片压缩按团队约定处理，细节见正文第 6 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 图片压缩\n\n## 决策\n图片压缩按团队约定处理，细节见正文第 6 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9506.md",
+            "content": "---\nid: S9506\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"定时任务按团队约定处理，细节见正文第 7 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 定时任务\n\n## 决策\n定时任务按团队约定处理，细节见正文第 7 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9507.md",
+            "content": "---\nid: S9507\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"权限缓存按团队约定处理，细节见正文第 8 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 权限缓存\n\n## 决策\n权限缓存按团队约定处理，细节见正文第 8 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9508.md",
+            "content": "---\nid: S9508\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"导出格式按团队约定处理，细节见正文第 9 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 导出格式\n\n## 决策\n导出格式按团队约定处理，细节见正文第 9 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9509.md",
+            "content": "---\nid: S9509\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"分页参数按团队约定处理，细节见正文第 10 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 分页参数\n\n## 决策\n分页参数按团队约定处理，细节见正文第 10 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9510.md",
+            "content": "---\nid: S9510\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"时区处理按团队约定处理，细节见正文第 11 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 时区处理\n\n## 决策\n时区处理按团队约定处理，细节见正文第 11 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9511.md",
+            "content": "---\nid: S9511\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"错误码按团队约定处理，细节见正文第 12 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 错误码\n\n## 决策\n错误码按团队约定处理，细节见正文第 12 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9512.md",
+            "content": "---\nid: S9512\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"灰度开关按团队约定处理，细节见正文第 13 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 灰度开关\n\n## 决策\n灰度开关按团队约定处理，细节见正文第 13 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9513.md",
+            "content": "---\nid: S9513\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"依赖升级按团队约定处理，细节见正文第 14 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 依赖升级\n\n## 决策\n依赖升级按团队约定处理，细节见正文第 14 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9514.md",
+            "content": "---\nid: S9514\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"文档目录按团队约定处理，细节见正文第 15 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 文档目录\n\n## 决策\n文档目录按团队约定处理，细节见正文第 15 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9515.md",
+            "content": "---\nid: S9515\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"测试夹具按团队约定处理，细节见正文第 16 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 测试夹具\n\n## 决策\n测试夹具按团队约定处理，细节见正文第 16 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9516.md",
+            "content": "---\nid: S9516\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"发布清单按团队约定处理，细节见正文第 17 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 发布清单\n\n## 决策\n发布清单按团队约定处理，细节见正文第 17 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9517.md",
+            "content": "---\nid: S9517\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"监控阈值按团队约定处理，细节见正文第 18 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 监控阈值\n\n## 决策\n监控阈值按团队约定处理，细节见正文第 18 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9518.md",
+            "content": "---\nid: S9518\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"告警渠道按团队约定处理，细节见正文第 19 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 告警渠道\n\n## 决策\n告警渠道按团队约定处理，细节见正文第 19 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9519.md",
+            "content": "---\nid: S9519\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"备份周期按团队约定处理，细节见正文第 20 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 备份周期\n\n## 决策\n备份周期按团队约定处理，细节见正文第 20 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9520.md",
+            "content": "---\nid: S9520\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"索引重建按团队约定处理，细节见正文第 21 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 索引重建\n\n## 决策\n索引重建按团队约定处理，细节见正文第 21 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9521.md",
+            "content": "---\nid: S9521\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"队列重试按团队约定处理，细节见正文第 22 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 队列重试\n\n## 决策\n队列重试按团队约定处理，细节见正文第 22 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9522.md",
+            "content": "---\nid: S9522\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"会话过期按团队约定处理，细节见正文第 23 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 会话过期\n\n## 决策\n会话过期按团队约定处理，细节见正文第 23 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "file": {
+            "path": "Decision Journal/summarize/S9523.md",
+            "content": "---\nid: S9523\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"字体加载按团队约定处理，细节见正文第 24 条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 字体加载\n\n## 决策\n字体加载按团队约定处理，细节见正文第 24 条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        },
+        {
+          "id": "restart-1",
+          "restart": true
+        },
+        {
+          "id": "b-q1-en",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "For transient network failures, retry at most three times with doubled waiting intervals and randomized jitter",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9001"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "b-q2-zh",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "怎样保证同一笔交易只会结算一次",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9002"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "b-q3-en",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "how long do we keep application logs on the machine",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9003"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "b-q4-zh",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "保证同一笔交易只结算一次的做法",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9002"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "after-ready",
+      "description": "对照：同样的种子和四个查询，不重启，在运行器确认语义补充不超时之后再查。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/S9001.md",
+            "content": "---\nid: S9001\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 瞬时故障恢复\n\n## 决策\n网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9002.md",
+            "content": "---\nid: S9002\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"支付写操作采用幂等键与去重令牌，防止重复执行。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付幂等键\n\n## 决策\n支付写操作采用幂等键与去重令牌，防止重复执行。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9003.md",
+            "content": "---\nid: S9003\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"应用日志在本机保留十四天，之后压缩归档。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 日志保留\n\n## 决策\n应用日志在本机保留十四天，之后压缩归档。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/S9004.md",
+            "content": "---\nid: S9004\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"页面级状态放在组件内，跨页面共享的才进全局存储。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端状态管理\n\n## 决策\n页面级状态放在组件内，跨页面共享的才进全局存储。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "c-q1-en",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "For transient network failures, retry at most three times with doubled waiting intervals and randomized jitter",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9001"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "c-q2-zh",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "怎样保证同一笔交易只会结算一次",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9002"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "c-q3-en",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "how long do we keep application logs on the machine",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9003"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        },
+        {
+          "id": "c-q4-zh",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "保证同一笔交易只结算一次的做法",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "S9002"
+            ],
+            "k": 3,
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

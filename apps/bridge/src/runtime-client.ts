@@ -1,3 +1,25 @@
+import {
+  getHistoricalDecisionRequestSchema,
+  getHistoricalDecisionResultSchema,
+  listHistoricalDecisionsRequestSchema,
+  listHistoricalDecisionsResultSchema,
+  openHistoricalDecisionRequestSchema,
+  openHistoricalDecisionResultSchema,
+  recordHistoricalDecisionRequestSchema,
+  recordHistoricalDecisionResultSchema,
+  updateHistoricalDecisionRequestSchema,
+  updateHistoricalDecisionResultSchema,
+  type GetHistoricalDecisionRequest,
+  type GetHistoricalDecisionResult,
+  type ListHistoricalDecisionsRequest,
+  type ListHistoricalDecisionsResult,
+  type OpenHistoricalDecisionRequest,
+  type OpenHistoricalDecisionResult,
+  type RecordHistoricalDecisionRequest,
+  type RecordHistoricalDecisionResult,
+  type UpdateHistoricalDecisionRequest,
+  type UpdateHistoricalDecisionResult,
+} from "@cognelis/decision-protocol";
 import { DecisionFeedbackUpdate, DecisionFeedbackUpdateResult, decisionFeedbackUpdateSchema, decisionFeedbackUpdateResultSchema, DecisionFeedbackQuery, DecisionFeedbackResponse, decisionFeedbackQuerySchema, decisionFeedbackResponseSchema } from "@cognelis/decision-protocol";
 import {
   CONSULTATION_SHAPE,
@@ -33,12 +55,42 @@ import {
   type DecisionHandoffResponse,
   decisionOutcomeUpdateSchema,
   decisionOutcomeUpdateResultSchema,
+  obsidianNoteReadRequestSchema,
+  obsidianNoteReadResponseSchema,
+  obsidianNoteSearchRequestSchema,
+  obsidianNoteSearchResponseSchema,
+  type ObsidianNoteReadRequest,
+  type ObsidianNoteReadResponse,
+  type ObsidianNoteSearchRequest,
+  type ObsidianNoteSearchResponse,
   type DecisionOutcomeUpdate,
   type DecisionOutcomeUpdateResult,
   decisionRelationUpdateSchema,
   decisionRelationUpdateResultSchema,
   type DecisionRelationUpdate,
   type DecisionRelationUpdateResult,
+  TODO_SHAPE,
+  CONTEXT_SHAPE,
+  CONTEXT_SHAPE_SIGNALS,
+  contextShapeNeeded,
+  CONTEXT_SHAPE_HEADER,
+  decisionAmendmentRequestSchema,
+  decisionAmendmentResultSchema,
+  type DecisionAmendmentRequest,
+  type DecisionAmendmentResult,
+  TODO_SHAPE_HEADER,
+  todoItemUpdateRequestSchema,
+  todoItemUpdateResultSchema,
+  todoListQuerySchema,
+  todoListResponseSchema,
+  todoRecordRequestSchema,
+  todoRecordResultSchema,
+  type TodoItemUpdateRequest,
+  type TodoItemUpdateResult,
+  type TodoListQuery,
+  type TodoListResponse,
+  type TodoRecordRequest,
+  type TodoRecordResult,
   type CaptureReceipt,
   type CapturedDecisionCandidate,
   type CapturedDecisionEvent,
@@ -51,13 +103,132 @@ import {
   type ProactiveRecordRequest,
   type ProactiveRecordResult,
 } from "@cognelis/decision-protocol";
+import {
+  prListToolQuerySchema,
+  prListToolResultSchema,
+  prDescriptionDraftQuerySchema,
+  prDescriptionDraftResultSchema,
+  prReviewRunToolRequestSchema,
+  prReviewRunToolResultSchema,
+  type PrReviewRunToolRequest,
+  type PrReviewRunToolResult,
+  localReviewJobRecordSchema,
+  localReviewJobRecordResultSchema,
+  localReviewJobsQuerySchema,
+  localReviewJobsResultSchema,
+  localReviewJobRequestSchema,
+  localReviewJobResultSchema,
+  localReviewJobUpdateSchema,
+  localReviewJobUpdateResultSchema,
+  type LocalReviewJobRecord,
+  type LocalReviewJobRecordResult,
+  type LocalReviewJobsQuery,
+  type LocalReviewJobsResult,
+  type LocalReviewJobRequest,
+  type LocalReviewJobResult,
+  type LocalReviewJobUpdate,
+  type LocalReviewJobUpdateResult,
+  prReviewSettingsQuerySchema,
+  prReviewSettingsResultSchema,
+  reviewQualityQuerySchema,
+  reviewQualityResultSchema,
+  reviewEscapeRecordSchema,
+  reviewEscapeRecordResultSchema,
+  reviewBenchmarkRunRequestSchema,
+  reviewBenchmarkRunStartSchema,
+  reviewPromotionsQuerySchema,
+  reviewPromotionsResultSchema,
+  type ReviewPromotionsQuery,
+  type ReviewPromotionsResult,
+  reviewBenchmarkRunsQuerySchema,
+  reviewBenchmarkRunsResultSchema,
+  reviewBenchmarkRunQuerySchema,
+  reviewBenchmarkRunResultSchema,
+  type ReviewBenchmarkRunRequest,
+  type ReviewBenchmarkRunStart,
+  type ReviewBenchmarkRunsQuery,
+  type ReviewBenchmarkRunsResult,
+  type ReviewBenchmarkRunQuery,
+  type ReviewBenchmarkRunResult,
+  reviewEscapesQuerySchema,
+  reviewEscapesResultSchema,
+  reviewEscapeUpdateSchema,
+  reviewEscapeUpdateResultSchema,
+  type ReviewEscapeRecord,
+  type ReviewEscapeRecordResult,
+  type ReviewEscapesQuery,
+  type ReviewEscapesResult,
+  type ReviewEscapeUpdate,
+  type ReviewEscapeUpdateResult,
+  reviewRuleUpdateSchema,
+  reviewRuleUpdateResultSchema,
+  type ReviewQualityQuery,
+  type ReviewQualityResult,
+  type ReviewRuleUpdate,
+  type ReviewRuleUpdateResult,
+  prReviewSettingsUpdateSchema,
+  prReviewSettingsUpdateResultSchema,
+  type PrReviewSettingsQuery,
+  type PrReviewSettingsResult,
+  type PrReviewSettingsUpdate,
+  type PrReviewSettingsUpdateResult,
+  prCommentsToolQuerySchema,
+  prCommentsToolResultSchema,
+  prCommentUpdateToolSchema,
+  prCommentUpdateToolResultSchema,
+  type PrCommentsToolQuery,
+  type PrCommentsToolResult,
+  type PrCommentUpdateTool,
+  type PrCommentUpdateToolResult,
+  prUpdateRequestSchema,
+  prUpdateResultSchema,
+  type PrDescriptionDraftQuery,
+  type PrDescriptionDraftResult,
+  type PrUpdateRequest,
+  type PrUpdateResult,
+  prReviewCommentsRecordSchema,
+  prReviewCommentsResultSchema,
+  prReviewFindingUpdateSchema,
+  prReviewFindingUpdateResultSchema,
+  prReviewRecordRequestSchema,
+  prReviewRecordResultSchema,
+  prReviewRecordsQuerySchema,
+  prReviewRecordsResultSchema,
+  type PrListToolQuery,
+  type PrListToolResult,
+  type PrReviewCommentsRecord,
+  type PrReviewCommentsResult,
+  type PrReviewFindingUpdate,
+  type PrReviewFindingUpdateResult,
+  type PrReviewRecordRequest,
+  type PrReviewRecordResult,
+  type PrReviewRecordsQuery,
+  type PrReviewRecordsResult,
+  reviewBenchmarkGetRequestSchema,
+  reviewBenchmarkGetResultSchema,
+  reviewBenchmarkListRequestSchema,
+  reviewBenchmarkListResultSchema,
+  reviewBenchmarkRecordRequestSchema,
+  reviewBenchmarkRecordResultSchema,
+  reviewBenchmarkUpdateRequestSchema,
+  reviewBenchmarkUpdateResultSchema,
+  type ReviewBenchmarkGetRequest,
+  type ReviewBenchmarkGetResult,
+  type ReviewBenchmarkListRequest,
+  type ReviewBenchmarkListResult,
+  type ReviewBenchmarkRecordRequest,
+  type ReviewBenchmarkRecordResult,
+  type ReviewBenchmarkUpdateRequest,
+  type ReviewBenchmarkUpdateResult,
+} from "@cognelis/decision-protocol";
 import { runtimeIdentityProof } from "@cognelis/decision-storage";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, posix, win32 } from "node:path";
+import { dirname, join, posix, win32 } from "node:path";
 
-import { readDecisionEnvironment } from "../../../config/decision-environment.mjs";
+import { readParaselfEnvironment } from "../../../config/paraself-environment.mjs";
+import { userDataDirectories } from "../../../config/user-data-directory.mjs";
 
 type Fetcher = typeof fetch;
 
@@ -76,7 +247,7 @@ export class RuntimeClientError extends Error {
 export interface DoctorReport {
   runtimeFile: string;
   /**
-   * outdated: a Decision App answers, from before this bridge's identity challenge: restart or update it. busy: its
+   * outdated: a Paraself App answers, from before this bridge's identity challenge: restart or update it. busy: its
    * process is alive, and it did not answer that challenge in time.
    */
   appStatus: "healthy" | "unavailable" | "busy" | "outdated" | "invalid_runtime";
@@ -90,7 +261,7 @@ export interface DoctorReport {
 export type RuntimeFailure =
   /** Nothing sent: no App's runtime file names a live process, or what answers on its port is not that App. */
   | { reason: "not_running" }
-  /** Nothing sent: a Decision App answers, from before this bridge's identity challenge. */
+  /** Nothing sent: a Paraself App answers, from before this bridge's identity challenge. */
   | { reason: "outdated" }
   /** Nothing sent: the App is there, and did not answer its challenge in time. */
   | { reason: "busy" }
@@ -102,24 +273,24 @@ export type RuntimeFailure =
 export type RuntimeFailureReport = (failure: RuntimeFailure) => void;
 
 /**
- * What an agent is told when the App gave nothing back. Every case read "Decision 可能没有运行": an App too old for
+ * What an agent is told when the App gave nothing back. Every case read "Paraself 可能没有运行": an App too old for
  * this bridge, one too busy to answer, one refusing for a missing vault, all sent the reader to start it.
  */
 export const runtimeFailureText = (failure: RuntimeFailure): string => {
   switch (failure.reason) {
     case "outdated":
-      return "Decision 正在运行，但版本比这次调用的 bridge 旧，无法安全连接，这次没有发出；请用户重启或更新 Decision。";
+      return "Paraself 正在运行，但版本比这次调用的 bridge 旧，无法安全连接，这次没有发出；请用户重启或更新 Paraself。";
     case "busy":
-      return "Decision 正在运行，但没有及时回应，这次没有发出；稍后可以再试。";
+      return "Paraself 正在运行，但没有及时回应，这次没有发出；稍后可以再试。";
     case "no_answer":
-      return "请求已经发给 Decision，但没有收到能读懂的回应，结果未知。";
+      return "请求已经发给 Paraself，但没有收到能读懂的回应，结果未知。";
     case "refused":
       // Ended as a sentence: Node's own words end with none, and the tool's next sentence ran straight on from them.
       return failure.message === null
-        ? "Decision 没有完成这次请求。"
-        : `Decision 没有完成这次请求：${failure.message}${/[。！？.!?]$/u.test(failure.message) ? "" : "。"}`;
+        ? "Paraself 没有完成这次请求。"
+        : `Paraself 没有完成这次请求：${failure.message}${/[。！？.!?]$/u.test(failure.message) ? "" : "。"}`;
     case "not_running":
-      return "Decision 没有运行或连不上，这次没有发出。";
+      return "Paraself 没有运行或连不上，这次没有发出。";
   }
 };
 
@@ -139,53 +310,30 @@ interface RuntimeClientOptions {
   contextTimeoutMs?: number;
 }
 
-const platformRuntimeFile = (
-  directoryName: string,
-  linuxDirectoryName: string,
-  platform: NodeJS.Platform = process.platform,
-  userHome: string = homedir(),
-  xdgConfigHome: string | undefined = process.env.XDG_CONFIG_HOME,
-  appData: string | undefined = process.env.APPDATA,
-): string => {
-  if (platform === "win32") {
-    return win32.join(
-      appData ?? win32.join(userHome, "AppData", "Roaming"),
-      directoryName,
-      "runtime.json",
-    );
-  }
-  if (platform === "darwin") {
-    return posix.join(
-      userHome,
-      "Library",
-      "Application Support",
-      directoryName,
-      "runtime.json",
-    );
-  }
-  return posix.join(
-    xdgConfigHome ?? posix.join(userHome, ".config"),
-    linuxDirectoryName,
-    "runtime.json",
-  );
-};
-
 export const defaultRuntimeFile = (
   platform: NodeJS.Platform = process.platform,
   userHome: string = homedir(),
   xdgConfigHome: string | undefined = process.env.XDG_CONFIG_HOME,
   appData: string | undefined = process.env.APPDATA,
 ): string =>
-  platformRuntimeFile(
-    "Decision",
-    "decision",
-    platform,
-    userHome,
-    xdgConfigHome,
-    appData,
+  (platform === "win32" ? win32 : posix).join(
+    userDataDirectories(platform, userHome, { XDG_CONFIG_HOME: xdgConfigHome, APPDATA: appData }).current,
+    "runtime.json",
   );
 
-export const defaultBridgeDataDirectory = (): string => dirname(defaultRuntimeFile());
+/** The data folder as this process found it when it started (cli.ts, before anything else): see useDataDirectory. */
+let startedWithDataDirectory: string | undefined;
+
+/**
+ * Where the App's data folder is for the rest of this run, as resolveUserData found it once at the bridge's start:
+ * Decision's folder moved to its new name, or kept to where the move could not be made. Run in a test, nothing sets
+ * it, and the default is only worked out, never moved.
+ */
+export const useDataDirectory = (path: string): void => {
+  startedWithDataDirectory = path;
+};
+
+export const defaultBridgeDataDirectory = (): string => startedWithDataDirectory ?? dirname(defaultRuntimeFile());
 
 /**
  * Whether the process that wrote a runtime file is still there (signal 0 only asks; it sends nothing). One the
@@ -226,11 +374,11 @@ export class RuntimeClient {
   constructor(options: RuntimeClientOptions = {}) {
     const configuredRuntimeFile =
       options.runtimeFile ??
-      readDecisionEnvironment(
+      readParaselfEnvironment(
         options.environment ?? process.env,
         "RUNTIME_FILE",
       );
-    this.#runtimeFiles = [configuredRuntimeFile ?? defaultRuntimeFile()];
+    this.#runtimeFiles = [configuredRuntimeFile ?? join(defaultBridgeDataDirectory(), "runtime.json")];
     this.#runtimeFile = this.#runtimeFiles[0]!;
     this.#fetch = options.fetcher ?? fetch;
     this.#deliveryTimeoutMs = options.deliveryTimeoutMs ?? 750;
@@ -348,7 +496,13 @@ export class RuntimeClient {
   }
 
   async searchContext(input: DecisionContextQuery, report?: RuntimeFailureReport): Promise<DecisionContextResponse | null> {
-    return this.#post("/v1/decision-context", decisionContextQuerySchema.parse(input), decisionContextResponseSchema, report);
+    const query = decisionContextQuerySchema.parse(input);
+    // Shape 3 only for a query that names experiences: an App from before reads "2" as it always did (IMP-191).
+    return this.#post("/v1/decision-context", query, decisionContextResponseSchema, report, { [CONTEXT_SHAPE_HEADER]: contextShapeNeeded(query) >= 3 ? CONTEXT_SHAPE : CONTEXT_SHAPE_SIGNALS });
+  }
+
+  async updateDecisionAmendment(input: DecisionAmendmentRequest, report?: RuntimeFailureReport): Promise<DecisionAmendmentResult | null> {
+    return this.#post("/v1/decision-context/amend", decisionAmendmentRequestSchema.parse(input), decisionAmendmentResultSchema, report);
   }
 
   async updateContextScope(input: DecisionScopeUpdate, report?: RuntimeFailureReport): Promise<DecisionScopeUpdateResult | null> {
@@ -380,7 +534,163 @@ export class RuntimeClient {
   }
 
   async record(input: ProactiveRecordRequest, report?: RuntimeFailureReport): Promise<ProactiveRecordResult | null> {
-    return this.#post("/v1/journal-entries", proactiveRecordRequestSchema.parse(input), proactiveRecordResultSchema, report);
+    return this.#post("/v1/journal-entries", proactiveRecordRequestSchema.parse(input), proactiveRecordResultSchema, report, { [CONTEXT_SHAPE_HEADER]: CONTEXT_SHAPE_SIGNALS });
+  }
+
+  async searchObsidianNotes(input: ObsidianNoteSearchRequest, report?: RuntimeFailureReport): Promise<ObsidianNoteSearchResponse | null> {
+    return this.#post("/v1/obsidian-notes/search", obsidianNoteSearchRequestSchema.parse(input), obsidianNoteSearchResponseSchema, report);
+  }
+
+  async readObsidianNote(input: ObsidianNoteReadRequest, report?: RuntimeFailureReport): Promise<ObsidianNoteReadResponse | null> {
+    return this.#post("/v1/obsidian-notes/read", obsidianNoteReadRequestSchema.parse(input), obsidianNoteReadResponseSchema, report);
+  }
+
+  async recordHistoricalDecision(input: RecordHistoricalDecisionRequest, report?: RuntimeFailureReport): Promise<RecordHistoricalDecisionResult | null> {
+    return this.#post("/v1/historical-decisions", recordHistoricalDecisionRequestSchema.parse(input), recordHistoricalDecisionResultSchema, report);
+  }
+
+  async listHistoricalDecisions(input: ListHistoricalDecisionsRequest, report?: RuntimeFailureReport): Promise<ListHistoricalDecisionsResult | null> {
+    return this.#post("/v1/historical-decisions/query", listHistoricalDecisionsRequestSchema.parse(input), listHistoricalDecisionsResultSchema, report);
+  }
+
+  async getHistoricalDecision(input: GetHistoricalDecisionRequest, report?: RuntimeFailureReport): Promise<GetHistoricalDecisionResult | null> {
+    return this.#post("/v1/historical-decisions/get", getHistoricalDecisionRequestSchema.parse(input), getHistoricalDecisionResultSchema, report);
+  }
+
+  async updateHistoricalDecision(input: UpdateHistoricalDecisionRequest, report?: RuntimeFailureReport): Promise<UpdateHistoricalDecisionResult | null> {
+    return this.#post("/v1/historical-decisions/update", updateHistoricalDecisionRequestSchema.parse(input), updateHistoricalDecisionResultSchema, report);
+  }
+
+  async openHistoricalDecision(input: OpenHistoricalDecisionRequest, report?: RuntimeFailureReport): Promise<OpenHistoricalDecisionResult | null> {
+    return this.#post("/v1/historical-decisions/open", openHistoricalDecisionRequestSchema.parse(input), openHistoricalDecisionResultSchema, report);
+  }
+
+  async listTodos(input: TodoListQuery, report?: RuntimeFailureReport): Promise<TodoListResponse | null> {
+    return this.#post("/v1/todos/query", todoListQuerySchema.parse(input), todoListResponseSchema, report, { [TODO_SHAPE_HEADER]: TODO_SHAPE });
+  }
+
+  async recordTodos(input: TodoRecordRequest, report?: RuntimeFailureReport): Promise<TodoRecordResult | null> {
+    return this.#post("/v1/todos", todoRecordRequestSchema.parse(input), todoRecordResultSchema, report, { [TODO_SHAPE_HEADER]: TODO_SHAPE });
+  }
+
+  async updateTodoItem(input: TodoItemUpdateRequest, report?: RuntimeFailureReport): Promise<TodoItemUpdateResult | null> {
+    return this.#post("/v1/todos/item", todoItemUpdateRequestSchema.parse(input), todoItemUpdateResultSchema, report, { [TODO_SHAPE_HEADER]: TODO_SHAPE });
+  }
+
+  async recordReviewBenchmarkCases(input: ReviewBenchmarkRecordRequest, report?: RuntimeFailureReport): Promise<ReviewBenchmarkRecordResult | null> {
+    return this.#post("/v1/review-benchmark/cases", reviewBenchmarkRecordRequestSchema.parse(input), reviewBenchmarkRecordResultSchema, report);
+  }
+
+  async listReviewBenchmarkCases(input: ReviewBenchmarkListRequest, report?: RuntimeFailureReport): Promise<ReviewBenchmarkListResult | null> {
+    return this.#post("/v1/review-benchmark/cases/query", reviewBenchmarkListRequestSchema.parse(input), reviewBenchmarkListResultSchema, report);
+  }
+
+  async getReviewBenchmarkCase(input: ReviewBenchmarkGetRequest, report?: RuntimeFailureReport): Promise<ReviewBenchmarkGetResult | null> {
+    return this.#post("/v1/review-benchmark/case", reviewBenchmarkGetRequestSchema.parse(input), reviewBenchmarkGetResultSchema, report);
+  }
+
+  async updateReviewBenchmarkCase(input: ReviewBenchmarkUpdateRequest, report?: RuntimeFailureReport): Promise<ReviewBenchmarkUpdateResult | null> {
+    return this.#post("/v1/review-benchmark/case/update", reviewBenchmarkUpdateRequestSchema.parse(input), reviewBenchmarkUpdateResultSchema, report);
+  }
+
+  /**
+   * Read from the code platform as it is asked: given longer than the rest, short of the ten seconds the App keeps a silent
+   * connection open.
+   */
+  async listPrs(input: PrListToolQuery, report?: RuntimeFailureReport): Promise<PrListToolResult | null> {
+    return this.#post("/v1/prs/query", prListToolQuerySchema.parse(input), prListToolResultSchema, report, {}, 9_000);
+  }
+
+  async listPrReviewRecords(input: PrReviewRecordsQuery, report?: RuntimeFailureReport): Promise<PrReviewRecordsResult | null> {
+    return this.#post("/v1/pr-reviews/query", prReviewRecordsQuerySchema.parse(input), prReviewRecordsResultSchema, report);
+  }
+
+  async getPrReviewRecord(input: PrReviewRecordRequest, report?: RuntimeFailureReport): Promise<PrReviewRecordResult | null> {
+    return this.#post("/v1/pr-reviews/record", prReviewRecordRequestSchema.parse(input), prReviewRecordResultSchema, report);
+  }
+
+  async updatePrReviewFinding(input: PrReviewFindingUpdate, report?: RuntimeFailureReport): Promise<PrReviewFindingUpdateResult | null> {
+    return this.#post("/v1/pr-reviews/finding", prReviewFindingUpdateSchema.parse(input), prReviewFindingUpdateResultSchema, report);
+  }
+
+  /** Read from the code platform as it is asked, as list_prs is: short of the ten seconds the App keeps a silent connection. */
+  async prDescriptionDraft(input: PrDescriptionDraftQuery, report?: RuntimeFailureReport): Promise<PrDescriptionDraftResult | null> {
+    return this.#post("/v1/prs/description/draft", prDescriptionDraftQuerySchema.parse(input), prDescriptionDraftResultSchema, report, {}, 9_000);
+  }
+
+  async getPrReviewSettings(input: PrReviewSettingsQuery, report?: RuntimeFailureReport): Promise<PrReviewSettingsResult | null> {
+    return this.#post("/v1/pr-reviews/settings", prReviewSettingsQuerySchema.parse(input), prReviewSettingsResultSchema, report);
+  }
+  async updatePrReviewSettings(input: PrReviewSettingsUpdate, report?: RuntimeFailureReport): Promise<PrReviewSettingsUpdateResult | null> {
+    return this.#post("/v1/pr-reviews/settings/update", prReviewSettingsUpdateSchema.parse(input), prReviewSettingsUpdateResultSchema, report);
+  }
+  /** Reads the link's merged PRs from the platform (twenty new ones at most a call), which takes a while the first time. */
+  async getReviewQuality(input: ReviewQualityQuery, report?: RuntimeFailureReport): Promise<ReviewQualityResult | null> {
+    return this.#post("/v1/review-quality", reviewQualityQuerySchema.parse(input), reviewQualityResultSchema, report, {}, 120_000);
+  }
+  async updateReviewRule(input: ReviewRuleUpdate, report?: RuntimeFailureReport): Promise<ReviewRuleUpdateResult | null> {
+    return this.#post("/v1/review-rules/update", reviewRuleUpdateSchema.parse(input), reviewRuleUpdateResultSchema, report);
+  }
+  async recordReviewEscape(input: ReviewEscapeRecord, report?: RuntimeFailureReport): Promise<ReviewEscapeRecordResult | null> {
+    return this.#post("/v1/review-escapes/record", reviewEscapeRecordSchema.parse(input), reviewEscapeRecordResultSchema, report, {}, 30_000);
+  }
+  async listReviewEscapes(input: ReviewEscapesQuery, report?: RuntimeFailureReport): Promise<ReviewEscapesResult | null> {
+    return this.#post("/v1/review-escapes", reviewEscapesQuerySchema.parse(input), reviewEscapesResultSchema, report);
+  }
+  /** Starting checks the repository's cases and the model, answering before any case is reviewed. */
+  async runReviewBenchmark(input: ReviewBenchmarkRunRequest, report?: RuntimeFailureReport): Promise<ReviewBenchmarkRunStart | null> {
+    return this.#post("/v1/review-benchmark/runs/start", reviewBenchmarkRunRequestSchema.parse(input), reviewBenchmarkRunStartSchema, report, {}, 30_000);
+  }
+  async listReviewBenchmarkRuns(input: ReviewBenchmarkRunsQuery, report?: RuntimeFailureReport): Promise<ReviewBenchmarkRunsResult | null> {
+    return this.#post("/v1/review-benchmark/runs", reviewBenchmarkRunsQuerySchema.parse(input), reviewBenchmarkRunsResultSchema, report, {}, 15_000);
+  }
+  async getReviewBenchmarkRun(input: ReviewBenchmarkRunQuery, report?: RuntimeFailureReport): Promise<ReviewBenchmarkRunResult | null> {
+    return this.#post("/v1/review-benchmark/runs/get", reviewBenchmarkRunQuerySchema.parse(input), reviewBenchmarkRunResultSchema, report, {}, 15_000);
+  }
+  async listRulePromotionCandidates(input: ReviewPromotionsQuery, report?: RuntimeFailureReport): Promise<ReviewPromotionsResult | null> {
+    return this.#post("/v1/review-promotions", reviewPromotionsQuerySchema.parse(input), reviewPromotionsResultSchema, report, {}, 15_000);
+  }
+  /** Making a benchmark candidate checks the commits in the local repository, which takes a while. */
+  async updateReviewEscape(input: ReviewEscapeUpdate, report?: RuntimeFailureReport): Promise<ReviewEscapeUpdateResult | null> {
+    return this.#post("/v1/review-escapes/update", reviewEscapeUpdateSchema.parse(input), reviewEscapeUpdateResultSchema, report, {}, 60_000);
+  }
+
+  /** The worker is checked before the comments are taken: the answer may take a couple of minutes. */
+  async recordLocalReviewJob(input: LocalReviewJobRecord, report?: RuntimeFailureReport): Promise<LocalReviewJobRecordResult | null> {
+    return this.#post("/v1/local-review/jobs/record", localReviewJobRecordSchema.parse(input), localReviewJobRecordResultSchema, report, {}, 170_000);
+  }
+  async listLocalReviewJobs(input: LocalReviewJobsQuery, report?: RuntimeFailureReport): Promise<LocalReviewJobsResult | null> {
+    return this.#post("/v1/local-review/jobs/list", localReviewJobsQuerySchema.parse(input), localReviewJobsResultSchema, report);
+  }
+  async getLocalReviewJob(input: LocalReviewJobRequest, report?: RuntimeFailureReport): Promise<LocalReviewJobResult | null> {
+    return this.#post("/v1/local-review/jobs/get", localReviewJobRequestSchema.parse(input), localReviewJobResultSchema, report);
+  }
+  async updateLocalReviewJob(input: LocalReviewJobUpdate, report?: RuntimeFailureReport): Promise<LocalReviewJobUpdateResult | null> {
+    return this.#post("/v1/local-review/jobs/update", localReviewJobUpdateSchema.parse(input), localReviewJobUpdateResultSchema, report, {}, 20_000);
+  }
+
+  /** Ten pages of a busy PR's threads at most, read fresh. */
+  async listPrComments(input: PrCommentsToolQuery, report?: RuntimeFailureReport): Promise<PrCommentsToolResult | null> {
+    return this.#post("/v1/prs/comments/list", prCommentsToolQuerySchema.parse(input), prCommentsToolResultSchema, report, {}, 30_000);
+  }
+
+  /** The thread read fresh, a todo filed for 转后续, then the reply. */
+  async updatePrComment(input: PrCommentUpdateTool, report?: RuntimeFailureReport): Promise<PrCommentUpdateToolResult | null> {
+    return this.#post("/v1/prs/comments/respond", prCommentUpdateToolSchema.parse(input), prCommentUpdateToolResultSchema, report, {}, 30_000);
+  }
+
+  /** Answered once the review runs: the PR is read fresh first, which for a large one takes a while. */
+  async runPrReview(input: PrReviewRunToolRequest, report?: RuntimeFailureReport): Promise<PrReviewRunToolResult | null> {
+    return this.#post("/v1/pr-reviews/run", prReviewRunToolRequestSchema.parse(input), prReviewRunToolResultSchema, report, {}, 55_000);
+  }
+
+  async updatePr(input: PrUpdateRequest, report?: RuntimeFailureReport): Promise<PrUpdateResult | null> {
+    return this.#post("/v1/prs/description/update", prUpdateRequestSchema.parse(input), prUpdateResultSchema, report, {}, 9_000);
+  }
+
+  /** Posted one after another, a few platform calls each: up to PR_COMMENTS_PER_CALL within the App's minute for them. */
+  async recordPrComments(input: PrReviewCommentsRecord, report?: RuntimeFailureReport): Promise<PrReviewCommentsResult | null> {
+    return this.#post("/v1/pr-reviews/comments", prReviewCommentsRecordSchema.parse(input), prReviewCommentsResultSchema, report, {}, 55_000);
   }
 
   async submitConsultationFeedback(
@@ -402,7 +712,7 @@ export class RuntimeClient {
         return {
           runtimeFile: this.#runtimeFile,
           appStatus: "invalid_runtime",
-          message: "Decision 的运行信息文件读不出来：请重启 Decision，它启动时会重写这个文件。在那之前的捕获留在本地队列里，App 重启后会收进来。",
+          message: "Paraself 的运行信息文件读不出来：请重启 Paraself，它启动时会重写这个文件。在那之前的捕获留在本地队列里，App 重启后会收进来。",
         };
       }
       throw error;
@@ -411,7 +721,7 @@ export class RuntimeClient {
       return {
         runtimeFile: this.#runtimeFile,
         appStatus: "outdated",
-        message: "Decision 正在运行，但版本比这个 bridge 旧：请重启或更新 Decision。在那之前的捕获留在本地队列里，App 重启后会收进来。",
+        message: "Paraself 正在运行，但版本比这个 bridge 旧：请重启或更新 Paraself。在那之前的捕获留在本地队列里，App 重启后会收进来。",
       };
     }
     // Read as not running, an App busy for a moment sent the reader to start one that was running.
@@ -419,14 +729,14 @@ export class RuntimeClient {
       return {
         runtimeFile: this.#runtimeFile,
         appStatus: "busy",
-        message: "Decision 正在运行，但没有及时回应：稍后再试；一直如此时请重启 Decision。在那之前的捕获留在本地队列里，App 会定时收进来。",
+        message: "Paraself 正在运行，但没有及时回应：稍后再试；一直如此时请重启 Paraself。在那之前的捕获留在本地队列里，App 会定时收进来。",
       };
     }
     if ("failure" in found || !(await this.#healthy(found.runtime))) {
       return {
         runtimeFile: this.#runtimeFile,
         appStatus: "unavailable",
-        message: "Decision 没有运行或连不上：请启动 Decision。在那之前的捕获留在本地队列里，App 启动后会收进来。",
+        message: "Paraself 没有运行或连不上：请启动 Paraself。在那之前的捕获留在本地队列里，App 启动后会收进来。",
       };
     }
     return {
@@ -447,6 +757,7 @@ export class RuntimeClient {
     schema: { parse(value: unknown): T },
     report: RuntimeFailureReport | undefined,
     headers: Record<string, string> = {},
+    budgetMs = this.#contextTimeoutMs,
   ): Promise<T | null> {
     const failed = (failure: RuntimeFailure): null => {
       report?.(failure);
@@ -455,8 +766,8 @@ export class RuntimeClient {
     // One budget for proving the App and asking it: each given the whole of it, an App stalled on both kept an agent
     // waiting twice as long, past what its own tool call allowed, before it was told anything. Kept on the monotonic
     // clock: on the wall clock, one stepped forward meanwhile left the answer a millisecond, one stepped back an hour.
-    const deadline = performance.now() + this.#contextTimeoutMs;
-    const found = await this.#readRuntime(this.#contextTimeoutMs).catch((): Found => ({ failure: { reason: "not_running" } }));
+    const deadline = performance.now() + budgetMs;
+    const found = await this.#readRuntime(budgetMs).catch((): Found => ({ failure: { reason: "not_running" } }));
     if ("failure" in found) return failed(found.failure);
     let response: Response;
     try {
@@ -499,10 +810,10 @@ export class RuntimeClient {
       } catch {
         throw new RuntimeClientError(
           "invalid_runtime",
-          "Decision runtime descriptor is invalid",
+          "Paraself runtime descriptor is invalid",
         );
       }
-      // Left by an App that crashed: whatever listens on its port now is not Decision, and is sent
+      // Left by an App that crashed: whatever listens on its port now is not Paraself, and is sent
       // neither the token nor a capture.
       if (!processAlive(runtime.pid)) continue;
       const refused = await this.#identify(runtime, timeoutMs);

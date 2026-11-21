@@ -32,3 +32,24 @@ describe("exported report of a multi-group review", () => {
     expect(markdown).toContain(counted);
   });
 });
+
+describe("exported report of the verification's verdicts", () => {
+  const finding = { priority: "P2" as const, title: "重试时重复提交", body: "失败后整体重试。", path: "src/a.ts", side: "new" as const, line: 3, decisionIndexes: [] };
+  it("lists the candidates waiting for material apart, with what is missing", () => {
+    const markdown = reviewMarkdown(snapshot, { ...report, needsContext: [{ finding, reason: "看不到调用方。", missing: "调用方是否只传入幂等请求。" }],
+      filtered: [{ finding: { ...finding, title: "超时写死" }, reason: "调用方传入（src/a.ts:1）。" }] });
+    expect(markdown).toContain("## 待核实的候选问题");
+    expect(markdown).toContain("- P2 重试时重复提交（src/a.ts:3）· 缺少：调用方是否只传入幂等请求。 · 看不到调用方。");
+    expect(markdown).toContain("核验找到了具体反证，没有列入问题：\n- P2 超时写死（src/a.ts:3）· 调用方传入（src/a.ts:1）。");
+  });
+  it("lists the candidates no changed line could hold, apart from the findings", () => {
+    const markdown = reviewMarkdown(snapshot, { ...report, unplaced: [{ ...finding, line: 40 }] });
+    expect(markdown).toContain("## 没能定位到变更行的候选问题");
+    expect(markdown).toContain("- P2 重试时重复提交（src/a.ts:40）· 失败后整体重试。");
+  });
+  it("still reads a report saved with the old 0–100 scores", () => {
+    const markdown = reviewMarkdown(snapshot, { ...report, filtered: [{ finding, score: 40, reason: "变更前就有。" }] });
+    expect(markdown).toContain("置信度低于 80，没有列入问题：\n- P2 重试时重复提交（src/a.ts:3）· 置信度 40 · 变更前就有。");
+    expect(markdown).not.toContain("待核实");
+  });
+});

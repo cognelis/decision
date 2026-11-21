@@ -1,4 +1,6 @@
+import { LocalReviewPanel } from "./components/pages/local-review/LocalReviewPanel.js";
 import { PrReviewPanel } from "./components/pages/pr-review/PrReviewPanel.js";
+import { moveReviewHistory } from "./components/pages/pr-review/review-history.js";
 import type { OutcomeVerdict, RationaleSubmission } from "@cognelis/decision-core";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -6,8 +8,8 @@ import {
   pendingRationaleTotal,
   type DecisionApi,
   type DesktopPrimarySurface,
-  type ProactiveRecordResult,
 } from "../shared/renderer-api.js";
+import type { ActiveRecordSaved } from "./components/pages/decisions/ActiveRecordDialog.js";
 import { CandidateReview } from "./components/CandidateReview.js";
 import { DecisionCenter, type HomeDrafts } from "./components/DecisionCenter.js";
 import { DecisionHeader } from "./components/DecisionHeader.js";
@@ -29,9 +31,14 @@ import { MethodologyPanel } from "./components/pages/methodology/MethodologyPane
 import type { MethodologyView } from "./components/pages/methodology/methodology-view-types.js";
 import { ModelsPanel } from "./components/pages/models/ModelsPanel.js";
 import { AssistantPanel } from "./components/pages/assistant/AssistantPanel.js";
+import { START_ONBOARDING_EVENT } from "./onboarding-navigation.js";
 import { SettingsPanel } from "./components/pages/settings/SettingsPanel.js";
+import { TodoPanel } from "./components/pages/todos/TodoPanel.js";
+import { PromptsPanel } from "./components/pages/prompts/PromptsPanel.js";
+import { followAccent } from "./accent.js";
 import { keepSwitchFocus } from "./keyboard.js";
 import { useAppSnapshot } from "./use-app-snapshot.js";
+import { rememberClients } from "./client-labels.js";
 
 interface AppProps {
   api?: DecisionApi;
@@ -86,15 +93,39 @@ export const App = ({ api = window.decision }: AppProps) => {
   const [recordRequest, setRecordRequest] = useState(0);
   const [assistantOpened, setAssistantOpened] = useState(false);
   const [reviewOpened, setReviewOpened] = useState(false);
+  const [localReviewOpened, setLocalReviewOpened] = useState(false);
+  const [localReviewJobId, setLocalReviewJobId] = useState<string | null>(null);
+  useEffect(() => api.onLocalReviewNavigate(id => { setLocalReviewJobId(id); setLocalReviewOpened(true); void api.openSurface("local-review").catch(cause => setError(String(cause))); }), [api]);
+  useEffect(() => { if (snapshot?.primarySurface === "local-review") setLocalReviewOpened(true); }, [snapshot?.primarySurface]);
   const [reviewActivity, setReviewActivity] = useState<"running" | "done" | null>(null);
   // A review record picked in quick jump; a new object each time, so picking the same one again still opens it.
   const [reviewNavigation, setReviewNavigation] = useState<{ id: string } | null>(null);
-  const [assistantNavigation, setAssistantNavigation] = useState<{ id: string } | null>(null);
+  // A PR whose comments a link read as decisions, picked on the home page; a new object each time, as above.
+  const [discussionNavigation, setDiscussionNavigation] = useState<{ connectionId: string; reference: string; title: string } | null>(null);
+  const [assistantNavigation, setAssistantNavigation] = useState<{ id: string } | { onboarding: true } | null>(null);
+  // Set once jumpTo is: a 接入新工具 conversation asked for from any page (onboarding-navigation.ts).
+  const startOnboardingRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const start = () => startOnboardingRef.current?.();
+    window.addEventListener(START_ONBOARDING_EVENT, start);
+    return () => window.removeEventListener(START_ONBOARDING_EVENT, start);
+  }, []);
+  // Here, at the start, not on the review page, which is not there until it is opened.
+  // The review history this window's storage held before the App kept it: moved at the start, so it no longer crowds out
+  // the drafts kept there. The App's own api only: the preview's store is that storage.
+  useEffect(() => { if (api !== undefined && api === window.decision) void moveReviewHistory(api); }, [api]);
+  // Before any page reads a client's name.
+  rememberClients(snapshot?.clients);
+  const accent = snapshot?.accent;
+  // The theme colour the settings hold, for the scheme shown now and again whenever it changes (IMP-140).
+  useEffect(() => (accent === undefined ? undefined : followAccent(accent)), [accent]);
   useEffect(() => { if (snapshot?.primarySurface === "pr-review") setReviewOpened(true); }, [snapshot?.primarySurface]);
   // The same function at every render: a page's arrival effect depends on it, and a new one with each snapshot
   // pushed meanwhile threw the record's lookup away and sent it again, the arrival opening only once pushes paused.
   const decisionNavigationConsumed = useCallback(() => setDecisionNavigation(null), []);
   const journalNavigationConsumed = useCallback(() => setJournalNavigation(null), []);
+  const [historicalNavigation, setHistoricalNavigation] = useState<string | null>(null);
+  const historicalNavigationConsumed = useCallback(() => setHistoricalNavigation(null), []);
   const sourceNavigationConsumed = useCallback(() => setSourceNavigation(null), []);
   const principleNavigationConsumed = useCallback(() => {
     setPrincipleNavigation(null);
@@ -214,8 +245,13 @@ export const App = ({ api = window.decision }: AppProps) => {
     jumpTarget.current = surface;
     // Mounted afresh, the page left lost the view, filters and record the reader left it on. Not the home
     // page, which reads again what still waits; the assistant and reviews are kept mounted anyway.
-    setKept(back === "dashboard" || back === "assistant" || back === "pr-review" ? null : back);
+    setKept(back === "dashboard" || back === "assistant" || (back === "pr-review" || back === "local-review") ? null : back);
     void api.openSurface(surface);
+  };
+  startOnboardingRef.current = () => {
+    setAssistantNavigation({ onboarding: true });
+    setAssistantOpened(true);
+    jumpTo("assistant");
   };
   const openDecision = (id: string): void => {
     setDecisionNavigation({ id, reviewState: "all" });
@@ -239,9 +275,12 @@ export const App = ({ api = window.decision }: AppProps) => {
     setJournalNavigation(id);
     jumpTo("decisions");
   };
-  const openRecorded = (result: ProactiveRecordResult): void => {
+  const openRecorded = (result: ActiveRecordSaved): void => {
     if (result.recordKind === "decision") openDecision(result.recordId);
-    else openJournalEntry(result.recordId);
+    else if (result.recordKind === "historical_decision") {
+      setHistoricalNavigation(result.recordId);
+      jumpTo("decisions");
+    } else openJournalEntry(result.recordId);
   };
 
   const reviewCandidate = snapshot.decisionCandidates.current;
@@ -276,6 +315,9 @@ export const App = ({ api = window.decision }: AppProps) => {
           onOpenHome={() => jumpTo("dashboard")}
           initialDecisionId={decisionNavigation?.id ?? null}
           initialJournalEntryId={journalNavigation}
+          historicalRevision={snapshot.dashboard.historicalDecisionRevision ?? 0}
+          initialHistoricalId={historicalNavigation}
+          onInitialHistoricalConsumed={historicalNavigationConsumed}
           initialReviewState={decisionNavigation?.reviewState ?? "all"}
           initialQuery={decisionNavigation?.query ?? ""}
           initialPeriod={decisionNavigation?.period ?? "all"}
@@ -285,6 +327,7 @@ export const App = ({ api = window.decision }: AppProps) => {
           onInitialNavigationConsumed={decisionNavigationConsumed}
           onInitialJournalConsumed={journalNavigationConsumed}
           onOpenPrinciple={openPrinciple}
+          organization={{ revision: snapshot.dashboard.organizationRevision ?? 0, pending: snapshot.dashboard.organizationPending ?? 0, onOpenMethodology: () => jumpTo("methodology") }}
           onRecorded={openRecorded}
           onDistillDecision={(id) => {
             setSourceNavigation(id);
@@ -292,8 +335,16 @@ export const App = ({ api = window.decision }: AppProps) => {
           }}
         />
       );
-    } else if ((surface === "assistant" || surface === "pr-review")) {
+    } else if ((surface === "assistant" || surface === "pr-review" || surface === "local-review")) {
       return null;
+    } else if (surface === "todos") {
+      return (
+        <TodoPanel
+          api={api}
+          todoRevision={snapshot.dashboard.todoRevision ?? 0}
+          organization={{ api, revision: snapshot.dashboard.organizationRevision ?? 0, pending: snapshot.dashboard.organizationPending ?? 0, onOpenMethodology: () => jumpTo("methodology") }}
+        />
+      );
     } else if (surface === "methodology") {
       return (
         <MethodologyPanel
@@ -308,6 +359,8 @@ export const App = ({ api = window.decision }: AppProps) => {
           onBrowseDecisions={browseDecisions}
         />
       );
+    } else if (surface === "prompts") {
+      return <PromptsPanel api={api} />;
     } else if (surface === "models") {
       return <ModelsPanel snapshot={snapshot} api={api} />;
     } else if (surface === "activity") {
@@ -333,6 +386,10 @@ export const App = ({ api = window.decision }: AppProps) => {
             jumpTo("decisions");
           }}
           onOpenRecent={() => browseDecisions({ period: "7" })}
+          onOpenPrDiscussion={(target) => {
+            setDiscussionNavigation({ connectionId: target.connectionId, reference: target.reference, title: target.title });
+            jumpTo("pr-review");
+          }}
           onOpenDeferred={() => browseDecisions({ rationaleStatus: "deferred" })}
           onOpenRetrospective={openRetrospective}
           onNavigate={jumpTo}
@@ -376,6 +433,8 @@ export const App = ({ api = window.decision }: AppProps) => {
         candidate={reviewCandidate}
         position={reviewProgress.position}
         total={reviewProgress.total}
+        remaining={snapshot.decisionCandidates.count}
+        recordApi={api}
         busy={busy}
         persistenceStatus={snapshot.decisionCandidates.persistenceStatus}
         error={error}
@@ -394,6 +453,7 @@ export const App = ({ api = window.decision }: AppProps) => {
             "候选仍未保存，请重试或稍后处理。",
           )
         }
+        onSkip={() => perform(() => api.skipCandidate(reviewCandidate.candidateId))}
         onRetry={() =>
           perform(
             () => api.retryCandidate(reviewCandidate.candidateId),
@@ -405,6 +465,8 @@ export const App = ({ api = window.decision }: AppProps) => {
   } else if (current !== null && current.status === "completed" && snapshot.persistenceStatus === "failed") {
     // Said over whatever page is open, not in place of every page: held there, the window had only a retry
     // that could not work while the vault was gone, and Settings, where the vault is changed, out of reach.
+    // A strip across the top of the content that takes its own height: floated over the bottom right corner, it
+    // covered whatever page was open there, every page, for as long as the vault was gone.
     persistenceAlert = (
       <section className="persistence-alert" role="region" aria-label="决策保存状态">
         {/* Said as an alert: a status inserted with its words was, as often as not, never read out. */}
@@ -433,34 +495,12 @@ export const App = ({ api = window.decision }: AppProps) => {
         </div>
       </section>
     );
-  } else if (current !== null && current.status === "completed") {
-    taskKey = `saving:${current.candidateId}`;
-    task = (
-      <section
-        className="desktop-view decision-workspace decision-saving"
-        data-layout="panel"
-        data-testid="decision-shell"
-        role="region"
-        aria-label="决策保存状态"
-      >
-        <div className="decision-workspace-inner">
-          <DecisionHeader
-            candidate={current}
-            waitingCount={snapshot.waitingCount}
-          />
-          <p className="status-line" role="status">
-            正在写入 Obsidian…
-          </p>
-          {error === null ? null : (
-            <p className="error-message" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
-      </section>
-    );
   } else if (current !== null) {
-    taskKey = `rationale:${current.candidateId}`;
+    // Taken by one of its actions and being carried out (written to Obsidian, kept on this Mac, put off), it is the same
+    // panel, the same component: what was written in it stays in sight, its fields and actions still, while the bar says
+    // what is under way. A page of its own for it was a line on an empty window.
+    const saving = current.status === "completed";
+    taskKey = `${saving ? "saving" : "rationale"}:${current.candidateId}`;
     const submitRationale = (submission: RationaleSubmission): Promise<void> =>
       perform(() =>
         api.submitRationale({
@@ -475,25 +515,24 @@ export const App = ({ api = window.decision }: AppProps) => {
         data-layout="desktop"
         data-testid="decision-shell"
         role="region"
-        aria-label="待补充决策理由"
+        aria-label={saving ? "决策保存状态" : "待补充决策理由"}
       >
         <div className="decision-workspace-inner">
           <DecisionHeader
             candidate={current}
             waitingCount={snapshot.waitingCount}
+            questionId="rationale-question-text"
           />
           <RationaleStep
             candidate={current}
-            busy={busy}
+            busy={busy || saving}
+            saving={saving}
+            error={error}
             getPrincipleSuggestions={api.getDecisionPrincipleSuggestions}
             listDecisions={api.listDecisions}
+            recordApi={api}
             onSubmit={submitRationale}
           />
-          {error === null ? null : (
-            <p className="error-message" role="alert">
-              {error}
-            </p>
-          )}
         </div>
       </section>
     );
@@ -527,6 +566,7 @@ export const App = ({ api = window.decision }: AppProps) => {
       snapshot={snapshot}
       activeSurface={activeSurface}
       quickJumpApi={api}
+      todoApi={api}
       recordApi={api}
       recordRequest={recordRequest}
       reviewActivity={reviewActivity}
@@ -569,9 +609,10 @@ export const App = ({ api = window.decision }: AppProps) => {
       }}
     >
       {content}
+      {localReviewOpened || activeSurface === "local-review" ? <PageHidden.Provider value={activeSurface !== "local-review"}><LocalReviewPanel api={api} hidden={activeSurface !== "local-review"} openJobId={localReviewJobId} /></PageHidden.Provider> : null}
       {reviewOpened || activeSurface === "pr-review" ? (
         <PageHidden.Provider value={activeSurface !== "pr-review"}>
-          <PrReviewPanel api={api} hidden={activeSurface !== "pr-review"} onOpenDecision={openDecision} onActivity={setReviewActivity} openRun={reviewNavigation} />
+          <PrReviewPanel api={api} hidden={activeSurface !== "pr-review"} onOpenDecision={openDecision} onActivity={setReviewActivity} openRun={reviewNavigation} openDiscussion={discussionNavigation} />
         </PageHidden.Provider>
       ) : null}
       {assistantOpened || activeSurface === "assistant" ? (

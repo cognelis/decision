@@ -11,9 +11,10 @@ import {
   rename,
   unlink,
 } from "node:fs/promises";
-import { homedir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { resolveUserData } from "../config/user-data-directory.mjs";
 
 const DEFAULT_MAXIMUM_REDIRECTS = 5;
 
@@ -409,34 +410,14 @@ export const prepareLocalModel = async ({
   };
 };
 
+/**
+ * The App's models folder, in its data folder where that is now: Decision's, before the App has started once since the
+ * rename and moved it, so nothing is put in an empty new folder beside the data. Nothing is moved here.
+ */
 export const defaultModelsDirectory = (
   environment = process.env,
   platform = process.platform,
-) => {
-  if (platform === "darwin") {
-    return join(
-      homedir(),
-      "Library",
-      "Application Support",
-      "Decision",
-      "models",
-    );
-  }
-  if (platform === "win32") {
-    return join(
-      environment.APPDATA ??
-        join(homedir(), "AppData", "Roaming"),
-      "Decision",
-      "models",
-    );
-  }
-  return join(
-    environment.XDG_CONFIG_HOME ??
-      join(homedir(), ".config"),
-    "decision",
-    "models",
-  );
-};
+) => join(resolveUserData(environment, { platform, migrate: false }).path, "models");
 
 const loadBundledManifests = async (model = "4b") =>
   Promise.all(
@@ -456,7 +437,7 @@ const loadBundledManifests = async (model = "4b") =>
 
 const CLI_HELP = `Usage: prepare-local-model.mjs [--check] [--model 2b|4b] [--models-dir PATH]
 
-Prepare the immutable Qwen generation and embedding GGUFs used by Decision.
+Prepare the immutable Qwen generation and embedding GGUFs used by Paraself.
 Downloads only after an explicit invocation of this command.
 
 Options:

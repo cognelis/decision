@@ -49,6 +49,58 @@ const question = (
 
 afterEach(cleanup);
 
+describe("DecisionAnswerSummary reply", () => {
+  it("shows the reply an option was read off under the chosen option", () => {
+    render(
+      <DecisionAnswerSummary
+        question={question({
+          answer: { kind: "preset", values: ["一并同步 production"], reply: "选 2，一步到位" },
+        })}
+      />,
+    );
+    expect(within(screen.getByRole("list", { name: "已选答案" })).getByText("一并同步 production")).toBeInTheDocument();
+    expect(screen.getByText("原话：选 2，一步到位")).toBeInTheDocument();
+  });
+
+  it("shows no reply line for a native pick or an answer in the reader's own words", () => {
+    render(<DecisionAnswerSummary question={question()} />);
+    expect(screen.queryByText(/^原话：/u)).not.toBeInTheDocument();
+  });
+});
+
+describe("DecisionAnswerSummary following the recommendation", () => {
+  const hint = /你选的是 agent 标为推荐的选项/u;
+
+  it("says so only when the recommended option was picked", () => {
+    render(<DecisionAnswerSummary question={question()} />);
+    expect(screen.getByText(hint)).toBeInTheDocument();
+  });
+
+  it("stays silent for another option, a custom answer or no recommendation", () => {
+    const { rerender } = render(
+      <DecisionAnswerSummary
+        question={question({ answer: { kind: "preset", values: ["只同步 CI"] } })}
+      />,
+    );
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+    rerender(
+      <DecisionAnswerSummary
+        question={question({ answer: { kind: "custom", values: ["都不要"] } })}
+      />,
+    );
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+    rerender(
+      <DecisionAnswerSummary
+        question={question({
+          options: [{ label: "A" }, { label: "B" }],
+          answer: { kind: "preset", values: ["A"] },
+        })}
+      />,
+    );
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+  });
+});
+
 describe("DecisionAnswerSummary", () => {
   it("makes the selected answer and description primary", () => {
     render(<DecisionAnswerSummary question={question()} />);

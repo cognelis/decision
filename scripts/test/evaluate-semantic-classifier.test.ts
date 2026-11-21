@@ -3,12 +3,14 @@ import { describe, expect, it } from "vitest";
 // @ts-expect-error The evaluator is a directly executable ESM module.
 import {
   createProviderPredictor,
+  createRulePredictor,
   evaluateSemanticCorpus,
   evaluationExitCode,
   formatEvaluationError,
   formatHumanReport,
   parseEvaluatorArgs,
 } from "../evaluate-semantic-classifier.mjs";
+import { routeSemanticDecision } from "../../packages/core/src/index.js";
 
 const samples = [
   {
@@ -272,6 +274,21 @@ describe("semantic evaluator", () => {
     );
   });
 
+  it("reads a question found past a closing as the app does, so a low reading leaves the model's medium", async () => {
+    const rules = await createRulePredictor();
+    try {
+      const assistantText = "- **A** Add import checks\n- **B** Change cache keys\n\n**Which of these do you approve?**\n\nI'll wait for your answer.";
+      const deferred = await rules.predict({ ...samples[0], assistantText, userText: "Let me think about it and get back to you." });
+      expect(deferred).toMatchObject({ band: "low", signals: [], question: null });
+      const route = routeSemanticDecision({ ruleBand: deferred.band, ruleSignals: deferred.signals, modelBand: "high", answerRelation: "answers", modelIntent: "decision" });
+      expect(route.finalBand).toBe("medium");
+      const taken = await rules.predict({ ...samples[0], assistantText, userText: "A and B." });
+      expect(taken.band).toBe("medium");
+    } finally {
+      await rules.close();
+    }
+  });
+
   it("combines a selected provider result with the unchanged routing guardrails", async () => {
     const predictor = createProviderPredictor({
       provider: "builtin-codex",
@@ -331,5 +348,34 @@ describe("semantic evaluator", () => {
         totalTokens: 14,
       },
     });
+  });
+
+  it("records a model call that failed on one sample and goes on, routing it as the app does", async () => {
+    // R8-SEM: one 5-second Qwen timeout used to end the whole run with exit code 2, so no distribution was measured.
+    const routed: unknown[] = [];
+    const failures = [
+      Object.assign(new Error("Qwen inference timed out"), { code: "timeout" }),
+      Object.assign(new Error("The managed Qwen model is unavailable"), { code: "model_missing" }),
+    ];
+    const predictor = createProviderPredictor({
+      provider: "builtin-qwen",
+      rulePredictor: async () => ({ band: "high", relation: "answers", question: "选 A 还是 B？", answerExcerpt: "A", signals: [] }),
+      invoke: async () => { throw failures.shift(); },
+      validateClassification: () => { throw new Error("not reached"); },
+      routeDecision: (input: unknown) => { routed.push(input); return { finalBand: (input as { modelTimedOut?: boolean }).modelTimedOut ? "medium" : "high" }; },
+    });
+
+    await expect(predictor(samples[0])).resolves.toMatchObject({ band: "medium", relation: "answers", provider: "builtin-qwen", modelFailure: "timeout" });
+    await expect(predictor(samples[0])).resolves.toMatchObject({ band: "high", modelFailure: "model_missing" });
+    expect(routed).toEqual([
+      expect.objectContaining({ modelBand: "unavailable", modelTimedOut: true }),
+      expect.objectContaining({ modelBand: "unavailable", modelTimedOut: false }),
+    ]);
+    const report = await evaluateSemanticCorpus({
+      samples: [samples[0]],
+      predictor: async () => ({ band: "medium", relation: "answers", question: null, answerExcerpt: null, provider: "builtin-qwen", modelFailure: "timeout" }),
+    });
+    expect(report.providers["builtin-qwen"]).toMatchObject({ modelFailures: { timeout: 1 } });
+    expect(formatHumanReport(report)).toContain("Model failures     timeout 1");
   });
 });

@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "synonyms-clean",
+      "description": "基线发现英文编号与查询重合后，追加独立合成诊断；使用无语义编号，标签在追加实跑前固定，不覆盖原始基线。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/N0001.md",
+            "content": "---\nid: N0001\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 瞬时故障恢复\n\n## 决策\n网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/N0002.md",
+            "content": "---\nid: N0002\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"支付写操作采用幂等键与去重令牌，防止重复执行。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付幂等键\n\n## 决策\n支付写操作采用幂等键与去重令牌，防止重复执行。\n\n合成数据，仅用于 R1-BB 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "retry-clean",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "retry failed requests using exponential backoff and jitter"
+          },
+          "expect": {
+            "mustInclude": [
+              "N0001"
+            ],
+            "k": 3
+          }
+        },
+        {
+          "id": "retry-translation",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "For transient network failures, retry at most three times with doubled waiting intervals and randomized jitter"
+          },
+          "expect": {
+            "mustInclude": [
+              "N0001"
+            ],
+            "k": 3
+          }
+        },
+        {
+          "id": "payment-clean",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "怎样保证同一笔交易只会结算一次"
+          },
+          "expect": {
+            "mustInclude": [
+              "N0002"
+            ],
+            "k": 3
+          }
+        }
+      ]
+    }
+  ]
+}

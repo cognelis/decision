@@ -348,7 +348,7 @@ describe("MethodologyRepository", () => {
     const path = join(directory, name!);
     const note = await readFile(path, "utf8");
     // A property as well, by the name the note shows: "title must contain 1-120 characters" and "createdAt is
-    // required" were said as a note not in the format Decision reads, which told the reader nothing to change.
+    // required" were said as a note not in the format Paraself reads, which told the reader nothing to change.
     await writeFile(path, note.replace(/^# .*$/mu, `# ${"标".repeat(121)}`));
     await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（「标题」需要 1–120 个字）`);
     await writeFile(path, note.replace(/^created: .*\n/mu, ""));
@@ -359,7 +359,7 @@ describe("MethodologyRepository", () => {
     await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（缺少「适用条件」一节，或它前后的标记被删改了）`);
     // A property it cannot read, too: "Methodology note status is invalid".
     await writeFile(path, (await readFile(path, "utf8")).replace(/^status: .*$/mu, "status: 想想再说"));
-    await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（有属性的值不是 Decision 能读的格式）`);
+    await expect(repository.find("principle-1")).rejects.toThrow(`原则笔记 ${name} 无法读取（有属性的值不是 Paraself 能读的格式）`);
   });
 
   it("says which principle notes it could not read, and names the one asked for by id", async () => {

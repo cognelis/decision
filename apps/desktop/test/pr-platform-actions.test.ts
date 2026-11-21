@@ -45,8 +45,9 @@ const comment = { connectionId: request.connectionId, reference: request.referen
 
 it.each(["github", "gitlab", "bitbucket-server"] as const)("publishes a confirmed inline comment on the reviewed line on %s", async platform => {
   const { client, write } = setup(platform);
-  write.mockResolvedValue({ text: JSON.stringify(platform === "gitlab" ? { id: "discussion-1" } : { id: 9 }), next: false });
-  await expect(client.publishComment(comment)).resolves.toEqual({ message: "评论已发布到 src/app.ts:12。" });
+  write.mockResolvedValue({ text: JSON.stringify(platform === "gitlab" ? { id: "discussion-1", notes: [{ id: 41 }] } : { id: 9 }), next: false });
+  // With the posted comment's id, as its thread is named when its outcome is read later (GitLab: the note opening it).
+  await expect(client.publishComment(comment)).resolves.toEqual({ message: "评论已发布到 src/app.ts:12。", comment: platform === "gitlab" ? "41" : "9" });
   await client.publishComment({ ...comment, side: "old", line: 8 });
   if (platform === "github") {
     expect(write.mock.calls[0]).toEqual(["/repos/org/app/pulls/1/comments", "POST", { body: "P1 · 超时未取消", commit_id: head, path: "src/app.ts", line: 12, side: "RIGHT" }]);
@@ -59,6 +60,23 @@ it.each(["github", "gitlab", "bitbucket-server"] as const)("publishes a confirme
     expect(write.mock.calls[0]).toEqual(["/rest/api/1.0/projects/org/repos/app/pull-requests/1/comments", "POST", { text: "P1 · 超时未取消", anchor: { path: "src/app.ts", line: 12, lineType: "ADDED", fileType: "TO", diffType: "EFFECTIVE" } }]);
     expect(write.mock.calls[1]![2]).toMatchObject({ anchor: { line: 8, lineType: "REMOVED", fileType: "FROM" } });
   }
+});
+
+it.each(["github", "gitlab", "bitbucket-server"] as const)("posts a blocking finding as a Bitbucket task and as an ordinary comment elsewhere on %s", async platform => {
+  const { client, write } = setup(platform);
+  write.mockResolvedValue({ text: JSON.stringify(platform === "gitlab" ? { id: "discussion-1" } : platform === "github" ? { id: 9 } : { id: 9, severity: "BLOCKER" }), next: false });
+  const result = await client.publishComment({ ...comment, blocking: true });
+  expect(result.blocking).toBe(true);
+  if (platform === "bitbucket-server") {
+    expect(write.mock.calls[0]![2]).toMatchObject({ text: "P1 · 超时未取消", severity: "BLOCKER" });
+    expect(result.message).toBe("任务已发布到 src/app.ts:12。");
+  } else expect(write.mock.calls[0]![2]).not.toHaveProperty("severity");
+});
+
+it("says when a Bitbucket server posts a blocking finding as an ordinary comment", async () => {
+  const { client, write } = setup("bitbucket-server");
+  write.mockResolvedValue({ text: JSON.stringify({ id: 9 }), next: false });
+  expect(await client.publishComment({ ...comment, blocking: true })).toEqual({ message: "评论已发布到 src/app.ts:12。平台没有把它设为任务（Bitbucket 7.2 以下不支持），它是一条普通评论。", blocking: false, comment: "9" });
 });
 
 it.each(["github", "gitlab", "bitbucket-server"] as const)("posts a confirmed comment on the PR as a whole on %s", async platform => {
@@ -101,7 +119,7 @@ it("says so when a Bitbucket PR moves while its comment, anchored to no commit, 
   write.mockImplementation(async () => { posted = true; return { text: JSON.stringify({ id: 9 }), next: false }; });
   const moved = { ...raw["bitbucket-server"], fromRef: { ...raw["bitbucket-server"].fromRef, latestCommit: "c".repeat(40) } };
   read.mockImplementation(async path => ({ text: JSON.stringify(path.startsWith("/rest/api/1.0/users/") ? { slug: "alice" } : posted ? moved : raw["bitbucket-server"]), next: false, username: "Alice" }));
-  await expect(client.publishComment(comment)).resolves.toEqual({ message: "评论已发布，但 PR 随后有新的提交；请到平台核对评论是否仍在原来的行上。" });
+  await expect(client.publishComment(comment)).resolves.toEqual({ message: "评论已发布，但 PR 随后有新的提交；请到平台核对评论是否仍在原来的行上。", comment: "9" });
   expect(write).toHaveBeenCalledTimes(1);
 });
 
@@ -173,4 +191,23 @@ it("does not take an anonymous or unnamed answer as a working token", async () =
   const connection = (platform: PrConnection["platform"]) => ({ id: request.connectionId, label: platform, platform, baseUrl: "https://code.example" });
   await expect(new HostedPrClient(connection("bitbucket-server"), reply("anonymous")).account()).rejects.toThrow("没有认出令牌对应的账号");
   await expect(new HostedPrClient(connection("github"), reply()).account()).rejects.toThrow("没有认出令牌对应的账号");
+});
+
+it.each(["github", "gitlab", "bitbucket-server"] as const)("writes a PR's description back over the version read, and only that, on %s", async platform => {
+  const { client, read, write } = setup(platform);
+  const body = platform === "github" ? { body: "旧描述" } : { description: "旧描述" };
+  const reviewers = [{ user: { name: "alice", displayName: "Alice" }, approved: false }];
+  read.mockImplementation(async () => ({ text: JSON.stringify({ ...raw[platform], ...body, ...(platform === "bitbucket-server" ? { reviewers } : {}) }), next: false }));
+  write.mockImplementation(async (_path, _method, sent) => ({ text: JSON.stringify(platform === "github" ? { body: sent.body } : { description: sent.description, version: 8 }), next: false }));
+  const current = await client.readDescription("org/app#1");
+  expect(current).toMatchObject({ title: platform === "gitlab" ? "MR" : "PR", description: "旧描述" });
+  // Moved since it was read: not written over.
+  await expect(client.updateDescription({ connectionId: request.connectionId, reference: "org/app#1", description: "新描述", baseVersion: "0".repeat(16) })).rejects.toThrow("PR 描述在读取之后被改过");
+  expect(write).not.toHaveBeenCalled();
+  const result = await client.updateDescription({ connectionId: request.connectionId, reference: "org/app#1", description: "新描述 🚀", baseVersion: current.version });
+  if (platform === "github") expect(write.mock.calls[0]).toEqual(["/repos/org/app/pulls/1", "PATCH", { body: "新描述 🚀" }]);
+  else if (platform === "gitlab") expect(write.mock.calls[0]).toEqual(["/projects/org%2Fapp/merge_requests/1", "PUT", { description: "新描述 🚀" }]);
+  // Bitbucket keeps its title and reviewers in the write, and cannot store the emoji.
+  else expect(write.mock.calls[0]).toEqual(["/rest/api/1.0/projects/org/repos/app/pull-requests/1", "PUT", { version: 7, title: "PR", description: "新描述 ", reviewers: [{ user: { name: "alice" } }] }]);
+  expect(result.message).toBe(platform === "bitbucket-server" ? "PR 描述已更新。Bitbucket 存不下表情符号，已去掉。" : "PR 描述已更新。");
 });

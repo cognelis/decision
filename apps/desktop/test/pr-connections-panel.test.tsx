@@ -27,6 +27,22 @@ it("offers an independent links tab and creates a link in the shared modal", asy
   expect(screen.getByText("公司 GitHub")).toBeVisible();
 });
 
+it("asks to add a link in the action colour only while there is none, and points to where tokens are kept", async () => {
+  const empty = harness([]);
+  const view = render(<PrConnectionsPanel api={empty} />);
+  await screen.findByText("尚未添加链接");
+  expect(screen.getByRole("button", { name: "新增链接" })).toHaveClass("primary-button");
+  fireEvent.click(screen.getByRole("button", { name: "通用 › 密钥存储" }));
+  expect(empty.openSurface).toHaveBeenCalledWith("settings");
+  view.unmount();
+
+  // Beside a list of links, adding one more is one action among the rows', not the page's call to act.
+  render(<PrConnectionsPanel api={harness()} />);
+  await screen.findByText("公司 GitHub");
+  expect(screen.getByRole("button", { name: "新增链接" })).toHaveClass("secondary-button");
+  expect(screen.getByText("1 个，最多 20 个")).toBeVisible();
+});
+
 it("preserves the saved token when editing and requires a new token for another site", async () => {
   const api = harness(); render(<PrConnectionsPanel api={api} />);
   fireEvent.click(await screen.findByRole("button", { name: "编辑 公司 GitHub" }));
@@ -37,7 +53,7 @@ it("preserves the saved token when editing and requires a new token for another 
   fireEvent.click(await screen.findByRole("button", { name: "编辑 公司 GitHub" }));
   fireEvent.change(screen.getByLabelText("服务地址"), { target: { value: "https://other.example.com" } });
   expect(screen.getByLabelText("访问令牌")).toBeRequired();
-  fireEvent.submit(screen.getByRole("button", { name: "保存链接" }).closest("form")!);
+  fireEvent.submit((screen.getByRole("button", { name: "保存链接" }) as HTMLButtonElement).form!);
   expect(await screen.findByRole("alert")).toHaveTextContent("新的访问令牌");
   expect(api.savePrConnection).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "取消" }));
@@ -53,7 +69,7 @@ it("says a refused value on its field and takes focus there", async () => {
   // Put together here: written out, an address with credentials is what the release scan refuses.
   fireEvent.change(address, { target: { value: Object.assign(new URL("https://code.example.com"), { username: "me", password: "pw" }).href } });
   fireEvent.change(dialog.getByLabelText("访问令牌"), { target: { value: "token-123" } });
-  fireEvent.submit(dialog.getByRole("button", { name: "保存链接" }).closest("form")!);
+  fireEvent.submit((dialog.getByRole("button", { name: "保存链接" }) as HTMLButtonElement).form!);
 
   // Said only below the form, it was heard once from 保存链接, and 服务地址 said nothing when reached.
   expect(dialog.getByRole("alert")).toHaveTextContent("地址不能包含账号密码");
@@ -63,7 +79,7 @@ it("says a refused value on its field and takes focus there", async () => {
 
   fireEvent.change(address, { target: { value: "https://code.example.com" } });
   const token = dialog.getByLabelText("访问令牌");
-  fireEvent.submit(dialog.getByRole("button", { name: "保存链接" }).closest("form")!);
+  fireEvent.submit((dialog.getByRole("button", { name: "保存链接" }) as HTMLButtonElement).form!);
   expect(token).toHaveAttribute("aria-invalid", "true");
   expect(token).toHaveAccessibleDescription(/新的访问令牌.*读取权限/u);
   expect(address).not.toHaveAttribute("aria-invalid");
@@ -82,7 +98,8 @@ it("retries failed loading and requires confirmation before removal", async () =
   fireEvent.click(screen.getByRole("button", { name: "取消" }));
   expect(api.removePrConnection).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "移除 公司 GitHub" }));
-  fireEvent.click(screen.getByRole("button", { name: "确认移除" }));
+  expect(screen.getByRole("dialog", { name: "移除「公司 GitHub」？" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "移除链接" }));
   await waitFor(() => expect(api.removePrConnection).toHaveBeenCalledWith(connection.id));
   expect(await screen.findByText("尚未添加链接")).toBeVisible();
 });
@@ -110,4 +127,35 @@ it("signs in with each link's token and says which account it is, or why it fail
   fireEvent.click(screen.getByRole("button", { name: "检查 公司 GitHub" }));
   expect(await screen.findByText("代码平台拒绝了此资源的身份认证（HTTP 401），请检查连接凭据或仓库授权。")).toBeVisible();
   expect(screen.queryByText(/Error invoking remote method/u)).toBeNull();
+});
+
+it("turns 自动预评审 on with a model and a daily limit, says it on the link, and refuses a limit out of range", async () => {
+  const models = [{ profileId: "local", label: "本机模型", kind: "qwen" as const, model: "qwen3", leavesDevice: false }];
+  const api = { ...harness(), listAssistantModels: vi.fn(async () => models) };
+  const view = render(<PrConnectionsPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: "编辑 公司 GitHub" }));
+  // Off as a link starts: it spends model calls.
+  expect(screen.getByLabelText("自动预评审")).toHaveValue("");
+  expect(screen.queryByLabelText("每天最多评审几次")).toBeNull();
+  await screen.findByRole("option", { name: "本机模型" });
+  fireEvent.change(screen.getByLabelText("自动预评审"), { target: { value: "local" } });
+  expect(screen.getByLabelText("每天最多评审几次")).toHaveValue(5);
+  // Out of range the field's own check stops it; left empty, it is said on the field.
+  fireEvent.change(screen.getByLabelText("每天最多评审几次"), { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "保存链接" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("1 到 50");
+  expect(screen.getByLabelText("每天最多评审几次")).toHaveFocus();
+  fireEvent.change(screen.getByLabelText("每天最多评审几次"), { target: { value: "3" } });
+  fireEvent.click(screen.getByRole("button", { name: "保存链接" }));
+  await waitFor(() => expect(api.savePrConnection).toHaveBeenCalledWith({ ...connection, autoReview: { profileId: "local", dailyReviews: 3 } }));
+  view.unmount();
+
+  // On a link: said on its row, and kept as it was when the link is saved again.
+  const turnedOn = { ...connection, autoReview: { profileId: "local", dailyReviews: 3 } };
+  const again = { ...harness([turnedOn]), listAssistantModels: vi.fn(async () => models) };
+  render(<PrConnectionsPanel api={again} />);
+  expect(await screen.findByText("自动预评审 · 本机模型 · 每天最多 3 次")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "编辑 公司 GitHub" }));
+  fireEvent.click(screen.getByRole("button", { name: "保存链接" }));
+  await waitFor(() => expect(again.savePrConnection).toHaveBeenCalledWith(turnedOn));
 });

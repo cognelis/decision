@@ -28,7 +28,6 @@ const repositoryRoot = new URL("../../../", import.meta.url).pathname;
 interface DashboardMetrics {
   appClientHeight: number;
   appScrollHeight: number;
-  brandIconBorderRadius: number;
   cardHeaderHeights: number[];
   cardHeadersSingleRow: boolean;
   clientHeight: number;
@@ -36,7 +35,7 @@ interface DashboardMetrics {
   headerHeight: number;
   heading: string;
   headingVisible: boolean;
-  historyBadge: string;
+  staleBadge: string;
   navigationLabels: string[];
   overflowY: string;
   pageContentLeftInset: number;
@@ -118,15 +117,17 @@ describe.skipIf(process.platform !== "darwin")(
       const metrics = await measureDashboard();
 
       expect(metrics).toMatchObject({
-        brandIconBorderRadius: 2,
         heading: "首页",
-        historyBadge: "历史",
+        staleBadge: "超过 30 天",
         navigationLabels: [
           "首页",
           "问答",
           "知识",
           "评审",
+          "本地审阅",
+          "待办",
           "方法论",
+          "提示词",
           "设置",
         ],
         overflowY: "auto",
@@ -156,7 +157,7 @@ describe.skipIf(process.platform !== "darwin")(
         "收起菜单栏",
         "键盘快捷键",
       ]);
-      expect(metrics.headerHeight).toBe(44);
+      expect(metrics.headerHeight).toBe(58);
       expect(metrics.headingVisible).toBe(true);
       expect(new Set(metrics.cardHeaderHeights)).toEqual(new Set([40]));
       expect(metrics.cardHeadersSingleRow).toBe(true);
@@ -230,7 +231,7 @@ describe.skipIf(process.platform !== "darwin")(
       const metrics = await measureDashboard("tall");
 
       expect(metrics.viewportHeight).toBe(900);
-      expect(metrics.headerHeight).toBe(44);
+      expect(metrics.headerHeight).toBe(58);
       expect(metrics.scrollHeight).toBe(metrics.clientHeight);
       expect(metrics.scrollTopAfter).toBe(0);
       expect(metrics.recentListClientHeight).toBeGreaterThan(316);

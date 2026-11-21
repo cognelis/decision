@@ -1,0 +1,366 @@
+[
+  {
+    "id": "R6IRSKWB-001",
+    "group": "evaluation-then-commit",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "2 更稳，就用 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "评价词后明确采用同一项。"
+  },
+  {
+    "id": "R6IRSKWB-002",
+    "group": "evaluation-then-commit",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "第二个更稳，就按 2 走。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "「更稳」评价后有明确执行动作。"
+  },
+  {
+    "id": "R6IRSKWB-003",
+    "group": "evaluation-then-commit",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "Option 2 is more stable; choose option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "英文评价后明确选中。"
+  },
+  {
+    "id": "R6IRSKWB-004",
+    "group": "evaluation-then-commit",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "2 风险低一些，采用它。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "先比较属性再用指代词批准。"
+  },
+  {
+    "id": "R6IRSKWB-005",
+    "group": "evaluation-then-commit",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "看下来 2 稳一些，先定 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "评价句之后追加定案。"
+  },
+  {
+    "id": "R6IRSKWB-006",
+    "group": "evaluation-then-commit",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "3 更便宜；就选 3，其他不考虑。",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ],
+    "attack": "属性评价后排除其它选项。"
+  },
+  {
+    "id": "R6IRSKWB-007",
+    "group": "evaluation-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "2 更稳，但还要再压测一次。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "带评价词但明确延期，没有选中。"
+  },
+  {
+    "id": "R6IRSKWB-008",
+    "group": "evaluation-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "Option 2 seems more stable; let’s compare once more.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "英文评价及继续比较，不构成决定。"
+  },
+  {
+    "id": "R6IRSKWB-009",
+    "group": "evaluation-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "2 的坑更多，所以暂时不选。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "评价+明确否决，不应选中。"
+  },
+  {
+    "id": "R6IRSKWB-010",
+    "group": "evaluation-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "3 看着不错？先收集数据，不批准。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "评价加反问，后文明确不批准。"
+  },
+  {
+    "id": "R6IRSKWB-011",
+    "group": "current-state-then-choice",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "现在生产用的是 Redis；这次新服务决定选 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "现状分句后另作新选择。"
+  },
+  {
+    "id": "R6IRSKWB-012",
+    "group": "current-state-then-choice",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "目前线上用 Redis，不过本次切换采用 PostgreSQL（2）。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "「目前」现状之后明确迁移决定。"
+  },
+  {
+    "id": "R6IRSKWB-013",
+    "group": "current-state-then-choice",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "现状是 Redis；这次改用 SQLite，也就是选 3。",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ],
+    "attack": "现状描述与本次行动分句。"
+  },
+  {
+    "id": "R6IRSKWB-014",
+    "group": "current-state-then-choice",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "We currently use Redis. For this migration, choose option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "英文当前态之后的新迁移决定。"
+  },
+  {
+    "id": "R6IRSKWB-015",
+    "group": "current-state-then-choice",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "Redis is currently used in production; select option 2 now.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "被动现状之后有显式选择动词。"
+  },
+  {
+    "id": "R6IRSKWB-016",
+    "group": "current-state-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "目前生产环境用 Redis。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "仅描述现状。"
+  },
+  {
+    "id": "R6IRSKWB-017",
+    "group": "current-state-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "We currently use Redis in production.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "英文当前态，没有后续动作。"
+  },
+  {
+    "id": "R6IRSKWB-018",
+    "group": "current-state-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "线上 Redis 用着挺好，暂时维持现状。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "评价并保持现状，没有作新选择。"
+  },
+  {
+    "id": "R6IRSKWB-019",
+    "group": "current-state-then-choice",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "现有方案是 2，已决定继续用 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "先报告现状，随后重复确认选择。"
+  },
+  {
+    "id": "R6IRSKWB-020",
+    "group": "current-state-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "当前就是 2，记录一下现状，没有新选择。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "选项编号用于描述事实，后文排除决策。"
+  },
+  {
+    "id": "R6IRSKWB-021",
+    "group": "read-only-then-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "只读检查现状即可。批准第 2 项并照此实施。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "只读要求后追加批准指令。"
+  },
+  {
+    "id": "R6IRSKWB-022",
+    "group": "read-only-then-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "先看下 2 的 diff；看完就批准 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "检查动作之后明确批准。"
+  },
+  {
+    "id": "R6IRSKWB-023",
+    "group": "read-only-then-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "Please only inspect option 2 first. Approved; implement it after review.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "英文只读请求后有批准和实施。"
+  },
+  {
+    "id": "R6IRSKWB-024",
+    "group": "read-only-then-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "只查一下 2 的风险，最后同意采用方案 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "评估之后明确同意同一选项。"
+  },
+  {
+    "id": "R6IRSKWB-025",
+    "group": "read-only-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "查看 2 的运行表现，不要修改或批准。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "仅检查且明确不批准。"
+  },
+  {
+    "id": "R6IRSKWB-026",
+    "group": "read-only-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "I only asked to compare option 1; do not approve any option yet.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "比较请求之后仍然拒绝批准。"
+  },
+  {
+    "id": "R6IRSKWB-027",
+    "group": "read-only-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "先检查第 2 项，不是批准它。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "检查提及编号，明确不是批准。"
+  },
+  {
+    "id": "R6IRSKWB-028",
+    "group": "read-only-then-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "请只读审查；我批准 2，按计划上线。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "只读分句后作独立明确批准。"
+  },
+  {
+    "id": "R6IRSKWB-029",
+    "group": "read-only-then-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "Check only, approved option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "英文只读开头后明确批准。"
+  },
+  {
+    "id": "R6IRSKWB-030",
+    "group": "evaluation-then-commit",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "2 和 3 都慢，先比成本，暂不决定。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "多选项评价后明确不决定。"
+  },
+  {
+    "id": "R6IRSKWB-031",
+    "group": "evaluation-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "选 2 的坑更多，先别选。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "「选」出现在评价宾语中，后文明确暂缓。"
+  },
+  {
+    "id": "R6IRSKWB-032",
+    "group": "evaluation-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "2 更稳，但我没批准。再等等。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "评价后否决批准并延期。"
+  },
+  {
+    "id": "R6IRSKWB-033",
+    "group": "evaluation-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "Option 2 works for me in the current system; no new decision today.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "现状评价，没有改变或批准。"
+  },
+  {
+    "id": "R6IRSKWB-034",
+    "group": "current-state-then-choice",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "Option 2 works for me in production; keep option 2 unchanged.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "现状评价后明确保持所选项。"
+  },
+  {
+    "id": "R6IRSKWB-035",
+    "group": "read-only-then-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "现在使用 Redis；先只读评估迁到 2 的影响，然后批准 2 实施。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "现状+只读评估+后续批准的三段混合。"
+  },
+  {
+    "id": "R6IRSKWB-036",
+    "group": "read-only-only",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option do you approve?",
+    "userText": "查看选项 2 的历史。下周我再决定。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "读取后明确推迟决定。"
+  }
+]

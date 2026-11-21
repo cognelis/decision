@@ -114,6 +114,18 @@ describe("assistant answer markdown", () => {
     expect(view.innerHTML).not.toContain("example.com");
   });
 
+  // A PR's description and comments are a person's words: where a link went is part of what they said.
+  it("keeps a link's target as text for what a person wrote on the platform, still nothing to click", () => {
+    const { container } = render(
+      <div>{renderMarkdown("见 [设计依据](https://example.com/spec) 和 **[拆分方案](https://example.com/split)**。", undefined, { linkTargets: true })}</div>,
+    );
+    const view = container.firstElementChild!;
+
+    expect(view).toHaveTextContent("见 设计依据（https://example.com/spec） 和 拆分方案（https://example.com/split）。");
+    expect(view.querySelector("a")).toBeNull();
+    expect(view.querySelector("strong")).toHaveTextContent("拆分方案（https://example.com/split）");
+  });
+
   it("never turns model output into markup", () => {
     const view = show(
       '<img src=x onerror="alert(1)"> 与 <script>bad()</script>',

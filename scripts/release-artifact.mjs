@@ -16,7 +16,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
-import { readDecisionEnvironment } from "../config/decision-environment.mjs";
+import { readParaselfEnvironment } from "../config/paraself-environment.mjs";
 import { releaseTarget } from "./platform-artifacts.mjs";
 import { findForbiddenReleasePath } from "./release-security-rules.mjs";
 
@@ -429,15 +429,15 @@ const main = async () => {
   const options = parseArguments(process.argv.slice(2));
   if (
     options.distribution &&
-    readDecisionEnvironment(process.env, "RELEASE") !== "1"
+    readParaselfEnvironment(process.env, "RELEASE") !== "1"
   ) {
     throw new Error(
-      "Distribution verification requires DECISION_RELEASE=1",
+      "Distribution verification requires PARASELF_RELEASE=1",
     );
   }
   const tag = resolveReleaseTag({
     argumentTag: options.tag,
-    environmentTag: readDecisionEnvironment(process.env, "RELEASE_TAG"),
+    environmentTag: readParaselfEnvironment(process.env, "RELEASE_TAG"),
     ciTag: process.env.GITHUB_REF_TYPE === "tag"
       ? process.env.GITHUB_REF_NAME
       : undefined,

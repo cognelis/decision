@@ -276,8 +276,8 @@ describe("workspace navigation", () => {
     await user.keyboard("?");
     const dialog = screen.getByRole("dialog", { name: "键盘快捷键" });
     expect(dialog).toBeVisible();
-    expect(within(dialog).getByText("按侧边栏顺序切换页面")).toBeVisible();
-    expect(within(dialog).getByText("知识：聚焦搜索框")).toBeVisible();
+    expect(within(dialog).getByText("切换页面（侧栏按钮上显示各自的快捷键）")).toBeVisible();
+    expect(within(dialog).getByText("知识、待办：聚焦搜索框")).toBeVisible();
     await waitFor(() =>
       expect(
         within(dialog).getByRole("button", { name: "关闭键盘快捷键" }),
@@ -313,7 +313,9 @@ describe("workspace navigation", () => {
 
     for (const surface of [
       ["知识", "decisions"],
+      ["待办", "todos"],
       ["方法论", "methodology"],
+      ["提示词", "prompts"],
       ["设置", "settings"],
     ] as const) {
       await user.click(screen.getByRole("button", { name: surface[0] }));
@@ -371,17 +373,23 @@ describe("workspace navigation", () => {
     await user.keyboard("{Control>}4{/Control}");
     expect(api.openSurface).toHaveBeenLastCalledWith("pr-review");
     await user.keyboard("{Control>}5{/Control}");
+    expect(api.openSurface).toHaveBeenLastCalledWith("local-review");
+    // 待办紧跟本地审阅，方法论和设置各往后挪一位。
+    await user.keyboard("{Control>}6{/Control}");
+    expect(api.openSurface).toHaveBeenLastCalledWith("todos");
+    await user.keyboard("{Meta>}7{/Meta}");
     expect(api.openSurface).toHaveBeenLastCalledWith("methodology");
-    // 接入、模型与日志收进设置后，侧栏只剩六项，设置就是第六个。
-    await user.keyboard("{Meta>}6{/Meta}");
+    await user.keyboard("{Meta>}8{/Meta}");
     expect(api.openSurface).toHaveBeenLastCalledWith("settings");
     await user.keyboard("{Meta>},{/Meta}");
     expect(api.openSurface).toHaveBeenLastCalledWith("settings");
-    // 第七个位置已经没有页面了，按下去什么也不该发生。
-    await user.keyboard("{Meta>}7{/Meta}");
+    // 提示词是后加的，排在 ⌘9：⌘8 仍是设置，已有的快捷键一个都没挪。
+    await user.keyboard("{Meta>}9{/Meta}");
+    expect(api.openSurface).toHaveBeenLastCalledWith("prompts");
+    // 第十个位置没有页面，按下去不应触发导航。
     await user.keyboard("{Meta>}0{/Meta}");
     await user.keyboard("{Shift>}{Meta>}3{/Meta}{/Shift}");
-    expect(api.openSurface).toHaveBeenCalledTimes(6);
+    expect(api.openSurface).toHaveBeenCalledTimes(9);
   });
 
   it("keeps surface shortcuts locked while a decision task is active", async () => {
@@ -451,7 +459,7 @@ describe("workspace navigation", () => {
     // A principle distilled from this decision can since have been set aside;
     // saying "待确认" about an archived one would be a plain untruth.
     expect(
-      within(panel).getByRole("button", { name: /后来归档的原则 · 已归档/u }),
+      within(panel).getByRole("button", { name: /后来归档的原则，?已归档/u }),
     ).toBeVisible();
     // Listed, but not counted as distilled: only the one still in use is.
     const progress = screen.getByRole("heading", { name: "进度" }).closest("section")!;
@@ -609,7 +617,7 @@ describe("workspace navigation", () => {
       const analytics = await api.getDecisionAnalytics();
       const period = (days: number, lessons: unknown[]) => ({
         days, startDate: "2026-09-04", endDate: "2026-10-03", decisions: 3, previousDecisions: 1, rationaleCaptured: 2,
-        rationaleDeferred: 1, expectationMissing: 0, reviews: lessons.length, previousReviews: 0, lessons, repeats: [],
+        rationaleDeferred: 1, recommendation: { offered: 0, followed: 0 }, expectationMissing: 0, reviews: lessons.length, previousReviews: 0, lessons, repeats: [],
         projects: [], principles: [],
       });
       vi.mocked(api.getDecisionAnalytics).mockResolvedValue({
@@ -855,7 +863,7 @@ describe("workspace navigation", () => {
       "手动重建够用，没有遗漏。",
     );
     const before = vi.mocked(api.listDecisions).mock.calls.length;
-    await user.click(within(form).getByRole("button", { name: /保存结果/u }));
+    await user.click(screen.getByRole("button", { name: /保存结果/u }));
 
     await waitFor(() =>
       expect(api.updateDecisionOutcome).toHaveBeenCalledWith(

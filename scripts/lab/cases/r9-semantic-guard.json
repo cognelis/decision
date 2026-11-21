@@ -1,0 +1,332 @@
+[
+  {
+    "id": "R9SEMG-01",
+    "group": "pref-followup",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "2 is better than 1. I'll check with ops about the deploy freeze dates."
+  },
+  {
+    "id": "R9SEMG-02",
+    "group": "pref-followup",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "2 比 1 合适。发布时间我再跟测试确认一下。"
+  },
+  {
+    "id": "R9SEMG-03",
+    "group": "pref-followup",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "B beats A for us. I'll let the data team know this afternoon."
+  },
+  {
+    "id": "R9SEMG-04",
+    "group": "pref-followup",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "队列有两个方案：\n\nA. 用 BullMQ\nB. 自己写基于表的轮询\n\n选哪个？",
+    "userText": "B 更好，就按这个方向。我回头通知一下运维。"
+  },
+  {
+    "id": "R9SEMG-05",
+    "group": "pref-reserved",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "2 is better than 1, but I want the load-test numbers before we decide."
+  },
+  {
+    "id": "R9SEMG-06",
+    "group": "pref-reserved",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "2 比 1 好一些，不过等压测结果出来再定。"
+  },
+  {
+    "id": "R9SEMG-07",
+    "group": "pref-reserved",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "B looks better. I'll check with the team before committing."
+  },
+  {
+    "id": "R9SEMG-08",
+    "group": "pref-reserved",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "队列有两个方案：\n\nA. 用 BullMQ\nB. 自己写基于表的轮询\n\n选哪个？",
+    "userText": "B 看着更好，先跟团队确认了再决定。"
+  },
+  {
+    "id": "R9SEMG-09",
+    "group": "handover",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Your call — pick whichever you think is safest."
+  },
+  {
+    "id": "R9SEMG-10",
+    "group": "handover",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "你决定就好。"
+  },
+  {
+    "id": "R9SEMG-11",
+    "group": "handover",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "Either is fine with me, you choose."
+  },
+  {
+    "id": "R9SEMG-12",
+    "group": "handover",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "队列有两个方案：\n\nA. 用 BullMQ\nB. 自己写基于表的轮询\n\n选哪个？",
+    "userText": "随你挑，选你觉得稳的。"
+  },
+  {
+    "id": "R9SEMG-13",
+    "group": "handover-quoted",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "The runbook says \"let the assistant decide\", but ops already switched to option 3."
+  },
+  {
+    "id": "R9SEMG-14",
+    "group": "handover-quoted",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "文档里写的是「由你来定」，不过团队上周已经换成 2 了。"
+  },
+  {
+    "id": "R9SEMG-15",
+    "group": "try-both",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "队列有两个方案：\n\nA. 用 BullMQ\nB. 自己写基于表的轮询\n\n选哪个？",
+    "userText": "A 和 B 都试试。"
+  },
+  {
+    "id": "R9SEMG-16",
+    "group": "try-both",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "Try both A and B and we'll compare."
+  },
+  {
+    "id": "R9SEMG-17",
+    "group": "try-both",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "1 和 3 都做个原型试一下。"
+  },
+  {
+    "id": "R9SEMG-18",
+    "group": "reject-all",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "三个都不要。"
+  },
+  {
+    "id": "R9SEMG-19",
+    "group": "reject-all",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "No to all three."
+  },
+  {
+    "id": "R9SEMG-20",
+    "group": "reject-all",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "队列有两个方案：\n\nA. 用 BullMQ\nB. 自己写基于表的轮询\n\n选哪个？",
+    "userText": "都否了，维持现在的做法。"
+  },
+  {
+    "id": "R9SEMG-21",
+    "group": "reject-all",
+    "decision": true,
+    "expectedBand": "high",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "None of them — keep what we have."
+  },
+  {
+    "id": "R9SEMG-22",
+    "group": "evaluation",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Option 1 hides real bugs behind retries."
+  },
+  {
+    "id": "R9SEMG-23",
+    "group": "evaluation",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "方案 2 要停机迁移，挺麻烦的。"
+  },
+  {
+    "id": "R9SEMG-24",
+    "group": "evaluation",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "队列有两个方案：\n\nA. 用 BullMQ\nB. 自己写基于表的轮询\n\n选哪个？",
+    "userText": "B 的维护成本会很高。"
+  },
+  {
+    "id": "R9SEMG-25",
+    "group": "view-only",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Show me the diff for option 2 first."
+  },
+  {
+    "id": "R9SEMG-26",
+    "group": "view-only",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "先给我看看 3 要改哪些文件。"
+  },
+  {
+    "id": "R9SEMG-27",
+    "group": "view-only",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "Can you show me what the config for A would look like?"
+  },
+  {
+    "id": "R9SEMG-28",
+    "group": "status",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "缓存层有三个方案：\n\n1. 保留 Redis\n2. 换成 PostgreSQL 表\n3. 改用本地 SQLite\n\n你选哪个？",
+    "userText": "现在线上用的就是 Redis。"
+  },
+  {
+    "id": "R9SEMG-29",
+    "group": "status",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "We're running Postgres full-text search in staging right now."
+  },
+  {
+    "id": "R9SEMG-30",
+    "group": "status",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Retries are already on in the staging export job."
+  },
+  {
+    "id": "R9SEMG-31",
+    "group": "discussion",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "zh-CN",
+    "sourceClient": "claude-code",
+    "assistantText": "队列有两个方案：\n\nA. 用 BullMQ\nB. 自己写基于表的轮询\n\n选哪个？",
+    "userText": "A 和 B 的差别主要在运维成本上。"
+  },
+  {
+    "id": "R9SEMG-32",
+    "group": "discussion",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "The flaky export job has three fixes:\n\n1. Add retries around the upload\n2. Mock the storage client in tests\n3. Raise the timeout to 30s\n\nWhich one should I implement?",
+    "userText": "Interesting trade-off between 2 and 3; mocking hides the network, the timeout hides the slowness."
+  },
+  {
+    "id": "R9SEMG-33",
+    "group": "discussion",
+    "decision": false,
+    "expectedBand": "low",
+    "locale": "en",
+    "sourceClient": "claude-code",
+    "assistantText": "For the search index we can either:\n\nA. Use Meilisearch\nB. Use Postgres full-text search\n\nWhich do you want?",
+    "userText": "Meilisearch vs Postgres FTS comes up every quarter."
+  }
+]

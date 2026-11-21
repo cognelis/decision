@@ -34,11 +34,12 @@ interface TestIndex {
     sourceClient: "codex" | "claude-code" | "test";
     selectedAnswer: string;
     context: string | null;
+    filePath?: string;
   }>;
   hasDecision?(id: string): boolean;
 }
 
-const createRuntime = (index?: TestIndex) => {
+const createRuntime = (index?: TestIndex, followOf?: ConstructorParameters<typeof CaptureRuntime>[0]["followOf"]) => {
   let sequence = 0;
   const spool = {
     append: vi.fn(async () => undefined),
@@ -93,10 +94,36 @@ const createRuntime = (index?: TestIndex) => {
     candidateSpool,
     store,
     ...(index === undefined ? {} : { index }),
+    ...(followOf === undefined ? {} : { followOf }),
     idFactory: () => `id-${++sequence}`,
   });
   return { candidateSpool, runtime, spool, store, localDecisions };
 };
+
+describe("CaptureRuntime pending rationales and the recommendation", () => {
+  const row = (id: string) => ({
+    id, question: "怎么迁移？", created: "2026-10-29T00:00:00.000Z", project: "decision",
+    sourceClient: "codex" as const, selectedAnswer: "兼容迁移", context: null, filePath: `/vault/${id}.md`,
+  });
+
+  it("flags a decision loaded from the vault only when its note's answer follows the recommendation", () => {
+    const { runtime } = createRuntime(
+      { listByRationaleStatus: () => [row("followed"), row("other"), row("unread")] },
+      ({ id }) => (id === "followed" ? "followed" : id === "other" ? "not_followed" : null),
+    );
+    const flagged = Object.fromEntries(runtime.pendingRationales().map((item) => [item.id, item.followedRecommendation]));
+    expect(flagged).toEqual({ followed: true, other: undefined, unread: undefined });
+  });
+
+  it("leaves the flag to the captured question for a decision held in this process", async () => {
+    const { runtime } = createRuntime({ listByRationaleStatus: () => [] }, () => "followed");
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+    const [held] = runtime.pendingRationales();
+    expect(held?.capturedQuestion).not.toBeNull();
+    expect(held?.followedRecommendation).toBeUndefined();
+  });
+});
 
 describe("CaptureRuntime", () => {
   it("saves local-only choices without writing the vault and retries a failed local write before acknowledging", async () => {
@@ -561,6 +588,21 @@ describe("CaptureRuntime", () => {
     expect(runtime.queue.snapshot().current).toBeNull();
   });
 
+  it.each(["captured", "skipped"] as const)("keeps the capture date and stamps confirmation when a held decision is %s", async (status) => {
+    const { runtime, store } = createRuntime();
+    const event = serverCaptureFixture({ capturedAt: "2025-01-01T00:00:00.000Z" });
+    await runtime.ingest(event);
+    await runtime.queue.submit({ status: "deferred" });
+    const pending = runtime.pendingRationales()[0]!;
+    const before = Date.now();
+    if (status === "captured") await runtime.completeDeferredRationale(pending.id, { rationale: "补上理由。" });
+    else await runtime.skipDeferredRationale(pending.id);
+    const saved = store.save.mock.calls[0]![0];
+    expect(saved.created).toBe(event.capturedAt);
+    expect(Date.parse(saved.confirmedAt!)).toBeGreaterThanOrEqual(before);
+    expect(Date.parse(saved.confirmedAt!)).toBeLessThanOrEqual(Date.now());
+  });
+
   it("writes a local deferred rationale only when its reason is completed", async () => {
     const { runtime, spool, store } = createRuntime();
     const event = serverCaptureFixture();
@@ -584,6 +626,7 @@ describe("CaptureRuntime", () => {
       {
         status: "captured",
         rationale: "先保留可逆方案。",
+        confirmedAt: expect.any(String),
         reasonFactors: ["reversibility"],
         appliedPrincipleIds: ["principle-1"],
         expectedOutcome: "回滚演练一次通过。",
@@ -679,7 +722,7 @@ describe("CaptureRuntime", () => {
     expect(spool.replaceDisposition).toHaveBeenCalledWith(
       event,
       0,
-      { status: "skipped", appliedPrincipleIds: ["principle-2"], expectedOutcome: "回滚演练一次通过。" },
+      { status: "skipped", confirmedAt: expect.any(String), appliedPrincipleIds: ["principle-2"], expectedOutcome: "回滚演练一次通过。" },
     );
     expect(store.save).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -730,6 +773,7 @@ describe("CaptureRuntime", () => {
     expect(spool.replaceDisposition).toHaveBeenCalledWith(event, 0, {
       status: "captured",
       rationale: "恢复后补充理由。",
+      confirmedAt: expect.any(String),
       appliedPrincipleIds: ["principle-recovered"],
       expectedOutcome: "恢复后预期仍在。",
     });
@@ -1044,6 +1088,7 @@ describe("CaptureRuntime", () => {
 
   it("derives the same record across process restarts", async () => {
     const event = serverCaptureFixture();
+    let disposition: RationaleSubmission | null = null;
     const saved: DecisionRecord[] = [];
     const store = {
       save: vi.fn(async (record: DecisionRecord) => {
@@ -1061,6 +1106,7 @@ describe("CaptureRuntime", () => {
     const first = new CaptureRuntime({
       spool: {
         ...semanticSpoolMethods(),
+        saveDisposition: async (_event, _index, submission) => { disposition = submission; },
         acknowledge: vi.fn(async () => {
           throw new Error("process exits before acknowledgement");
         }),
@@ -1071,6 +1117,7 @@ describe("CaptureRuntime", () => {
     const second = new CaptureRuntime({
       spool: {
         ...semanticSpoolMethods(),
+        loadDisposition: async () => disposition,
         acknowledge: vi.fn(async () => undefined),
       },
       store,
@@ -1082,10 +1129,10 @@ describe("CaptureRuntime", () => {
       first.queue.submit({ status: "skipped" }),
     ).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
     await second.ingest(event);
-    await second.queue.submit({ status: "skipped" });
 
     expect(saved).toHaveLength(2);
     expect(saved[1]).toEqual(saved[0]);
+    expect(saved[0]?.confirmedAt).toEqual(expect.any(String));
   });
 
   it("keeps distinct IDs for repeated same-mode decisions", async () => {
@@ -1244,6 +1291,25 @@ describe("CaptureRuntime", () => {
     await expect(runtime.completeDeferredRationale(id, { rationale: "补上的理由" })).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
     await expect(runtime.completeDeferredRationale(id, { rationale: "补上的理由" })).rejects.toThrow(/决策已写入 Obsidian，但本机恢复队列没能更新/u);
     expect(store.save).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not take a completed rationale as not recorded while its note is in Obsidian and only its receipt was refused", async () => {
+    const { runtime, spool, store, localDecisions } = createRuntime();
+    await runtime.ingest(serverCaptureFixture());
+    await runtime.queue.submit({ status: "deferred" });
+    const id = runtime.pendingRationales()[0]!.id;
+    spool.acknowledge.mockRejectedValueOnce(new Error("ENOSPC"));
+    await expect(runtime.completeDeferredRationale(id, { rationale: "补上的理由" })).rejects.toThrow(/决策已写入 Obsidian/u);
+
+    // 不保留 dropped it from the recovery queue alone and said it done: the note written a moment ago stayed in Obsidian.
+    await expect(runtime.discardDeferredRationale(id)).rejects.toThrow(/已写入 Obsidian.*再保存一次/u);
+    expect(spool.replaceDisposition).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), { status: "not_recorded" });
+    expect(localDecisions.resolve).not.toHaveBeenCalledWith(id, "discarded");
+    expect(runtime.pendingRationales().map((item) => item.id)).toEqual([id]);
+
+    await runtime.completeDeferredRationale(id, { rationale: "补上的理由" });
+    expect(store.save).toHaveBeenCalledTimes(1);
+    expect(runtime.pendingRationales()).toEqual([]);
   });
 
   it("says the note is in Obsidian when a retry finds the recovery queue still unwritable", async () => {

@@ -21,8 +21,8 @@ describe("bridge Vite config", () => {
 
   it("packages current and 1.x-compatible wrappers for both shell families", () => {
     expect(bridgeWrapperNames).toEqual([
-      "decision-bridge",
-      "decision-bridge.cmd",
+      "paraself-bridge",
+      "paraself-bridge.cmd",
     ]);
   });
 });

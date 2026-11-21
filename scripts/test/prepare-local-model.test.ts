@@ -283,12 +283,12 @@ describe("prepareLocalModel", () => {
 
   it("never writes into the application bundle", async () => {
     const root = await mkdtemp(
-      join(tmpdir(), "Decision.app-"),
+      join(tmpdir(), "Paraself.app-"),
     );
     roots.push(root);
     const resourcesPath = join(
       root,
-      "Decision.app",
+      "Paraself.app",
       "Contents",
       "Resources",
     );

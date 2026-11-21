@@ -3,7 +3,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFER_SHORTCUT_KEYS,
   isClearShortcut,
+  isDeferShortcut,
   isSubmitShortcut,
   SUBMIT_SHORTCUT_KEYS,
 } from "../src/renderer/keyboard.js";
@@ -47,5 +49,20 @@ describe("keyboard shortcuts", () => {
 
   it("publishes both modifiers in aria-keyshortcuts syntax", () => {
     expect(SUBMIT_SHORTCUT_KEYS).toBe("Meta+Enter Control+Enter");
+    expect(DEFER_SHORTCUT_KEYS).toBe("Meta+L Control+L");
+  });
+
+  it("accepts Cmd+L and Ctrl+L as the defer shortcut, by the key's place too", () => {
+    expect(isDeferShortcut(keyEvent({ key: "l", metaKey: true }))).toBe(true);
+    expect(isDeferShortcut(keyEvent({ key: "L", ctrlKey: true }))).toBe(true);
+    expect(isDeferShortcut(keyEvent({ key: "¬", code: "KeyL", metaKey: true }))).toBe(true);
+  });
+
+  it("rejects plain, shifted, alt and composing L for defer", () => {
+    expect(isDeferShortcut(keyEvent({ key: "l" }))).toBe(false);
+    expect(isDeferShortcut(keyEvent({ key: "L", metaKey: true, shiftKey: true }))).toBe(false);
+    expect(isDeferShortcut(keyEvent({ key: "l", ctrlKey: true, altKey: true }))).toBe(false);
+    expect(isDeferShortcut(keyEvent({ key: "l", metaKey: true, isComposing: true }))).toBe(false);
+    expect(isDeferShortcut(keyEvent({ key: "k", metaKey: true }))).toBe(false);
   });
 });

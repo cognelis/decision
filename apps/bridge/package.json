@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "decision-bridge": "./dist/cli.js"
+    "paraself-bridge": "./dist/cli.js"
   },
   "dependencies": {
     "@cognelis/decision-core": "1.2.0",

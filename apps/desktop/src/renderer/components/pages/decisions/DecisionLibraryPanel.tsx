@@ -1,3 +1,6 @@
+import type { DecisionDeletionTarget } from "../../../../shared/decision-deletion.js";
+import { knownClients, sourceLabel } from "../../../client-labels.js";
+import { DecisionDeletionDialog } from "./DecisionDeletionDialog.js";
 import { ActionIcon, IconButton } from "../../IconButton.js";
 import type { OutcomeVerdict } from "@cognelis/decision-core";
 import {
@@ -24,9 +27,17 @@ import { focusFirst, navigateList } from "../../../list-navigation.js";
 import { useSearchHighlight } from "../../../use-search-highlight.js";
 import { useSlashToFocus } from "../../../use-slash-focus.js";
 import { ModalDialog, PageHidden, usePageShownAgain } from "../../ModalDialog.js";
+import { plainHeadline, useClampedTitle } from "../../question-title.js";
+import { renderMarkdown } from "../assistant/markdown.js";
 import { DesktopPageHeader } from "../DesktopPageHeader.js";
-import { ActiveRecordDialog } from "./ActiveRecordDialog.js";
+import { OrganizationPanel } from "../organization/OrganizationPanel.js";
+import { ActiveRecordDialog, type ActiveRecordSaved } from "./ActiveRecordDialog.js";
+import { HistoricalDecisionView } from "./HistoricalDecisionView.js";
 import { DecisionEvidencePanel } from "./DecisionEvidencePanel.js";
+import type { AmendmentRecordView } from "../../../../shared/renderer-api.js";
+import { amendmentKey, decisionWordsNow, READER, restoreRequest, rewriteInForce } from "./amendment-view.js";
+import { OriginalWords } from "./AmendmentBlocks.js";
+import { DECISION_FIELDS, DecisionFieldEditor, amendedTag, valueOf, type DecisionField, type FieldEdit } from "./DecisionFieldEditor.js";
 import { DecisionLifecycle } from "./DecisionLifecycle.js";
 import { SameQuestionDecisions } from "./SameQuestionDecisions.js";
 import { decisionMarkdown, decisionsMarkdown } from "./decision-markdown.js";
@@ -57,11 +68,18 @@ interface DecisionLibraryPanelProps {
   initialVerdict?: OutcomeVerdict | null;
   initialDecisionId?: string | null;
   initialJournalEntryId?: string | null;
+  /** 历史决定 written since (DashboardSnapshot.historicalDecisionRevision): moved, their list reads again. */
+  historicalRevision?: number;
+  /** A 历史决定 to arrive at: its tab is shown and its detail opened. */
+  initialHistoricalId?: string | null;
   onInitialNavigationConsumed?(): void;
   onInitialJournalConsumed?(): void;
+  onInitialHistoricalConsumed?(): void;
   onOpenPrinciple(id: string): void;
   onDistillDecision(id: string): void;
-  onRecorded(result: ProactiveRecordResult): void;
+  onRecorded(result: ActiveRecordSaved): void;
+  /** 整理与记忆（IMP-191）：知识页也能打开同一个整理面板；没给就没有入口。 */
+  organization?: { revision: number; pending: number; onOpenMethodology?: () => void };
 }
 
 /** The most a list query returns (ipc.ts allows no more). */
@@ -71,14 +89,6 @@ const rationaleLabels: Record<DecisionRationaleFilter, string> = {
   captured: "理由完整",
   deferred: "待补理由",
   skipped: "未补理由",
-};
-
-const sourceLabels: Record<string, string> = {
-  codex: "Codex",
-  "claude-code": "Claude Code",
-  test: "Test",
-  manual: "手动记录",
-  "pr-comment": "PR 评论",
 };
 
 const dateFormatter = zonedFormatter({
@@ -126,6 +136,42 @@ const verdictOptions = Object.entries(verdictLabels) as Array<
   [OutcomeVerdict, string]
 >;
 
+/** Where and when a decision was made: the line over its title in the detail, and what the dialog is described by. */
+const detailMeta = (decision: DecisionLibraryItem): string =>
+  // A decision recorded by hand may name no project: "· 10月24日" said nothing before its dot.
+  [decision.project, dateFormatter.format(new Date(decision.created))].filter(Boolean).join(" · ");
+
+/** A principle named in the detail is a way to it; what became of it since is said beside it when worth saying. */
+const PrincipleLink = ({
+  principle,
+  status,
+  locked,
+  onOpen,
+}: {
+  principle: { id: string; title: string; status: string };
+  status: string | null;
+  /** An editor is open: leaving for 方法论 would take what is being written with the page. */
+  locked: boolean;
+  onOpen(id: string): void;
+}) => (
+  <button
+    type="button"
+    className={`decision-principle-link ${principle.status}`}
+    disabled={locked}
+    title={locked ? "先保存或取消正在填写的内容" : `打开原则：${principle.title}`}
+    onClick={() => onOpen(principle.id)}
+  >
+    <ActionIcon name="principles" />
+    <span>{principle.title}</span>
+    {status === null ? null : (
+      <small>
+        <span className="sr-only">，</span>
+        {status}
+      </small>
+    )}
+  </button>
+);
+
 /** Days, counted as today and the calendar days before it. */
 type PeriodFilter = "all" | "7" | "30";
 
@@ -171,6 +217,7 @@ interface PrincipleChoice {
 
 export const DecisionLibraryPanel = ({
   api,
+  organization,
   totalDecisions,
   decisionsRevision = 0,
   journalRevision = 0,
@@ -185,15 +232,24 @@ export const DecisionLibraryPanel = ({
   initialVerdict = null,
   initialDecisionId = null,
   initialJournalEntryId = null,
+  historicalRevision = 0,
+  initialHistoricalId = null,
   onInitialNavigationConsumed,
   onInitialJournalConsumed,
+  onInitialHistoricalConsumed,
   onOpenPrinciple,
   onDistillDecision,
   onRecorded,
 }: DecisionLibraryPanelProps) => {
   const [query, setQuery] = useState(initialQuery);
-  const [libraryView, setLibraryView] = useState<"decisions" | "journal" | "local">("decisions");
-  const [recording, setRecording] = useState(false);
+  const [libraryView, setLibraryView] = useState<"decisions" | "journal" | "history" | "local">("decisions");
+  // true: 主动记录 as it was left; "historical": opened on 历史决定, from that tab's own entry.
+  const [recording, setRecording] = useState<boolean | "historical">(false);
+  const [historicalKept, setHistoricalKept] = useState<number | null>(null);
+  const [historicalOpen, setHistoricalOpen] = useState<string | null>(null);
+  const [historicalSaved, setHistoricalSaved] = useState(0);
+  // The 历史决定 a decision record was made from, when it was: the detail links back to it.
+  const [promotedFrom, setPromotedFrom] = useState<{ decisionId: string; historicalId: string } | null>(null);
   // With the decision it is about (a 主动记录 opened right after it is saved), or null: kept while that one is shown.
   const [recordNotice, setRecordNotice] = useState<{ text: string; forId: string | null } | null>(null);
   const [searchMode, setSearchMode] = useState<"keyword" | "semantic">(
@@ -210,6 +266,8 @@ export const DecisionLibraryPanel = ({
   // shows as a removable condition rather than another select.
   const [project, setProject] = useState<string | null>(initialProject);
   const [projects, setProjects] = useState<DecisionProjectCount[]>([]);
+  const [organizing, setOrganizing] = useState(false);
+  const [organizingDirty, setOrganizingDirty] = useState(false);
 
   // Read again with the list: a project renamed in Obsidian (no decision added) kept its old name and count here,
   // and choosing it showed fewer than it said.
@@ -293,6 +351,27 @@ export const DecisionLibraryPanel = ({
   const doneSaving = (id: string) => (current: string | null): string | null => (current === id ? null : current);
   const [principles, setPrinciples] = useState<MethodologyItem[]>([]);
   const [refreshRevision, setRefreshRevision] = useState(0);
+  // Which decisions an agent has added to or rewritten, for a small mark on their rows; read again with the list.
+  // What the reader or an agent rewrote of a decision's own words, kept beside its note: the detail shows it in place of
+  // the note's words, with the words as first written one click away. An edit made here is a rewrite of its own.
+  const [amendRevision, setAmendRevision] = useState(0);
+  const [fieldEdit, setFieldEdit] = useState<FieldEdit | null>(null);
+  const [expectedView, setExpectedView] = useState<"original" | "revised">("original");
+  const [amendmentRecords, setAmendmentRecords] = useState<Map<string, AmendmentRecordView>>(new Map());
+  const amendmentMarks = new Map([...amendmentRecords.values()].filter((record) => record.source === "decisions").map((record) => [
+    record.recordId, { rewritten: record.state.revised !== null && !record.state.revised.stale, added: record.state.amendments.length },
+  ] as const));
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => api.listDecisionAmendments())
+      .then((overview) => {
+        if (!active) return;
+        setAmendmentRecords(new Map(overview.records.map((record) => [amendmentKey(record.source, record.recordId), record])));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [api, refreshRevision, amendRevision]);
+  const [deleting, setDeleting] = useState<DecisionDeletionTarget | null>(null);
   // Preferences and ideas are not in the decisions' index: read again when the page is shown again, not at its every
   // move, which took the list away mid-read and closed the revision history open in it.
   const [shownAgain, setShownAgain] = useState(0);
@@ -468,6 +547,34 @@ export const DecisionLibraryPanel = ({
     setJournalJumps((count) => count + 1);
     onInitialJournalConsumed?.();
   }, [initialJournalEntryId, onInitialJournalConsumed]);
+
+  // A 历史决定 arrived at (just recorded from elsewhere, or followed from the decision made of it).
+  useEffect(() => {
+    if (initialHistoricalId === null) return;
+    setSelected(null);
+    setLibraryView("history");
+    setHistoricalOpen(initialHistoricalId);
+    onInitialHistoricalConsumed?.();
+  }, [initialHistoricalId, onInitialHistoricalConsumed]);
+  // From a 历史决定 to the decision record made of it: the decisions tab, with that one's detail.
+  const openPromotedDecision = (id: string): void => {
+    setLibraryView("decisions");
+    void api.listDecisions({ query: "", decisionId: id, limit: 1 }).then(([found]) => {
+      if (found === undefined) setRecordNotice({ text: "这条正式决策已经找不到了，可能已被删除。", forId: null });
+      else setSelected(found);
+    }, () => setRecordNotice({ text: "暂时无法打开这条正式决策。", forId: null }));
+  };
+  const selectedId = selected?.id ?? null;
+  useEffect(() => {
+    if (selectedId === null) return;
+    let current = true;
+    // Most decisions were never a 历史决定: found or not, the detail shows as it is, and gains a line when one is.
+    void api.listHistoricalDecisions({ promotedDecisionId: selectedId, includeWithdrawn: true, limit: 1 }).then((listed) => {
+      const [origin] = listed.records;
+      if (current) setPromotedFrom(origin === undefined ? null : { decisionId: selectedId, historicalId: origin.id });
+    }, () => undefined);
+    return () => { current = false; };
+  }, [api, selectedId]);
 
   const filtersActive =
     query.trim().length > 0 ||
@@ -661,7 +768,7 @@ export const DecisionLibraryPanel = ({
     }
     setUnsaved({
       id: record.id,
-      notice: `「${record.question}」的${what}没能保存：${message.replace(/[。.]$/u, "")}${
+      notice: `「${plainHeadline(record.question)}」的${what}没能保存：${message.replace(/[。.]$/u, "")}${
         reopen === undefined ? "。" : "。重新打开这条决策，写下的内容还在。"
       }`,
       restore: () => {
@@ -894,7 +1001,8 @@ export const DecisionLibraryPanel = ({
         ? "正在理解并查找…"
         : "正在查找…";
     }
-    if (error !== null) return "查询失败";
+    // Not read is not none found: the count waits for a read that works.
+    if (error !== null) return "—";
     const semanticParticipated = decisions.some(
       (decision) =>
         decision.searchMatch === "semantic" || decision.searchMatch === "hybrid",
@@ -921,19 +1029,114 @@ export const DecisionLibraryPanel = ({
     selected === null
       ? -1
       : decisions.findIndex((decision) => decision.id === selected.id);
-  const detailEditing =
+  const amendRecord = selected === null ? undefined : amendmentRecords.get(amendmentKey("decisions", selected.id));
+  const amendState = amendRecord?.state;
+  const rewrite = rewriteInForce(amendState);
+  // The decision as it reads now: a rewrite in force in place of the note's words.
+  const now = selected === null ? null : {
+    question: valueOf(rewrite, "question") ?? selected.question,
+    choice: valueOf(rewrite, "choice") ?? selected.selectedAnswer,
+    rationale: valueOf(rewrite, "rationale") === undefined ? selected.rationale : valueOf(rewrite, "rationale") ?? null,
+    context: valueOf(rewrite, "context") === undefined ? selected.context : valueOf(rewrite, "context") ?? null,
+    expectedOutcome: valueOf(rewrite, "expectedOutcome") === undefined ? selected.expectedOutcome ?? null : valueOf(rewrite, "expectedOutcome") ?? null,
+  };
+  const expectedRevised = amendState?.originals !== undefined && "expectedOutcome" in amendState.originals && rewrite !== null && "expectedOutcome" in rewrite;
+  useEffect(() => { setExpectedView("original"); setFieldEdit(null); }, [selected?.id]);
+  // An editor of the detail's own open: the others' buttons are put away until it is saved or let go.
+  const editorOpen =
+    fieldEdit !== null ||
     editingRationale ||
     editingExpected || editingOutcome ||
     editingReview ||
     editingReviewSchedule ||
-    editingPrinciples ||
-    evidenceEditing;
+    editingPrinciples;
+  const detailEditing = editorOpen || evidenceEditing;
+  // Said in the footer, beside the 删除决策 it holds: why that, the steps and the close button do nothing now.
+  const editingSection = fieldEdit !== null ? DECISION_FIELDS[fieldEdit.field].label
+    : editingRationale ? "决策理由"
+    : editingExpected ? "预期结果"
+    : editingOutcome ? "实际结果"
+    : editingReview ? "预期 / 实际复盘"
+    : editingReviewSchedule ? "复盘计划"
+    : editingPrinciples ? "采用的方法论"
+    : evidenceEditing ? "适用范围与关联"
+    : null;
+  const beginFieldEdit = (field: DecisionField): void => {
+    setSavedNotice("");
+    setFieldEdit({ field, draft: now?.[field] ?? "", reason: "", saving: false, error: null });
+  };
+  const saveFieldEdit = async (): Promise<void> => {
+    if (selected === null || fieldEdit === null || fieldEdit.saving) return;
+    const spec = DECISION_FIELDS[fieldEdit.field];
+    const text = fieldEdit.draft.trim();
+    if (text === "" && !spec.clearable) return;
+    const edit = fieldEdit;
+    setFieldEdit({ ...edit, saving: true, error: null });
+    try {
+      // The note as it is now: what a rewrite is made against. Read from the search when the list's copy has none.
+      const hash = amendRecord?.contentHash ?? selected.contentHash ??
+        (await api.searchDecisionContext({ source: "decisions", recordId: selected.id, query: "", includeOutOfScope: false, limit: 8, offset: 0 })).results[0]?.sourceRef.contentHash ?? null;
+      if (hash === null) throw new Error("读不到这条决策现在的版本，请重新读取后再试。");
+      const result = await api.updateDecisionAmendment({
+        amendVersion: 1, source: "decisions", recordId: selected.id, sourceClient: READER, action: "revise", basis: "user_said",
+        expectedContentHash: hash, expectedRevision: amendState?.revision ?? 0,
+        fields: { [edit.field]: text === "" ? null : text }, reason: edit.reason.trim() || "在页面上修改",
+      });
+      if (result.status === "saved" || result.status === "unchanged") {
+        setFieldEdit(null);
+        setSavedNotice(`${spec.label}已保存`);
+      } else {
+        setFieldEdit({ ...edit, saving: false, error: ({
+          source_changed: "这条决策在你打开之后改过，已重新读取，请核对后再改。",
+          revision_conflict: "这条决策的修订刚刚又有更新，已重新读取，请核对后再改。",
+          not_found: "找不到这条决策。", source_unavailable: "来源或修订记录没能完整读取，请检查笔记。",
+          limit_reached: "这条决策的修订记录已满，不能再增加；请在 Obsidian 里整理旁路笔记。",
+        } as Record<string, string>)[result.status] ?? "没有保存。" });
+      }
+    } catch (caught) {
+      setFieldEdit({ ...edit, saving: false, error: caught instanceof Error ? caught.message : String(caught) });
+    } finally {
+      setAmendRevision((value) => value + 1);
+    }
+  };
+  const tagOf = (field: DecisionField) => {
+    const tag = amendedTag(amendState, field);
+    return tag === null ? null : <span className={`amendment-tag ${tag.startsWith("已修改") ? "count" : "rewritten"}`}>{tag}</span>;
+  };
+  const originalOf = (field: DecisionField) =>
+    amendedTag(amendState, field) === null || amendState?.revised?.stale === true || amendState?.originals === undefined || !(field in amendState.originals) ? null
+      : <OriginalWords label="最初版本" lines={[{ name: null, text: amendState.originals[field] ?? "" }]} />;
+  const editButton = (field: DecisionField, text?: string) => editorOpen || detailEditing ? null : (
+    <button type="button" className="text-button decision-detail-edit" data-opens-editor={field === "expectedOutcome" ? "expected" : `field-${field}`} onClick={() => beginFieldEdit(field)}>
+      <ActionIcon name="edit" />
+      {text ?? DECISION_FIELDS[field].open}
+    </button>
+  );
+  const fieldEditor = (field: DecisionField) => fieldEdit?.field !== field ? null : (
+    <DecisionFieldEditor edit={fieldEdit} onChange={(patch) => setFieldEdit({ ...fieldEdit, ...patch })} onCancel={() => setFieldEdit(null)} onSave={() => void saveFieldEdit()} />
+  );
+  // The question is the detail's title, two lines of it; cut short there, or flattened from lists, it is given whole too.
+  const [detailTitleRef, titleCut] = useClampedTitle<HTMLHeadingElement>(now?.question ?? "");
+  const questionInFull = selected !== null && titleCut;
+  // An editor opened where it stands (the side column's too) is brought into view whole, its buttons with it: focus on
+  // its first field showed that field alone, the 保存 under it still out of sight. The principles' editor opens on
+  // 正在读取 and grows once they are read: brought into view again then.
+  useEffect(() => {
+    if (editingSection === null) return;
+    document
+      .querySelector(".decision-library-detail :is(.decision-outcome-editor, .decision-review-editor, .decision-review-schedule-editor, .decision-principle-editor)")
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [editingSection, principleLoading]);
   // An editor closed (saved or let go) takes the focused field and its own buttons with it: focus goes back to the
   // button that opened it, where the dialog took it to its top and Tab started over there. Where that button is
   // gone with what was saved (补充理由 once there is a rationale), the dialog keeps it, and the save is said.
   const openEditors = {
+    "field-question": fieldEdit?.field === "question",
+    "field-choice": fieldEdit?.field === "choice",
+    "field-rationale": fieldEdit?.field === "rationale",
+    "field-context": fieldEdit?.field === "context",
     rationale: editingRationale,
-    expected: editingExpected,
+    expected: editingExpected || fieldEdit?.field === "expectedOutcome",
     outcome: editingOutcome,
     review: editingReview,
     schedule: editingReviewSchedule,
@@ -1046,14 +1249,15 @@ export const DecisionLibraryPanel = ({
     setSelected(next);
     setStepNotice({
       id: next.id,
-      text: `第 ${decisions.findIndex((item) => item.id === next.id) + 1} / ${decisions.length} 条：${next.question}`,
+      text: `第 ${decisions.findIndex((item) => item.id === next.id) + 1} / ${decisions.length} 条：${plainHeadline(next.question)}`,
     });
   };
 
   // Out of sight while a captured decision has the window, its arrow keys are not this page's to take.
   const pageHidden = useContext(PageHidden);
   useEffect(() => {
-    if (selected === null || pageHidden) return;
+    // Nor while its deletion is asked about over it.
+    if (selected === null || pageHidden || deleting !== null) return;
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       if (event.defaultPrevented || event.altKey || event.metaKey || event.ctrlKey) {
@@ -1066,19 +1270,7 @@ export const DecisionLibraryPanel = ({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [decisions, detailEditing, selected, pageHidden]);
-
-  const detailEditingClass = editingRationale
-    ? " rationale-editing"
-    : editingReview
-    ? " review-editing"
-    : editingOutcome
-      ? " outcome-editing"
-      : editingReviewSchedule
-        ? " schedule-editing"
-        : editingPrinciples
-          ? " principles-editing"
-        : "";
+  }, [decisions, detailEditing, selected, pageHidden, deleting]);
 
   return (
     <section
@@ -1090,8 +1282,8 @@ export const DecisionLibraryPanel = ({
         eyebrow="沉淀"
         title="知识"
         description="一次搜索同时查决策、个人偏好想法和 Vault 里的全部笔记。"
-        meta={totalDecisions}
-        metaLabel="全部决策"
+        meta={libraryView === "history" ? historicalKept ?? "–" : totalDecisions}
+        metaLabel={libraryView === "history" ? "历史决定" : "全部决策"}
       />
 
       <div className="decision-directory-actions">
@@ -1099,19 +1291,38 @@ export const DecisionLibraryPanel = ({
           // Tabs as they are read: an arrow moves to the other one and shows it, Home and End go to the first and last.
           if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
           event.preventDefault();
-          const tabs = ["decisions", "journal", "local"] as const;
-          const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[2] : tabs[(tabs.indexOf(libraryView) + (event.key === "ArrowRight" ? 1 : 2)) % 3]!;
+          const tabs = ["decisions", "journal", "history", "local"] as const;
+          const next = event.key === "Home" ? tabs[0] : event.key === "End" ? tabs.at(-1)! : tabs[(tabs.indexOf(libraryView) + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length]!;
           if (next !== "decisions") setSelected(null);
           setLibraryView(next);
           document.getElementById(`knowledge-tab-${next}`)?.focus();
         }}>
           <button type="button" role="tab" id="knowledge-tab-decisions" aria-controls="knowledge-panel-decisions" aria-selected={libraryView === "decisions"} tabIndex={libraryView === "decisions" ? 0 : -1} onClick={() => setLibraryView("decisions")}><ActionIcon name="record" /><span>决策</span></button>
           <button type="button" role="tab" id="knowledge-tab-journal" aria-controls="knowledge-panel-journal" aria-selected={libraryView === "journal"} tabIndex={libraryView === "journal" ? 0 : -1} onClick={() => { setSelected(null); setLibraryView("journal"); }}><ActionIcon name="idea" /><span>偏好与想法</span></button>
+          <button type="button" role="tab" id="knowledge-tab-history" aria-controls="knowledge-panel-history" aria-selected={libraryView === "history"} tabIndex={libraryView === "history" ? 0 : -1} onClick={() => { setSelected(null); setLibraryView("history"); }}><ActionIcon name="history" /><span>历史决定</span></button>
           <button type="button" role="tab" id="knowledge-tab-local" aria-controls="knowledge-panel-local" aria-selected={libraryView === "local"} tabIndex={libraryView === "local" ? 0 : -1} onClick={() => { setSelected(null); setLibraryView("local"); }}><ActionIcon name="record" /><span>仅本机保留</span></button>
         </div>
         {recordNotice === null ? null : <span role="status">{recordNotice.text}</span>}
+        {organization === undefined ? null : (
+          <button type="button" className="secondary-button" onClick={() => setOrganizing(true)}>
+            <ActionIcon name="star" />整理与记忆 <span className="org-count" aria-label={`${organization.pending} 个问题需要判断`}>{organization.pending}</span>
+          </button>
+        )}
         <button type="button" className="primary-button" onClick={() => setRecording(true)}>主动记录</button>
       </div>
+
+      {organization === undefined || !organizing ? null : (
+        <ModalDialog title="整理与记忆" size="workspace" unsaved={organizingDirty} onClose={() => setOrganizing(false)}>
+          <OrganizationPanel
+            api={api}
+            organizationRevision={organization.revision}
+            context={{ project, projects: projects.map((item) => item.project), listId: null, listTitle: null, items: [] }}
+            onClose={() => setOrganizing(false)}
+            onOpenMethodology={organization.onOpenMethodology}
+            onDirtyChange={setOrganizingDirty}
+          />
+        </ModalDialog>
+      )}
 
       <div className="desktop-page-scroll decision-library-content">
         <div className="knowledge-results" id="knowledge-panel-decisions" role="tabpanel" aria-labelledby="knowledge-tab-decisions" hidden={libraryView !== "decisions"}>
@@ -1226,8 +1437,9 @@ export const DecisionLibraryPanel = ({
                 }
               >
                 <option value="all">全部</option>
-                <option value="codex">Codex</option>
-                <option value="claude-code">Claude Code</option>
+                {knownClients().map((client) => (
+                  <option key={client.id} value={client.id}>{client.name}</option>
+                ))}
                 <option value="manual">手动记录</option>
                 <option value="pr-comment">PR 评论</option>
               </select>
@@ -1326,8 +1538,11 @@ export const DecisionLibraryPanel = ({
           </div>
 
           {error !== null ? (
-            <p className="decision-library-message error-message">
+            <p className="load-failure" role="alert">
               无法读取决策库，请在设置中重建决策索引后重试。
+              <button type="button" className="secondary-button" disabled={loading} onClick={() => setRefreshRevision((value) => value + 1)}>
+                重试
+              </button>
             </p>
           ) : !loading && decisions.length === 0 ? (
             <div className="decision-library-empty">
@@ -1343,7 +1558,7 @@ export const DecisionLibraryPanel = ({
                     ? "这张列表里已经没有要处理的了。"
                     : filtersActive
                       ? "调整关键词或筛选条件后再试。"
-                      : "在 Claude Code / Codex 中完成一次选择，或使用上方“主动记录”手动添加。"}
+                      : `在 ${knownClients().map((client) => client.name).join(" / ")} 中完成一次选择，或使用上方“主动记录”手动添加。`}
               </span>
               {deferredElsewhere && query.trim().length === 0 && onOpenHome !== undefined ? (
                 <button type="button" className="primary-button" onClick={onOpenHome}>
@@ -1367,15 +1582,17 @@ export const DecisionLibraryPanel = ({
               aria-label="决策列表"
               onKeyDown={handleListKeyDown}
             >
-              {decisions.map((decision) => (
-                <li key={decision.id}>
+              {decisions.map((shown, index) => {
+                const decision = decisionWordsNow(shown, amendmentRecords.get(amendmentKey("decisions", shown.id))?.state);
+                return (
+                <li key={decision.id} className="decision-library-item">
                   <button
                     type="button"
                     className="decision-library-row"
-                    onClick={() => setSelected(decision)}
+                    onClick={() => setSelected(shown)}
                   >
                     <span className="decision-library-copy">
-                      <strong>{decision.question}</strong>
+                      <strong id={`decision-row-question-${index}`}>{plainHeadline(decision.question)}</strong>
                       <span>
                         {decision.selectedAnswer}
                         {decision.searchMatch === "semantic" ||
@@ -1388,6 +1605,8 @@ export const DecisionLibraryPanel = ({
                               : "语义命中"}
                           </small>
                         ) : null}
+                        {amendmentMarks.get(decision.id)?.rewritten === true ? <small className="decision-amend-badge" title="agent 改写过这条的摘要、适用条件或注意事项">已改写</small> : null}
+                        {(amendmentMarks.get(decision.id)?.added ?? 0) > 0 ? <small className="decision-amend-badge" title="之后的会话里增补过">+{amendmentMarks.get(decision.id)!.added}</small> : null}
                         {decision.outcomeReview !== null ? (
                           <small
                             className={`decision-review-badge ${decision.outcomeReview.verdict}`}
@@ -1415,7 +1634,7 @@ export const DecisionLibraryPanel = ({
                       {decision.project}
                     </span>
                     <span className="decision-library-source">
-                      {sourceLabels[decision.sourceClient] ?? decision.sourceClient}
+                      {sourceLabel(decision.sourceClient)}
                     </span>
                     <time dateTime={decision.created}>
                       {listDateFormatter.format(new Date(decision.created))}
@@ -1427,14 +1646,21 @@ export const DecisionLibraryPanel = ({
                       ›
                     </span>
                   </button>
+                  {/* Where a wrong capture is noticed, it is cleared: no need to open it first. */}
+                  <IconButton className="row-delete-button" aria-label="删除" title="删除这条决策"
+                    aria-describedby={`decision-row-question-${index}`}
+                    onClick={() => setDeleting({ id: decision.id, storage: "vault" })}>
+                    <ActionIcon name="trash" />
+                  </IconButton>
                 </li>
-              ))}
+                );
+              })}
             </ol>
           )}
         </section>
           <VaultNoteResults api={api} query={query} />
         </div>
-        <div id="knowledge-panel-journal" role="tabpanel" aria-labelledby="knowledge-tab-journal" hidden={libraryView !== "journal"}>
+        <div className="knowledge-tabpanel" id="knowledge-panel-journal" role="tabpanel" aria-labelledby="knowledge-tab-journal" hidden={libraryView !== "journal"}>
           <JournalEntryView
             // Each arrival is fresh, the same entry again included: its search and filters start clear.
             key={journalJumps}
@@ -1446,17 +1672,32 @@ export const DecisionLibraryPanel = ({
             unreadableNotice={journalNotice}
           />
         </div>
-        <div id="knowledge-panel-local" role="tabpanel" aria-labelledby="knowledge-tab-local" hidden={libraryView !== "local"}>
+        <div className="knowledge-tabpanel" id="knowledge-panel-history" role="tabpanel" aria-labelledby="knowledge-tab-history" hidden={libraryView !== "history"}>
+          {/* Read once its tab has been opened, then kept: a record opened or half-edited there survives a look at another tab. */}
+          {libraryView === "history" || historicalKept !== null ? (
+            <HistoricalDecisionView
+              api={api}
+              refreshRevision={shownAgain + historicalRevision + historicalSaved}
+              openId={historicalOpen}
+              onOpenConsumed={() => setHistoricalOpen(null)}
+              onCounted={setHistoricalKept}
+              onRecord={() => setRecording("historical")}
+              onOpenDecision={openPromotedDecision}
+            />
+          ) : null}
+        </div>
+        <div className="knowledge-tabpanel" id="knowledge-panel-local" role="tabpanel" aria-labelledby="knowledge-tab-local" hidden={libraryView !== "local"}>
           {libraryView === "local" ? <LocalDecisionList api={api} /> : null}
         </div>
       </div>
 
+      {/* Asked over the detail, which stays behind: let go, the reader is back where they were in it. */}
       {selected === null ? null : (
         <ModalDialog
+          // The dialog is named 决策详情 (its close button 关闭决策详情); what shows as its title is the question, with
+          // where and when it was decided above it. Both sit with the header's own buttons, the name kept for a reader.
           title="决策详情"
-          description={`${selected.project} · ${dateFormatter.format(
-            new Date(selected.created),
-          )}`}
+          description={detailMeta(selected)}
           size="wide"
           // While something is being written here, Escape, a click outside or the close button does not throw it away:
           // its own 取消 does. Once it is being saved it may be closed; the save finishes without reopening anything.
@@ -1464,6 +1705,18 @@ export const DecisionLibraryPanel = ({
           onClose={closeDetails}
           actions={
             <>
+              <div className="decision-detail-heading">
+                <p aria-hidden="true">{detailMeta(selected)}</p>
+                {/* Two lines of it as plain text; a longer question, or one with lists, is given whole in the body. */}
+                <div className="decision-detail-title-row">
+                  <h3 ref={detailTitleRef}>{plainHeadline(now!.question)}</h3>
+                  {editorOpen || detailEditing ? null : (
+                    <IconButton aria-label="编辑问题" title="编辑问题" data-opens-editor="field-question" onClick={() => beginFieldEdit("question")}>
+                      <ActionIcon name="edit" />
+                    </IconButton>
+                  )}
+                </div>
+              </div>
               {copyNotice === null || copyNotice.id !== selected.id ? null : (
                 <span
                   className={`decision-detail-copy-notice${copyNotice.ok ? "" : " error"}`}
@@ -1478,55 +1731,103 @@ export const DecisionLibraryPanel = ({
               >
                 <ActionIcon name="copy" />
               </IconButton>
-            {/* Nothing left to step to once the last item of a to-do list is done. */}
-            {decisions.length === 0 ||
-            (selectedIndex < 0 && !droppedOut) ||
-            (selectedIndex >= 0 && decisions.length < 2) ? null : (
-              <div className="decision-detail-nav" role="group" aria-label="逐条查看">
-                <IconButton
-                  aria-label="上一条决策"
-                  disabled={detailEditing || neighbor(-1) === undefined}
-                  onClick={() => stepDetail(-1)}
+              {/* Nothing left to step to once the last item of a to-do list is done. */}
+              {decisions.length === 0 ||
+              (selectedIndex < 0 && !droppedOut) ||
+              (selectedIndex >= 0 && decisions.length < 2) ? null : (
+                <>
+                  <span className="decision-detail-divider" aria-hidden="true" />
+                  <div className="decision-detail-nav" role="group" aria-label="逐条查看">
+                    <IconButton
+                      aria-label="上一条决策"
+                      disabled={detailEditing || neighbor(-1) === undefined}
+                      onClick={() => stepDetail(-1)}
+                    >
+                      <ActionIcon name="previous" />
+                    </IconButton>
+                    <span>
+                      {selectedIndex >= 0 ? selectedIndex + 1 : "–"} / {decisions.length}
+                    </span>
+                    <span className="sr-only" role="status">{stepNotice?.id === selected.id ? stepNotice.text : ""}</span>
+                    <IconButton
+                      aria-label="下一条决策"
+                      disabled={detailEditing || neighbor(1) === undefined}
+                      onClick={() => stepDetail(1)}
+                    >
+                      <ActionIcon name="next" />
+                    </IconButton>
+                  </div>
+                </>
+              )}
+            </>
+          }
+          footer={
+            <>
+              {/* Where a detail keeps what would end it for good: apart, at the start of the footer, and asked again. */}
+              <div className="modal-dialog-footer-start">
+                <button
+                  type="button"
+                  className="text-button danger-button decision-detail-delete"
+                  disabled={detailEditing}
+                  onClick={() => setDeleting({ id: selected.id, storage: "vault" })}
                 >
-                  <ActionIcon name="previous" />
-                </IconButton>
-                <span>
-                  {selectedIndex >= 0 ? selectedIndex + 1 : "–"} / {decisions.length}
-                </span>
-                <span className="sr-only" role="status">{stepNotice?.id === selected.id ? stepNotice.text : ""}</span>
-                <IconButton
-                  aria-label="下一条决策"
-                  disabled={detailEditing || neighbor(1) === undefined}
-                  onClick={() => stepDetail(1)}
-                >
-                  <ActionIcon name="next" />
-                </IconButton>
+                  <ActionIcon name="trash" />
+                  删除决策
+                </button>
               </div>
-            )}
+              {editingSection === null ? null : (
+                <p className="decision-detail-lock">
+                  {detailSaving
+                    ? `正在保存「${editingSection}」：保存完成前，不能删除或切换上一条、下一条。`
+                    : `正在编辑「${editingSection}」：保存或取消后，才能删除、切换上一条、下一条或关闭。`}
+                </p>
+              )}
             </>
           }
         >
-          <article className={`decision-library-detail${detailEditingClass}`}>
+          <article className="decision-library-detail">
             <p className="sr-only" role="status">{savedNotice}</p>
             <div className="decision-detail-main">
-            <section className="decision-detail-question">
-              <span>问题</span>
-              <h3>{selected.question}</h3>
-            </section>
+            {fieldEdit?.field === "question" ? (
+              <section className="decision-detail-question">
+                <div className="decision-outcome-heading"><h4>问题</h4>{tagOf("question")}</div>
+                {fieldEditor("question")}
+              </section>
+            ) : questionInFull || amendedTag(amendState, "question") !== null ? (
+              <section className="decision-detail-question" aria-labelledby="decision-detail-question-title">
+                <div className="decision-outcome-heading"><h4 id="decision-detail-question-title">问题</h4>{tagOf("question")}</div>
+                {questionInFull ? <div className="assistant-answer">{renderMarkdown(now!.question)}</div> : <p>{now!.question}</p>}
+                {originalOf("question")}
+              </section>
+            ) : null}
             <section className="decision-detail-choice">
-              <span>最终选择</span>
-              <p>{selected.selectedAnswer}</p>
+              <div className="decision-outcome-heading"><h4>最终选择</h4>{tagOf("choice")}{editButton("choice")}</div>
+              {fieldEdit?.field === "choice" ? fieldEditor("choice") : (
+                <>
+                  <p className="decision-detail-answer">{now!.choice}</p>
+                  {originalOf("choice")}
+                </>
+              )}
+              {selected.answer?.kind !== "custom" && selected.answer?.reply !== undefined ? (
+                <p className="decision-answer-reply">原话：{selected.answer.reply}</p>
+              ) : null}
               <div className="decision-detail-choice-meta">
                 <em className={`decision-rationale-chip ${selected.rationaleStatus}`}>
                   {rationaleLabels[selected.rationaleStatus]}
                 </em>
                 <span>
-                  {sourceLabels[selected.sourceClient] ?? selected.sourceClient}
+                  {sourceLabel(selected.sourceClient)}
                 </span>
+                {promotedFrom?.decisionId !== selected.id ? null : (
+                  <button type="button" className="decision-detail-link" disabled={detailEditing} onClick={() => { const { historicalId } = promotedFrom; closeDetails(); setLibraryView("history"); setHistoricalOpen(historicalId); }}>
+                    来自历史决定
+                    <ActionIcon name="next" />
+                  </button>
+                )}
                 {selected.sourceUrl === undefined ? null : (
                   <button
                     type="button"
-                    className="text-button"
+                    className="decision-detail-link"
                     onClick={() => {
                       const link = selected.sourceUrl!;
                       setFailedSourceLink(null);
@@ -1534,11 +1835,12 @@ export const DecisionLibraryPanel = ({
                     }}
                   >
                     打开原评论
+                    <ActionIcon name="open" />
                   </button>
                 )}
               </div>
               {failedSourceLink !== null && failedSourceLink === selected.sourceUrl ? (
-                <p className="error-message" role="alert">
+                <p className="form-error" role="alert">
                   无法打开原评论：它不在已添加的代码平台链接下，或系统拒绝了打开。
                 </p>
               ) : null}
@@ -1546,18 +1848,16 @@ export const DecisionLibraryPanel = ({
             <section className="decision-detail-rationale">
               <div className="decision-outcome-heading">
                 <h4>决策理由</h4>
-                {selected.rationaleStatus !== "deferred" ||
-                editingRationale ||
-                editingExpected || editingOutcome ||
-                editingReview ||
-                editingReviewSchedule ||
-                editingPrinciples ? null : (
+                {tagOf("rationale")}
+                {selected.rationaleStatus !== "deferred" ? editButton("rationale") : null}
+                {selected.rationaleStatus !== "deferred" || editorOpen ? null : (
                   <button
                     type="button"
-                    className="text-button"
+                    className="text-button decision-detail-edit"
                     data-opens-editor="rationale"
                     onClick={beginRationaleEdit}
                   >
+                    <ActionIcon name="edit" />
                     补充理由
                   </button>
                 )}
@@ -1568,17 +1868,23 @@ export const DecisionLibraryPanel = ({
                   <textarea
                     id="decision-rationale-input"
                     autoFocus
+                    rows={4}
                     maxLength={8_000}
                     value={rationaleDraft}
                     placeholder="写下当时为什么这样选。"
                     onChange={(event) => setRationaleDraft(event.currentTarget.value)}
                   />
+                  {rationaleError === null ? null : (
+                    <p className="form-error" role="alert">
+                      理由暂时无法保存：{rationaleError}
+                    </p>
+                  )}
                   <div className="decision-outcome-editor-footer">
                     <span>{rationaleDraft.length} / 8000</span>
                     <div>
                       <button
                         type="button"
-                        className="text-button"
+                        className="secondary-button"
                         disabled={rationaleSaving}
                         onClick={() => {
                           setEditingRationale(false);
@@ -1597,43 +1903,62 @@ export const DecisionLibraryPanel = ({
                       </button>
                     </div>
                   </div>
-                  {rationaleError === null ? null : (
-                    <p className="error-message" role="alert">
-                      理由暂时无法保存：{rationaleError}
-                    </p>
-                  )}
                 </div>
-              ) : (
-                <p className={selected.rationale === null ? "missing" : undefined}>
-                  {selected.rationale ?? "没有补充理由。"}
-                </p>
+              ) : fieldEdit?.field === "rationale" ? fieldEditor("rationale") : (
+                <>
+                  <p className={now!.rationale === null ? "missing" : undefined}>
+                    {now!.rationale ?? "没有补充理由。"}
+                  </p>
+                  {originalOf("rationale")}
+                </>
               )}
             </section>
-            {selected.context === null ? null : (
+            {now!.context === null && fieldEdit?.field !== "context" ? null : (
               <section className="decision-detail-context">
-                <span>当时上下文</span>
-                <p>{selected.context}</p>
+                <div className="decision-outcome-heading">
+                  <h4>当时上下文</h4>
+                  {tagOf("context")}
+                  {editButton("context")}
+                </div>
+                {fieldEdit?.field === "context" ? fieldEditor("context") : (
+                  <>
+                    <p>{now!.context}</p>
+                    {originalOf("context")}
+                  </>
+                )}
               </section>
             )}
+            {/* Above, what was written at the time; below, what came of it. */}
+            <hr className="decision-detail-rule" />
             {/* Kept visible while reviewing: it is what the result is compared with. */}
             {editingExpected ? (
               <section className="decision-detail-expected">
+                <div className="decision-outcome-heading">
+                  <h4 id="decision-expected-title">预期结果</h4>
+                </div>
                 <div className="decision-outcome-editor">
-                  <label htmlFor="decision-expected-input">预期结果</label>
+                  {/* Named by the section's own title: a label saying 预期结果 again under it said nothing new. */}
                   <textarea
                     id="decision-expected-input"
+                    aria-labelledby="decision-expected-title"
                     autoFocus
+                    rows={3}
                     maxLength={4_000}
                     value={expectedDraft}
                     placeholder="结果出来之前写下：做完之后预期会看到什么。"
                     onChange={(event) => setExpectedDraft(event.currentTarget.value)}
                   />
+                  {expectedError === null ? null : (
+                    <p className="form-error" role="alert">
+                      预期暂时无法保存：{expectedError}
+                    </p>
+                  )}
                   <div className="decision-outcome-editor-footer">
                     <span>{expectedDraft.length} / 4000</span>
                     <div>
                       <button
                         type="button"
-                        className="text-button"
+                        className="secondary-button"
                         disabled={expectedSaving}
                         onClick={() => {
                           setEditingExpected(false);
@@ -1652,25 +1977,27 @@ export const DecisionLibraryPanel = ({
                       </button>
                     </div>
                   </div>
-                  {expectedError === null ? null : (
-                    <p className="error-message" role="alert">
-                      预期暂时无法保存：{expectedError}
-                    </p>
-                  )}
                 </div>
               </section>
-            ) : selected.expectedOutcome || selected.outcome === null ? (
+            ) : now!.expectedOutcome || selected.outcome === null || fieldEdit?.field === "expectedOutcome" ? (
               <section className="decision-detail-expected">
                 <div className="decision-outcome-heading">
                   <h4>预期结果</h4>
-                  {selected.outcome !== null || detailEditing ? null : (
-                    <button type="button" className="text-button" data-opens-editor="expected" onClick={beginExpectedEdit}>
-                      {selected.expectedOutcome ? "修改预期" : "补写预期"}
+                  {tagOf("expectedOutcome")}
+                  {/* Written once, before the result: filled in as the note's own. Written, it is changed as a rewrite,
+                      the first words kept. */}
+                  {now!.expectedOutcome ? editButton("expectedOutcome") : selected.outcome !== null || detailEditing ? null : (
+                    <button type="button" className="text-button decision-detail-edit" data-opens-editor="expected" onClick={beginExpectedEdit}>
+                      <ActionIcon name="edit" />
+                      补写预期
                     </button>
                   )}
                 </div>
-                {selected.expectedOutcome ? (
-                  <p>{selected.expectedOutcome}</p>
+                {fieldEdit?.field === "expectedOutcome" ? fieldEditor("expectedOutcome") : now!.expectedOutcome ? (
+                  <>
+                    <p>{now!.expectedOutcome}</p>
+                    {originalOf("expectedOutcome")}
+                  </>
                 ) : (
                   <p className="missing">结果出来之前写下预期，复盘时才有对照。</p>
                 )}
@@ -1679,12 +2006,9 @@ export const DecisionLibraryPanel = ({
             <section className="decision-outcome-section">
               <div className="decision-outcome-heading">
                 <h4>实际结果</h4>
-                {editingExpected || editingOutcome ||
-                editingReview ||
-                editingReviewSchedule ||
-                editingPrinciples ||
-                editingRationale ? null : (
-                  <button type="button" className="text-button" data-opens-editor="outcome" onClick={beginOutcomeEdit}>
+                {editorOpen ? null : (
+                  <button type="button" className="text-button decision-detail-edit" data-opens-editor="outcome" onClick={beginOutcomeEdit}>
+                    <ActionIcon name="edit" />
                     {selected.outcome === null ? "记录结果" : "更新结果"}
                   </button>
                 )}
@@ -1695,17 +2019,23 @@ export const DecisionLibraryPanel = ({
                   <textarea
                     id="decision-outcome-input"
                     autoFocus
+                    rows={4}
                     maxLength={8_000}
                     value={outcomeDraft}
                     placeholder="记录实施后的实际效果、偏差或新的结论。"
                     onChange={(event) => setOutcomeDraft(event.currentTarget.value)}
                   />
+                  {outcomeError === null ? null : (
+                    <p className="form-error" role="alert">
+                      结果暂时无法保存：{outcomeError}
+                    </p>
+                  )}
                   <div className="decision-outcome-editor-footer">
                     <span>{outcomeDraft.length} / 8000</span>
                     <div>
                       <button
                         type="button"
-                        className="text-button"
+                        className="secondary-button"
                         disabled={outcomeSaving}
                         onClick={() => {
                           setEditingOutcome(false);
@@ -1724,37 +2054,39 @@ export const DecisionLibraryPanel = ({
                       </button>
                     </div>
                   </div>
-                  {outcomeError === null ? null : (
-                    <p className="error-message" role="alert">
-                      结果暂时无法保存：{outcomeError}
-                    </p>
-                  )}
                 </div>
               ) : (
-                <p>{selected.outcome ?? "尚未记录实际结果。"}</p>
+                <p className={selected.outcome === null ? "missing" : undefined}>{selected.outcome ?? "尚未记录实际结果。"}</p>
               )}
             </section>
             <section className="decision-review-section">
               <div className="decision-outcome-heading">
                 <h4>预期 / 实际复盘</h4>
-                {selected.outcome === null ||
-                editingReview ||
-                editingExpected || editingOutcome ||
-                editingReviewSchedule ||
-                editingPrinciples ||
-                editingRationale ? null : (
+                {selected.outcome === null || editorOpen ? null : (
                   <button
                     type="button"
-                    className="text-button"
+                    className="text-button decision-detail-edit"
                     data-opens-editor="review"
                     onClick={beginReviewEdit}
                   >
+                    <ActionIcon name="edit" />
                     {selected.outcomeReview === null ? "开始复盘" : "更新复盘"}
                   </button>
                 )}
               </div>
+              {/* Compared with the first expectation by default: the one the result was to be judged against. */}
+              {!expectedRevised || selected.outcome === null || editingReview ? null : (
+                <div className="decision-expected-compare">
+                  <span id="decision-expected-compare-label">对照</span>
+                  <div className="decision-filter-segment" role="group" aria-labelledby="decision-expected-compare-label">
+                    <button type="button" aria-pressed={expectedView === "original"} onClick={() => setExpectedView("original")}>最初的预期</button>
+                    <button type="button" aria-pressed={expectedView === "revised"} onClick={() => setExpectedView("revised")}>修改后的预期</button>
+                  </div>
+                  <p>{(expectedView === "original" ? amendState?.originals?.expectedOutcome : now!.expectedOutcome) ?? "（空）"}</p>
+                </div>
+              )}
               {selected.outcome === null ? (
-                <p>记录实际结果后即可比较当初选择与最终效果。</p>
+                <p className="missing">记录实际结果后即可比较当初选择与最终效果。</p>
               ) : editingReview ? (
                 <div className="decision-review-editor">
                   <fieldset>
@@ -1777,17 +2109,23 @@ export const DecisionLibraryPanel = ({
                   <textarea
                     id="decision-review-lesson"
                     autoFocus
+                    rows={4}
                     maxLength={8_000}
                     value={reviewLesson}
                     placeholder="哪些判断有效、哪里出现偏差、下次应如何调整。"
                     onChange={(event) => setReviewLesson(event.currentTarget.value)}
                   />
+                  {reviewError === null ? null : (
+                    <p className="form-error" role="alert">
+                      复盘暂时无法保存：{reviewError}
+                    </p>
+                  )}
                   <div className="decision-outcome-editor-footer">
                     <span>{reviewLesson.length} / 8000</span>
                     <div>
                       <button
                         type="button"
-                        className="text-button"
+                        className="secondary-button"
                         disabled={reviewSaving}
                         onClick={() => {
                           setEditingReview(false);
@@ -1806,27 +2144,24 @@ export const DecisionLibraryPanel = ({
                       </button>
                     </div>
                   </div>
-                  {reviewError === null ? null : (
-                    <p className="error-message" role="alert">
-                      复盘暂时无法保存：{reviewError}
-                    </p>
-                  )}
                 </div>
               ) : selected.outcomeReview === null ? (
-                <p>实际结果已记录，尚未进行复盘。</p>
+                <p className="missing">实际结果已记录，尚未进行复盘。</p>
               ) : (
                 <div className="decision-review-summary">
-                  <strong
-                    className={`decision-review-verdict ${selected.outcomeReview.verdict}`}
-                  >
-                    {verdictLabels[selected.outcomeReview.verdict]}
-                  </strong>
-                  <time dateTime={selected.outcomeReview.reviewedAt}>
-                    {dateFormatter.format(
-                      new Date(selected.outcomeReview.reviewedAt),
-                    )}
-                  </time>
-                  <p>{selected.outcomeReview.lesson ?? "未填写复盘经验。"}</p>
+                  <div>
+                    <strong
+                      className={`decision-review-verdict ${selected.outcomeReview.verdict}`}
+                    >
+                      {verdictLabels[selected.outcomeReview.verdict]}
+                    </strong>
+                    <time dateTime={selected.outcomeReview.reviewedAt}>
+                      {dateFormatter.format(
+                        new Date(selected.outcomeReview.reviewedAt),
+                      )}
+                    </time>
+                  </div>
+                  <p className={selected.outcomeReview.lesson === null ? "missing" : undefined}>{selected.outcomeReview.lesson ?? "未填写复盘经验。"}</p>
                   <div className="decision-methodology-ready">
                     <span>
                       <strong>这条决策现在可作为方法论证据</strong>
@@ -1846,13 +2181,15 @@ export const DecisionLibraryPanel = ({
                 </div>
               )}
             </section>
-            <DecisionEvidencePanel key={selected.id} api={api} decisionId={selected.id} revision={JSON.stringify([selected.outcome, selected.outcomeReview, selected.reviewDueDate, refreshRevision])} onEditingChange={setEvidenceEditing} />
+            <hr className="decision-detail-rule" />
+            <DecisionEvidencePanel key={selected.id} api={api} decisionId={selected.id} revision={JSON.stringify([selected.outcome, selected.outcomeReview, selected.reviewDueDate, refreshRevision, amendRevision])} onEditingChange={setEvidenceEditing} />
             </div>
             <aside className="decision-detail-side" aria-label="进度与关联">
               {/* Only principles in use count; one set aside or still unconfirmed is listed below, not counted. */}
               <DecisionLifecycle
                 decision={selected}
                 distilledCount={distilled.filter(({ status }) => status === "accepted").length}
+                revisions={amendState === undefined ? null : { state: amendState, onOpen: () => document.querySelector(".decision-amend-block")?.scrollIntoView?.({ block: "start", behavior: "smooth" }) }}
               />
               <SameQuestionDecisions
                 api={api}
@@ -1868,18 +2205,14 @@ export const DecisionLibraryPanel = ({
             >
               <div className="decision-outcome-heading">
                 <h4>复盘计划</h4>
-                {selected.outcomeReview !== null ||
-                editingExpected || editingOutcome ||
-                editingReview ||
-                editingReviewSchedule ||
-                editingPrinciples ||
-                editingRationale ? null : (
+                {selected.outcomeReview !== null || editorOpen ? null : (
                   <button
                     type="button"
-                    className="text-button"
+                    className="text-button decision-detail-edit"
                     data-opens-editor="schedule"
                     onClick={beginReviewScheduleEdit}
                   >
+                    <ActionIcon name="edit" />
                     {selected.reviewDueDate === null ? "安排日期" : "调整日期"}
                   </button>
                 )}
@@ -1895,7 +2228,7 @@ export const DecisionLibraryPanel = ({
                 </div>
               ) : editingReviewSchedule ? (
                 <div className="decision-review-schedule-editor">
-                  <div className="decision-review-presets" aria-label="快捷日期">
+                  <div className="decision-review-presets" role="group" aria-label="快捷日期">
                     {/* The same spans the dashboard offers when a review is postponed, plus tomorrow. */}
                     {([
                       [1, "明天"],
@@ -1921,53 +2254,61 @@ export const DecisionLibraryPanel = ({
                     type="date"
                     autoFocus
                     value={reviewScheduleDraft}
+                    aria-describedby="decision-review-due-date-help"
                     onChange={(event) =>
                       setReviewScheduleDraft(event.currentTarget.value)
                     }
                   />
+                  <p id="decision-review-due-date-help">到期后只进入首页收件箱，不会自动弹出窗口。</p>
+                  {reviewScheduleError === null ? null : (
+                    <p className="form-error" role="alert">
+                      复盘日期暂时无法保存：{reviewScheduleError}
+                    </p>
+                  )}
                   <div className="decision-review-schedule-actions">
-                    <span>到期后只进入首页收件箱，不会自动弹出窗口。</span>
-                    <div>
-                      {selected.reviewDueDate === null ? null : (
-                        <button
-                          type="button"
-                          className="text-button"
-                          disabled={reviewScheduleSaving}
-                          onClick={() => void saveReviewSchedule(null)}
-                        >
-                          取消安排
-                        </button>
-                      )}
+                    {selected.reviewDueDate === null ? null : (
                       <button
                         type="button"
                         className="text-button"
                         disabled={reviewScheduleSaving}
-                        onClick={() => setEditingReviewSchedule(false)}
+                        onClick={() => void saveReviewSchedule(null)}
                       >
-                        返回
+                        取消安排
                       </button>
-                      <button
-                        type="button"
-                        className="primary-button"
-                        disabled={
-                          reviewScheduleSaving || reviewScheduleDraft.length === 0
-                        }
-                        onClick={() => void saveReviewSchedule()}
-                      >
-                        {reviewScheduleSaving ? "保存中…" : "保存日期"}
-                      </button>
-                    </div>
+                    )}
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={reviewScheduleSaving}
+                      onClick={() => setEditingReviewSchedule(false)}
+                    >
+                      返回
+                    </button>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={
+                        reviewScheduleSaving || reviewScheduleDraft.length === 0
+                      }
+                      onClick={() => void saveReviewSchedule()}
+                    >
+                      {reviewScheduleSaving ? "保存中…" : "保存日期"}
+                    </button>
                   </div>
-                  {reviewScheduleError === null ? null : (
-                    <p className="error-message" role="alert">
-                      复盘日期暂时无法保存：{reviewScheduleError}
-                    </p>
-                  )}
                 </div>
               ) : selected.reviewDueDate === null ? (
                 <div className="decision-review-plan-copy empty">
-                  <strong>尚未安排</strong>
-                  <span>安排一个合适的日期，届时会出现在首页复盘收件箱。</span>
+                  {selected.reviewScheduleReasons?.length ? (
+                    <>
+                      <strong>已取消自动安排</strong>
+                      <span>记录时因「{selected.reviewScheduleReasons.join("、")}」自动安排过，取消后不会再自动安排。</span>
+                    </>
+                  ) : (
+                    <>
+                      <strong>尚未安排</strong>
+                      <span>安排一个合适的日期，届时会出现在首页复盘收件箱。</span>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div
@@ -1983,23 +2324,23 @@ export const DecisionLibraryPanel = ({
                       : `${dueLabel(selected.reviewDueDate)}复盘`}
                   </strong>
                   <span>只在首页提醒，不会主动打开应用。</span>
+                  {selected.reviewScheduleReasons?.length ? (
+                    <span>记录时曾自动安排：{selected.reviewScheduleReasons.join("、")}。不需要可以调整或取消。</span>
+                  ) : null}
                 </div>
               )}
             </section>
             <section className="decision-applied-principles">
               <div className="decision-outcome-heading">
                 <h4>采用的方法论</h4>
-                {editingExpected || editingOutcome ||
-                editingReview ||
-                editingReviewSchedule ||
-                editingPrinciples ||
-                editingRationale ? null : (
+                {editorOpen ? null : (
                   <button
                     type="button"
-                    className="text-button"
+                    className="text-button decision-detail-edit"
                     data-opens-editor="principles"
                     onClick={() => void beginPrincipleEdit()}
                   >
+                    <ActionIcon name="edit" />
                     {selected.appliedPrincipleIds.length === 0
                       ? "关联原则"
                       : "调整关联"}
@@ -2056,7 +2397,7 @@ export const DecisionLibraryPanel = ({
                     </div>
                   )}
                   {principleError === null ? null : (
-                    <p className="error-message" role="alert">
+                    <p className="form-error" role="alert">
                       原则关联暂时无法处理：{principleError}
                     </p>
                   )}
@@ -2065,7 +2406,7 @@ export const DecisionLibraryPanel = ({
                     <div>
                       <button
                         type="button"
-                        className="text-button"
+                        className="secondary-button"
                         disabled={principleSaving}
                         onClick={() => {
                           setEditingPrinciples(false);
@@ -2086,24 +2427,21 @@ export const DecisionLibraryPanel = ({
                   </footer>
                 </div>
               ) : selected.appliedPrinciples.length === 0 ? (
-                <p>尚未记录这次决策实际采用了哪些原则。</p>
+                <p className="missing">尚未记录这次决策实际采用了哪些原则。</p>
               ) : (
                 <div className="decision-principle-tags">
                   {selected.appliedPrinciples.map((principle) => (
                     // The principle is where its conditions, cautions and
                     // evidence live; naming it without a way there leaves the
                     // reader to go find it by hand.
-                    <button
+                    <PrincipleLink
                       key={principle.id}
-                      type="button"
-                      className={principle.status}
-                      disabled={detailEditing}
-                      title={detailEditing ? "先保存或取消正在填写的内容" : `打开原则：${principle.title}`}
-                      onClick={() => onOpenPrinciple(principle.id)}
-                    >
-                      {principle.title}
-                      {principle.status === "retired" ? " · 已归档" : ""}
-                    </button>
+                      principle={principle}
+                      // Only one set aside is worth saying of a principle this decision applied.
+                      status={principle.status === "retired" ? principleStatusLabels.retired : null}
+                      locked={detailEditing}
+                      onOpen={onOpenPrinciple}
+                    />
                   ))}
                   {selected.appliedPrincipleIds.length >
                   selected.appliedPrinciples.length ? (
@@ -2119,19 +2457,13 @@ export const DecisionLibraryPanel = ({
                 </div>
                 <div className="decision-principle-tags">
                   {distilled.map((principle) => (
-                    <button
+                    <PrincipleLink
                       key={principle.id}
-                      type="button"
-                      className={principle.status}
-                      disabled={detailEditing}
-                      title={detailEditing ? "先保存或取消正在填写的内容" : `打开原则：${principle.title}`}
-                      onClick={() => onOpenPrinciple(principle.id)}
-                    >
-                      {principle.title}
-                      {principle.status === "accepted"
-                        ? ""
-                        : ` · ${principleStatusLabels[principle.status]}`}
-                    </button>
+                      principle={principle}
+                      status={principle.status === "accepted" ? null : principleStatusLabels[principle.status]}
+                      locked={detailEditing}
+                      onOpen={onOpenPrinciple}
+                    />
                   ))}
                 </div>
               </section>
@@ -2140,9 +2472,15 @@ export const DecisionLibraryPanel = ({
           </article>
         </ModalDialog>
       )}
+      {deleting === null ? null : <DecisionDeletionDialog api={api} target={deleting} onClose={() => setDeleting(null)} onDeleted={(result) => {
+        setDecisions(items => items.filter(item => item.id !== deleting.id));
+        closeDetails(); setDeleting(null); setRefreshRevision(value => value + 1);
+        setRecordNotice({ text: result.warnings.length ? result.warnings.join(" ") : "决策已移到系统废纸篓", forId: null });
+      }} />}
       {recording ? (
         <ActiveRecordDialog
           api={api}
+          {...(recording === "historical" ? { initialKind: "historical" as const } : {})}
           onClose={() => setRecording(false)}
           onSaved={(result) => {
             setRecording(false);
@@ -2151,7 +2489,11 @@ export const DecisionLibraryPanel = ({
               forId: result.recordKind === "decision" ? result.recordId : null,
             });
             setRefreshRevision((value) => value + 1);
-            if (result.recordKind !== "decision") setLibraryView("journal");
+            if (result.recordKind === "historical_decision") {
+              setHistoricalSaved((count) => count + 1);
+              setSelected(null);
+              setLibraryView("history");
+            } else if (result.recordKind !== "decision") setLibraryView("journal");
             onRecorded(result);
           }}
         />

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { sourceClientSchema } from "./capture.js";
+
 export const PROACTIVE_RECORD_VERSION = 1 as const;
 
 const text = (maximum: number) => z.string().trim().min(1).max(maximum);
@@ -31,7 +33,7 @@ export const knowledgeStatusSchema = z.enum(["inbox", "active", "archived"]);
 const common = {
   recordVersion: z.literal(PROACTIVE_RECORD_VERSION),
   requestId: text(200),
-  sourceClient: z.enum(["manual", "claude-code", "codex", "test"]),
+  sourceClient: sourceClientSchema,
   sourceKind: proactiveRecordSourceKindSchema,
   sourceForm: proactiveRecordSourceFormSchema,
   sensitivity: recordSensitivitySchema.default("private"),
@@ -129,8 +131,21 @@ export const proactiveRecordResultSchema = z
     knowledgeStatus: z.enum(["active", "inbox", "archived"]),
     sensitivity: recordSensitivitySchema,
     storedTranscript: z.literal(false),
+    /** Existing records close in meaning to what was just written (local embedding): said, never merged. Shape 2 only. */
+    possibleDuplicates: z.array(z.object({
+      source: z.enum(["decisions", "summarize", "preferences", "ideas"]),
+      id: text(200),
+      title: z.string().max(500),
+      similarity: z.number().min(0).max(1),
+    }).strict()).max(5).optional(),
   })
   .strict();
+
+/** A record result as a bridge without CONTEXT_SHAPE reads it. */
+export const proactiveResultAsReleased = (result: z.infer<typeof proactiveRecordResultSchema>) => {
+  const { possibleDuplicates: _duplicates, ...released } = result;
+  return released;
+};
 
 export type ProactiveRecordRequest = z.infer<
   typeof proactiveRecordRequestSchema

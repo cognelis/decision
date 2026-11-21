@@ -2,7 +2,10 @@ import { runElectronCheck } from "./support/run-electron-check.js";
 import { createRequire } from "node:module";
 import { describe, expect, it, vi } from "vitest";
 
-import { DESKTOP_WINDOW_SIZE } from "../src/shared/decision-layout.js";
+import {
+  DESKTOP_WINDOW_MIN_SIZE,
+  DESKTOP_WINDOW_SIZE,
+} from "../src/shared/decision-layout.js";
 
 
 /*
@@ -29,12 +32,18 @@ type Interaction =
   | "expanded"
   | "hover"
   | "no-record"
-  | "alternatives-expanded";
+  | "alternatives-expanded"
+  | "compact"
+  | "wide";
 
 interface RationaleMetrics {
   actionsBottom: number;
   actionsHeight: number;
+  /** The action bar's top once the columns are scrolled to their end. */
+  actionsTop: number;
   answerFontSize: number;
+  answerHeadingFontSize: number;
+  answerNotesApart: boolean;
   answerSummaryFitsWidth: boolean;
   answerSummaryVisible: boolean;
   alternativeOptionCount: number;
@@ -43,6 +52,8 @@ interface RationaleMetrics {
   appScrollHeight: number;
   backdropFilter: string;
   cardBottom: number;
+  columnsBottomAfterScroll: number;
+  columnsFitWidth: boolean;
   contextDialogCentered: boolean;
   contextDialogOpen: boolean;
   contextInsideDialog: boolean;
@@ -50,11 +61,13 @@ interface RationaleMetrics {
   discardLabel: string;
   inlineContextExpanded: boolean;
   interaction: Interaction;
+  lastFieldBottomAfterScroll: number;
   navigationLabels: string[];
   principleOptionCount: number;
   principleOptionsSingleRow: boolean;
   principleSectionInsideCard: boolean;
   sidebarWidth: number;
+  singleColumn: boolean;
   stageWidth: number;
   textareaBottom: number | null;
   toggleBackground: string;
@@ -101,7 +114,10 @@ describe.skipIf(process.platform !== "darwin")(
             "问答",
             "知识",
             "评审",
+            "本地审阅",
+            "待办",
             "方法论",
+            "提示词",
             "设置",
           ],
           workspaceOverflowY: "auto",
@@ -110,23 +126,68 @@ describe.skipIf(process.platform !== "darwin")(
           DESKTOP_WINDOW_SIZE.width - metrics.sidebarWidth - 2,
         );
         expect(metrics.answerSummaryVisible).toBe(true);
+        // The preview picks the recommended option: its hint must not sit on the original note.
+        expect(metrics.answerNotesApart).toBe(true);
         expect(metrics.answerSummaryFitsWidth).toBe(true);
         expect(metrics.alternativesVisible).toBe(true);
         expect(metrics.alternativeOptionCount).toBe(3);
-        expect(metrics.answerFontSize).toBeGreaterThanOrEqual(22);
+        // The chosen answer is the one fact on the page: it outranks the heading of its own card.
+        expect(metrics.answerFontSize).toBeGreaterThan(
+          metrics.answerHeadingFontSize,
+        );
         expect(metrics.workspaceScrollTop).toBe(0);
         expect(metrics.appScrollHeight).toBe(metrics.appClientHeight);
         expect(metrics.principleOptionCount).toBe(3);
         expect(metrics.principleOptionsSingleRow).toBe(true);
         expect(metrics.principleSectionInsideCard).toBe(true);
         expect(metrics.actionsHeight).toBeGreaterThan(0);
-        expect(metrics.discardLabel).toBe("不保留");
+        expect(metrics.discardLabel).toMatch(/^不保留/u);
         expect(metrics.discardDisabled).toBe(false);
         expect(metrics.textareaBottom).not.toBeNull();
-        expect(metrics.textareaBottom ?? 0).toBeLessThan(metrics.actionsBottom);
         expect(metrics.actionsBottom).toBeLessThanOrEqual(metrics.cardBottom);
+        // The default window is one column; the action bar stays in view, and scrolled
+        // to their end the columns stop above it with the last field clear of it.
+        expect(metrics.singleColumn).toBe(true);
+        expect(metrics.columnsFitWidth).toBe(true);
+        expect(metrics.actionsBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+        expect(metrics.columnsBottomAfterScroll).toBeLessThanOrEqual(
+          metrics.actionsTop,
+        );
+        expect(metrics.lastFieldBottomAfterScroll).toBeLessThanOrEqual(
+          metrics.columnsBottomAfterScroll,
+        );
       },
     );
+
+    it("stays one column without overflow at the minimum window", async () => {
+      const metrics = await measureRationale("light", "compact");
+
+      expect(metrics.viewportWidth).toBe(DESKTOP_WINDOW_MIN_SIZE.width);
+      expect(metrics.viewportHeight).toBe(DESKTOP_WINDOW_MIN_SIZE.height);
+      expect(metrics.singleColumn).toBe(true);
+      expect(metrics.columnsFitWidth).toBe(true);
+      expect(metrics.answerSummaryFitsWidth).toBe(true);
+      expect(metrics.principleOptionsSingleRow).toBe(true);
+      expect(metrics.appScrollHeight).toBe(metrics.appClientHeight);
+      expect(metrics.actionsBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+      expect(metrics.lastFieldBottomAfterScroll).toBeLessThanOrEqual(
+        metrics.columnsBottomAfterScroll,
+      );
+      expect(metrics.columnsBottomAfterScroll).toBeLessThanOrEqual(
+        metrics.actionsTop,
+      );
+    });
+
+    it("sets what was chosen beside the basis to add when the window is wide", async () => {
+      const metrics = await measureRationale("light", "wide");
+
+      expect(metrics.singleColumn).toBe(false);
+      expect(metrics.columnsFitWidth).toBe(true);
+      expect(metrics.answerSummaryFitsWidth).toBe(true);
+      expect(metrics.principleOptionsSingleRow).toBe(true);
+      expect(metrics.appScrollHeight).toBe(metrics.appClientHeight);
+      expect(metrics.actionsBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+    });
 
     it("keeps the form stable while a one-click discard is submitting", async () => {
       const metrics = await measureRationale("light", "no-record");

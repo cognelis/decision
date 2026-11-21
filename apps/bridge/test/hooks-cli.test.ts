@@ -262,7 +262,7 @@ describe("passive text observer hooks", () => {
       await expect(
         main(["hook", operation, client], {
           environment: {
-            DECISION_PROVIDER_CHILD: "1",
+            PARASELF_PROVIDER_CHILD: "1",
           },
           readStdin,
           fallback,
@@ -445,7 +445,7 @@ describe("passive text observer hooks", () => {
 
   it("counts a capture that aged out before anyone answered", async () => {
     const root = await mkdtemp(
-      join(tmpdir(), "decision-bridge-aged-"),
+      join(tmpdir(), "paraself-bridge-aged-"),
     );
     const pendingPath = join(root, "text-pending");
     const capturedAt = new Date(
@@ -472,7 +472,7 @@ describe("passive text observer hooks", () => {
           cwd: "/tmp/project",
           prompt: "继续",
         }),
-        environment: { DECISION_TEXT_PENDING: pendingPath },
+        environment: { PARASELF_TEXT_PENDING: pendingPath },
         audit,
       },
     );

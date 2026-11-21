@@ -294,6 +294,35 @@ describe("ModelProviderService", () => {
     );
   });
 
+  // R15-JEVSET: jev's key goes through the vault like every remote key; the profile holds only its reference.
+  it("keeps a decisions backend's key in the vault, asks for it only when settings change, and deletes it with the backend", async () => {
+    const { profiles, secrets, service, credentials } = setup();
+    const jev = {
+      version: 1 as const, profileId: "remote-jev", kind: "openrouter-decisions" as const, label: "jev", enabled: true,
+      priority: 50, model: "typesafe/jev-1.14", timeoutMs: 30_000, credentialConfigured: false,
+    };
+    await expect(service.save({ profile: jev })).rejects.toMatchObject({ code: "credential_unavailable" });
+    // Too short to be an OpenRouter key (R15-JEVSET-B7): refused in words, nothing stored.
+    for (const short of ["ACT", "profile", "or-key-only-19-char"]) {
+      await expect(service.save({ profile: jev, secret: short })).rejects.toThrow("API 密钥格式不对");
+    }
+    expect(secrets.size).toBe(0);
+    const saved = await service.save({ profile: jev, secret: "or-key-jev-SYNTHETIC-0001" });
+    expect(profiles()[0]).toMatchObject({ profileId: "remote-jev", credentialRef: "generated-reference" });
+    expect(secrets.get("generated-reference")).toBe("or-key-jev-SYNTHETIC-0001");
+    expect(JSON.stringify([saved, await service.list()])).not.toMatch(/or-key-jev-SYNTHETIC-0001|generated-reference/u);
+    await expect(service.save({ profile: { ...jev, enabled: false, credentialConfigured: true } })).resolves.toMatchObject({ enabled: false });
+    // Moved from OpenRouter (no address of its own) to another service with the key left blank, the OpenRouter
+    // key would go there: asked for again, as a remote backend's is.
+    await expect(service.save({ profile: { ...jev, baseUrl: "https://api.openai.com/v1/decisions", decisionsProtocol: "openai", model: "gpt-6-luna", credentialConfigured: true } }))
+      .rejects.toThrow("服务地址换到了另一个站点");
+    // Another path at OpenRouter is the same site: the key stays, unasked.
+    await expect(service.save({ profile: { ...jev, baseUrl: "https://openrouter.ai/api/v2/decisions", credentialConfigured: true } }))
+      .resolves.toMatchObject({ baseUrl: "https://openrouter.ai/api/v2/decisions" });
+    await expect(service.delete("remote-jev")).resolves.toBe(true);
+    expect(credentials.delete).toHaveBeenCalledWith("generated-reference");
+  });
+
   it("delegates exact reordering and refreshes future routing", async () => {
     const first = remoteProfile({
       profileId: "remote-first",

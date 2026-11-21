@@ -178,7 +178,7 @@ describe("PracticeAssetsView", () => {
 
     // Read and shown for adopted assets alone, the copy the main process lets go could not be reached from here.
     await user.click(await dialog.findByRole("button", { name: "回滚" }));
-    await user.click(await dialog.findByRole("button", { name: "确认回滚" }));
+    await user.click(await dialog.findByRole("button", { name: "回滚发布" }));
     expect(rollbackPracticeAssetPublication).toHaveBeenCalledWith(dismissed.id, "codex");
   });
 

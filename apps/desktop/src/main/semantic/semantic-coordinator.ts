@@ -2,12 +2,15 @@ import {
   TextDecisionAnalyzer,
   isCompletedDecisionStatus,
   routeSemanticDecision,
+  ruleReading,
+  stripRecommendationMarker,
   validateSemanticClassification,
   type CompletedDecisionAnalysis,
 } from "@cognelis/decision-core";
 import {
   capturedDecisionCandidateSchema,
   capturedDecisionEventSchema,
+  type CapturedAnswer,
   type CapturedDecisionCandidate,
   type CapturedDecisionEvent,
   type CaptureAuditErrorCode,
@@ -26,6 +29,77 @@ import type {
   SemanticClassifierInput,
 } from "./semantic-classifier.js";
 
+/** What the rules saw the reply do instead of taking an option, whatever it names. */
+const TAKES_NO_OPTION = new Set([
+  "answer_defers_decision",
+  "answer_is_question",
+  "answer_is_acknowledgement",
+  "answer_only_evaluates",
+  "answer_only_requests_information",
+  "answer_has_no_commitment",
+  "answer_describes_current_state",
+  "answer_is_status_update",
+  "unrelated_new_task",
+]);
+
+const labelKey = (value: string): string => stripRecommendationMarker(value).replace(/\s+/gu, " ").trim().replace(/[.。!！]+$/u, "");
+const withoutOptionId = (label: string, id?: string): string => id === undefined ? label : label.replace(new RegExp(`^\\s*${id.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}(?:[.)、:：]\\s*|\\s+[—–-]{1,2}\\s+)`, "u"), "");
+const literalSelection = (reply: string, options: { id?: string; label: string }[]) => {
+  const matchesFor = (token: string) => {
+    const ids = options.filter((option) => option.id !== undefined && option.id.toLowerCase() === token.toLowerCase());
+    return ids.length > 0 ? ids : options.filter((option) => labelKey(token) !== "" && labelKey(option.label) === labelKey(token));
+  };
+  const text = reply.trim().replace(/[.。!！]+$/u, "");
+  const whole = matchesFor(text);
+  if (whole.length > 0) return whole.length === 1 ? whole : null;
+  const exclusion = /^all except\s+(.+)$/iu.exec(text);
+  const remaining = exclusion?.[1] ?? text;
+  const single = matchesFor(remaining);
+  if (single.length > 1) return null;
+  // Split only identifiers: separators can also belong to a compound label.
+  const selected = single.length === 1 ? single : remaining.split(/\s*(?:[,，、]|\band\b|和)\s*/iu).map((token) => {
+    const matches = options.filter(option => option.id?.toLowerCase() === token.toLowerCase());
+    return matches.length === 1 ? matches[0]! : null;
+  });
+  if (selected.every((option) => option !== null)) return exclusion ? options.filter(option => !selected.includes(option)) : [...new Set(selected)];
+  return null;
+};
+
+const answerFor = (
+  reply: string,
+  options: { id?: string; label: string }[],
+  rule: CompletedDecisionAnalysis | null,
+  model: ReturnType<typeof validateSemanticClassification> | null,
+): { answer: CapturedAnswer; review: boolean } => {
+  const original = { kind: "custom" as const, values: [reply] };
+  if (rule !== null && options !== rule.options && rule.selected.length === 0 && rule.signals.some((signal) => TAKES_NO_OPTION.has(signal))) return { answer: original, review: true };
+  let taken = literalSelection(reply, options);
+  if (taken === null) {
+    if (model !== null && (model.answerRelation === "uncertain" || model.answerRelation === "new_task")) return { answer: original, review: true };
+    if (model?.selectedOptionIndices === undefined) return { answer: original, review: (rule?.selected.length ?? 0) > 0 };
+    if (model.band === "low" || !model.selectionValid || ((rule?.selected.length ?? 0) === 0 && rule?.signals.some((signal) => TAKES_NO_OPTION.has(signal)))) return { answer: original, review: true };
+    const matched = model.selectedOptionIndices.map((index) => {
+      const selected = model.optionLabels[index - 1]!;
+      const candidates = options.filter((option) => {
+        const bare = withoutOptionId(selected, option.id);
+        return labelKey(bare) !== "" && labelKey(bare) === labelKey(option.label);
+      });
+      return candidates.length === 1 ? candidates[0]! : null;
+    });
+    if (matched.some((option) => option === null)) return { answer: original, review: true };
+    taken = [...new Set(matched.filter((option) => option !== null))];
+    if ((rule?.selected.length ?? 0) > 0 && (rule!.selected.length !== taken.length || rule!.selected.some((option) => !taken!.some((chosen) => chosen.label === option.label)))) return { answer: original, review: true };
+  }
+  if (taken.length === 0) {
+    return { answer: original, review: (rule?.selected.length ?? 0) > 0 };
+  }
+  const labels = taken.map((option) => option.label);
+  const answer: CapturedAnswer = taken.length === 1
+    ? { kind: "preset", values: [labels[0] as string], reply }
+    : { kind: "multiple", values: labels.slice(0, 8), reply };
+  return { answer, review: false };
+};
+
 interface SemanticRuntimeLike {
   ingest(event: CapturedDecisionEvent): Promise<unknown>;
   ingestCandidate(
@@ -42,18 +116,31 @@ interface SemanticDecisionCoordinatorOptions {
   audit: CaptureAuditLike;
   classifier?: SemanticClassificationService;
   /**
-   * Whether a model is asked at all. Off by default in settings: this is the
-   * one model caller that runs on every turn without the reader asking, and on
-   * the fixed corpus the bundled model scored below the rules alone.
+   * Whether a model is asked at all. Off only when the reader chose the rules
+   * alone; by default the classifier is held to this machine's Qwen 4B, which
+   * the gateway enforces (IMP-153), since this is the one model caller that
+   * runs on every turn without the reader asking. False too, on that default,
+   * while the model is not there to ask (IMP-153): no failure, as for the rules.
    */
-  modelEnabled?: () => boolean;
+  modelEnabled?: () => boolean | Promise<boolean>;
   analyzer?: TextDecisionAnalyzer;
   now?: () => Date;
   timeoutMs?: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
-const DEFAULT_CLASSIFICATION_TIMEOUT_MS = 30_000;
+// A cold Qwen checks and loads its model (26 s measured) before the 15 s its classification is allowed.
+const DEFAULT_CLASSIFICATION_TIMEOUT_MS = 60_000;
+
+/**
+ * Out of time, by the backend's own timer (`code`) or as the gateway sums up a chain whose last tried backend timed
+ * out (`failureCode`).
+ */
+const timedOutError = (error: unknown): boolean =>
+  error !== null &&
+  typeof error === "object" &&
+  ((error as { code?: unknown }).code === "timeout" ||
+    (error as { failureCode?: unknown }).failureCode === "timeout");
 
 const uniqueSignals = (signals: string[]): string[] =>
   [...new Set(signals)].slice(0, 32);
@@ -97,7 +184,7 @@ export class SemanticDecisionCoordinator {
   readonly #classifier:
     | SemanticClassificationService
     | undefined;
-  readonly #modelEnabled: () => boolean;
+  readonly #modelEnabled: () => boolean | Promise<boolean>;
   readonly #analyzer: TextDecisionAnalyzer;
   readonly #now: () => Date;
   readonly #timeoutMs: number;
@@ -131,16 +218,19 @@ export class SemanticDecisionCoordinator {
       userText: pair.context?.taskBackground ?? null,
       assistantText: pair.assistantText,
     });
-    const rule = pending === null
+    // A question the rules found only past a closing, read low, is no reading at all:
+    // the rules alone had none there, and the model's reading stands as it would.
+    const rule = ruleReading(pending === null
       ? null
-      : this.#analyzer.complete(pending, pair.userText);
+      : this.#analyzer.complete(pending, pair.userText));
     const ruleBand: SemanticBand = rule?.band ?? "low";
     const ruleScore = rule?.score ?? 0;
     const completedStatus = isCompletedDecisionStatus(pair.userText);
-    const model = completedStatus ? null : await this.#classify(pair);
+    const answered = completedStatus ? null : await this.#classify(pair, rule?.options ?? []);
     // Cut short by quit, which aborts every model call: left in the spool, the pair is read again at the next
     // start, model and all, rather than by the rules alone now and never by the model.
     if (this.#closed) return "deferred";
+    const model = answered === "timeout" ? null : answered;
     const modelBand: SemanticModelBand =
       model?.band ?? "unavailable";
     const route = routeSemanticDecision({
@@ -150,22 +240,16 @@ export class SemanticDecisionCoordinator {
       answerRelation: model?.answerRelation ?? null,
       ruleSignals: completedStatus ? ["answer_is_status_update"] : rule?.signals ?? [],
       ...(model === null ? {} : { modelIntent: model.decisionIntent }),
+      ...(answered === "timeout" ? { modelTimedOut: true } : {}),
+      userText: pair.userText,
       pairAgeMs: Math.max(
         0,
         this.#now().getTime() - Date.parse(pair.capturedAt),
       ),
     });
-    await this.#record(pair, {
-      stage: "classification_completed",
-      ruleBand,
-      modelBand,
-      finalBand: route.finalBand,
-      durationMs: Math.round(performance.now() - started),
-    });
-
+    let finalBand = route.finalBand;
     try {
-      if (route.finalBand !== "low") {
-        const event = this.#event(
+      const event = route.finalBand === "low" ? null : this.#event(
           pair,
           await decisionProjectFor(pair.cwd),
           rule,
@@ -178,7 +262,10 @@ export class SemanticDecisionCoordinator {
             ...route.signals,
           ]),
         );
-        if (route.finalBand === "high") {
+      finalBand = event?.detection?.band ?? route.finalBand;
+      await this.#record(pair, { stage: "classification_completed", ruleBand, modelBand, finalBand, durationMs: Math.round(performance.now() - started) });
+      if (event !== null) {
+        if (finalBand === "high") {
           await this.#runtime.ingest(event);
         } else {
           await this.#runtime.ingestCandidate(
@@ -198,7 +285,7 @@ export class SemanticDecisionCoordinator {
         stage: "routed",
         ruleBand,
         modelBand,
-        finalBand: route.finalBand,
+        finalBand,
       });
       return "processed";
     } catch (error) {
@@ -206,7 +293,7 @@ export class SemanticDecisionCoordinator {
         stage: "failed",
         ruleBand,
         modelBand,
-        finalBand: route.finalBand,
+        finalBand,
         errorCode: "routing_failed",
       });
       throw error;
@@ -221,10 +308,12 @@ export class SemanticDecisionCoordinator {
     await this.#classifier?.close?.();
   }
 
-  async #classify(pair: SemanticDecisionPair) {
+  /** The model's reading, `null` when none was asked or it could not answer, `"timeout"` when it ran out of time. */
+  async #classify(pair: SemanticDecisionPair, options: CompletedDecisionAnalysis["options"]) {
     // Not an error and not a failure to record: nothing was asked of a model,
     // so the route reads `unavailable` and the rules answer on their own.
-    if (this.#classifier === undefined || !this.#modelEnabled()) {
+    // Not known to be there to ask (the profiles unreadable, the app closing): the rules answer, as when not there.
+    if (this.#classifier === undefined || !(await Promise.resolve().then(this.#modelEnabled).catch(() => false))) {
       return null;
     }
     const controller = new AbortController();
@@ -234,6 +323,7 @@ export class SemanticDecisionCoordinator {
         pairId: pair.pairId,
         assistantText: pair.assistantText,
         userText: pair.userText,
+        ...(options.length === 0 ? {} : { selectionOptions: options }),
         locale: /[\p{Script=Han}]/u.test(
           `${pair.assistantText}${pair.userText}`,
         )
@@ -242,7 +332,8 @@ export class SemanticDecisionCoordinator {
       };
       const timeoutPromise = new Promise<never>((_resolve, reject) => {
         timeout = setTimeout(() => {
-          controller.abort();
+          // Said to be a timeout, the model call is filed as one, as the audit files it: not as stopped.
+          controller.abort(new DOMException("Semantic classification timed out", "TimeoutError"));
           reject(new Error("Semantic classification timed out"));
         }, this.#timeoutMs);
         timeout.unref();
@@ -261,12 +352,20 @@ export class SemanticDecisionCoordinator {
         ),
         timeoutPromise,
       ]);
+      if (options.length > 0 && output.selectedOptionIndices !== undefined) {
+        // Indices refer to the supplied list; a conflicting re-extraction must not silently change their meaning.
+        const sameOrder = output.optionLabels.length === 0 || (output.optionLabels.length === options.length && output.optionLabels.every((label, index) => labelKey(withoutOptionId(label, options[index]!.id)) === labelKey(options[index]!.label)));
+        const optionLabels = options.map(option => option.label);
+        const validated = validateSemanticClassification(pair, { ...output, optionLabels }, optionLabels);
+        return sameOrder ? validated : { ...validated, selectionValid: false };
+      }
       return validateSemanticClassification(pair, output);
     } catch (error) {
       // A quit is not the model's failure.
       if (this.#closed) return null;
+      const timedOut = controller.signal.aborted || timedOutError(error);
       const errorCode: CaptureAuditErrorCode =
-        controller.signal.aborted
+        timedOut
           ? "classification_timeout"
           : error instanceof Error &&
               error.name === "ZodError"
@@ -276,7 +375,7 @@ export class SemanticDecisionCoordinator {
         stage: "failed",
         errorCode,
       });
-      return null;
+      return timedOut ? "timeout" as const : null;
     } finally {
       if (timeout !== undefined) {
         clearTimeout(timeout);
@@ -338,6 +437,12 @@ export class SemanticDecisionCoordinator {
         ? rule!.options
         : (extraction?.optionLabels ?? []).map((label) => ({ label }));
     const context = rule?.context ?? pair.context;
+    const resolved = answerFor(pair.userText, options, rule, model);
+    const answer = resolved.answer;
+    if (resolved.review) {
+      band = "medium";
+      signals = uniqueSignals([...signals, "selection_not_verified"]);
+    }
     return capturedDecisionEventSchema.parse({
       eventVersion: 1,
       captureMode: "transcript",
@@ -372,11 +477,8 @@ export class SemanticDecisionCoordinator {
           questionIndex: 0,
           question,
           options,
-          answer: {
-            kind: "custom",
-            values: [pair.userText],
-          },
-          multiSelect: false,
+          answer,
+          multiSelect: answer.kind === "multiple",
         },
       ],
     });

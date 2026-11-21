@@ -308,10 +308,13 @@ describe("MethodologyService", () => {
     const { generate, service } = await makeService([reviewedDecision()]);
     generate.mockRejectedValueOnce(new ProfiledModelGatewayError("chain failed", "rate_limited"));
     generate.mockRejectedValueOnce(new ProfiledModelGatewayError("chain failed", "invalid_output"));
+    generate.mockRejectedValueOnce(new ProfiledModelGatewayError("chain failed", "content_refused"));
 
     // Rate limited, or answered with a title too long, it was told to go and enable a model.
     await expect(service.generate(["decision-1"])).rejects.toThrow("方法论提炼没有完成：模型服务限流");
     await expect(service.generate(["decision-1"])).rejects.toThrow("模型的回答不符合要求的格式");
+    // Refused by the provider's moderation, it was told to look at the model call log, which said 没有访问权限.
+    await expect(service.generate(["decision-1"])).rejects.toThrow("方法论提炼没有完成：服务商的内容审核拒绝了这次请求，不是凭据问题");
   });
 
   it("preserves evidence and generation metadata across revision and acceptance", async () => {

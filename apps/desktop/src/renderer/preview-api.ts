@@ -1,6 +1,13 @@
+import { createLocalReviewPreview } from "./preview-local-review.js";
+import { previewReviewHistory } from "./components/pages/pr-review/review-history.js";
+import { createTodoPreview } from "./preview-todos.js";
+import { createHistoricalDecisionPreview } from "./preview-historical-decisions.js";
+import { createOrganizationPreview } from "./preview-organization.js";
 import { createEvidencePreviewApi } from "./evidence-preview-api.js";
+import { previewOnboarding } from "./preview-onboarding.js";
+import { previewBenchmarkPage, previewEscapeUpdate, previewReviewQuality } from "./preview-review-quality.js";
 import { createJournalEntry, reviseJournalEntry } from "@cognelis/decision-core/journal-entry";
-import type { RetrievalAnswerProvider } from "@cognelis/decision-protocol";
+import { CLIENT_CATALOG, CONTEXT_SUMMARY_LINES, prDescriptionVersion, type CustomClient, type RetrievalAnswerProvider } from "@cognelis/decision-protocol";
 import type {
   KnowledgeGraphSnapshot,
   RationaleCandidate,
@@ -11,7 +18,10 @@ import type {
 } from "@cognelis/decision-protocol";
 
 import {
+  DEFAULT_ACCENT,
   THEME_PREFERENCES,
+  isAccentPreset,
+  type AccentPreference,
   type ThemePreference,
 } from "../shared/appearance.js";
 import type {
@@ -20,7 +30,45 @@ import type {
   DecisionLibraryItem,
   JournalEntry,
   ManualFormDraft,
+  PromptItem,
 } from "../shared/renderer-api.js";
+import { PROMPT_EXAMPLES } from "../shared/prompt-examples.js";
+
+/** A client the reader added on the 接入 page, as the preview's custom-clients.json would hold it. */
+export const PREVIEW_CUSTOM_CLIENT: CustomClient = {
+  id: "my-cli",
+  name: "My CLI",
+  shortName: "MC",
+  command: "mycli",
+  hooks: { file: "~/.mycli/hooks/paraself.json", format: "claude-owned" },
+  prompt: { event: "UserPromptSubmit", field: "prompt" },
+  reply: { event: "Stop", source: "field", field: "last_assistant_message" },
+  fields: { sessionId: "session_id", cwd: "cwd" },
+  complete: { field: "reason", values: ["end_turn"] },
+  mcp: { mode: "none" },
+};
+
+const customSummary = ({ id, name, shortName, command, mcp }: CustomClient) => ({
+  id, name, shortName, ...(command === undefined ? {} : { command }), custom: true as const, ...(mcp.mode === "none" ? { mcp: false as const } : {}),
+});
+
+const PREVIEW_CLIENTS = [
+  { id: "claude-code", name: "Claude Code", shortName: "CC", command: "claude" },
+  { id: "codex", name: "Codex", shortName: "CX", command: "codex" },
+  { id: "grok", name: "Grok", shortName: "GK", command: "grok" },
+  { id: "antigravity", name: "Antigravity", shortName: "AG", command: "agy" },
+  // The catalog's tools, as the main process lists them: each marked untested.
+  ...CLIENT_CATALOG.map(({ client, untested }) => ({
+    id: client.id, name: client.name, shortName: client.shortName, ...(client.command === undefined ? {} : { command: client.command }), untested,
+    ...(client.hooks.shadowedBy === undefined ? {} : { shadowedBy: client.hooks.shadowedBy }),
+  })),
+  customSummary(PREVIEW_CUSTOM_CLIENT),
+];
+
+/** The catalog's tools in the preview: Qwen Code connected, Cursor CLI found on this machine, the rest not found. */
+const PREVIEW_CATALOG_STATUS = Object.fromEntries(
+  CLIENT_CATALOG.map(({ client }) => [client.id, client.id === "qwen-code" ? "installed" : client.id === "cursor" ? "not-installed" : "command-missing"] as const),
+);
 
 const candidate = (
   overrides: Partial<RationaleCandidate> = {},
@@ -33,7 +81,7 @@ const candidate = (
       {
         id: "markdown-sqlite",
         label: "Markdown + SQLite",
-        description: "兼顾人类可读、版本管理与本地全文检索。",
+        description: "兼顾**人类可读**、版本管理与 `FTS5` 本地全文检索。",
       },
       {
         id: "sqlite-only",
@@ -87,7 +135,7 @@ const reviewCandidate = (): CapturedDecisionCandidate => {
         taskBackground:
           "继续开发 Decision 的本地语义采集，并保持 Markdown 为唯一事实来源。",
         decisionFraming:
-          "这是既有代码，不是本次引入。调整会涉及领域类型和 9 个既有测试。\n\n两个改动仍在 dev 分支且尚未提交。需要决定先处理技术债，还是先交付当前改动。",
+          "## 现状\n\n这是**既有代码**，不是本次引入：\n\n- 调整会涉及领域类型和 9 个既有测试\n- 两个改动仍在 `dev` 分支且尚未提交\n\n需要决定先处理技术债，\n还是先交付当前改动。",
       },
     },
   };
@@ -243,6 +291,27 @@ const previewJournalEntryFixtures: JournalEntry[] = [
   },
 ];
 
+/**
+ * What a journal kept a while looks like and the two fixtures never did: a page of entries, a token with no place to
+ * break, every optional field filled. The knowledge layout check asks for it with interaction=journal-long.
+ */
+const longJournalEntries = (): JournalEntry[] => {
+  const [preference, idea] = previewJournalEntryFixtures as [JournalEntry, JournalEntry];
+  return Array.from({ length: 18 }, (_, index) => {
+    const base = structuredClone(index % 2 === 0 ? preference : idea);
+    return {
+      ...base,
+      id: `journal-long-${index}`,
+      title: `第 ${index + 3} 条 · ${base.title}`,
+      ...(index === 0 ? { content: `参考 ${"snake_case_identifier_without_break_".repeat(8)}END` } : {}),
+      ...(index === 2
+        ? { context: "上线前的发布评审里提出。", rationale: "回滚入口缺失时，恢复时间会翻倍。", tags: ["发布", "回滚"], strength: "hard_constraint" }
+        : {}),
+      ...(index === 3 ? { openQuestions: ["写入端能否可靠拿到受影响的键？", "失效事件丢了怎么补？"], incubateUntil: "2026-12-01" } : {}),
+    } as JournalEntry;
+  });
+};
+
 const previewObsidianSearchResults = [
   {
     relativePath: "运维/发布回滚.md",
@@ -306,6 +375,10 @@ const snapshotForPreview = (): AppSnapshot => {
   )
     ? (requestedTheme as ThemePreference)
     : "auto";
+  const requestedAccent = parameters.get("accent") ?? "";
+  const accent: AccentPreference = isAccentPreset(requestedAccent) || /^#[0-9a-f]{6}$/u.test(requestedAccent)
+    ? (requestedAccent as AccentPreference)
+    : DEFAULT_ACCENT;
   const common = {
     primarySurface: "hidden" as const,
     waitingCount: 2,
@@ -316,14 +389,21 @@ const snapshotForPreview = (): AppSnapshot => {
       count: 0,
     },
     theme,
+    accent,
     vaultPath: "/vault/Decision",
     health: {
       index: "healthy" as const,
       recovery: "healthy" as const,
     },
+    // The four built-in clients, as the main process's registry lists them, and one the reader added.
+    clients: PREVIEW_CLIENTS,
     integrationStatus: {
-      claudeCode: "installed" as const,
+      "claude-code": "installed" as const,
       codex: "installed" as const,
+      grok: "upgrade-required" as const,
+      antigravity: "not-installed" as const,
+      ...PREVIEW_CATALOG_STATUS,
+      "my-cli": "installed" as const,
     },
     pendingRationales: [
       {
@@ -403,16 +483,16 @@ const snapshotForPreview = (): AppSnapshot => {
       })),
     },
     modelTraceContentEnabled: true,
-    captureClassifier: "rules" as const,
-    // Coherent with `captureClassifier` above: with the capture path on rules
-    // the engine really is the rules, and showing a model name beside a
-    // control that says no model runs is the kind of gap a preview exists to
-    // stop shipping.
+    captureClassifier: "local" as const,
+    // Coherent with `captureClassifier` above: on the default the engine is
+    // this machine's Qwen 4B, and showing another engine beside a control that
+    // says only it runs is the kind of gap a preview exists to stop shipping.
     semanticRecognition: {
-      provider: "rules" as const,
-      providerLabel: "规则识别",
+      provider: "qwen" as const,
+      providerLabel: "Qwen 本地模型",
       availability: "available" as const,
-      mode: "rules_only" as const,
+      mode: "hybrid" as const,
+      modelVersion: "qwen3.5-4b-q4-k-m",
       processed7d: 12,
       high7d: 4,
       medium7d: 3,
@@ -438,8 +518,10 @@ const snapshotForPreview = (): AppSnapshot => {
       primarySurface: "dashboard",
       current: null,
       integrationStatus: {
-        claudeCode: "not-installed" as const,
+        "claude-code": "not-installed" as const,
         codex: "not-installed" as const,
+        grok: "not-installed" as const,
+        antigravity: "not-installed" as const,
       },
       pendingRationales: [],
       dashboard: {
@@ -461,7 +543,10 @@ const snapshotForPreview = (): AppSnapshot => {
     preview === "decisions" ||
     preview === "assistant" ||
     preview === "pr-review" ||
+    preview === "local-review" ||
+    preview === "todos" ||
     preview === "methodology" ||
+    preview === "prompts" ||
     preview === "clients" ||
     preview === "connections" ||
     preview === "models" ||
@@ -473,19 +558,37 @@ const snapshotForPreview = (): AppSnapshot => {
       current: null,
     };
   }
-  if (preview === "candidate") {
+  if (preview === "candidate" || preview === "candidate-long") {
+    const review = reviewCandidate();
+    const [question] = review.event.questions;
     return {
       ...common,
       current: null,
       candidateReviewOpen: true,
       candidateReviewProgress: { position: 1, total: 4 },
       decisionCandidates: {
-        current: reviewCandidate(),
+        // An assistant's whole message taken as the question, as captures from free-text replies often are.
+        current: preview === "candidate" || question === undefined ? review : {
+          ...review,
+          event: {
+            ...review.event,
+            questions: [{
+              ...question,
+              question: [
+                "- **已完成**：全局页头改版。所有页面去掉了灰色标题条，标题和说明上下两行，高度统一为 58px，6 组布局测试共 94 项通过。",
+                "- **进行中**：三个设计代理正在为问答、评审、待处理面板、方法论、理由面板、首次使用，以及设置下的接入、链接、模型、日志画设计稿，保留每个页面现有的全部功能。",
+                "- **下一步**：设计稿回来后，我统一发布到画布，再按画板逐页实现。",
+                "",
+                "先按 `Markdown + SQLite` 的方案继续，还是改成只用 SQLite？",
+              ].join("\n"),
+            }],
+          },
+        },
         count: 4,
       },
     };
   }
-  if (preview === "rationale") {
+  if (preview === "rationale" || preview === "rationale-saving") {
     const current = candidate();
     const question = {
       ...current.question,
@@ -526,6 +629,8 @@ const snapshotForPreview = (): AppSnapshot => {
       ...common,
       current: {
         ...current,
+        // Recorded, and being written to Obsidian.
+        ...(preview === "rationale-saving" ? { status: "completed" as const } : {}),
         question,
         event: {
           ...current.event,
@@ -563,11 +668,13 @@ const snapshotForPreview = (): AppSnapshot => {
 
 export const createPreviewApi = (): DecisionApi => {
   const previewJournalEntries = structuredClone(previewJournalEntryFixtures);
+  const previewSummaries = new Map<string, AbortController>();
   document.documentElement.dataset.preview = "true";
   const parameters = new URLSearchParams(window.location.search);
   const preview = parameters.get("preview");
   const requestedTheme = parameters.get("theme");
   const requestedInteraction = parameters.get("interaction");
+  if (requestedInteraction === "journal-long") previewJournalEntries.push(...longJournalEntries());
   const obsidianPreviewStatus =
     requestedInteraction === "indexing"
       ? {
@@ -591,7 +698,7 @@ export const createPreviewApi = (): DecisionApi => {
         : previewObsidianSearchStatus;
   const delayedModelFixture =
     parameters.get("settingsModelFixture") === "delayed";
-  const showModelFixture = preview === "models" || delayedModelFixture;
+  const showModelFixture = preview === "models" || preview === "local-review" || delayedModelFixture;
   const previewProfiles: Awaited<
     ReturnType<DecisionApi["listModelProviderProfiles"]>
   > = [
@@ -653,6 +760,18 @@ export const createPreviewApi = (): DecisionApi => {
       timeoutMs: 30_000,
       credentialConfigured: false,
     },
+    // A decisions backend (jev): drawn in its own section, with a key said to be saved and none held.
+    {
+      version: 1,
+      profileId: "remote-jev",
+      kind: "openrouter-decisions",
+      label: "jev",
+      enabled: true,
+      priority: 40,
+      model: "typesafe/jev-1.14",
+      timeoutMs: 30_000,
+      credentialConfigured: true,
+    },
   ];
   const previewClientStatuses: Awaited<
     ReturnType<DecisionApi["listLocalModelClientStatuses"]>
@@ -680,14 +799,41 @@ export const createPreviewApi = (): DecisionApi => {
       checkedAt: "2026-07-31T00:00:00.000Z",
     },
   ];
+  if (requestedInteraction === "model-candidates" || preview === "local-review") {
+    // Codex's eight models with a Luna one in use: offered by a datalist, they showed as its two Luna ones.
+    Object.assign(previewProfiles.find((profile) => profile.kind === "codex-cli")!, { model: "gpt-6-luna" });
+    Object.assign(previewClientStatuses.find((status) => status.kind === "codex-cli")!, {
+      modelsSource: "server",
+      models: ["6.1-Sol", "6-Astra", "6.1-Terra", "6-Sol", "6-Luna", "5.6-Sol", "5.6-Terra", "5.6-Luna"]
+        .map((name) => ({ id: `gpt-${name.toLowerCase()}`, label: `GPT-${name}` })),
+    });
+  }
   if (requestedTheme === "light" || requestedTheme === "dark") {
     document.documentElement.dataset.previewTheme = requestedTheme;
   }
   let snapshot = snapshotForPreview();
   const snapshotListeners = new Set<(value: AppSnapshot) => void>();
+  let previewCustomClients: CustomClient[] = [PREVIEW_CUSTOM_CLIENT];
+  /** The 接入 page's clients again, one added, edited or deleted: saved, not connected yet. */
+  const publishCustomClients = (previousId?: string, savedId?: string) => {
+    const { [previousId ?? ""]: _previous, ...statuses } = snapshot.integrationStatus;
+    snapshot = {
+      ...snapshot,
+      clients: [...snapshot.clients.filter((client) => client.custom !== true), ...previewCustomClients.map(customSummary)],
+      integrationStatus: savedId === undefined ? statuses : { ...statuses, [savedId]: "not-installed" },
+    };
+    for (const listener of snapshotListeners) listener(snapshot);
+  };
   let previewManualFormDrafts: ManualFormDraft[] = [];
+  let previewPrompts: PromptItem[] = PROMPT_EXAMPLES.map((example, index) => ({
+    id: `00000000-0000-4000-8000-00000000000${index + 1}`,
+    ...example,
+    createdAt: "2026-11-17T09:00:00.000Z",
+    updatedAt: "2026-11-17T09:00:00.000Z",
+  }));
   // Comment link → decision recorded from it, as the real index answers for the PR discussion.
-  const previewCommentDecisions = new Map([["https://github.com/sample/app/pull/123#discussion_r1", "preview-decision"]]);
+  const previewCommentDecisions = new Map([["https://github.com/sample/app/pull/123#issuecomment-1", "preview-decision"]]);
+  const previewCommentRecognition = { read: false, dismissed: new Set<string>() };
   const previewDecisions: Awaited<
     ReturnType<DecisionApi["listDecisions"]>
   > = snapshot.dashboard.recentDecisions.map((decision, index) => ({
@@ -724,7 +870,7 @@ export const createPreviewApi = (): DecisionApi => {
   }));
   // The rationale surface's question was answered once before, so the recall
   // of earlier answers is drawn, and measured, in the preview as well.
-  if (preview === "rationale" && snapshot.current !== null) {
+  if ((preview === "rationale" || preview === "rationale-saving") && snapshot.current !== null) {
     previewDecisions.push({
       ...previewDecisions[0]!,
       id: "preview-earlier-pricing",
@@ -824,7 +970,7 @@ export const createPreviewApi = (): DecisionApi => {
     principle: "先验证关键假设，再扩大不可逆投入。",
     appliesWhen: "结果仍有关键未知项时。",
     caution: "切换成本快速增长时重新评估。",
-    evidenceSummary: "从本地 Markdown 导入，尚未关联 Decision 中的复盘证据。",
+    evidenceSummary: "从本地 Markdown 导入，尚未关联 Paraself 中的复盘证据。",
     sourceDecisionIds: [],
     sourceDecisions: [],
     importSource: {
@@ -1227,7 +1373,7 @@ export const createPreviewApi = (): DecisionApi => {
           decisions: 7,
           previousDecisions: 5,
           rationaleCaptured: 5,
-          rationaleDeferred: 2,
+          rationaleDeferred: 2, recommendation: { offered: 0, followed: 0 },
           expectationMissing: 3,
           reviews: 3,
           previousReviews: 2,
@@ -1297,7 +1443,7 @@ export const createPreviewApi = (): DecisionApi => {
           decisions: 19,
           previousDecisions: 12,
           rationaleCaptured: 15,
-          rationaleDeferred: 3,
+          rationaleDeferred: 3, recommendation: { offered: 0, followed: 0 },
           expectationMissing: 6,
           reviews: 9,
           previousReviews: 6,
@@ -1359,13 +1505,13 @@ export const createPreviewApi = (): DecisionApi => {
     strongMatches: 19,
     possibleMatches: 12,
     durationMs: 168,
-    byClient: { claudeCode: 9, codex: 15 },
+    byClient: { "claude-code": 9, codex: 15 },
     feedback: {
       total: 9,
       helpful: 7,
       notHelpful: 1,
       misleading: 1,
-      bySource: { claudeCode: 3, codex: 4, preview: 2 },
+      bySource: { "claude-code": 3, codex: 4, preview: 2 },
       byResult: {
         strong: { total: 6, helpful: 5, notHelpful: 0, misleading: 1 },
         possible: { total: 2, helpful: 1, notHelpful: 1, misleading: 0 },
@@ -1465,7 +1611,7 @@ export const createPreviewApi = (): DecisionApi => {
               {
                 role: "assistant",
                 content:
-                  "两条历史决策指向同一条判断：配置变更先在可验证环境落地，再随真正开放动作推进线上[1]。7 月 30 日那次写的理由是「不把暂未开放的能力写进线上配置」[2]。",
+                  "两条过往决策指向同一条判断：配置变更先在可验证环境落地，再随真正开放动作推进线上[1]。7 月 30 日那次写的理由是「不把暂未开放的能力写进线上配置」[2]。",
                 citations: previewCitations,
                 turnId: "preview-turn",
                 provider: previewProviders[0],
@@ -1488,9 +1634,32 @@ export const createPreviewApi = (): DecisionApi => {
     );
   }
 
+  // The discussion as the main process returns it: a recorded comment links its decision, a read one its candidate.
+  const previewDiscussion = async (): ReturnType<DecisionApi["listPrDiscussion"]> => {
+    // A GitHub line comment comes with the change it was made on (its diff_hunk), which stops at the comment's line.
+    const code = { kind: "hunk" as const, side: "new" as const, from: 9, text: "@@ -9,2 +9,4 @@\n export async function request(url: string, init: RequestInit = {}) {\n-  return fetch(url, init);\n+  const controller = new AbortController();\n+  const timer = setTimeout(() => controller.abort(), 5000);\n+  return fetch(url, { ...init, signal: controller.signal });" };
+    return { more: false, comments: [
+      { id: "3", url: "https://github.com/sample/app/pull/123#discussion_r3", author: "Maintainer", path: "src/request.ts", line: 12, body: "同意，调用方传入的超时参数这次一起删掉。", createdAt: "2026-09-21T10:45:00Z", replyTo: "2", code },
+      { id: "2", url: "https://github.com/sample/app/pull/123#discussion_r2", author: "Example", path: "src/request.ts", line: 12, body: "超时统一放在请求层处理，调用方不再各自设置；这样重试和取消只有一处。", createdAt: "2026-09-21T10:40:00Z", replyTo: null, code },
+      { id: "issuecomment-1", url: "https://github.com/sample/app/pull/123#issuecomment-1", author: "Reviewer", path: null, line: null, body: "整体思路没问题。", createdAt: "2026-09-21T10:30:00Z", replyTo: null, code: null },
+    ].map((comment) => {
+      const decisionId = previewCommentDecisions.get(comment.url) ?? null;
+      return { ...comment, decisionId, candidate: decisionId === null && previewCommentRecognition.read && !previewCommentRecognition.dismissed.has(comment.url) && comment.id === "3"
+        ? { question: "请求超时由谁来设置？", choice: "统一放在请求层处理，调用方的超时参数这次一起删掉", quote: "调用方传入的超时参数这次一起删掉" } : null };
+    }), recognition: { pending: previewCommentRecognition.read ? 0 : 2, callsLeft: previewCommentRecognition.read ? 19 : 20, stopped: null } };
+  };
   return {
     ...createEvidencePreviewApi(previewDecisions),
     getSnapshot: async () => snapshot,
+    ...createLocalReviewPreview(),
+    ...createTodoPreview(),
+    // interaction=history-empty | history-unreadable | history-index: the 历史决定 list's other states.
+    ...createHistoricalDecisionPreview(requestedInteraction === "history-empty" ? "empty" : requestedInteraction === "history-unreadable" ? "unreadable" : requestedInteraction === "history-index" ? "index" : null),
+    ...createOrganizationPreview(requestedInteraction, ({ revision, pending }) => {
+      // 入口徽标与面板用同一份计数：预览的 dashboard 也带上，和 App 一样。
+      snapshot = { ...snapshot, dashboard: { ...snapshot.dashboard, organizationRevision: revision, organizationPending: pending } };
+      for (const listener of snapshotListeners) listener(snapshot);
+    }),
     listPrConnections: async () => [{ id: "00000000-0000-4000-8000-000000000011", label: "示例 GitHub", platform: "github", baseUrl: "https://github.com" }],
     savePrConnection: async (input) => [{ id: input.id ?? "00000000-0000-4000-8000-000000000012", label: input.label, platform: input.platform, baseUrl: input.baseUrl }],
     removePrConnection: async () => [],
@@ -1502,27 +1671,63 @@ export const createPreviewApi = (): DecisionApi => {
     publishPrReviewComment: async () => ({ message: "界面预览：评论已模拟，未写入代码平台。" }),
     publishPrGeneralComment: async () => ({ message: "界面预览：评论已模拟，未写入代码平台。" }),
     openReviewRulesDirectory: async () => undefined,
-    listPrDiscussion: async () => ({ more: false, comments: [
-      { id: "2", url: "https://github.com/sample/app/pull/123#discussion_r2", author: "Example", path: "src/request.ts", line: 12, body: "超时统一放在请求层处理，调用方不再各自设置；这样重试和取消只有一处。", createdAt: "2026-09-21T10:40:00Z" },
-      { id: "1", url: "https://github.com/sample/app/pull/123#discussion_r1", author: "Reviewer", path: null, line: null, body: "整体思路没问题。", createdAt: "2026-09-21T10:30:00Z" },
-    ].map((comment) => ({ ...comment, decisionId: previewCommentDecisions.get(comment.url) ?? null })) }),
+    listPrDiscussion: previewDiscussion,
+    recognizePrDiscussion: async () => {
+      previewCommentRecognition.read = true;
+      return previewDiscussion();
+    },
+    dismissPrCommentCandidate: async (url) => { previewCommentRecognition.dismissed.add(url); },
+    listPrCommentCandidates: async () => ({
+      prs: previewCommentRecognition.read && !previewCommentRecognition.dismissed.has("https://github.com/sample/app/pull/123#discussion_r3") && !previewCommentDecisions.has("https://github.com/sample/app/pull/123#discussion_r3")
+        ? [{ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123", title: "示例：调整请求超时", count: 1, latest: "2026-09-21T10:50:00Z" }] : [],
+      links: [{ connectionId: "00000000-0000-4000-8000-000000000011", checkedAt: "2026-09-21T10:50:00Z", error: null }],
+    }),
     openPrLink: async () => undefined,
     openPr: async () => undefined,
     reevaluatePrReviewFinding: async () => ({ verdict: "replace", reason: "预览示例：问题成立，但原文没有说明结束时要清理计时器。", replacement: { title: "超时后应取消底层请求并清理计时器", body: "超时只拒绝了等待中的 Promise，底层请求仍在运行，会继续占用连接。\n\n请把 AbortSignal 传给请求，并在请求结束或超时时清理计时器。" } }),
     peekPrReview: async () => null,
     prefetchPrReviews: async () => undefined,
     loadPrReviewDiff: async () => ({ diff: "diff --git a/src/request.ts b/src/request.ts\nindex 1111111..2222222 100644\n--- a/src/request.ts\n+++ b/src/request.ts\n@@ -1,4 +1,5 @@\n export async function request(url: string) {\n-  return fetch(url);\n+  const controller = new AbortController();\n+  setTimeout(() => controller.abort(), 5000);\n+  return fetch(url, { signal: controller.signal });\n }\n-// Requests have no timeout\n" }),
-    loadPrReview: async (input) => ({ snapshotId: "00000000-0000-4000-8000-000000000001", reference: input.reference, batchCount: 1, title: "示例：调整请求超时", description: "为请求添加超时保护。", project: "sample", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40), files: [{ path: "src/request.ts", status: "modified" }], fileBatches: { "src/request.ts": 1 }, fileHunks: { "src/request.ts": [420] }, changeSize: { added: 12, removed: 4, testFiles: 0, codeFiles: 1 }, warnings: [], rules: [{ id: "team/timeout.md", source: "code-meeseeks" }], existingComments: 2 }),
+    ...previewReviewHistory,
+    loadPrReview: async (input) => ({ snapshotId: "00000000-0000-4000-8000-000000000001", reference: input.reference, batchCount: 1, title: "示例：调整请求超时", description: "为请求添加超时保护。", project: "sample", sourceCommit: "a".repeat(40), destinationCommit: "b".repeat(40), files: [{ path: "src/request.ts", status: "modified" }], fileBatches: { "src/request.ts": 1 }, fileHunks: { "src/request.ts": [420] }, changeSize: { added: 12, removed: 4, testFiles: 0, codeFiles: 1 }, warnings: [], rules: [{ id: "team/timeout.md", source: "code-meeseeks" }], existingComments: 2,
+      guides: ["REVIEW.md", "AGENTS.md"], destinationBranch: "main",
+      risk: { level: "medium", table: "review_md", reasons: [{ level: "medium", reason: "请求与重试", paths: ["src/request.ts"], more: 0 }], changesRules: false, problems: [] } }),
     runPrReview: async (input) => ({ reviewedFiles: ["src/request.ts"], unreviewedFiles: [], history: [
       { runId: input.runId, id: "batch-0", at: "2026-09-21T10:00:00Z", kind: "status", status: "done", group: 0, message: "评审分组 1/1：src/request.ts" },
       { runId: input.runId, id: "preview-step-1", at: "2026-09-21T10:00:00Z", kind: "tool", status: "done", group: 0, message: "检索与本组相关的决策：没有相关决策", detail: "当前预览没有真实证据。" },
       { runId: input.runId, id: "preview-step-2", at: "2026-09-21T10:00:01Z", kind: "tool", status: "done", group: 0, message: "读取源码 src/request.ts 第 1–80 行" },
       { runId: input.runId, id: "preview-step-3", at: "2026-09-21T10:00:02Z", kind: "tool", status: "done", group: 0, message: "提交本组结论：1 个问题" },
-      { runId: input.runId, id: "verify-0", at: "2026-09-21T10:00:03Z", kind: "model", status: "done", message: "核验候选问题 1/1" }], status: "completed", summary: "预览示例：应核对超时后是否释放资源。", findings: [{ priority: "P2", title: "超时后请求仍在运行", body: "计时器只拒绝等待中的 Promise，底层请求不会取消。应将 AbortSignal 传入请求，并在结束时清理计时器。", path: "src/request.ts", side: "new", line: 12, decisionIndexes: [] }], evidence: [], readFiles: ["src/request.ts"], unreadFiles: [], warnings: ["此为界面预览，未连接代码平台或调用模型。"], steps: 3, groups: 1, filtered: [{ finding: { priority: "P3", title: "超时时间写死", body: "超时值写成常量，调用方无法调整。", path: "src/request.ts", side: "new", line: 11, decisionIndexes: [] }, score: 45, reason: "超时值本来就由调用方传入，变更前也是这样，不是这次引入的问题。" }] }),
+      { runId: input.runId, id: "verify-0", at: "2026-09-21T10:00:03Z", kind: "model", status: "done", message: "核验候选问题 1/1" }], status: "completed", summary: "预览示例：应核对超时后是否释放资源。", findings: [{ priority: "P2", title: "超时后请求仍在运行", body: "计时器只拒绝等待中的 Promise，底层请求不会取消。应将 AbortSignal 传入请求，并在结束时清理计时器。", path: "src/request.ts", side: "new", line: 12, decisionIndexes: [] }], evidence: [], readFiles: ["src/request.ts"], unreadFiles: [], warnings: ["此为界面预览，未连接代码平台或调用模型。"], steps: 3, groups: 1, filtered: [{ finding: { priority: "P3", title: "超时时间写死", body: "超时值写成常量，调用方无法调整。", path: "src/request.ts", side: "new", line: 11, decisionIndexes: [] }, reason: "超时值本来就由调用方传入（src/request.ts:4），变更前也是这样，不是这次引入的问题。" }], needsContext: [{ finding: { priority: "P2", title: "重试时重复提交", body: "失败后整体重试，非幂等的提交可能执行两次。", path: "src/request.ts", side: "new", line: 18, decisionIndexes: [] }, reason: "调用方是否只传入幂等请求，在本 PR 里看不到。", missing: "调用 request() 的业务代码与服务端是否去重。" }], unplaced: [{ priority: "P3", title: "调用方没有处理超时错误", body: "超时后抛出的错误在调用方没有被捕获。", path: "src/client.ts", side: "new", line: 40, decisionIndexes: [] }] }),
     followUpPrReview: async () => ({ answer: "可以将取消信号传给底层请求，并在超时时调用 `abort()`。这项建议针对本次提交，尚未运行测试。" }),
     cancelPrReview: async () => undefined,
     onPrReviewProgress: () => () => undefined,
+    onPrReviewHistoryChanged: () => () => undefined,
+    // Synthetic: the description the preview PR was opened with; a write back is only simulated.
+    getPrDescription: async () => ({ title: "示例：调整请求超时", description: "为请求添加超时保护。", version: prDescriptionVersion("为请求添加超时保护。") }),
+    updatePrDescription: async () => ({ message: "界面预览：PR 描述已模拟写回，未写入代码平台。" }),
+    // Synthetic: a pre-review task not answered yet, and a person's comment the author answered. A reply is only simulated.
+    listPrReceivedComments: async () => ({ me: "preview-author", more: false, comments: [
+      { id: "901", url: "https://code.example/pr/123#901", author: "示例审阅人 A", path: "src/request.ts", line: 12, side: "new" as const, createdAt: "2026-09-21T10:05:00Z", task: "open" as const, resolved: null,
+        body: "**P1 · 超时后请求仍在运行**\n\n计时器只拒绝等待中的 Promise，底层请求不会取消。\n\n— Paraself 预评审 · 依据 REVIEW.md · P1", replies: [] },
+      { id: "902", url: "https://code.example/pr/123#902", author: "示例审阅人 B", path: null, line: null, side: null, createdAt: "2026-09-21T10:20:00Z", task: null, resolved: null,
+        body: "超时时间能不能做成可配置？", replies: [{ id: "903", author: "示例作者", mine: true, createdAt: "2026-09-21T11:00:00Z", body: "**有意为之**：超时由调用方传入，这里只给默认值。\n\n— Paraself 作者回应" }] },
+    ] }),
+    // Synthetic: no platform to read outcomes from; the preview's records stay as they are.
+    readPrReviewOutcomes: async () => ({ changed: false }),
+    getReviewQuality: async ({ connectionId }) => previewReviewQuality(connectionId),
+    updateReviewEscape: async (input) => previewEscapeUpdate(input),
+    reviewBenchmarkPage: async (request) => previewBenchmarkPage(request),
+    // Synthetic: nothing is handed to a local review in the preview.
+    actOnReviewPromotion: async (action) => action.action === "dismiss" ? { ok: true, message: "这条提议不再列出。", jobId: null }
+      : { ok: true, message: "已交给本地审阅（任务 00000000-0000-4000-8000-0000000000ab）：改好后在“本地审阅”里确认，才会推送分支并开 PR。", jobId: "00000000-0000-4000-8000-0000000000ab" },
+    updateReviewRule: async () => ({ prReviewToolsVersion: 1 as const, status: "updated" as const, reason: null }),
+    // Synthetic: 自动预评审 off on every preview link, as it is until the user turns it on.
+    getPrReviewSettings: async () => ({ prReviewToolsVersion: 1 as const, status: "ok" as const, connections: [], models: [], settings: [] }),
+    respondToPrComment: async (input) => ({ message: "界面预览：回复已模拟发出，未写入代码平台。", todo: input.kind === "later" ? { listId: "preview-follow-ups", item: 1, title: input.todo ?? "示例待办" } : null }),
+    // Synthetic: a passing build, nobody's approval yet, one open blocker. Nothing is read from a platform.
+    listPrReviewStatuses: async ({ references }) => ({ statuses: references.map((reference) => ({ reference, status: { sourceCommit: "a".repeat(40), build: "passed" as const, approvals: { count: 0, users: [], logins: [], stale: [] }, blockers: 1, blocking: "discussions" as const, blockersHold: null, sections: null, problems: [] } })) }),
     listAssistantModels: async () => previewProviders,
+    sendOnboarding: previewOnboarding(),
     checkAssistantSource: async () => ({ status: "review", content: "当前笔记：配置变更需经过验证，再逐步放开。", truncated: false }),
     searchAssistantSources: async () => ({ sources: previewCitations, issues: [] }),
     runAssistantTurn: async (input) => {
@@ -1536,7 +1741,7 @@ export const createPreviewApi = (): DecisionApi => {
         message: {
           role: "assistant",
           content:
-            "两条历史决策指向同一条判断：配置变更先在可验证环境落地，再随真正开放动作推进线上[1]。7 月 30 日那次写的理由是「不把暂未开放的能力写进线上配置」[2]。",
+            "两条过往决策指向同一条判断：配置变更先在可验证环境落地，再随真正开放动作推进线上[1]。7 月 30 日那次写的理由是「不把暂未开放的能力写进线上配置」[2]。",
           citations: previewCitations,
           steps: [
             { kind: "search", query: "配置变更 测试环境", scope: input.scope, hits: 3 },
@@ -1560,6 +1765,7 @@ export const createPreviewApi = (): DecisionApi => {
     closeCandidateReview: async () => undefined,
     confirmCandidate: async () => undefined,
     ignoreCandidate: async () => undefined,
+    skipCandidate: async () => undefined,
     retryCandidate: async () => undefined,
     openSurface: async (primarySurface) => {
       snapshot = { ...snapshot, primarySurface };
@@ -1590,6 +1796,12 @@ export const createPreviewApi = (): DecisionApi => {
         if (query.rationaleStatus !== undefined) {
           return previewDecisions.filter(
             (decision) => decision.rationaleStatus === query.rationaleStatus,
+          );
+        }
+        // A client's card asks for its own: Grok and Antigravity have brought nothing in here.
+        if (query.sourceClient !== undefined) {
+          return previewDecisions.filter(
+            (decision) => decision.sourceClient === query.sourceClient,
           );
         }
         if (query.reviewState === "reviewed") {
@@ -1700,6 +1912,33 @@ export const createPreviewApi = (): DecisionApi => {
       storedTranscript: false,
       };
     },
+    // As the app answers: only with Qwen on, after the moment a local model takes, and stopped when cancelled.
+    summarizeRecordContext: async (input) => {
+      if (!previewProfiles.some((profile) => profile.enabled && profile.kind === "qwen")) {
+        return { status: "unavailable", reason: "没有启用本机模型。请先在“模型”中启用 Qwen 本机模型；总结只在本机进行，不会发给远端 API 或命令行工具。" };
+      }
+      const stop = new AbortController();
+      previewSummaries.set(input.requestId, stop);
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, 600);
+          stop.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("总结已取消。")); }, { once: true });
+        });
+      } finally {
+        previewSummaries.delete(input.requestId);
+      }
+      const where = input.context.split("\n").map((line) => line.trim()).find(Boolean) ?? "";
+      return {
+        status: "summarized",
+        summary: [CONTEXT_SUMMARY_LINES.change, where.slice(0, 120), CONTEXT_SUMMARY_LINES.views, "- 超时写死不便调整，建议由调用方传入", "- 计时器结束后要清理",
+          CONTEXT_SUMMARY_LINES.decided, input.choice?.trim().slice(0, 200) || "上下文没有写明"].join("\n"),
+        model: "qwen3.5-2b-q4-k-m",
+        clipped: input.context.length > 2_200,
+      };
+    },
+    cancelRecordContextSummary: async (requestId) => { previewSummaries.get(requestId)?.abort(); },
+    listDecisionAmendments: async () => ({ records: [], unavailable: false }),
+    updateDecisionAmendment: async (request) => ({ amendVersion: 1, status: "not_found", revision: 0, relativePath: null, originalUnchanged: true, ...(request ? {} : {}) }),
     listJournalEntries: async (query) => {
       const wanted =
         query.query === undefined ? "" : query.query.trim().toLowerCase();
@@ -1965,6 +2204,23 @@ export const createPreviewApi = (): DecisionApi => {
       previewManualFormDrafts = previewManualFormDrafts.filter(
         (item) => item.key !== key,
       );
+    },
+    listPrompts: async () => structuredClone(previewPrompts),
+    createPrompt: async (input) => {
+      const at = new Date().toISOString();
+      const prompt: PromptItem = { id: crypto.randomUUID(), ...input, createdAt: at, updatedAt: at };
+      previewPrompts = [prompt, ...previewPrompts];
+      return structuredClone(prompt);
+    },
+    updatePrompt: async ({ id, title, body }) => {
+      const current = previewPrompts.find((prompt) => prompt.id === id);
+      if (current === undefined) throw new Error("这条提示词已被删除");
+      const next = { ...current, title, body, updatedAt: new Date().toISOString() };
+      previewPrompts = previewPrompts.map((prompt) => (prompt.id === id ? next : prompt));
+      return structuredClone(next);
+    },
+    deletePrompt: async (id) => {
+      previewPrompts = previewPrompts.filter((prompt) => prompt.id !== id);
     },
     generateMethodology: async () => previewMethodology,
     createMethodologyMergeDraft: async (sourcePrincipleIds, input) => ({
@@ -2599,6 +2855,25 @@ export const createPreviewApi = (): DecisionApi => {
       restartRequired: false,
     }),
     removeIntegrations: async () => ({ mode: "apply", targets: [], commands: [], restartRequired: false }),
+    listCustomClients: async () => structuredClone(previewCustomClients),
+    saveCustomClient: async ({ client, previousId }) => {
+      if (PREVIEW_CLIENTS.some((entry) => entry.id === client.id && !("custom" in entry)) ||
+        previewCustomClients.some((entry) => entry.id === client.id && entry.id !== previousId)) {
+        throw new Error(`已经有一个 id 为 ${client.id} 的客户端`);
+      }
+      const at = previewCustomClients.findIndex((entry) => entry.id === (previousId ?? client.id));
+      previewCustomClients = at < 0 ? [...previewCustomClients, client] : previewCustomClients.map((entry, index) => (index === at ? client : entry));
+      publishCustomClients(previousId, client.id);
+      return structuredClone(previewCustomClients);
+    },
+    deleteCustomClient: async (id) => {
+      previewCustomClients = previewCustomClients.filter((entry) => entry.id !== id);
+      publishCustomClients(id);
+      return { mode: "apply", targets: [{ client: id, path: "~/.mycli/hooks/paraself.json", changed: true, status: "removed" }], commands: [], restartRequired: true };
+    },
+    previewDecisionDeletion: async () => { throw new Error("预览模式不能删除决策，请在 Paraself App 中操作。"); },
+    deleteDecision: async () => { throw new Error("预览模式不能删除决策，请在 Paraself App 中操作。"); },
+    getMisrecognitionSummary: async () => ({ days: 30, total: 0, byMode: { transcript: 0, structured_tool: 0 }, byBand: { high: 0, medium: 0, unknown: 0 }, bySignal: {}, byDetector: {} }),
     listLocalDecisions: async () => ({ records: [], total: 0 }),
     resolveLocalDecision: async () => undefined,
     rebuildIndex: async () => ({
@@ -2606,6 +2881,7 @@ export const createPreviewApi = (): DecisionApi => {
       diagnostics: [],
     }),
     setTheme: async () => undefined,
+    setAccent: async () => undefined,
     listModelTraces: async () => {
       const { output: _output, ...base } = previewModelTrace;
       return preview === "activity" ? [{
@@ -2623,6 +2899,10 @@ export const createPreviewApi = (): DecisionApi => {
     deleteModelTraceRequest: async () => 0,
     forgetAssistantTurns: async () => undefined,
     clearModelTraces: async () => 0,
+    setModelProxyUrl: async (modelProxyUrl) => {
+      snapshot = { ...snapshot, modelProxyUrl };
+      for (const listener of snapshotListeners) listener(snapshot);
+    },
     setModelTraceContentEnabled: async (modelTraceContentEnabled) => {
       snapshot = { ...snapshot, modelTraceContentEnabled };
       for (const listener of snapshotListeners) listener(snapshot);
@@ -2657,6 +2937,7 @@ export const createPreviewApi = (): DecisionApi => {
       latencyMs: 0,
       requestId: "preview-provider-test",
       tokenSource: "unavailable",
+      ...(profileId === "remote-jev" ? { tokenSource: "provider_reported" as const, latencyMs: 620, costUsd: 0.000003 } : {}),
     }),
     listLocalModelClientStatuses: async () => {
       if (!showModelFixture) {
