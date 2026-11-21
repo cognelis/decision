@@ -1,0 +1,254 @@
+[
+  {
+    "id": "R6RVSK-001",
+    "group": "selection-proprietary",
+    "kind": "decision",
+    "text": "Should we choose AcmeVault or QuantaStore for the new secrets backend?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-002",
+    "group": "selection-proprietary",
+    "kind": "decision",
+    "text": "For identity, should we use Keycloak or Authentik?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-003",
+    "group": "selection-proprietary",
+    "kind": "decision",
+    "text": "Pick between Cedar and OPA for policy evaluation.",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-004",
+    "group": "selection-proprietary",
+    "kind": "decision",
+    "text": "Do we standardize on NATS or Redpanda for this event bus?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-005",
+    "group": "selection-proprietary",
+    "kind": "decision",
+    "text": "Choose Sentry or Bugsnag for crash reporting.",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-006",
+    "group": "selection-proprietary",
+    "kind": "decision",
+    "text": "Should this service use Temporal or Restate?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-007",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "Draft or Final: which heading should the mockup show?",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-008",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "Plan A versus Plan B are labels in the slide; keep both on the page.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-009",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "Should the button say Start or Continue?",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-010",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "Choose between the blue and green icon in the screenshot.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-011",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "Use the phrase “Primary or Secondary” as the diagram legend?",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-012",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "We need to pick Monday or Tuesday for the meeting.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-013",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "Should the document title be “Overview” or “Architecture”?",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-014",
+    "group": "selection-negative",
+    "kind": "decision",
+    "text": "For the illustration, do we prefer a square or round avatar?",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-015",
+    "group": "service-boundary",
+    "kind": "decision",
+    "text": "Should the API run as one service or two services split by tenant?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-016",
+    "group": "service-boundary",
+    "kind": "decision",
+    "text": "Do we keep one process or run separate read and write processes?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-017",
+    "group": "service-boundary",
+    "kind": "decision",
+    "text": "Choose a single worker or a pair of workers with isolated queues.",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-018",
+    "group": "service-boundary",
+    "kind": "decision",
+    "text": "Should we deploy one service instance or separate frontend and backend services?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-019",
+    "group": "service-boundary",
+    "kind": "decision",
+    "text": "Decide whether one daemon handles both roles or two independent daemons.",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-020",
+    "group": "service-boundary",
+    "kind": "decision",
+    "text": "Would one process per region or one shared process own the scheduler?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-021",
+    "group": "service-negative",
+    "kind": "decision",
+    "text": "The diagram shows one service box or two boxes depending on slide width.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-022",
+    "group": "service-negative",
+    "kind": "decision",
+    "text": "A single process screenshot looks cleaner than the two-process screenshot.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-023",
+    "group": "service-negative",
+    "kind": "decision",
+    "text": "Use one or two columns in the architecture document?",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-024",
+    "group": "service-negative",
+    "kind": "decision",
+    "text": "The product offers one or two worker licenses; this copy is for the pricing page.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-025",
+    "group": "migration-strategy",
+    "kind": "decision",
+    "text": "For the customer table migration, should we dual-write or schedule a maintenance-window cutover?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-026",
+    "group": "migration-strategy",
+    "kind": "decision",
+    "text": "Should we use a rolling migration or stop-the-world migration for the event store?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-027",
+    "group": "migration-strategy",
+    "kind": "decision",
+    "text": "Choose shadow writes or downtime migration when moving sessions to the new database.",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-028",
+    "group": "migration-strategy",
+    "kind": "decision",
+    "text": "Do we backfill then dual-write, or pause writes and migrate the ledger?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-029",
+    "group": "migration-strategy",
+    "kind": "decision",
+    "text": "For moving tenant data to the new cluster, gradual cutover or a single outage?",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-030",
+    "group": "migration-negative",
+    "kind": "decision",
+    "text": "The migration guide should describe dual-write and downtime approaches.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-031",
+    "group": "migration-negative",
+    "kind": "decision",
+    "text": "Change “rolling migration” to sentence case in the documentation.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-032",
+    "group": "migration-negative",
+    "kind": "decision",
+    "text": "The diagram compares a shadow-write icon with a maintenance-window icon.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-033",
+    "group": "migration-negative",
+    "kind": "decision",
+    "text": "We already migrated the customer table last quarter; no decision is requested.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-034",
+    "group": "migration-negative",
+    "kind": "decision",
+    "text": "The release notes mention a gradual rollout, but the rollout is complete.",
+    "expected": "no_schedule"
+  },
+  {
+    "id": "R6RVSK-035",
+    "group": "mixed-boundary",
+    "kind": "decision",
+    "text": "For the new authorization service, choose one process or two isolated services; migration can be dual-write or downtime cutover.",
+    "expected": "schedule"
+  },
+  {
+    "id": "R6RVSK-036",
+    "group": "mixed-negative",
+    "kind": "decision",
+    "text": "The fictional names Cedar and OPA appear in the sample paragraph, not a product choice.",
+    "expected": "no_schedule"
+  }
+]

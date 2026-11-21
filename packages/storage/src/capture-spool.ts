@@ -78,6 +78,10 @@ const parseDisposition = (
   ) {
     throw new Error("Capture disposition is invalid");
   }
+  const confirmedAt = "confirmedAt" in value ? value.confirmedAt : undefined;
+  if (confirmedAt !== undefined && (typeof confirmedAt !== "string" || !Number.isFinite(Date.parse(confirmedAt)))) {
+    throw new Error("Capture disposition confirmation time is invalid");
+  }
   if (
     value.status === "deferred" ||
     value.status === "skipped"
@@ -90,6 +94,7 @@ const parseDisposition = (
     );
     return {
       status: value.status,
+      ...(confirmedAt === undefined ? {} : { confirmedAt: new Date(confirmedAt).toISOString() }),
       ...(appliedPrincipleIds === undefined ? {} : { appliedPrincipleIds }),
       ...(expectedOutcome === undefined ? {} : { expectedOutcome }),
     };
@@ -132,6 +137,7 @@ const parseDisposition = (
   );
   return {
     status: value.status,
+    ...(confirmedAt === undefined ? {} : { confirmedAt: new Date(confirmedAt).toISOString() }),
     ...(expectedOutcome === undefined ? {} : { expectedOutcome }),
     ...(rationale === undefined
       ? {}

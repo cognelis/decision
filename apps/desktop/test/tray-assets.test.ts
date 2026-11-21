@@ -92,8 +92,8 @@ const assetPath = (name: string): string =>
 
 describe("macOS tray assets", () => {
   it.each([
-    ["trayTemplate.png", 16],
-    ["trayTemplate@2x.png", 32],
+    ["trayTemplate.png", 22],
+    ["trayTemplate@2x.png", 44],
   ])("%s contains transparent negative space", async (name, size) => {
     const image = await decodeRgbaPng(assetPath(name));
 

@@ -8,12 +8,21 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// Counted, to tell how many times a model's file is read through.
+const hashes = vi.hoisted(() => ({ made: 0 }));
+vi.mock("node:crypto", async (original) => {
+  const crypto = await original<typeof import("node:crypto")>();
+  return { ...crypto, createHash: (...args: Parameters<typeof crypto.createHash>) => { hashes.made += 1; return crypto.createHash(...args); } };
+});
 
 import {
   QWEN_EMBEDDING_MODEL_MANIFEST,
   QWEN_MODEL_MANIFEST,
   clearQwenModelVerificationCache,
+  qwenModelManifest,
+  qwenModelMissing,
   verifyQwenModel,
   type QwenModelManifest,
 } from "../src/main/semantic/model-manifest.js";
@@ -62,6 +71,19 @@ describe("Qwen model manifest", () => {
         "06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439",
       license: "Apache-2.0",
     });
+  });
+
+  it("tells a model never downloaded by one look at its path, never reading the file (IMP-153)", async () => {
+    const modelsDirectory = await createModelDirectory();
+    await expect(qwenModelMissing(modelsDirectory, "qwen3.5-4b-q4-k-m")).resolves.toBe(true);
+    // Only 2B there: 4B is still missing.
+    await writeFile(join(modelsDirectory, QWEN_MODEL_MANIFEST.fileName), "2b");
+    await expect(qwenModelMissing(modelsDirectory, "qwen3.5-4b-q4-k-m")).resolves.toBe(true);
+    // There, even cut short: not missing, and its check is left to the call that files it.
+    hashes.made = 0;
+    await writeFile(join(modelsDirectory, qwenModelManifest("qwen3.5-4b-q4-k-m").fileName), "partial");
+    await expect(qwenModelMissing(modelsDirectory, "qwen3.5-4b-q4-k-m")).resolves.toBe(false);
+    expect(hashes.made).toBe(0);
   });
 
   it("distinguishes a missing model from a bad checksum", async () => {
@@ -119,6 +141,27 @@ describe("Qwen model manifest", () => {
     ).resolves.toEqual({
       availability: "checksum_failed",
     });
+  });
+
+  it("reads a file once for the verifications asked of it at the same time", async () => {
+    const modelsDirectory = await createModelDirectory();
+    const manifest: QwenModelManifest = {
+      ...QWEN_MODEL_MANIFEST,
+      fileName: "mini.gguf",
+      bytes: 5,
+      sha256:
+        "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    };
+    await writeFile(join(modelsDirectory, manifest.fileName), "hello");
+    hashes.made = 0;
+
+    const both = await Promise.all([
+      verifyQwenModel({ modelsDirectory, manifest }),
+      verifyQwenModel({ modelsDirectory, manifest }),
+    ]);
+
+    expect(both.map((result) => result.availability)).toEqual(["available", "available"]);
+    expect(hashes.made).toBe(1);
   });
 
   it("caches success by inode, size and mtime rather than path alone", async () => {

@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** A record's context at most, as saved; a summary put in front of one must leave it within this too. */
+export const CONTEXT_MAX_CHARS = 8_000;
+
 const proactiveCommonShape = {
   title: z.string().trim().min(1).max(500),
   content: z.string().trim().min(1).max(8_000),
@@ -14,7 +17,7 @@ const proactiveCommonShape = {
   project: z.string().trim().min(1).max(500).optional(),
   occurredAt: z.string().datetime().optional(),
   knowledgeStatus: z.enum(["inbox", "active", "archived"]).optional(),
-  context: z.string().trim().min(1).max(8_000).optional(),
+  context: z.string().trim().min(1).max(CONTEXT_MAX_CHARS).optional(),
   rationale: z.string().trim().min(1).max(8_000).optional(),
   tags: z.array(z.string().trim().min(1).max(100)).max(12),
 };
@@ -52,3 +55,22 @@ export const proactiveRecordInputSchema = z.discriminatedUnion("kind", [
   }).strict(),
 ]);
 export type ProactiveRecordInput = z.infer<typeof proactiveRecordInputSchema>;
+
+/** A record's context for the local model to summarize, with what the record says, to show it what matters. */
+export const recordContextSummaryRequestSchema = z.object({
+  requestId: z.string().uuid(),
+  context: z.string().trim().min(1).max(CONTEXT_MAX_CHARS),
+  title: z.string().trim().max(500).optional(),
+  choice: z.string().trim().max(8_000).optional(),
+}).strict();
+export type RecordContextSummaryRequest = z.infer<typeof recordContextSummaryRequestSchema>;
+
+/**
+ * What the local model made of it, for the reader to use or not. `clipped`: it read only the start and the end of a
+ * long context. `unavailable`: nothing on this machine can write one, and why.
+ */
+export const recordContextSummarySchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("summarized"), summary: z.string().min(1).max(8_000), model: z.string().min(1).max(200), clipped: z.boolean() }).strict(),
+  z.object({ status: z.literal("unavailable"), reason: z.string().min(1).max(500) }).strict(),
+]);
+export type RecordContextSummary = z.infer<typeof recordContextSummarySchema>;

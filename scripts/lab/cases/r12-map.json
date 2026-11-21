@@ -1,0 +1,1382 @@
+[
+ {
+  "id": "R12MAP-P01-article-a-defer",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B",
+   "C"
+  ],
+  "assistantText": "Four possible improvements:\n\n**A. Upload tracing** — add spans to the upload path.\n**B. Result cache** — cache query results.\n**C. Edge-case tests** — cover boundaries.\n**D. Log redaction** — drop sensitive fields.\n\nWhich of these do you approve now?",
+  "userText": "Approve B and C now, push A to next sprint, and skip D."
+ },
+ {
+  "id": "R12MAP-P02-article-a-first",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "Four possible improvements:\n\n**A. Upload tracing** — add spans to the upload path.\n**B. Result cache** — cache query results.\n**C. Edge-case tests** — cover boundaries.\n**D. Log redaction** — drop sensitive fields.\n\nWhich of these do you approve now?",
+  "userText": "Do A first, then D; leave B and C for later."
+ },
+ {
+  "id": "R12MAP-P03-please",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "发现四个可选改进项:\n\nA. 添加请求超时\nB. 添加重试机制\nC. 添加结构化日志\nD. 添加健康检查端点\n\n你想要哪些?",
+  "userText": "A and D please, nothing else."
+ },
+ {
+  "id": "R12MAP-P04-now",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "Four possible improvements:\n\n**A. Upload tracing** — add spans to the upload path.\n**B. Result cache** — cache query results.\n**C. Edge-case tests** — cover boundaries.\n**D. Log redaction** — drop sensitive fields.\n\nWhich of these do you approve now?",
+  "userText": "A and D now, B next sprint, C never."
+ },
+ {
+  "id": "R12MAP-P05-thanks-zh",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "我整理了四项可做的改进：\n\n**A. 上传追踪**：给上传链路加 trace。\n**B. 结果缓存**：缓存查询结果。\n**C. 补充单测**：补齐边界用例。\n**D. 日志脱敏**：去掉敏感字段。\n\n你现在批准哪几项？",
+  "userText": "A、D，谢谢。"
+ },
+ {
+  "id": "R12MAP-P06-numletter-list",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "Review 发现以下四项可选改进：\n\n1. A — 加请求超时\n2. B — 加重试\n3. C — 加结构化日志\n4. D — 加健康检查端点\n\n你想做哪几项？可以多选，直接回复字母即可。",
+  "userText": "A and D please, nothing else."
+ },
+ {
+  "id": "R12MAP-P07-numletter-by-number",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "Review 发现以下四项可选改进：\n\n1. A — 加请求超时\n2. B — 加重试\n3. C — 加结构化日志\n4. D — 加健康检查端点\n\n你想做哪几项？可以多选，直接回复字母即可。",
+  "userText": "1 和 4。"
+ },
+ {
+  "id": "R12MAP-P08-table-pair",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "三项可做的改进：\n\n| # | 选项 | 内容 |\n|---|---|---|\n| 1 | A | 上传追踪 |\n| 2 | B | 结果缓存 |\n| 3 | C | 补充单测 |\n\n你现在批准哪几项？",
+  "userText": "批准 A 和 C，B 先放着。"
+ },
+ {
+  "id": "R12MAP-P09-table-letterlabel-en",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "三项可做的改进：\n\n| ID | 任务 | 说明 |\n|---|---|---|\n| 1 | A. 上传追踪 | 给上传链路加 trace |\n| 2 | B. 结果缓存 | 缓存查询结果 |\n| 3 | C. 补充单测 | 补齐边界用例 |\n\nWhich ones do you approve?",
+  "userText": "Approve A and C now; leave B for later."
+ },
+ {
+  "id": "R12MAP-P10-table-letternum",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "三项可做的改进：\n\n| ID | 编号 | 任务 |\n|---|---|---|\n| A | 1 | 上传追踪 |\n| B | 2 | 结果缓存 |\n| C | 3 | 补充单测 |\n\n你现在批准哪几项？",
+  "userText": "批准 1 和 3，2 先放着。"
+ },
+ {
+  "id": "R12MAP-P11-table-code-by-letter",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "T1",
+   "T3"
+  ],
+  "assistantText": "| ID | 具体内容 |\n|---|---|\n| T1 | 给上传链路加追踪 |\n| T2 | 轮换签名密钥 |\n| T3 | 精简调试日志 |\n\n现在批准哪几项？",
+  "userText": "批准 A 和 C，B 先放着。"
+ },
+ {
+  "id": "R12MAP-P12-recommend-in-desc",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "有三个消息队列方案：\n\n1. Kafka：吞吐高，运维重。建议数据量大时用。\n2. RabbitMQ：成熟，路由灵活。推荐。\n3. Redis Streams：轻量，持久性弱。\n\n你选哪个？",
+  "userText": "RabbitMQ 吧。"
+ },
+ {
+  "id": "R12MAP-P13-question-then-wait",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "有三个消息队列方案：\n\n1. Kafka：吞吐高，运维重\n2. RabbitMQ：成熟，路由灵活\n3. Redis Streams：轻量，持久性弱\n\n你选哪个？\n\n我会等你回复后再动手。",
+  "userText": "选 2。",
+  "note": "Read back past a closing remark: options are mapped, the band stays capped at medium."
+ },
+ {
+  "id": "R12MAP-P14-fangan-yi",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "有三个方案：\n\n方案一：Kafka，吞吐高\n方案二：RabbitMQ，成熟\n方案三：Redis Streams，轻量\n\n你选哪个？",
+  "userText": "选方案二。"
+ },
+ {
+  "id": "R12MAP-P15-fullwidth-paren",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "有三个方案：\n\n1）Kafka：吞吐高\n2）RabbitMQ：成熟\n3）Redis Streams：轻量\n\n你选哪个？",
+  "userText": "选 2。"
+ },
+ {
+  "id": "R12MAP-P16-circled",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "有三个方案：\n\n① Kafka：吞吐高\n② RabbitMQ：成熟\n③ Redis Streams：轻量\n\n你选哪个？",
+  "userText": "RabbitMQ 吧。"
+ },
+ {
+  "id": "R12MAP-P17-name-first-table",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "| 方案 | 优点 | 缺点 |\n|---|---|---|\n| Kafka | 吞吐高 | 运维重 |\n| RabbitMQ | 成熟 | 吞吐一般 |\n| Redis Streams | 轻量 | 持久性弱 |\n\n你选哪个？",
+  "userText": "就选 RabbitMQ。"
+ },
+ {
+  "id": "R12MAP-P18-multiq-approve-en",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "我建议给报表加一个导出预览功能，计划如下：\n\n1. 新增 `preview` 子命令\n2. 渲染前 20 行\n3. 补充单测\n\n需要你确认：\n1. 你批准我实施吗？\n2. 预览希望用命令行输出，还是图形界面？",
+  "userText": "Yes, implement it. CLI is fine."
+ },
+ {
+  "id": "R12MAP-P19-multiq-approve-dash",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "I propose adding an export preview:\n\n1. Add a `preview` subcommand\n2. Render the first 20 rows\n3. Add unit tests\n\nTwo questions:\n1. Do you approve me implementing this?\n2. Should the preview be CLI output or a GUI?",
+  "userText": "Approve — go ahead and implement it with CLI output."
+ },
+ {
+  "id": "R12MAP-P20-multiq-approve-zh",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "我建议给报表加一个导出预览功能，计划如下：\n\n1. 新增 `preview` 子命令\n2. 渲染前 20 行\n3. 补充单测\n\n需要你确认：\n1. 你批准我实施吗？\n2. 预览希望用命令行输出，还是图形界面？",
+  "userText": "批准实施，用命令行就行。"
+ },
+ {
+  "id": "R12MAP-P21-twopara-approved",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "我建议给报表加一个导出预览功能：新增 preview 子命令，渲染前 20 行，并补充单测。\n\n是否批准我实施这个导出预览？另外，预览希望用命令行输出还是图形界面？",
+  "userText": "Approved. Please implement the export preview."
+ },
+ {
+  "id": "R12MAP-P22-look-offered-approve",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "有三个候选改动：\n\nA. 上传追踪：给上传链路加 trace\nB. 结果缓存：缓存查询结果\nC. 补充单测：补齐边界用例\n\n你想先看哪一项的详细改动，还是直接批准实施其中几项？",
+  "userText": "批准 A 和 C。"
+ },
+ {
+  "id": "R12MAP-P23-look-offered-bare",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "1",
+   "3"
+  ],
+  "assistantText": "Three candidate changes:\n\n1. Upload tracing: add spans\n2. Result cache: cache query results\n3. Edge-case tests: cover boundaries\n\nWhich ones should I implement? I can also show the diff for any item first.",
+  "userText": "1 and 3."
+ },
+ {
+  "id": "R12MAP-N01-look-offered-diff",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "有三个候选改动：\n\nA. 上传追踪：给上传链路加 trace\nB. 结果缓存：缓存查询结果\nC. 补充单测：补齐边界用例\n\n你想先看哪一项的详细改动，还是直接批准实施其中几项？",
+  "userText": "先看 B 的 diff。"
+ },
+ {
+  "id": "R12MAP-N02-look-offered-object-first",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "有三个候选改动：\n\nA. 上传追踪：给上传链路加 trace\nB. 结果缓存：缓存查询结果\nC. 补充单测：补齐边界用例\n\n你想先看哪一项的详细改动，还是直接批准实施其中几项？",
+  "userText": "B 的具体改动给我看一下。"
+ },
+ {
+  "id": "R12MAP-N03-look-offered-en",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "Three candidate changes:\n\n1. Upload tracing: add spans\n2. Result cache: cache query results\n3. Edge-case tests: cover boundaries\n\nWhich ones should I implement? I can also show the diff for any item first.",
+  "userText": "Let me see the diff for 2 first."
+ },
+ {
+  "id": "R12MAP-N04-just-show",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "Three candidate changes:\n\n1. Upload tracing: add spans\n2. Result cache: cache query results\n3. Edge-case tests: cover boundaries\n\nWhich ones should I implement? I can also show the diff for any item first.",
+  "userText": "Just show me 2 for now."
+ },
+ {
+  "id": "R12MAP-N05-agree-to-look",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "有三个候选改动：\n\nA. 上传追踪：给上传链路加 trace\nB. 结果缓存：缓存查询结果\nC. 补充单测：补齐边界用例\n\n你批准哪几项？",
+  "userText": "我同意先看迁移预览，确认影响后再决定。"
+ },
+ {
+  "id": "R12MAP-N06-no-then-new-task",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "我建议给报表加一个导出预览功能，计划如下：\n\n1. 新增 `preview` 子命令\n2. 渲染前 20 行\n3. 补充单测\n\n需要你确认：\n1. 你批准我实施吗？\n2. 预览希望用命令行输出，还是图形界面？",
+  "userText": "不用了，帮我看下 README。"
+ },
+ {
+  "id": "R12MAP-N07-article-sentence",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "Four possible improvements:\n\n**A. Upload tracing** — add spans to the upload path.\n**B. Result cache** — cache query results.\n**C. Edge-case tests** — cover boundaries.\n**D. Log redaction** — drop sensitive fields.\n\nWhich of these do you approve now?",
+  "userText": "A merge now is risky; let's talk tomorrow."
+ },
+ {
+  "id": "R12MAP-N08-status-pair-table",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "| # | 选项 | 状态 |\n|---|---|---|\n| 1 | A | 已完成 |\n| 2 | B | 进行中 |\n| 3 | C | 未开始 |\n\n以上是当前进度，有问题随时说。",
+  "userText": "好的，收到。"
+ },
+ {
+  "id": "R12MAP-N09-approve-other",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "I propose adding an export preview:\n\n1. Add a `preview` subcommand\n2. Render the first 20 rows\n3. Add unit tests\n\nTwo questions:\n1. Do you approve me implementing this?\n2. Should the preview be CLI output or a GUI?",
+  "userText": "Not now. But please go ahead and update the README.",
+  "note": "Refuses the approval and asks for other work; a candidate, never high."
+ },
+ {
+  "id": "R12MAP-N10-still-to-discuss",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "1. A 本地\n2. B 云端\n\n选一个",
+  "userText": "我更喜欢 A 的名字，但还要讨论"
+ },
+ {
+  "id": "R12MAP-N11-compare-askback",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "| 方案 | 优点 | 缺点 |\n|---|---|---|\n| Kafka | 吞吐高 | 运维重 |\n| RabbitMQ | 成熟 | 吞吐一般 |\n| Redis Streams | 轻量 | 持久性弱 |\n\n你选哪个？",
+  "userText": "你觉得哪个更适合写多读少的场景？"
+ },
+ {
+  "id": "R12MAP-N12-plain-pick-view",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "有三个候选改动：\n\nA. 上传追踪：给上传链路加 trace\nB. 结果缓存：缓存查询结果\nC. 补充单测：补齐边界用例\n\n你批准哪几项？",
+  "userText": "先给我看看 A 的具体改动。"
+ },
+ {
+  "id": "R12MAP-P24-conditional-en",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "1"
+  ],
+  "assistantText": "1. Add caching\n2. Switch the queue\n3. Drop legacy API\n\nWhich do you approve?",
+  "userText": "Approve 1 now. Do 2 only if 1 passes review. Skip 3."
+ },
+ {
+  "id": "R12MAP-P25-conditional-zh",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "A — 重建倒排索引\nB — 升级分词词典\nC — 切换到新的排序模型\n\n批准哪些？",
+  "userText": "A 现在就做；C 只有在 A 做完、基准测试没变慢的前提下才批准；B 不要。"
+ },
+ {
+  "id": "R12MAP-P26-unless-approves",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "1. Add caching\n2. Switch the queue\n\nWhich do you approve?",
+  "userText": "Approve 2 unless you see a blocker."
+ },
+ {
+  "id": "R12MAP-P27-bare-letters",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C",
+   "D"
+  ],
+  "assistantText": "A、B、C、D 要做哪些？",
+  "userText": "除了 B 都要。"
+ },
+ {
+  "id": "R12MAP-P28-bare-letters-above",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "A、B、C\n\n请回复批准哪些。",
+  "userText": "A 现在做，B、C 不要。"
+ },
+ {
+  "id": "R12MAP-N13-bare-letters-status",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "A、B、C 三个服务现在哪些已经部署？",
+  "userText": "A 和 C。"
+ },
+ {
+  "id": "R12MAP-P29-bracketed-bullet-exclude-then-take",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "三种认证方案：\n\n- **A（Cookie Session）**：服务端维护会话\n- **B（JWT）**：无状态令牌\n- **C（mTLS）**：双向证书\n\n你选哪一种？",
+  "userText": "JWT 先排除。请用 Cookie session，也就是 A。"
+ },
+ {
+  "id": "R12MAP-P30-number-slash-letter",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "包管理改动有三项，请回复要做的编号或字母，可多选：\n\n1 / A：锁定 pnpm 版本\n2 / B：迁移到 workspace\n3 / C：加缓存\n\n要做哪几项？",
+  "userText": "1 和 3 可以做；2 这次先不迁移。"
+ },
+ {
+  "id": "R12MAP-P31-code-letter-table",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "| 编号 | 字母 | 名称 |\n|---|---|---|\n| ID 17 | A | SQLite |\n| ID 29 | B | PostgreSQL |\n| ID 41 | C | MySQL |\n\n最后采用哪个方案？请回复编号或字母。",
+  "userText": "用 PostgreSQL（B，ID 29）。"
+ },
+ {
+  "id": "R12MAP-P32-for-now-take",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "请选择迁移策略:\n\nA（原地迁移）\nB（双写迁移）\nC（停机迁移）\n\n你选哪个?",
+  "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。"
+ },
+ {
+  "id": "R12MAP-P33-exclude-alone",
+  "group": "r12-map-pos",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "三种认证方案：\n\n- **A（Cookie Session）**：服务端维护会话\n- **B（JWT）**：无状态令牌\n- **C（mTLS）**：双向证书\n\n你选哪一种？",
+  "userText": "排除 JWT。"
+ },
+ {
+  "id": "R12MAP-N14-hands-choice-back",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "日志库选哪个?\n\nA（Pino）\nB（Winston）\nC（Bunyan）",
+  "userText": "都行，你按维护成本最低的决定。"
+ },
+ {
+  "id": "R12MAP-N15-refuse-one-not-chosen",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "三种认证方案：\n\n- **A（Cookie Session）**：服务端维护会话\n- **B（JWT）**：无状态令牌\n- **C（mTLS）**：双向证书\n\n你选哪一种？",
+  "userText": "不要用 mTLS。A 和 B 我只是想再比较一下，还没选。"
+ },
+ {
+  "id": "R12MAP-N16-look-no-choice",
+  "group": "r12-map-neg",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "- **A 金丝雀**：先放一小部分流量\n- **B 蓝绿**：两套环境切换\n- **C 滚动**：逐批替换\n\n你选哪个？",
+  "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。"
+ },
+ {
+  "id": "R12MAP-CR-B1-all-time",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "B",
+   "C"
+  ],
+  "assistantText": "A. 补监控\nB. 加重试\nC. 加超时\n\n你批准哪些？",
+  "userText": "都批准，具体部署时间由你决定。"
+ },
+ {
+  "id": "R12MAP-CR-B1-all-order",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "B",
+   "C"
+  ],
+  "assistantText": "A. 补监控\nB. 加重试\nC. 加超时\n\n你批准哪些？",
+  "userText": "都做，顺序由你决定。"
+ },
+ {
+  "id": "R12MAP-CR-B1-neg-you-pick",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "A. 补监控\nB. 加重试\nC. 加超时\n\n你批准哪些？",
+  "userText": "都行，你选。"
+ },
+ {
+  "id": "R12MAP-CR-B2-status-label",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "Do you approve implementing this patch?",
+  "userText": "Approved is the status label. Please explain what it means."
+ },
+ {
+  "id": "R12MAP-CR-B2-yes-instead",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "A. 补监控\nB. 加重试\n\n是否批准实施以上方案？",
+  "userText": "Yes, explain the risks instead of implementing the change."
+ },
+ {
+  "id": "R12MAP-CR-B2-approved-implement",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "Do you approve implementing this patch?",
+  "userText": "Approved. Please implement it."
+ },
+ {
+  "id": "R12MAP-CR-B3-detail-name",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "A. 详细日志\nB. 批量执行\n\n你选择详细日志还是批量执行？",
+  "userText": "I vote B.",
+  "note": "Selection stays empty as on main (the vote is an existing mapping gap); the guard is that the band stays high. R14 holdout 复核（G 段）：用户这一轮其实选定了第 2 项「批量执行」；空选是 main 的已知映射缺口，这里锁的是现状，修映射时一起改。"
+ },
+ {
+  "id": "R12MAP-CR-B3-detail-name-zh",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "A. 详细日志\nB. 批量执行\n\n你选择详细日志还是批量执行？",
+  "userText": "我的答案是 B。",
+  "note": "Same as CR-B3-detail-name. R14 holdout 复核（G 段）：用户这一轮其实选定了第 2 项「批量执行」；空选是 main 的已知映射缺口，这里锁的是现状，修映射时一起改。"
+ },
+ {
+  "id": "R12MAP-CR-B4-skip-4",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "D"
+  ],
+  "assistantText": "2. B — 加监控\n4. D — 加重试\n\n你选哪个？",
+  "userText": "4"
+ },
+ {
+  "id": "R12MAP-CR-B4-skip-D",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "D"
+  ],
+  "assistantText": "2. B — 加监控\n4. D — 加重试\n\n你选哪个？",
+  "userText": "D"
+ },
+ {
+  "id": "R12MAP-CR-B5-as-long-as-possible",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "A. Redis\nB. SQLite\n\nWhich store should we use?",
+  "userText": "Use B as long as possible."
+ },
+ {
+  "id": "R12MAP-CR-B5-only-if",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "A. Redis\nB. SQLite\n\nWhich store should we use?",
+  "userText": "Use B only if A fails the load test."
+ },
+ {
+  "id": "R12MAP-SKC-wb-offer-look-cn-no-commit",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n- C：增加本地缓存\n\n你想先看哪一项的 diff，还是直接批准我实施？",
+  "userText": "先让我看 B 的 diff，展开一下这项改动。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-offer-look-explicit-approve",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n- C：增加本地缓存\n\n你想先看哪一项的 diff，还是直接批准我实施？",
+  "userText": "批准实施 B，现在就按 B 做。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-offer-look-approve-a-view-b",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n- C：增加本地缓存\n\n你想先看哪一项的 diff，还是直接批准我实施？",
+  "userText": "A 批准实施；B 先只给我看 diff。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-view-choice-without-approval-path",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "我可以先展示一个方案的 diff：\n- A：增加访问日志\n- B：切换序列化器\n\n你要我先展示 A 还是 B？",
+  "userText": "B"
+ },
+ {
+  "id": "R12MAP-SKC-wb-offer-look-explicit-refusal",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n\n你想先看哪项的 diff，还是直接批准我实施？",
+  "userText": "不批准实施，先只看 B 的 diff。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-approval-opens-chinese-approve",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "补丁已经准备好。你批准我现在应用这个补丁吗？",
+  "userText": "批准——go ahead and apply the patch."
+ },
+ {
+  "id": "R12MAP-SKC-wb-approval-opens-yes-implement",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "The migration is ready. Should I apply it now?",
+  "userText": "Yes, implement it."
+ },
+ {
+  "id": "R12MAP-SKC-wb-approval-opens-approved-extra-work",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "你批准我现在合并这个分支吗？",
+  "userText": "Approved. Please merge it and update the changelog."
+ },
+ {
+  "id": "R12MAP-SKC-wb-handoff-all-delegate-cost",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "请选择一个存储方案：\n- A：SQLite\n- B：PostgreSQL\n- C：JSON 文件",
+  "userText": "都行，你按维护成本最低的决定。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-handoff-named-both-still-delegates",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "请选择一个缓存方案：\n- A：进程内 LRU\n- B：Redis\n- C：不缓存",
+  "userText": "A 和 B 都可以，你选一个就好。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-handoff-one-explicit-other-delegated",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "请选择一个发布策略：\n- A：金丝雀\n- B：蓝绿\n- C：滚动发布",
+  "userText": "我选 A，剩下的你按风险决定。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-handoff-named-option-but-not-chosen",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "请选择一个日志库：\n- A：Pino\n- B：Winston\n- C：Bunyan",
+  "userText": "B 也行，具体你来定。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-handoff-explicit-choice-control",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "请选择一个构建工具：\n- A：Vite\n- B：Webpack\n- C：Parcel",
+  "userText": "都行，不过这次直接做 A。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-letter-paired-number-selected",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "请选择一项：\n1. A — 增加重试\n2. B — 提高超时\n3. C — 记录请求 ID\n你选哪些？",
+  "userText": "A and C please, nothing else."
+ },
+ {
+  "id": "R12MAP-SKC-wb-letter-bracketed-bullet",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "请选择一个队列：\n- A（Redis Streams）：轻量\n- B（RabbitMQ）：功能丰富\n- C（SQS）：托管服务\n你选哪项？",
+  "userText": "选 B。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-letter-number-slash-alias",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "C"
+  ],
+  "assistantText": "为状态管理选择方案：\n1 / A：Redux Toolkit\n2 / B：Zustand\n3 / C：React context\n请回复数字或字母。",
+  "userText": "3"
+ },
+ {
+  "id": "R12MAP-SKC-wb-letter-table-code-id-position-alias",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "T3"
+  ],
+  "assistantText": "请从表格选一个方案：\n| ID | 方案 |\n|---|---|\n| T1 | Kafka |\n| T2 | RabbitMQ |\n| T3 | SQS |\n你选哪项？",
+  "userText": "C"
+ },
+ {
+  "id": "R12MAP-SKC-wb-letter-table-numeric-id-letter-label",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "29"
+  ],
+  "assistantText": "请从表格选一个数据库：\n| ID | 标签 | 名称 |\n|---|---|---|\n| 17 | A | SQLite |\n| 29 | B | PostgreSQL |\n| 41 | C | MySQL |\n你选哪项？",
+  "userText": "B"
+ },
+ {
+  "id": "R12MAP-SKC-wb-readback-options-before-standalone-question",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "请考虑以下缓存选择：\n1. 进程内 LRU\n2. Redis\n3. HTTP cache\n\n你想选择哪一个？\n\n我建议选 Redis，因为需要跨实例一致性。",
+  "userText": "2"
+ },
+ {
+  "id": "R12MAP-SKC-wb-readback-options-before-wait-close",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "方案如下：\n- A：SQLite\n- B：PostgreSQL\n- C：JSON 文件\n\n你会选哪一个？\n\n我会等你回复后再处理。",
+  "userText": "B"
+ },
+ {
+  "id": "R12MAP-SKC-wb-readback-options-before-english-close",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "3"
+  ],
+  "assistantText": "The available options are:\n1. in-process LRU\n2. Redis\n3. HTTP cache headers\n\nWhich one do you choose?\n\nI'll wait for your answer.",
+  "userText": "3"
+ },
+ {
+  "id": "R12MAP-SKC-wb-readback-control-plan-is-not-options",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "执行计划：\n1. 添加 preview 子命令\n2. 运行迁移测试\n3. 更新 README\n\n你倾向命令行还是图形界面？\n\n我会等你回复后再继续。",
+  "userText": "先解释图形界面的权限模型。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-number-fullwidth-paren",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "选一种数据格式：\n1）YAML\n2）TOML\n3）JSON\n请告诉我选哪项。",
+  "userText": "2）TOML。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-number-circled",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "3"
+  ],
+  "assistantText": "请选一项：\n①：SQLite\n②：PostgreSQL\n③：MySQL\n你选择哪个？",
+  "userText": "③"
+ },
+ {
+  "id": "R12MAP-SKC-wb-number-chinese-comma",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "请选一个部署策略：\n一、金丝雀发布\n二、蓝绿发布\n三、滚动发布\n你选哪种？",
+  "userText": "第二项，蓝绿发布。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-number-scheme-one",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "3"
+  ],
+  "assistantText": "请从下面方案中选一个：\n方案一：SQLite\n方案二：PostgreSQL\n方案三：JSON 文件\n你倾向哪种？",
+  "userText": "方案三。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-table-code-ids-only",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "T2"
+  ],
+  "assistantText": "选择一个消息队列：\n| ID | 描述 |\n|---|---|\n| T1 | Kafka |\n| T2 | RabbitMQ |\n| T3 | SQS |\n你选哪个 ID？",
+  "userText": "T2。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-table-first-column-plan-name",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "2"
+  ],
+  "assistantText": "请选择一个数据库方案：\n| 方案 | 优点 | 风险 |\n|---|---|---|\n| SQLite | 易部署 | 单机写入 |\n| PostgreSQL | 并发能力强 | 运维成本较高 |\n| MySQL | 团队熟悉 | 需要维护副本 |\n你选哪个方案？",
+  "userText": "PostgreSQL。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-table-first-column-plan-name-long-header",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "1"
+  ],
+  "assistantText": "请选择一个数据库方案：\n| 方案名称 | 优点 | 风险 |\n|---|---|---|\n| SQLite | 易部署 | 单机写入 |\n| PostgreSQL | 并发能力强 | 运维成本较高 |\n| MySQL | 团队熟悉 | 需要维护副本 |\n你选哪个方案？",
+  "userText": "SQLite。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-table-status-rows-not-choice",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "当前部署状态：\n| 方案 | 状态 |\n|---|---|\n| SQLite | 已下线 |\n| PostgreSQL | 正在运行 |\n| MySQL | 未部署 |\n目前哪个方案正在运行？",
+  "userText": "PostgreSQL 正在运行。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-table-task-header-not-choice",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "任务状态：\n| 任务 | 状态 |\n|---|---|\n| API | 完成 |\n| UI | 进行中 |\n哪个任务已经完成？",
+  "userText": "API。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-recommend-one-option-keeps-whole-list",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "从这些缓存策略选一个：\n- A：进程内 LRU。建议单实例先用它。\n- B：Redis。适合多实例。\n- C：不缓存。适合数据很少的场景。\n你选哪个？",
+  "userText": "选 B。"
+ },
+ {
+  "id": "R12MAP-SKC-wb-recommend-two-of-three-keeps-whole-list",
+  "group": "r12-map-skeptic-c",
+  "source": "lab/r12-adversarial@ffde857a r12-adversarial-whitebox.json",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "请从三种发布策略选择：\n- A：金丝雀。建议用于小流量验证。\n- B：蓝绿。大版本切换时推荐。\n- C：滚动发布。逐步替换实例。\n你选哪个？",
+  "userText": "B。"
+ },
+ {
+  "id": "R12MAP-V11-1-table-single-act-word",
+  "group": "r12-map-v11-mechanism",
+  "source": "relay/v11-mechanisms.md (holdout synthetic repro)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "日志压缩有三种执行方式：\n| ID | 方式 | 说明 |\n|---|---|---|\n| A | 每日增量 | 文件增长较慢：需要更多索引 |\n| B | 每周批量 | 操作次数少：夜间耗时较长 |\n| C | 手动归档 | 不占定时任务：容易被遗忘 |\n你要采用哪种？",
+  "userText": "选 B，每周批量归档。"
+ },
+ {
+  "id": "R12MAP-V11-2-table-partial-defer-wait",
+  "group": "r12-map-v11-mechanism",
+  "source": "relay/v11-mechanisms.md (holdout synthetic repro)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "客服台有三项可以分别上线的改动：\n| ID | 功能 | 说明 |\n|---|---|---|\n| A | 标签筛选 | 为每张工单保留多个标签：侧栏可按标签组合过滤并记住上次筛选 |\n| B | 自动派单 | 按值班表与队列压力分配新工单：需记录改派历史供主管复核 |\n| C | 时限提示 | 在截止前按剩余时间提醒负责人：逾期后仍保留完整事件轨迹 |\n本次批准哪几项？A、B、C 可组合，也能留一项以后做。\n我等你的决定。",
+  "userText": "A 和 C 现在实施；B 改天再议。"
+ },
+ {
+  "id": "R12MAP-V11-3a-bold-last-with-question",
+  "group": "r12-map-v11-mechanism",
+  "source": "relay/v11-mechanisms.md (holdout synthetic repro)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "**A 快捷搜索**：可按订单号直接定位记录。\n\n**B 批量归档**：把选中订单移入历史列表。\n\n**C 过期提醒**：临近保留期限时提示管理员。哪些这周批准，哪些以后做？",
+  "userText": "先批准 A、C；B 后面再考虑。"
+ },
+ {
+  "id": "R12MAP-V11-3b-bold-last-with-question",
+  "group": "r12-map-v11-mechanism",
+  "source": "relay/v11-mechanisms.md (holdout synthetic repro)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "C"
+  ],
+  "assistantText": "**A** 小号字体：单屏多显示几行。\n\n**B** 中号字体：保持默认阅读密度。\n\n**C** 大号字体：照顾远距离阅读。你选哪一项？",
+  "userText": "选 C，大号字体。"
+ },
+ {
+  "id": "R12MAP-V11-4-letter-paren-exclusion",
+  "group": "r12-map-v11-mechanism",
+  "source": "relay/v11-mechanisms.md (holdout synthetic repro)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "这轮想加哪些账单功能？三项可以各自上线：\nA) 税额明细：逐项展示税额和计算依据\nB) 定时发送：每月底自动发送账单\nC) 异常标记：标注超出预算的项目\n请回字母，比如“A、C”；也可说“除了 B”。我会等你定下来。",
+  "userText": "除了 B 都做：税额明细和异常标记。"
+ },
+ {
+  "id": "R12MAP-V11-5a-number-letter-table-either",
+  "group": "r12-map-v11-mechanism",
+  "source": "relay/v11-mechanisms.md (holdout synthetic repro)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "排班屏幕有三处可改，你准备先做哪些？\n| ID | 名称 | 用途 |\n|---|---|---|\n| 1 | A 班次颜色 | 不同班次用不同色块：快速分辨早晚班 |\n| 2 | B 员工头像 | 在格子里显示头像：方便点名核对 |\n| 3 | C 冲突提示 | 重叠班次加醒目标记：减少人工排错 |\n请用数字或字母作答，例如“1、3”或“A、C”。",
+  "userText": "选 A 和 C，也就是 1、3；B 以后再做。"
+ },
+ {
+  "id": "R12MAP-V11-5b-number-letter-table",
+  "group": "r12-map-v11-mechanism",
+  "source": "relay/v11-mechanisms.md (holdout synthetic repro)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "| 序号 | 名称 | 说明 |\n|---|---|---|\n| 1 | A 行合并 | 把相邻的同类记录合并展示：降低视觉噪声 |\n| 2 | B 列固定 | 横向滚动时保留标题列：方便对照 |\n| 3 | C 快速复制 | 一键复制当前单元格：减少手动选择 |\n这轮先实施哪几项？数字或字母都可以。",
+  "userText": "A 和 C，也就是第 1、3 项。"
+ },
+ {
+  "id": "R12MAP-V7-state-only-a0u0",
+  "group": "r12-map-v7-state-only",
+  "source": "relay/v11-mechanisms.md state-only mechanism (synthetic, written by impl-map)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "Three stores:\n\nA. Redis: fast\nB. PostgreSQL: relational\nC. SQLite: local\n\nWhich one should we use?",
+  "userText": "A is already in the test fixtures; the previous run only measured its status.",
+  "note": "Held at main's band: a statement about option A is not a take."
+ },
+ {
+  "id": "R12MAP-V7-state-only-a0u1",
+  "group": "r12-map-v7-state-only",
+  "source": "relay/v11-mechanisms.md state-only mechanism (synthetic, written by impl-map)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "Three stores:\n\nA. Redis: fast\nB. PostgreSQL: relational\nC. SQLite: local\n\nWhich one should we use?",
+  "userText": "A was already part of the test data, and the earlier run just read its status.",
+  "note": "Held at main's band: a statement about option A is not a take."
+ },
+ {
+  "id": "R12MAP-V7-state-only-a0u2",
+  "group": "r12-map-v7-state-only",
+  "source": "relay/v11-mechanisms.md state-only mechanism (synthetic, written by impl-map)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "Three stores:\n\nA. Redis: fast\nB. PostgreSQL: relational\nC. SQLite: local\n\nWhich one should we use?",
+  "userText": "A is in the fixtures already. The last run only measured its state, nothing to add.",
+  "note": "Held at main's band: a statement about option A is not a take."
+ },
+ {
+  "id": "R12MAP-CR2-B2-1-refuse-then-handback",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "A. 补监控\nB. 加重试\n\n你批准哪些？",
+  "userText": "A 不做，B 也不做，后续你来定。",
+  "note": "Both options turned down; handing back what comes next does not cap it."
+ },
+ {
+  "id": "R12MAP-CR2-B2-2-use-to-review",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "A. 人工审查\nB. 自动审查\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Use B to review every pull request."
+ },
+ {
+  "id": "R12MAP-CR2-B2-3-count-not-letter",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "B. Redis\nD. SQLite\n\n你选择哪个？",
+  "userText": "Run 4 workers first.",
+  "note": "Held at main's band: a count is no option number in a plain lettered list."
+ },
+ {
+  "id": "R12MAP-CR2-B2-4-id-then-both",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B",
+   "A"
+  ],
+  "assistantText": "A. 补充请求超时\nB. 增加错误重试\nC. 删除失效缓存\n\n这几项你批准哪些？",
+  "userText": "选 B，重试和超时都做。"
+ },
+ {
+  "id": "R12MAP-CR2-B2-4b",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B",
+   "A"
+  ],
+  "assistantText": "A. 补充请求超时\nB. 增加错误重试\nC. 删除失效缓存\n\n这几项你批准哪些？",
+  "userText": "选 B，超时和重试都做。"
+ },
+ {
+  "id": "R12MAP-CR2-B2-4c",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B",
+   "A"
+  ],
+  "assistantText": "A. 补充请求超时\nB. 增加错误重试\nC. 删除失效缓存\n\n这几项你批准哪些？",
+  "userText": "先上 B；超时与重试一起实现。"
+ },
+ {
+  "id": "R12MAP-CR2-B2-5-criterion-time",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "A. Redis\nB. SQLite\n\n你选哪个？",
+  "userText": "都行，你按响应时间最短的决定。"
+ },
+ {
+  "id": "R12MAP-CR2-B2-5b",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "assistantText": "A. Redis\nB. SQLite\n\n你选哪个？",
+  "userText": "都可以，你按故障恢复时间来选。"
+ },
+ {
+  "id": "R12MAP-CR2-B2-6-condition-you-can",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "A. Redis\nB. SQLite\n\nWhich store should we use?",
+  "userText": "Use B as long as you can prove it passes security review.",
+  "note": "A real condition: B is put off until it holds (conditional-approval convention)."
+ },
+ {
+  "id": "R12MAP-CR2-B2-6b",
+  "group": "r12-map-reviewer",
+  "source": "R12-CR B2 (reviewer)",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "assistantText": "A. Redis\nB. SQLite\n\nWhich store should we use?",
+  "userText": "Use B as long as we can keep latency below 50 ms.",
+  "note": "Same as CR2-B2-6."
+ }
+]

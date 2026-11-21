@@ -1,6 +1,9 @@
 import { useState } from "react";
 
-import type { CaptureClassifier } from "../../../../shared/capture-classifier.js";
+import {
+  DEFAULT_CAPTURE_CLASSIFIER,
+  type CaptureClassifier,
+} from "../../../../shared/capture-classifier.js";
 import type {
   AppSnapshot,
   DecisionApi,
@@ -60,17 +63,22 @@ export const ModelsPanel = ({ snapshot, api }: ModelsPanelProps) => {
 
       <div className="desktop-page-scroll model-page-content">
         <section
-          className="recognition-overview"
+          className="settings-card recognition-overview"
           aria-labelledby="recognition-title"
         >
-          <div className="recognition-overview-heading">
-            <span className={`health-dot ${available ? "healthy" : ""}`} />
+          <header className="settings-card-header">
             <div>
-              <span>当前识别引擎</span>
-              <h2 id="recognition-title">{recognition.providerLabel}</h2>
+              <h2 id="recognition-title">识别引擎</h2>
             </div>
-          </div>
-          <dl>
+          </header>
+          <dl className="recognition-facts">
+            <div>
+              <dt>当前引擎</dt>
+              <dd>
+                <span className={`health-dot ${available ? "healthy" : ""}`} aria-hidden="true" />
+                {recognition.providerLabel}
+              </dd>
+            </div>
             <div>
               <dt>可用性</dt>
               <dd>{availabilityLabel[recognition.availability]}</dd>
@@ -81,7 +89,7 @@ export const ModelsPanel = ({ snapshot, api }: ModelsPanelProps) => {
             </div>
             <div>
               <dt>近 7 天处理</dt>
-              <dd>{recognition.processed7d}</dd>
+              <dd>{recognition.processed7d} 轮</dd>
             </div>
           </dl>
           {unavailableModels === undefined ? null : (
@@ -94,11 +102,18 @@ export const ModelsPanel = ({ snapshot, api }: ModelsPanelProps) => {
                     .join("、")}。`}
             </p>
           )}
-          <label className="recognition-classifier">
-            <span>采集分类</span>
+          <div className="recognition-classifier">
+            <div>
+              <label htmlFor="capture-classifier">采集分类</label>
+              <p id="capture-classifier-help">
+                每一轮对话都会走这里，无需你发起。默认「规则加本机模型」只在本机用 Qwen 4B，对话不离开这台电脑；4B 没装、只装了 2B、出错或超时时只用规则，不会改用下方其他后端。规则回退会保留原话；缺少可靠依据时，不会自动填入猜测的选项，需要核对的记录进入待确认。选「规则加模型」时，每一轮对话都会按下方顺序发给所选后端，可能是命令行或远程服务。其余用途（问答、方法论提炼、草案）始终按下方顺序调用。
+              </p>
+            </div>
             <select
+              id="capture-classifier"
               aria-label="采集分类使用的引擎"
-              value={snapshot.captureClassifier ?? "rules"}
+              aria-describedby="capture-classifier-help"
+              value={snapshot.captureClassifier ?? DEFAULT_CAPTURE_CLASSIFIER}
               onChange={(event) => {
                 setClassifierError(null);
                 // Not saved, the choice went back to what it was with nothing said.
@@ -109,18 +124,16 @@ export const ModelsPanel = ({ snapshot, api }: ModelsPanelProps) => {
                   );
               }}
             >
+              <option value="local">规则加本机模型，只用本机 Qwen 4B（默认）</option>
               <option value="rules">只用规则，不调用模型</option>
-              <option value="models">规则加模型，按下方后端顺序</option>
+              <option value="models">规则加模型，每一轮发给下方后端（按顺序，可能是远程）</option>
             </select>
-            <small>
-              每一轮对话都会走这里，无需你发起。模型只在选择第二项时参与，其余用途（问答、方法论提炼、草案）始终按下方顺序调用。
-            </small>
-            {classifierError === null ? null : (
-              <p className="error-message" role="alert">
-                采集分类没能保存：{classifierError}
-              </p>
-            )}
-          </label>
+          </div>
+          {classifierError === null ? null : (
+            <p className="error-message recognition-classifier-error" role="alert">
+              采集分类没能保存：{classifierError}
+            </p>
+          )}
         </section>
 
         <ModelProviderPanel api={api} />

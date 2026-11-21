@@ -4,6 +4,10 @@ import {
   consultationAsReleased,
   type DecisionConsultationRequest,
 } from "@cognelis/decision-protocol";
+import { MethodologyRepository } from "@cognelis/decision-storage";
+import { copyFile, mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { buildDecisionConsultation } from "../src/main/decision-consultation-service.js";
@@ -55,6 +59,34 @@ describe("decision consultation service", () => {
     // Answered in 1.1.0's shape to a bridge from before, which refused every key it did not know.
     expect(consultationAsReleased(result)).not.toHaveProperty("signalsUnavailable");
     expect(buildDecisionConsultation(request(), [], undefined, [])).not.toHaveProperty("signalsUnavailable");
+  });
+
+  it("says some principles or preferences could not be read, rather than that the reader holds none", async () => {
+    const vault = await mkdtemp(join(tmpdir(), "decision-consultation-unread-"));
+    try {
+      // A sync client's copy beside the one adopted principle ("<name> 2.md"): neither is listed, only the page is told.
+      let unread = false;
+      const principles = new MethodologyRepository(vault, { onUnreadable: (notes) => { unread = notes.length > 0; } });
+      await principles.save(methodology("principle-1"));
+      const folder = join(vault, "Decision Journal", "principles");
+      const [note] = await readdir(folder);
+      await copyFile(join(folder, note!), join(folder, note!.replace(/\.md$/u, " 2.md")));
+      const listed = await principles.list();
+      expect(listed).toEqual([]);
+
+      const result = buildDecisionConsultation(request(), listed, undefined, [], { principles: unread, journal: true });
+      expect(result).toMatchObject({ status: "no_match", principlesIncomplete: true, signalsIncomplete: true });
+      // Not no_accepted_principles, which a bridge from before says as 当前尚无可读取的已采纳原则.
+      expect(result).not.toHaveProperty("noMatchReason");
+      expect(buildDecisionConsultation(request(), [methodology("principle-1")], undefined, [], { principles: true }))
+        .toMatchObject({ status: "matched", principlesIncomplete: true });
+      // Answered in 1.1.0's shape to a bridge from before, which refused every key it did not know.
+      expect(consultationAsReleased(result)).not.toHaveProperty("principlesIncomplete");
+      expect(consultationAsReleased(result)).not.toHaveProperty("signalsIncomplete");
+      expect(buildDecisionConsultation(request(), [], undefined, [])).not.toHaveProperty("principlesIncomplete");
+    } finally {
+      await rm(vault, { recursive: true, force: true });
+    }
   });
 
   it("distinguishes an empty adopted-principle source from an unrelated query", () => {

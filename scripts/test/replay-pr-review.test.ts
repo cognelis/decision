@@ -35,11 +35,17 @@ it("replays immutable Git objects without using dirty files or exposing labels",
     const executable = join(directory, "fake-codex.cjs"), caseFile = join(directory, "case.json"), output = join(directory, "result.json");
     await writeFile(executable, `#!/usr/bin/env node\n(async () => { for await (const chunk of process.stdin) {}\nconsole.log(JSON.stringify({type:'item.completed',item:{type:'agent_message',text:JSON.stringify({actions:[{action:'finish_review',summary:'已检查',findings:[]}]})}}));\nconsole.log(JSON.stringify({type:'turn.completed',usage:{input_tokens:10,output_tokens:5}})); })();\n`, { mode: 0o700 });
     await writeFile(caseFile, JSON.stringify(sample));
-    await exec(process.execPath, ["scripts/replay-pr-review.mjs", "run", "--case", caseFile, "--executable", executable, "--output", output], { timeout: 30_000 });
+    await exec(process.execPath, ["scripts/replay-pr-review.mjs", "run", "--case", caseFile, "--executable", executable, "--output", output], { timeout: 30_000, env: { ...process.env, MODEL_PROXY_URL: "http://127.0.0.1:9" } });
     const result = JSON.parse(await readFile(output, "utf8"));
     expect(result).toMatchObject({ sourceCommit: head, baseCommit: base, candidateObservation: "before-verification", candidates: [], report: { status: "completed", findings: [] } });
     expect(result.implementationFiles).toHaveProperty("apps/desktop/src/main/pr-review-service.ts");
     expect(result.report.warnings.some((warning: string) => warning.includes("仓库规范"))).toBe(false);
+    expect(result).toMatchObject({ model: "codex-default", profile: { kind: "codex-cli" } });
+    const claude = join(directory, "fake-claude.cjs"), claudeOutput = join(directory, "result-claude.json");
+    await writeFile(claude, `#!/usr/bin/env node\n(async () => { for await (const chunk of process.stdin) {}\nconsole.log(JSON.stringify({type:'result',subtype:'success',is_error:false,result:JSON.stringify({actions:[{action:'finish_review',summary:'已检查',findings:[]}]}),usage:{input_tokens:10,output_tokens:5}})); })();\n`, { mode: 0o700 });
+    await exec(process.execPath, ["scripts/replay-pr-review.mjs", "run", "--case", caseFile, "--provider", "claude-code", "--executable", claude, "--model", "claude-test", "--output", claudeOutput], { timeout: 30_000, env: { ...process.env, MODEL_PROXY_URL: "http://127.0.0.1:9" } });
+    expect(JSON.parse(await readFile(claudeOutput, "utf8"))).toMatchObject({ model: "claude-test", profile: { kind: "claude-code-cli", model: "claude-test" }, report: { status: "completed", findings: [] }, traces: [{ status: "succeeded" }] });
+    await expect(exec(process.execPath, ["scripts/replay-pr-review.mjs", "run", "--case", caseFile, "--provider", "gemini", "--executable", claude, "--output", join(directory, "x.json")])).rejects.toThrow("--provider");
   } finally { await rm(directory, { recursive: true, force: true }); }
 }, 40_000);
 

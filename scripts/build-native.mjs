@@ -5,7 +5,6 @@ import { pathToFileURL } from "node:url";
 
 const APPLE_BUILD_SCRIPTS = Object.freeze([
   "scripts/build-foundation-model-helper.sh",
-  "scripts/build-liquid-glass-addon.sh",
 ]);
 
 export const nativeBuildPlan = (platform = process.platform) =>
@@ -35,9 +34,8 @@ const run = (command, arguments_, cwd) =>
 
 const clearAppleOutputs = async (repositoryRoot) => {
   const semanticDirectory = join(repositoryRoot, "dist", "semantic");
-  const nativeDirectory = join(repositoryRoot, "dist", "native");
-  await Promise.all([semanticDirectory, nativeDirectory].map((directory) => rm(directory, { recursive: true, force: true })));
-  await Promise.all([semanticDirectory, nativeDirectory].map((directory) => mkdir(directory, { recursive: true })));
+  await rm(semanticDirectory, { recursive: true, force: true });
+  await mkdir(semanticDirectory, { recursive: true });
   await copyFile(
     join(
       repositoryRoot,

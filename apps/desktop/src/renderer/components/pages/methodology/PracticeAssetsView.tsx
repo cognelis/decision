@@ -5,7 +5,7 @@ import type {
   PracticePublicationStatus,
   PracticePublicationTarget,
 } from "@cognelis/decision-core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type {
@@ -17,12 +17,15 @@ import type {
   PracticeAssetVersionItem,
 } from "../../../../shared/renderer-api.js";
 import { practiceAssetBasis } from "../../../../shared/renderer-api.js";
+import { ActionIcon } from "../../IconButton.js";
 import { ModalDialog } from "../../ModalDialog.js";
 
 interface PracticeAssetsViewProps {
   api: PracticeAssetsApi;
   onOpenPrinciples(): void;
   toolbarHost?: HTMLElement | null;
+  /** Where 新建草案 goes when the page header carries it; beside the filters otherwise. */
+  actionHost?: HTMLElement | null;
 }
 
 type StatusFilter = PracticeAssetStatus | "all";
@@ -134,10 +137,12 @@ const nonEmptyLines = (value: string): string[] =>
  * vanish as they were typed. Lines changed from outside (a draft opened) are shown as they are.
  */
 const LinesField = ({
+  id,
   label,
   lines,
   onLines,
 }: {
+  id: string;
   label: string;
   lines: string[];
   onLines(lines: string[]): void;
@@ -146,16 +151,18 @@ const LinesField = ({
   const shown =
     nonEmptyLines(text).join("\n") === lines.join("\n") ? text : lines.join("\n");
   return (
-    <label>
-      <span>{label}</span>
+    <div className="form-field">
+      <label htmlFor={id}>{label}</label>
       <textarea
+        id={id}
+        rows={4}
         value={shown}
         onChange={(event) => {
           setText(event.currentTarget.value);
           onLines(nonEmptyLines(event.currentTarget.value));
         }}
       />
-    </label>
+    </div>
   );
 };
 
@@ -180,61 +187,77 @@ const PracticeAssetFormFields = ({
   revision: PracticeAssetRevisionInput;
   onChange(next: PracticeAssetRevisionInput): void;
   autoFocus?: boolean;
-}) => (
-  <>
-    <label>
-      <span>标题</span>
-      <input
-        autoFocus={autoFocus}
-        maxLength={120}
-        value={revision.title}
-        onChange={(event) =>
-          onChange({ ...revision, title: event.currentTarget.value })
-        }
-      />
-    </label>
-    <label>
-      <span>简介</span>
-      <textarea
-        maxLength={800}
-        value={revision.summary}
-        onChange={(event) =>
-          onChange({ ...revision, summary: event.currentTarget.value })
-        }
-      />
-    </label>
-    <label>
-      <span>使用条件</span>
-      <textarea
-        maxLength={1_500}
-        value={revision.trigger}
-        onChange={(event) =>
-          onChange({ ...revision, trigger: event.currentTarget.value })
-        }
-      />
-    </label>
-    <LinesField
-      label="操作步骤（每行一项，2–12 项）"
-      lines={revision.steps}
-      onLines={(steps) => onChange({ ...revision, steps })}
-    />
-    <LinesField
-      label="验收检查（每行一项，1–8 项）"
-      lines={revision.checks}
-      onLines={(checks) => onChange({ ...revision, checks })}
-    />
-    <label>
-      <span>失败处理</span>
-      <textarea
-        maxLength={1_500}
-        value={revision.fallback}
-        onChange={(event) =>
-          onChange({ ...revision, fallback: event.currentTarget.value })
-        }
-      />
-    </label>
-  </>
-);
+}) => {
+  const id = useId();
+  return (
+    <div className="form-fields practice-asset-editor">
+      <div className="form-field">
+        <label htmlFor={`${id}-title`}>标题</label>
+        <input
+          id={`${id}-title`}
+          autoFocus={autoFocus}
+          maxLength={120}
+          value={revision.title}
+          onChange={(event) =>
+            onChange({ ...revision, title: event.currentTarget.value })
+          }
+        />
+      </div>
+      <div className="form-fields-row">
+        <div className="form-field">
+          <label htmlFor={`${id}-summary`}>简介</label>
+          <textarea
+            id={`${id}-summary`}
+            rows={3}
+            maxLength={800}
+            value={revision.summary}
+            onChange={(event) =>
+              onChange({ ...revision, summary: event.currentTarget.value })
+            }
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor={`${id}-trigger`}>使用条件</label>
+          <textarea
+            id={`${id}-trigger`}
+            rows={3}
+            maxLength={1_500}
+            value={revision.trigger}
+            onChange={(event) =>
+              onChange({ ...revision, trigger: event.currentTarget.value })
+            }
+          />
+        </div>
+      </div>
+      <div className="form-fields-row">
+        <LinesField
+          id={`${id}-steps`}
+          label="操作步骤（每行一项，2–12 项）"
+          lines={revision.steps}
+          onLines={(steps) => onChange({ ...revision, steps })}
+        />
+        <LinesField
+          id={`${id}-checks`}
+          label="验收检查（每行一项，1–8 项）"
+          lines={revision.checks}
+          onLines={(checks) => onChange({ ...revision, checks })}
+        />
+      </div>
+      <div className="form-field">
+        <label htmlFor={`${id}-fallback`}>失败处理</label>
+        <textarea
+          id={`${id}-fallback`}
+          rows={3}
+          maxLength={1_500}
+          value={revision.fallback}
+          onChange={(event) =>
+            onChange({ ...revision, fallback: event.currentTarget.value })
+          }
+        />
+      </div>
+    </div>
+  );
+};
 
 const versionDiffs = (
   current: PracticeAssetItem,
@@ -267,9 +290,12 @@ export const PracticeAssetsView = ({
   api,
   onOpenPrinciples,
   toolbarHost = null,
+  actionHost = null,
 }: PracticeAssetsViewProps) => {
   const [status, setStatus] = useState<StatusFilter>("candidate");
   const [items, setItems] = useState<PracticeAssetItem[]>([]);
+  // Which filter the rows shown were read for.
+  const [itemsFor, setItemsFor] = useState<StatusFilter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revisionKey, setRevisionKey] = useState(0);
@@ -328,6 +354,9 @@ export const PracticeAssetsView = ({
   const [publicationBusyTarget, setPublicationBusyTarget] =
     useState<PracticePublicationTarget | null>(null);
   const [publicationError, setPublicationError] = useState<string | null>(null);
+  // A status that could not be read is not a failed operation: said in the card with its retry (audit G5).
+  const [publicationReadError, setPublicationReadError] = useState<string | null>(null);
+  const [publicationReads, setPublicationReads] = useState(0);
   const [pendingPublicationAction, setPendingPublicationAction] = useState<{
     kind: "overwrite" | "rollback";
     target: PracticePublicationTarget;
@@ -335,6 +364,9 @@ export const PracticeAssetsView = ({
   const [versions, setVersions] = useState<PracticeAssetVersionItem[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyReads, setHistoryReads] = useState(0);
+  // A restore that did not go through is not a history that could not be read: the versions stay in view to try again.
+  const [restoreError, setRestoreError] = useState<string | null>(null);
   const [activeVersion, setActiveVersion] = useState<number | null>(null);
   const [pendingRestoreVersion, setPendingRestoreVersion] = useState<
     number | null
@@ -402,11 +434,15 @@ export const PracticeAssetsView = ({
     void api
       .listPracticeAssets(status === "all" ? undefined : status)
       .then((records) => {
-        if (active) setItems(records);
+        if (active) {
+          setItems(records);
+          setItemsFor(status);
+        }
       })
       .catch((caught: unknown) => {
         if (active) {
           setItems([]);
+          setItemsFor(status);
           setError(caught instanceof Error ? caught.message : String(caught));
         }
       })
@@ -429,6 +465,7 @@ export const PracticeAssetsView = ({
     let active = true;
     setPublicationLoading(true);
     setPublicationError(null);
+    setPublicationReadError(null);
     void api
       .listPracticePublicationStatuses(selected.id)
       .then((statuses) => {
@@ -437,7 +474,7 @@ export const PracticeAssetsView = ({
       .catch((caught: unknown) => {
         if (active) {
           setPublicationStatuses([]);
-          setPublicationError(
+          setPublicationReadError(
             `发布状态暂时无法读取：${caught instanceof Error ? caught.message : String(caught)}`,
           );
         }
@@ -448,11 +485,12 @@ export const PracticeAssetsView = ({
     return () => {
       active = false;
     };
-  }, [api, revisionKey, selected?.id, selected?.status]);
+  }, [api, revisionKey, selected?.id, selected?.status, publicationReads]);
 
   useEffect(() => {
     setActiveVersion(null);
     setPendingRestoreVersion(null);
+    setRestoreError(null);
     if (selected?.status !== "accepted") {
       setVersions([]);
       setVersionsLoading(false);
@@ -481,7 +519,7 @@ export const PracticeAssetsView = ({
     return () => {
       active = false;
     };
-  }, [api, revisionKey, selected?.id, selected?.status]);
+  }, [api, revisionKey, selected?.id, selected?.status, historyReads]);
 
   const openChooser = (): void => {
     const saved = manualFormDrafts.find(
@@ -858,7 +896,7 @@ export const PracticeAssetsView = ({
   const restoreVersion = async (version: number): Promise<void> => {
     if (selected === null) return;
     setRestoringVersion(true);
-    setHistoryError(null);
+    setRestoreError(null);
     setPublicationError(null);
     try {
       const restored = await api.restorePracticeAssetVersion(selected.id, version);
@@ -867,7 +905,7 @@ export const PracticeAssetsView = ({
       setPendingRestoreVersion(null);
       setRevisionKey((value) => value + 1);
     } catch (caught) {
-      setHistoryError(caught instanceof Error ? caught.message : String(caught));
+      setRestoreError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setRestoringVersion(false);
     }
@@ -885,6 +923,15 @@ export const PracticeAssetsView = ({
       ? []
       : versionDiffs(selected, selectedHistoryVersion);
 
+  // One solid button: 新建草案 in the header (or beside the filters); the empty list no longer offers a second one.
+  const create = (
+    <button type="button" className="primary-button" onClick={openChooser}>
+      {actionHost === null ? null : <ActionIcon name="plus" />}
+      新建草案
+    </button>
+  );
+  // Read for another filter, the rows shown are the last one's: dimmed while the right ones are read.
+  const switchingFilter = loading && itemsFor !== status;
   const toolbar = (
     <div className="practice-assets-toolbar">
         <div className="methodology-status-filter" aria-label="草案状态">
@@ -906,36 +953,67 @@ export const PracticeAssetsView = ({
             </button>
           ))}
         </div>
-        <span role="status">{loading ? "正在读取…" : `${items.length} 条`}</span>
-        <button type="button" className="primary-button" onClick={openChooser}>
-          新建草案
-        </button>
+        {/* A failed read counts nothing: 「0 条」 there read as nothing kept. */}
+        <span role="status">
+          {error !== null ? "—" : loading ? "正在读取…" : `${items.length} 条`}
+        </span>
+        {actionHost === null ? create : null}
     </div>
   );
+  const closeDetail = (): void => {
+    setSelected(null);
+    setEditing(false);
+    setPendingPublicationAction(null);
+    setPublicationError(null);
+    setActiveVersion(null);
+    setPendingRestoreVersion(null);
+    setHistoryError(null);
+  };
+  const leaveManualDraft = async (): Promise<void> => {
+    if (!(await draftKeptOnLeaving())) return;
+    setManualDraft(null);
+    setManualDraftRestoredAt(null);
+    setManualDraftPendingSelection(null);
+    setGenerationError(null);
+  };
 
   return (
     <section className="practice-assets" aria-label="技能与流程">
       {toolbarHost === null ? toolbar : createPortal(toolbar, toolbarHost)}
+      {actionHost === null ? null : createPortal(create, actionHost)}
 
       {error !== null ? (
-        <p className="methodology-message error-message">
-          技能与流程暂时无法读取：{error}
-        </p>
+        <div className="load-failure" role="alert">
+          <span>技能与流程暂时无法读取：{error}</span>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setRevisionKey((value) => value + 1)}
+          >
+            重试
+          </button>
+        </div>
       ) : !loading && items.length === 0 ? (
         <div className="methodology-empty practice-assets-empty">
           <strong>{status === "candidate" ? "没有待确认草案" : "暂无记录"}</strong>
           <span>从已采纳原则人工编写，或调用模型生成第一份草案。</span>
           <div>
-            <button type="button" className="primary-button" onClick={openChooser}>
-              新建草案
-            </button>
             <button type="button" className="text-button" onClick={onOpenPrinciples}>
               查看原则
             </button>
           </div>
         </div>
       ) : (
-        <ol className="practice-assets-list">
+        <>
+        <div className="methodology-list-head practice-assets-list-head" aria-hidden="true">
+          <span>类型</span>
+          <span>草案</span>
+          <span>来源</span>
+          <span>更新时间</span>
+          <span>状态</span>
+          <span />
+        </div>
+        <ol className="practice-assets-list" aria-busy={switchingFilter}>
           {items.map((item) => (
             <li key={item.id}>
               <button
@@ -975,6 +1053,7 @@ export const PracticeAssetsView = ({
             </li>
           ))}
         </ol>
+        </>
       )}
 
       {choosing ? (
@@ -992,6 +1071,86 @@ export const PracticeAssetsView = ({
           size="wide"
           dismissible={!generating && !manualSaving}
           onClose={closeChooser}
+          footer={
+            manualDraft === null ? (
+              <>
+                <span className="modal-dialog-footer-start methodology-footer-status">
+                  已选 {selectedPrinciples.length} / 5
+                </span>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={generating}
+                  onClick={closeChooser}
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={generating || selectedPrinciples.length === 0}
+                  onClick={beginManualDraft}
+                >
+                  手动编写
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={generating || selectedPrinciples.length === 0}
+                  onClick={() => void generate()}
+                >
+                  {generating
+                    ? "正在生成…"
+                    : `调用模型生成${kindLabels[kind]}`}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="modal-dialog-footer-start">
+                  {manualDraftRestoredAt === null ? null : (
+                    <button
+                      type="button"
+                      className="text-button danger-button"
+                      disabled={manualSaving}
+                      onClick={() => void discardManualDraft()}
+                    >
+                      {manualDraftPendingSelection === null
+                        ? "丢弃并重写"
+                        : `丢弃并使用刚选的 ${manualDraftPendingSelection.sourcePrincipleIds.length} 条原则`}
+                    </button>
+                  )}
+                  <span
+                    className={`methodology-footer-status${manualDraftSaveState === "error" ? " error" : ""}`}
+                    role="status"
+                  >
+                    {manualDraftSaveState === "saving"
+                      ? "正在保存…"
+                      : manualDraftSaveState === "saved"
+                        ? "已自动保存"
+                        : manualDraftSaveState === "error"
+                          ? "自动保存失败"
+                          : "本机草稿"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={manualSaving}
+                  onClick={() => void leaveManualDraft()}
+                >
+                  返回选择
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={manualSaving || !practiceRevisionValid(manualDraft)}
+                  onClick={() => void saveManualDraft()}
+                >
+                  {manualSaving ? "正在保存…" : "保存为待确认草案"}
+                </button>
+              </>
+            )
+          }
         >
           {manualDraft === null ? (
             <section className="practice-source-chooser">
@@ -1017,14 +1176,16 @@ export const PracticeAssetsView = ({
                 ))}
               </div>
               {sourceLoading ? (
-                <p className="methodology-message">正在读取已采纳原则…</p>
+                <p className="methodology-inbox-state" role="status">
+                  正在读取已采纳原则…
+                </p>
               ) : principles.length === 0 ? (
-                <div className="methodology-empty compact">
+                <div className="methodology-inbox-state">
                   <strong>还没有可用原则</strong>
                   <span>先审核并采纳至少一条方法论候选。</span>
                   <button
                     type="button"
-                    className="primary-button"
+                    className="secondary-button"
                     onClick={() => {
                       setChoosing(false);
                       onOpenPrinciples();
@@ -1039,7 +1200,7 @@ export const PracticeAssetsView = ({
                     const checked = selectedPrinciples.includes(principle.id);
                     return (
                       <li key={principle.id}>
-                        <label className={checked ? "selected" : ""}>
+                        <label className={checked ? "selected" : undefined}>
                           <input
                             type="checkbox"
                             checked={checked}
@@ -1056,145 +1217,55 @@ export const PracticeAssetsView = ({
                   })}
                 </ol>
               )}
-              {generationError === null ? null : (
-                <p className="error-message" role="alert">
-                  暂时无法创建：{generationError}
-                </p>
-              )}
-              <div className="practice-creation-boundary">
+              <p className="methodology-dialog-note practice-creation-boundary">
                 <span>人工编写不调用模型</span>
                 <span>模型生成会发起 1 次调用</span>
                 <span>两种方式都只保存为待确认草案</span>
-              </div>
-              <footer className="methodology-source-actions practice-creation-actions">
-                <span>已选 {selectedPrinciples.length} / 5</span>
-                <div>
-                  <button
-                    type="button"
-                    className="text-button"
-                    disabled={generating}
-                    onClick={closeChooser}
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    disabled={generating || selectedPrinciples.length === 0}
-                    onClick={beginManualDraft}
-                  >
-                    手动编写
-                  </button>
-                  <button
-                    type="button"
-                    className="primary-button"
-                    disabled={generating || selectedPrinciples.length === 0}
-                    onClick={() => void generate()}
-                  >
-                    {generating
-                      ? "正在生成…"
-                      : `调用模型生成${kindLabels[kind]}`}
-                  </button>
-                </div>
-              </footer>
+              </p>
+              {generationError === null ? null : (
+                <p className="form-error" role="alert">
+                  暂时无法创建：{generationError}
+                </p>
+              )}
             </section>
           ) : (
             <section className="practice-manual-draft">
-              <div
-                className={`manual-form-draft-status${
-                  manualDraftRestoredAt === null ? "" : " restored"
-                }`}
-                role="status"
-              >
+              {manualDraftRestoredAt === null ? null : (
+                <p className="methodology-dialog-note">
+                  <strong>已恢复未完成的{kindLabels[kind]}草稿</strong> ·{" "}
+                  {draftDateFormatter.format(new Date(manualDraftRestoredAt))}{" "}
+                  保存，尚未进入待确认列表。
+                </p>
+              )}
+              <p className="practice-manual-source-summary">
                 <span>
-                  <strong>
-                    {manualDraftRestoredAt === null
-                      ? "未完成内容会自动保存"
-                      : `已恢复未完成的${kindLabels[kind]}草稿`}
-                  </strong>
-                  <small>
-                    {manualDraftRestoredAt === null
-                      ? "只写入这台 Mac 的 App 私有目录，不会发布到任何终端。"
-                      : `${draftDateFormatter.format(new Date(manualDraftRestoredAt))} 保存，尚未进入待确认列表。`}
-                  </small>
+                  {kindLabels[kind]} · {selectedPrinciples.length} 条来源原则
                 </span>
-                <div>
-                  <em>
-                    {manualDraftSaveState === "saving"
-                      ? "正在保存…"
-                      : manualDraftSaveState === "saved"
-                        ? "已自动保存"
-                        : manualDraftSaveState === "error"
-                          ? "自动保存失败"
-                          : "本机草稿"}
-                  </em>
-                  {manualDraftRestoredAt === null ? null : (
-                    <button
-                      type="button"
-                      className="text-button"
-                      disabled={manualSaving}
-                      onClick={() => void discardManualDraft()}
-                    >
-                      {manualDraftPendingSelection === null
-                        ? "丢弃并重写"
-                        : `丢弃并使用刚选的 ${manualDraftPendingSelection.sourcePrincipleIds.length} 条原则`}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="practice-manual-source-summary">
-                <span>{kindLabels[kind]} · {selectedPrinciples.length} 条来源原则</span>
                 <strong>
                   {principles
                     .filter((principle) => selectedPrinciples.includes(principle.id))
                     .map((principle) => principle.title)
                     .join("、")}
                 </strong>
-              </div>
-              <div className="methodology-editor practice-asset-editor">
-                <PracticeAssetFormFields
-                  revision={manualDraft}
-                  onChange={setManualDraft}
-                  autoFocus
-                />
-              </div>
-              <p className="practice-manual-safety">
-                来源原则只用于建立追溯关系和预填适用条件、失败边界；系统不会替你补写步骤或验收标准。
+              </p>
+              <PracticeAssetFormFields
+                revision={manualDraft}
+                onChange={setManualDraft}
+                autoFocus
+              />
+              <p className="methodology-dialog-note practice-manual-safety">
+                来源原则只用于建立追溯关系和预填适用条件、失败边界；系统不会替你补写步骤或验收标准。未完成的内容只自动保存在这台 Mac 上，不会发布到任何终端。
               </p>
               {generationError === null ? null : (
-                <p className="error-message" role="alert">
+                <p className="form-error" role="alert">
                   暂时无法保存：{generationError}
                 </p>
               )}
               {manualDraftStorageError === null ? null : (
-                <p className="error-message" role="alert">
+                <p className="form-error" role="alert">
                   草稿箱暂不可用：{manualDraftStorageError}
                 </p>
               )}
-              <footer>
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={manualSaving}
-                  onClick={async () => {
-                    if (!(await draftKeptOnLeaving())) return;
-                    setManualDraft(null);
-                    setManualDraftRestoredAt(null);
-                    setManualDraftPendingSelection(null);
-                    setGenerationError(null);
-                  }}
-                >
-                  返回选择
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={manualSaving || !practiceRevisionValid(manualDraft)}
-                  onClick={() => void saveManualDraft()}
-                >
-                  {manualSaving ? "正在保存…" : "保存为待确认草案"}
-                </button>
-              </footer>
             </section>
           )}
         </ModalDialog>
@@ -1202,7 +1273,13 @@ export const PracticeAssetsView = ({
 
       {selected === null ? null : (
         <ModalDialog
-          title={selected.status === "candidate" ? "审核技能与流程草案" : "技能与流程详情"}
+          title={
+            editing
+              ? "编辑技能与流程"
+              : selected.status === "candidate"
+                ? "审核技能与流程草案"
+                : "技能与流程详情"
+          }
           description={`${kindLabels[selected.kind]} · ${selected.sourcePrincipleIds.length} 条来源原则`}
           size="wide"
           dismissible={
@@ -1213,43 +1290,92 @@ export const PracticeAssetsView = ({
             !restoringVersion &&
             publicationBusyTarget === null
           }
-          onClose={() => {
-            setSelected(null);
-            setEditing(false);
-            setPendingPublicationAction(null);
-            setPublicationError(null);
-            setActiveVersion(null);
-            setPendingRestoreVersion(null);
-            setHistoryError(null);
-          }}
+          onClose={closeDetail}
+          footer={
+            editing && revision !== null ? (
+              <>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={saving}
+                  onClick={() => setEditing(false)}
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={saving || !revisionValid}
+                  onClick={() => void saveRevision()}
+                >
+                  {saving ? "保存中…" : "保存修改"}
+                </button>
+              </>
+            ) : selected.status === "candidate" ? (
+              <>
+                {/* Leaving a draft is kept apart from the actions that keep it. */}
+                <div className="modal-dialog-footer-start">
+                  <button
+                    type="button"
+                    className="text-button danger-button"
+                    disabled={saving}
+                    onClick={() => void setRecordStatus("dismissed")}
+                  >
+                    忽略
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={saving}
+                  onClick={() => {
+                    beginRevision(selected);
+                    setDetailError(null);
+                    setEditing(true);
+                  }}
+                >
+                  编辑
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={saving || selected.freshness.state !== "current"}
+                  onClick={() => void setRecordStatus("accepted")}
+                >
+                  {saving
+                    ? "保存中…"
+                    : selected.supersedesId === null
+                      ? "采纳草案"
+                      : (selected.migrationSourcePrincipleIds?.length ?? 0) > 0
+                        ? "确认迁移来源"
+                        : "应用到原资产"}
+                </button>
+              </>
+            ) : selected.status === "accepted" ? (
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={saving || publicationBusyTarget !== null}
+                onClick={() => {
+                  beginRevision(selected);
+                  setDetailError(null);
+                  setPublicationError(null);
+                  setPendingPublicationAction(null);
+                  setEditing(true);
+                }}
+              >
+                编辑内容
+              </button>
+            ) : undefined
+          }
         >
           <article className="practice-asset-detail">
             {editing && revision !== null ? (
-              <div className="methodology-editor practice-asset-editor">
-                <PracticeAssetFormFields
-                  revision={revision}
-                  onChange={setRevision}
-                  autoFocus
-                />
-                <div className="methodology-detail-actions">
-                  <button
-                    type="button"
-                    className="text-button"
-                    disabled={saving}
-                    onClick={() => setEditing(false)}
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    className="primary-button"
-                    disabled={saving || !revisionValid}
-                    onClick={() => void saveRevision()}
-                  >
-                    {saving ? "保存中…" : "保存修改"}
-                  </button>
-                </div>
-              </div>
+              <PracticeAssetFormFields
+                revision={revision}
+                onChange={setRevision}
+                autoFocus
+              />
             ) : (
               <>
                 <header className="practice-detail-header">
@@ -1267,17 +1393,20 @@ export const PracticeAssetsView = ({
                         {freshnessLabels[selected.freshness.state]}
                       </span>
                     )}
+                    <small>
+                      {selected.generation.provider} · {selected.generation.model} · 保存在 Obsidian；发布只在明确确认后执行
+                    </small>
                   </div>
                   <h3>{selected.title}</h3>
                   <p>{selected.summary}</p>
                 </header>
                 {selected.supersedesId === null ? null : (
                   <section className="practice-replacement-notice">
-                    <strong>
+                    <h4>
                       {(selected.migrationSourcePrincipleIds?.length ?? 0) > 0
                         ? "这是来源迁移草案"
                         : "这是替换草案"}
-                    </strong>
+                    </h4>
                     <p>
                       {(selected.migrationSourcePrincipleIds?.length ?? 0) > 0
                         ? "采纳后会把原资产切换到合并原则，并用这份草案的内容替换原资产的内容（原内容先存为可恢复的版本），保留原标识；当前客户端内容仍保持不变，之后由你确认是否发布更新。"
@@ -1291,13 +1420,13 @@ export const PracticeAssetsView = ({
                     aria-label="来源状态"
                   >
                     <div>
-                      <strong>{freshnessLabels[selected.freshness.state]}</strong>
+                      <h4>{freshnessLabels[selected.freshness.state]}</h4>
                       <p>{selected.freshness.message}</p>
                     </div>
                     {selected.freshness.canRegenerate ? (
                       <button
                         type="button"
-                        className="primary-button"
+                        className="secondary-button"
                         disabled={saving || regenerating}
                         onClick={() => void regenerate()}
                       >
@@ -1308,7 +1437,7 @@ export const PracticeAssetsView = ({
                 )}
                 {visibleSourceChanges.length === 0 ? null : (
                   <details
-                    className="practice-source-diff"
+                    className="disclosure practice-source-diff"
                     open={selected.freshness.state !== "current"}
                   >
                     <summary>
@@ -1363,11 +1492,11 @@ export const PracticeAssetsView = ({
                   </details>
                 )}
                 <section>
-                  <span>使用条件</span>
+                  <h4>使用条件</h4>
                   <p>{selected.trigger}</p>
                 </section>
                 <section>
-                  <span>操作步骤</span>
+                  <h4>操作步骤</h4>
                   <ol>
                     {selected.steps.map((step, index) => (
                       <li key={`${index}-${step}`}>{step}</li>
@@ -1375,7 +1504,7 @@ export const PracticeAssetsView = ({
                   </ol>
                 </section>
                 <section>
-                  <span>验收检查</span>
+                  <h4>验收检查</h4>
                   <ul>
                     {selected.checks.map((check, index) => (
                       <li key={`${index}-${check}`}>{check}</li>
@@ -1383,14 +1512,14 @@ export const PracticeAssetsView = ({
                   </ul>
                 </section>
                 <section>
-                  <span>失败处理</span>
+                  <h4>失败处理</h4>
                   <p>{selected.fallback}</p>
                 </section>
                 {selected.status === "accepted" || publicationStatuses.some((status) => status.version !== null) ? (
                   <section className="practice-publication-section">
                     <header>
                       <div>
-                        <strong>发布到客户端</strong>
+                        <h4>发布到客户端</h4>
                         <span>技能与工作流均以 Skill 包发布，只在点击后写入。</span>
                       </div>
                       <small>手动触发</small>
@@ -1450,29 +1579,35 @@ export const PracticeAssetsView = ({
                                       回滚
                                     </button>
                                   ) : null}
-                                  <button
-                                    type="button"
-                                    className="primary-button"
-                                    disabled={
-                                      !publication.canPublish ||
-                                      selected.freshness.state !== "current" ||
-                                      publicationBusyTarget !== null
-                                    }
-                                    onClick={() => {
-                                      if (publication.requiresOverwriteConfirmation) {
-                                        setPendingPublicationAction({
-                                          kind: "overwrite",
-                                          target: publication.target,
-                                        });
-                                      } else {
-                                        void publish(publication.target);
+                                  {/* Nothing to do is said as words: a disabled solid 已发布 read as an action at 2:1. */}
+                                  {publication.canPublish ? (
+                                    <button
+                                      type="button"
+                                      className="secondary-button"
+                                      disabled={
+                                        selected.freshness.state !== "current" ||
+                                        publicationBusyTarget !== null
                                       }
-                                    }}
-                                  >
-                                    {busy
-                                      ? "处理中…"
-                                      : publishButtonLabel(publication)}
-                                  </button>
+                                      onClick={() => {
+                                        if (publication.requiresOverwriteConfirmation) {
+                                          setPendingPublicationAction({
+                                            kind: "overwrite",
+                                            target: publication.target,
+                                          });
+                                        } else {
+                                          void publish(publication.target);
+                                        }
+                                      }}
+                                    >
+                                      {busy
+                                        ? "处理中…"
+                                        : publishButtonLabel(publication)}
+                                    </button>
+                                  ) : (
+                                    <span className="practice-publication-state">
+                                      {publishButtonLabel(publication)}
+                                    </span>
+                                  )}
                                 </div>
                               ) : (
                                 <div
@@ -1492,7 +1627,7 @@ export const PracticeAssetsView = ({
                                   <div>
                                     <button
                                       type="button"
-                                      className="text-button"
+                                      className="secondary-button"
                                       disabled={publicationBusyTarget !== null}
                                       onClick={() => setPendingPublicationAction(null)}
                                     >
@@ -1500,7 +1635,7 @@ export const PracticeAssetsView = ({
                                     </button>
                                     <button
                                       type="button"
-                                      className="primary-button"
+                                      className="secondary-button danger-button"
                                       disabled={publicationBusyTarget !== null}
                                       onClick={() =>
                                         pending.kind === "overwrite"
@@ -1513,8 +1648,8 @@ export const PracticeAssetsView = ({
                                       {busy
                                         ? "处理中…"
                                         : pending.kind === "overwrite"
-                                          ? "确认覆盖"
-                                          : "确认回滚"}
+                                          ? "覆盖"
+                                          : "回滚发布"}
                                     </button>
                                   </div>
                                 </div>
@@ -1525,30 +1660,43 @@ export const PracticeAssetsView = ({
                         </div>
                       </>
                     )}
+                    {publicationReadError === null ? null : (
+                      <div className="load-failure" role="alert">
+                        <span>{publicationReadError}</span>
+                        <button type="button" className="secondary-button" disabled={publicationLoading} onClick={() => setPublicationReads((value) => value + 1)}>
+                          重试
+                        </button>
+                      </div>
+                    )}
                     {publicationError === null ? null : (
-                      <p className="error-message" role="alert">
+                      <p className="form-error" role="alert">
                         {publicationError}
                       </p>
                     )}
                   </section>
                 ) : null}
                 {selected.status === "accepted" ? (
-                  <details className="practice-version-history">
+                  <details className="disclosure practice-version-history">
                     <summary>
                       <span>资产版本</span>
                       <small>
-                        {versionsLoading ? "读取中…" : `${versions.length} 个恢复点`}
+                        {versionsLoading
+                          ? "读取中…"
+                          : historyError !== null
+                            ? "—"
+                            : `${versions.length} 个恢复点`}
                       </small>
                     </summary>
                     <div className="practice-version-history-body">
-                      {historyError === null ? null : (
-                        <p className="error-message" role="alert">
-                          版本历史暂时无法读取：{historyError}
-                        </p>
-                      )}
-                      {!versionsLoading &&
-                      historyError === null &&
-                      versions.length === 0 ? (
+                      {historyError !== null ? (
+                        // Said once, as a failed read: an empty history and 「0 个恢复点」 were drawn under it as well.
+                        <div className="load-failure" role="alert">
+                          <span>版本历史暂时无法读取：{historyError}</span>
+                          <button type="button" className="secondary-button" disabled={versionsLoading} onClick={() => setHistoryReads((value) => value + 1)}>
+                            重试
+                          </button>
+                        </div>
+                      ) : !versionsLoading && versions.length === 0 ? (
                         <p className="practice-version-empty">
                           下一次编辑或应用替换草案前，会自动保存当前内容作为恢复点。
                         </p>
@@ -1640,7 +1788,7 @@ export const PracticeAssetsView = ({
                                   <div>
                                     <button
                                       type="button"
-                                      className="text-button"
+                                      className="secondary-button"
                                       disabled={restoringVersion}
                                       onClick={() => setPendingRestoreVersion(null)}
                                     >
@@ -1648,7 +1796,7 @@ export const PracticeAssetsView = ({
                                     </button>
                                     <button
                                       type="button"
-                                      className="primary-button"
+                                      className="secondary-button danger-button"
                                       disabled={restoringVersion}
                                       onClick={() =>
                                         void restoreVersion(
@@ -1656,11 +1804,16 @@ export const PracticeAssetsView = ({
                                         )
                                       }
                                     >
-                                      {restoringVersion ? "正在恢复…" : "确认恢复"}
+                                      {restoringVersion ? "正在恢复…" : "恢复"}
                                     </button>
                                   </div>
                                 </div>
                               ) : null}
+                              {restoreError === null ? null : (
+                                <p className="form-error" role="alert">
+                                  恢复没有完成：{restoreError}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1668,7 +1821,7 @@ export const PracticeAssetsView = ({
                     </div>
                   </details>
                 ) : null}
-                <details className="practice-source-principles">
+                <details className="disclosure practice-source-principles">
                   <summary>
                     <span>来源原则</span>
                     <small>
@@ -1687,76 +1840,10 @@ export const PracticeAssetsView = ({
                     ))}
                   </ol>
                 </details>
-                <footer className="methodology-detail-footer practice-detail-footer">
-                  <small>
-                    {selected.generation.provider} · {selected.generation.model}
-                    <br />
-                    保存在 Obsidian；发布只在明确确认后执行
-                  </small>
-                  {selected.status === "candidate" ? (
-                    <div className="methodology-detail-actions">
-                      <button
-                        type="button"
-                        className="text-button danger-button"
-                        disabled={saving}
-                        onClick={() => void setRecordStatus("dismissed")}
-                      >
-                        忽略
-                      </button>
-                      <button
-                        type="button"
-                        className="text-button"
-                        disabled={saving}
-                        onClick={() => {
-                          beginRevision(selected);
-                          setDetailError(null);
-                          setEditing(true);
-                        }}
-                      >
-                        编辑
-                      </button>
-                      <button
-                        type="button"
-                        className="primary-button"
-                        disabled={
-                          saving || selected.freshness.state !== "current"
-                        }
-                        onClick={() => void setRecordStatus("accepted")}
-                      >
-                        {saving
-                          ? "保存中…"
-                          : selected.supersedesId === null
-                            ? "采纳草案"
-                            : (selected.migrationSourcePrincipleIds?.length ?? 0) > 0
-                              ? "确认迁移来源"
-                              : "应用到原资产"}
-                      </button>
-                    </div>
-                  ) : selected.status === "accepted" ? (
-                    <div className="methodology-detail-actions">
-                      <button
-                        type="button"
-                        className="text-button"
-                        disabled={
-                          saving || publicationBusyTarget !== null
-                        }
-                        onClick={() => {
-                          beginRevision(selected);
-                          setDetailError(null);
-                          setPublicationError(null);
-                          setPendingPublicationAction(null);
-                          setEditing(true);
-                        }}
-                      >
-                        编辑内容
-                      </button>
-                    </div>
-                  ) : null}
-                </footer>
               </>
             )}
             {detailError === null || detailError.id !== selected.id ? null : (
-              <p className="error-message" role="alert">
+              <p className="form-error" role="alert">
                 操作失败：{detailError.text}
               </p>
             )}

@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { DecisionApi } from "../src/shared/renderer-api.js";
-import { ActiveRecordDialog } from "../src/renderer/components/pages/decisions/ActiveRecordDialog.js";
+import { CONTEXT_SUMMARY_LINES } from "@cognelis/decision-protocol";
+
+import type { DecisionApi, RecordContextSummary } from "../src/shared/renderer-api.js";
+import { ActiveRecordDialog, type ActiveRecordApi } from "../src/renderer/components/pages/decisions/ActiveRecordDialog.js";
 import { loadActiveRecordDraft } from "../src/renderer/components/pages/decisions/active-record-draft.js";
 
 afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
@@ -84,7 +86,8 @@ describe("ActiveRecordDialog", () => {
   it("names the rationale field by the label shown for it", () => {
     render(<ActiveRecordDialog api={{ createProactiveRecord: vi.fn() }} onClose={vi.fn()} onSaved={vi.fn()} />);
     // Shown as 理由（可稍后补充） and named 补充说明, a speech user saying what they saw did not reach it.
-    expect(screen.getByText("理由（可稍后补充）").closest("label")?.querySelector("textarea")).toHaveAccessibleName("理由");
+    const label = screen.getByText("理由（可稍后补充）");
+    expect(document.getElementById(label.getAttribute("for") ?? "")).toHaveAccessibleName("理由");
   });
 
   it("protects unreadable drafts until the reader explicitly clears them", () => {
@@ -328,6 +331,38 @@ describe("ActiveRecordDialog", () => {
     );
   });
 
+  // The footer's buttons sit outside the form: ⌘↩ from one of them still saves, through the same checks.
+  it("saves with Cmd/Ctrl+Enter from the footer too", async () => {
+    const createProactiveRecord = vi.fn(async () => ({
+      recordVersion: 1 as const,
+      status: "created" as const,
+      recordKind: "idea" as const,
+      recordId: "idea-3",
+      knowledgeStatus: "inbox" as const,
+      sensitivity: "private" as const,
+      storedTranscript: false as const,
+    }));
+    render(
+      <ActiveRecordDialog
+        api={{ createProactiveRecord } as unknown as DecisionApi}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "想法" }));
+    const save = screen.getByRole("button", { name: "保存记录" });
+    expect(save.closest("form")).toBeNull();
+    fireEvent.keyDown(save, { key: "Enter", metaKey: true });
+    expect(createProactiveRecord).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("标题"), { target: { value: "冲突触发复盘" } });
+    fireEvent.change(screen.getByLabelText("想法内容"), { target: { value: "只在真实冲突时建议复盘。" } });
+    fireEvent.keyDown(save, { key: "Enter", metaKey: true });
+
+    await waitFor(() => expect(createProactiveRecord).toHaveBeenCalledOnce());
+  });
+
   it("quick-captures an idea into the inbox", async () => {
     const createProactiveRecord = vi.fn(async () => ({
       recordVersion: 1 as const,
@@ -374,5 +409,188 @@ describe("ActiveRecordDialog", () => {
     expect(onClose).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("ActiveRecordDialog summary of the context it was opened with", () => {
+  const original = "PR：调整请求超时（sample/app#123）\n位置：src/request.ts:12\n讨论串：\nBob：超时写死不好。";
+  const summary = "在做什么：src/request.ts:12 给请求加了超时。\n定了什么：超时由调用方传入。";
+  const summarized: RecordContextSummary = { status: "summarized", summary, model: "qwen3.5-2b-q4-k-m", clipped: false };
+  type Summarize = NonNullable<ActiveRecordApi["summarizeRecordContext"]>;
+  const later = () => {
+    let resolve!: (value: RecordContextSummary) => void;
+    const promise = new Promise<RecordContextSummary>((done) => { resolve = done; });
+    return { promise, resolve };
+  };
+  const renderWith = (summarizeRecordContext: Summarize, context = original) => {
+    const createProactiveRecord = vi.fn<DecisionApi["createProactiveRecord"]>(async () => saved);
+    const cancelRecordContextSummary = vi.fn(async (_requestId: string) => undefined);
+    const onClose = vi.fn();
+    const view = render(<ActiveRecordDialog api={{ createProactiveRecord, summarizeRecordContext, cancelRecordContextSummary }}
+      draft={{ title: "超时由谁决定？", content: "超时由调用方传入。", context }} onClose={onClose} onSaved={vi.fn()} />);
+    return { ...view, createProactiveRecord, cancelRecordContextSummary, onClose };
+  };
+  const contextBox = () => screen.getByRole("textbox", { name: "当时上下文" });
+
+  it("offers a summary only beside a context, runs it and shows it apart for checking, the context untouched", async () => {
+    // Begun here, a form has no context and nothing to summarize.
+    render(<ActiveRecordDialog api={{ createProactiveRecord: vi.fn(), summarizeRecordContext: vi.fn(), cancelRecordContextSummary: vi.fn() }} onClose={vi.fn()} onSaved={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "用本机模型总结" })).toBeNull();
+    cleanup();
+    const running = later();
+    const summarize = vi.fn<Summarize>(() => running.promise);
+    const { onClose } = renderWith(summarize);
+    const button = screen.getByRole("button", { name: "用本机模型总结" });
+    fireEvent.click(button);
+    expect(summarize).toHaveBeenCalledWith({ requestId: expect.stringMatching(/^[0-9a-f-]{36}$/u), context: original, title: "超时由谁决定？", choice: "超时由调用方传入。" });
+    // The same button, so focus stays on it: pressed again, it stops the summary.
+    expect(button).toHaveAccessibleName("取消总结");
+    expect(screen.getByText(/^本机模型正在总结/u)).toHaveAttribute("role", "status");
+    expect(contextBox()).toHaveAttribute("readonly");
+    await act(async () => running.resolve(summarized));
+    const panel = screen.getByRole("region", { name: "本机模型总结" });
+    expect(panel).toHaveTextContent("本机模型生成，可能遗漏或有误，请核对");
+    expect(within(panel).getByText(/^在做什么：src\/request.ts:12 给请求加了超时。/u)).toBeVisible();
+    expect(within(panel).getAllByRole("button").map((choice) => choice.textContent)).toEqual(["用总结替换上下文", "放在上下文前面", "不用"]);
+    expect(contextBox()).toHaveValue(original);
+    expect(contextBox()).not.toHaveAttribute("readonly");
+    // Waited for, it is not thrown away by a stray Escape.
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "主动记录" }), { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("replaces the context or goes before it, marked as the local model's, and 撤回 puts the reader's own back", async () => {
+    const { createProactiveRecord } = renderWith(vi.fn<Summarize>(async () => summarized));
+    fireEvent.click(screen.getByRole("button", { name: "用本机模型总结" }));
+    fireEvent.click(await screen.findByRole("button", { name: "用总结替换上下文" }));
+    expect(contextBox()).toHaveValue(`（本机模型总结，经确认采用）\n${summary}`);
+    expect(screen.getByText(/^已用总结替换上下文/u)).toHaveAttribute("role", "status");
+    const undo = screen.getByRole("button", { name: "撤回，恢复原上下文" });
+    expect(undo).toHaveFocus();
+    // Summarized again over it, the context it replaced, kept for 撤回 alone, would be gone.
+    expect(screen.getByRole("button", { name: "用本机模型总结" })).toBeDisabled();
+    fireEvent.click(undo);
+    expect(contextBox()).toHaveValue(original);
+    // Back at the choice, the reader's to make again.
+    expect(screen.getByRole("button", { name: "用总结替换上下文" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "放在上下文前面" }));
+    const adopted = `（本机模型总结，经确认采用）\n${summary}\n\n（以下为原上下文）\n${original}`;
+    expect(contextBox()).toHaveValue(adopted);
+    fireEvent.click(screen.getByRole("button", { name: /保存记录/u }));
+    await waitFor(() => expect(createProactiveRecord).toHaveBeenCalledOnce());
+    // Saved, the record says whose words they are: the local model's, adopted by the reader, before the draft's own.
+    expect(createProactiveRecord.mock.calls[0]![0]).toMatchObject({ context: adopted, sourceForm: "user_paraphrase" });
+  });
+
+  it("undoes an adopted summary only as far as edits made since allow, never dropping them", async () => {
+    renderWith(vi.fn<Summarize>(async () => summarized));
+    const value = () => (contextBox() as HTMLTextAreaElement).value;
+    fireEvent.click(screen.getByRole("button", { name: "用本机模型总结" }));
+    fireEvent.click(await screen.findByRole("button", { name: "放在上下文前面" }));
+    // Edited under the summary: 撤回 takes the summary off and leaves the edit.
+    fireEvent.change(contextBox(), { target: { value: `${value()}\n补充：5 秒是和网关约定的。` } });
+    fireEvent.click(screen.getByRole("button", { name: "撤回，恢复原上下文" }));
+    expect(contextBox()).toHaveValue(`${original}\n补充：5 秒是和网关约定的。`);
+    // Edited in the summary itself: what 撤回 would put back has no room for the edit, so it is not offered.
+    fireEvent.click(screen.getByRole("button", { name: "用总结替换上下文" }));
+    const edited = `${value()}（已核对）`;
+    fireEvent.change(contextBox(), { target: { value: edited } });
+    const undo = screen.getByRole("button", { name: "撤回，恢复原上下文" });
+    expect(undo).toBeDisabled();
+    expect(undo).toHaveAccessibleDescription(/采用后又改过上下文/u);
+    expect(contextBox()).toHaveValue(edited);
+    // Still not summarized again: the reader edits the context by hand from here.
+    expect(screen.getByRole("button", { name: "用本机模型总结" })).toBeDisabled();
+  });
+
+  it("keeps 用本机模型总结 off while a summary is adopted, so the context before it is never lost or marked twice", async () => {
+    renderWith(vi.fn<Summarize>(async () => summarized));
+    const value = () => (contextBox() as HTMLTextAreaElement).value;
+    const again = screen.getByRole("button", { name: "用本机模型总结" });
+    fireEvent.click(again);
+    fireEvent.click(await screen.findByRole("button", { name: "用总结替换上下文" }));
+    expect(again).toBeDisabled();
+    // A character changed, then changed back. Summarized again in between, the context before the summary was gone
+    // for good, and one put in front of the other left two marks, the first heading the model's text as the reader's.
+    const adopted = value();
+    fireEvent.change(contextBox(), { target: { value: `${adopted}x` } });
+    expect(again).toBeDisabled();
+    expect(again).toHaveAccessibleDescription("采用后又改过上下文，撤回会丢掉这些修改，所以撤回和重新总结都不可用；要去掉总结，请直接在上面删改。");
+    fireEvent.change(contextBox(), { target: { value: adopted } });
+    expect(again).toHaveAccessibleDescription("已采用总结；如需重新总结，请先撤回。");
+    fireEvent.click(screen.getByRole("button", { name: "撤回，恢复原上下文" }));
+    expect(contextBox()).toHaveValue(original);
+    fireEvent.click(screen.getByRole("button", { name: "放在上下文前面" }));
+    expect(value().split(CONTEXT_SUMMARY_LINES.mark)).toHaveLength(2);
+    expect(value().split(CONTEXT_SUMMARY_LINES.original)).toHaveLength(2);
+    expect(value().endsWith(`${CONTEXT_SUMMARY_LINES.original}\n${original}`)).toBe(true);
+  });
+
+  it("does not offer to put the summary in front when the context would pass its limit, and says why", async () => {
+    renderWith(vi.fn<Summarize>(async () => summarized), "讨论".repeat(3_975));
+    fireEvent.click(screen.getByRole("button", { name: "用本机模型总结" }));
+    const prepend = await screen.findByRole("button", { name: "放在上下文前面" });
+    // Put there, the record could not be saved until the reader found what to cut.
+    expect(prepend).toBeDisabled();
+    expect(prepend).toHaveAccessibleDescription("放在前面后当时上下文会超过 8000 个字符的上限，可以先删减上下文，或用总结替换。");
+    expect(screen.getByRole("button", { name: "用总结替换上下文" })).toBeEnabled();
+  });
+
+  it("says the context is marked as the local model's only while the mark heads it", async () => {
+    renderWith(vi.fn<Summarize>(async () => summarized));
+    fireEvent.click(screen.getByRole("button", { name: "用本机模型总结" }));
+    fireEvent.click(await screen.findByRole("button", { name: "用总结替换上下文" }));
+    expect(screen.getByText(/^已用总结替换上下文/u)).toHaveTextContent(/^已用总结替换上下文，开头注明了是本机模型总结。$/u);
+    // The reader is its author: the mark is theirs to take out, and the form then no longer says it is there.
+    fireEvent.change(contextBox(), { target: { value: summary } });
+    expect(screen.getByText(/^已用总结替换上下文/u)).toHaveTextContent(/^已用总结替换上下文。$/u);
+  });
+
+  it("leaves the reader's text as it was when the summary is not used", async () => {
+    const { createProactiveRecord } = renderWith(vi.fn<Summarize>(async () => summarized));
+    const edited = `${original}\n补充：5 秒是和网关约定的。`;
+    fireEvent.change(contextBox(), { target: { value: edited } });
+    fireEvent.click(screen.getByRole("button", { name: "用本机模型总结" }));
+    fireEvent.click(await screen.findByRole("button", { name: "不用" }));
+    expect(screen.queryByRole("region", { name: "本机模型总结" })).toBeNull();
+    expect(contextBox()).toHaveValue(edited);
+    expect(screen.getByRole("button", { name: "用本机模型总结" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: /保存记录/u }));
+    await waitFor(() => expect(createProactiveRecord).toHaveBeenCalledWith(expect.objectContaining({ context: edited })));
+  });
+
+  it("stops a running summary on 取消总结 and when the form closes, taking nothing from it after", async () => {
+    const running = later();
+    const summarize = vi.fn<Summarize>(() => running.promise);
+    const { cancelRecordContextSummary, unmount } = renderWith(summarize);
+    fireEvent.click(screen.getByRole("button", { name: "用本机模型总结" }));
+    fireEvent.click(screen.getByRole("button", { name: "取消总结" }));
+    expect(cancelRecordContextSummary).toHaveBeenCalledWith(summarize.mock.calls[0]![0].requestId);
+    expect(screen.getByText("已取消总结，上下文没有改动。")).toHaveAttribute("role", "status");
+    await act(async () => running.resolve(summarized));
+    expect(screen.queryByRole("region", { name: "本机模型总结" })).toBeNull();
+    expect(contextBox()).toHaveValue(original);
+    // Closed while one runs: nobody is left to read it, so it is stopped.
+    summarize.mockReturnValueOnce(later().promise);
+    fireEvent.click(screen.getByRole("button", { name: "用本机模型总结" }));
+    unmount();
+    expect(cancelRecordContextSummary).toHaveBeenLastCalledWith(summarize.mock.calls[1]![0].requestId);
+  });
+
+  it("says why there is no summary, a timeout or a failure as it is, and keeps the context as it was", async () => {
+    const summarize = vi.fn<Summarize>()
+      .mockResolvedValueOnce({ status: "unavailable", reason: "没有启用本机模型。请先在“模型”中启用 Qwen 本机模型；总结只在本机进行，不会发给远端 API 或命令行工具。" })
+      .mockRejectedValueOnce(new Error("本机模型没有在限定时间内写完总结（可能正忙于其它调用，或上下文较长），可以稍后重试。"))
+      .mockRejectedValueOnce(new Error("总结没有完成：模型的回答不符合要求的格式（例如超出长度），请重试或换一个模型。"));
+    renderWith(summarize);
+    const button = screen.getByRole("button", { name: "用本机模型总结" });
+    fireEvent.click(button);
+    expect(await screen.findByText(/^没有启用本机模型。请先在“模型”中启用 Qwen 本机模型/u)).toHaveAttribute("role", "status");
+    fireEvent.click(button);
+    expect(await screen.findByRole("alert")).toHaveTextContent("本机模型没有在限定时间内写完总结（可能正忙于其它调用，或上下文较长），可以稍后重试。原上下文没有改动。");
+    fireEvent.click(button);
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/^总结没有完成：模型的回答不符合要求的格式/u));
+    expect(contextBox()).toHaveValue(original);
+    expect(button).toBeEnabled();
   });
 });

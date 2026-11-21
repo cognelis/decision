@@ -279,6 +279,27 @@ describe("AppController", () => {
     expect(controller.snapshot().candidateReviewOpen).toBe(false);
   });
 
+  it("moves through what waits on a skip, and comes back round to it", async () => {
+    const { candidates, controller } = await createController();
+    const first = serverCandidateFixture();
+    const second = { ...first, candidateId: "candidate-server-2", createdAt: "2026-07-27T00:01:00.000Z" };
+    candidates.ingest(first);
+    candidates.ingest(second);
+    controller.openCandidateReview();
+
+    controller.skipCandidate(first.candidateId);
+    expect(controller.snapshot()).toMatchObject({
+      candidateReviewOpen: true,
+      candidateReviewProgress: { position: 2, total: 2 },
+      decisionCandidates: { current: { candidateId: second.candidateId }, count: 2 },
+    });
+    controller.skipCandidate(second.candidateId);
+    expect(controller.snapshot()).toMatchObject({
+      candidateReviewProgress: { position: 1, total: 2 },
+      decisionCandidates: { current: { candidateId: first.candidateId }, count: 2 },
+    });
+  });
+
   it("advances ignored candidates without closing the review session", async () => {
     const { candidates, controller } = await createController();
     const first = serverCandidateFixture();

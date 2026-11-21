@@ -5,12 +5,15 @@ import type {
   DecisionLibraryItem,
 } from "../../shared/renderer-api.js";
 
+import { ActionIcon } from "./IconButton.js";
 import { verdictLabels } from "./pages/decisions/decision-markdown.js";
 import {
-  questionSearchText,
-  sameQuestionAnswers,
+  listSameQuestionAnswers,
+  answerKey,
+  questionKey,
   shortDate,
 } from "./pages/decisions/SameQuestionDecisions.js";
+import { plainHeadline } from "./question-title.js";
 
 /**
  * The same question answered before, and how that turned out. Writing down
@@ -28,31 +31,32 @@ export const PastAnswers = ({
   excludeId: string;
   listDecisions: DecisionApi["listDecisions"];
 }) => {
-  const [past, setPast] = useState<DecisionLibraryItem[]>([]);
+  const [answers, setAnswers] = useState<DecisionLibraryItem[]>([]);
 
   useEffect(() => {
     let active = true;
-    setPast([]);
-    const query = questionSearchText(question);
-    if (query.length === 0) return;
-    void listDecisions({ query, limit: 50 })
+    setAnswers([]);
+    void listSameQuestionAnswers(listDecisions, question, "")
       .then((items) => {
-        if (active) setPast(sameQuestionAnswers(items, question, excludeId));
+        if (active) setAnswers(items);
       })
       .catch(() => {
-        if (active) setPast([]);
+        if (active) setAnswers([]);
       });
     return () => {
       active = false;
     };
   }, [excludeId, listDecisions, question]);
 
+  const current = answers.find((item) => item.id === excludeId);
+  const past = answers.filter((item) => item.id !== excludeId);
   if (past.length === 0) return null;
+  // Compared as the retrospective compares answers: "loopback http" is the answer "Loopback HTTP".
+  const sameAnswer = (item: DecisionLibraryItem): boolean => answerKey(item) === (current === undefined ? questionKey(answer) : answerKey(current));
   // The one case worth saying outright: the last time this very answer was
   // reviewed, it went worse. An older miss since done better is not "last time".
   const lastReviewed = past.find(
-    (item) =>
-      item.selectedAnswer.trim() === answer.trim() && item.outcomeReview !== null,
+    (item) => sameAnswer(item) && item.outcomeReview !== null,
   );
   const missed =
     lastReviewed?.outcomeReview?.verdict === "worse" ? lastReviewed : undefined;
@@ -62,27 +66,28 @@ export const PastAnswers = ({
       aria-labelledby="rationale-past-title"
     >
       <div className="rationale-principle-heading">
-        <div>
-          <span className="rationale-principle-kicker">本地记录</span>
-          <h3 id="rationale-past-title">以前也回答过这个问题</h3>
-        </div>
-        <small>{past.length} 次</small>
+        <h2 id="rationale-past-title">以前也回答过这个问题</h2>
+        <small>
+          <span>本地记录</span>
+          <span>{past.length} 次</span>
+        </small>
       </div>
       {missed === undefined ? null : (
         <p className="rationale-past-warning">
-          上次同样选了「{missed.selectedAnswer}」，复盘结果低于预期。
+          <ActionIcon name="warning" />
+          上次同样选了「{plainHeadline(missed.selectedAnswer)}」，复盘结果低于预期。
         </p>
       )}
       <ol>
         {past.slice(0, 3).map((item) => (
           <li key={item.id}>
+            <time dateTime={item.created}>
+              {shortDate(item.created)}
+            </time>
             <div>
-              <time dateTime={item.created}>
-                {shortDate(item.created)}
-              </time>
-              <strong>{item.selectedAnswer}</strong>
+              <strong>{plainHeadline(item.selectedAnswer)}</strong>
               <small>
-                {item.selectedAnswer.trim() === answer.trim() ? "答案相同" : "答案不同"}
+                {sameAnswer(item) ? "答案相同" : "答案不同"}
               </small>
             </div>
             <p>

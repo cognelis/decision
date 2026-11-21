@@ -1,0 +1,489 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "r9-startup-first-query-en",
+      "description": "冷启动隔离 App 的第一条英文语义查询要能召回目标且隔离近词记录",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9101.md",
+            "content": "---\nid: D9101\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"重复支付使用幂等键\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 幂等付款\n\n每笔付款必须带 idempotency key；重试返回首次结果。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9102.md",
+            "content": "---\nid: D9102\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"令牌每小时轮换\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 访问令牌\n\n短期访问令牌每小时轮换。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "first-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "How do we prevent a payment retry from charging the customer twice?",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9101"
+            ],
+            "mustExclude": [
+              "D9102"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-startup-first-query-zh",
+      "description": "冷启动后的首条中文同义查询检索中文决策，不泄漏其他项目记录",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9103.md",
+            "content": "---\nid: D9103\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"失败通知逐次延长等待后重发\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 消息重试\n\n通知失败最多重试四次，间隔逐次翻倍。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9104.md",
+            "content": "---\nid: D9104\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"导入失败由人工处理\"\nproject: \"imports\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 导入重试\n\n导入失败时由操作员手动重新运行。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "first-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "通知发送失败后怎么自动延迟重发？",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9103"
+            ],
+            "mustExclude": [
+              "D9104"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-startup-ordering",
+      "description": "新启动后立即查询目标，短关键词干扰项不得挤掉语义命中",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9105.md",
+            "content": "---\nid: D9105\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"三次退避后进入死信队列\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 后台任务失败策略\n\n后台任务失败时指数退避三次，再进入死信队列。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9106.md",
+            "content": "---\nid: D9106\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"任务表使用 JSON\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 任务表格式\n\n数据库任务表的序列化格式使用 JSON。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "immediate",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "What happens after a background job repeatedly fails?",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9105"
+            ],
+            "mustExclude": [
+              "D9106"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-reviewed-successor-current",
+      "description": "新方案仅追加复盘结果后，旧方案仍替代到新方案且不得返回旧项",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9110.md",
+            "content": "---\nid: D9110\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"同步生成 CSV\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: D9111\n---\n# 旧导出方式\n\n旧版同步生成 CSV。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9111.md",
+            "content": "---\nid: D9111\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"后台异步生成 CSV\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [D9110]\nsuperseded_by: null\n---\n# 导出方式\n\n当前后台异步生成 CSV。\n\n## 复盘结果\n复盘确认异步生成减少超时，继续采用。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "current-after-review",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "导出任务复盘后现在采用哪种生成方式？",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9111"
+            ],
+            "mustExclude": [
+              "D9110"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-reviewed-old-topic",
+      "description": "查询旧主题时仍能返回复盘后的有效后继，不能泄漏旧决定",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9112.md",
+            "content": "---\nid: D9112\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"本地内存缓存\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: D9113\n---\n# 旧缓存\n\n旧系统将数据放在本地内存。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9113.md",
+            "content": "---\nid: D9113\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"托管 Redis 缓存\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [D9112]\nsuperseded_by: null\n---\n# 缓存复盘\n\n现在使用托管 Redis。\n\n## 复盘结果\n复盘后确认持久化和恢复满足要求。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "old-topic-current-answer",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "缓存复盘后最终把缓存部署在哪里？",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9113"
+            ],
+            "mustExclude": [
+              "D9112"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-review-only-change",
+      "description": "复盘文本不改变替代关系；同名近邻其他项目不得泄漏",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9114.md",
+            "content": "---\nid: D9114\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"同步 SMTP 发送\"\nproject: \"notifications\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: D9115\n---\n# 旧通知投递\n\n旧方案同步发信。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9115.md",
+            "content": "---\nid: D9115\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"后台队列发送邮件\"\nproject: \"notifications\"\ntags: [\"synthetic\"]\nsupersedes: [D9114]\nsuperseded_by: null\n---\n# 通知复盘结论\n\n通知改用后台队列发信。\n\n## 复盘结果\n复盘通过，重复发送降低。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9116.md",
+            "content": "---\nid: D9116\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"账单系统同步 SMTP 发送\"\nproject: \"billing\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 账单通知\n\n账单使用同步 SMTP。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "review-relation-and-scope",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "通知复盘后邮件是怎么发送的？",
+            "project": "notifications",
+            "limit": 8
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9115"
+            ],
+            "mustExclude": [
+              "D9114",
+              "D9116"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-semantic-weak-keywords-en",
+      "description": "词面很弱的英文同义查询应提升语义目标，同时排除相近词泄漏",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9120.md",
+            "content": "---\nid: D9120\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"请求携带幂等键并返回首次处理结果\"\nproject: \"payments\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 重复扣款防护\n\n付款命令带 idempotency key；重复提交不会再次扣款。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9121.md",
+            "content": "---\nid: D9121\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"访问密钥每小时轮换\"\nproject: \"payments\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 密钥轮换\n\n短期认证密钥按小时更换。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9122.md",
+            "content": "---\nid: D9122\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"导入文件按文件哈希去重\"\nproject: \"imports\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 导入去重\n\n相同文件只导入一次。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "weak-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "How do we make payment retries safe from duplicate charges?",
+            "project": "payments",
+            "limit": 3
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9120"
+            ],
+            "mustExclude": [
+              "D9121",
+              "D9122"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-semantic-weak-keywords-cross-language",
+      "description": "中文查询检索英文记录的语义决定且不泄漏其他领域近义项",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9123.md",
+            "content": "---\nid: D9123\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"订单写入采用 transactional outbox\"\nproject: \"orders\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# outbox pattern\n\nOrder changes and event publication use the transactional outbox pattern.\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9124.md",
+            "content": "---\nid: D9124\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"账单服务采用双写\"\nproject: \"billing\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# billing events\n\nBilling service currently dual-writes events.\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "cross-language",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "订单状态变化怎样可靠地通知下游？",
+            "project": "orders",
+            "limit": 3
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9123"
+            ],
+            "mustExclude": [
+              "D9124"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-semantic-weak-keywords-zh",
+      "description": "弱关键词中文改写仍优先召回主题决策，不能把词面近似的其他方案带入",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9125.md",
+            "content": "---\nid: D9125\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"告警失败后指数延迟最多五次\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 故障通知退避\n\n告警投递失败时按指数退避自动重发，最多五次。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9126.md",
+            "content": "---\nid: D9126\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"登录接口每分钟限制五次\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 用户登录节流\n\n用户登录每分钟最多五次。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "synonym-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "告警没发出去时系统会怎么自动补发？",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9125"
+            ],
+            "mustExclude": [
+              "D9126"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-semantic-rank-no-cross-project",
+      "description": "语义排序提升目标时仍遵守项目范围，不从其他项目泄漏同主题记录",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9127.md",
+            "content": "---\nid: D9127\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"账单对账每天凌晨运行\"\nproject: \"billing\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 账单对账\n\n每日凌晨执行账单对账。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9128.md",
+            "content": "---\nid: D9128\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"支付失败采用指数退避重试\"\nproject: \"payments\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付重试\n\n支付失败最多指数退避四次。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "scoped-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "失败付款怎样安排自动重试？",
+            "project": "payments",
+            "limit": 3
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9128"
+            ],
+            "mustExclude": [
+              "D9127"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-chain-after-review",
+      "description": "替代链中间项复盘后仍不应被当成当前结论返回",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9130.md",
+            "content": "---\nid: D9130\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"本地文件缓存\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: D9131\n---\n# 第一版缓存\n\n第一版写本地文件。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9131.md",
+            "content": "---\nid: D9131\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"SQLite 缓存\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [D9130]\nsuperseded_by: D9132\n---\n# 第二版缓存\n\n第二版使用 SQLite。\n\n## 复盘结果\n该方案曾运行良好。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9132.md",
+            "content": "---\nid: D9132\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"WAL SQLite 缓存\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [D9131]\nsuperseded_by: null\n---\n# 当前缓存\n\n当前使用 WAL 模式的 SQLite。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "chain-final",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "缓存方案经过迭代和复盘后当前最终使用什么？",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9132"
+            ],
+            "mustExclude": [
+              "D9130",
+              "D9131"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-review-leak-unrelated-project",
+      "description": "目标复盘结果可找回，但同一术语的其他项目记录必须隔离",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9133.md",
+            "content": "---\nid: D9133\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"请求采用 Ed25519 签名\"\nproject: \"payments\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付签名复盘\n\n复盘后确认 API 请求使用 Ed25519 签名，继续采用。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9134.md",
+            "content": "---\nid: D9134\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"发布制品使用 GPG 签名\"\nproject: \"release\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 制品签名\n\n发布制品通过 GPG 签名。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "signature-query",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "支付接口复盘后最终选择哪种签名算法？",
+            "project": "payments",
+            "limit": 8
+          },
+          "expect": {
+            "k": 8,
+            "mustInclude": [
+              "D9133"
+            ],
+            "mustExclude": [
+              "D9134"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-weak-rank-unrelated-lexical",
+      "description": "语义结果插前时必须压住高词面相似但主题不同的记录",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/D9135.md",
+            "content": "---\nid: D9135\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"分析数据入仓前移除直接身份字段\"\nproject: \"analytics\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 隐私脱敏\n\n入仓前移除 email 与手机号等直接身份信息。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/D9136.md",
+            "content": "---\nid: D9136\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"原始日志保留三十天\"\nproject: \"analytics\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 数据保留\n\n日志保留三十天后清除。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "privacy-paraphrase",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "怎样避免分析数据里出现可直接识别个人的信息？",
+            "project": "analytics",
+            "limit": 3
+          },
+          "expect": {
+            "k": 3,
+            "mustInclude": [
+              "D9135"
+            ],
+            "mustExclude": [
+              "D9136"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

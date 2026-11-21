@@ -1,0 +1,318 @@
+[
+  {
+    "id": "R6IRSK-001",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "看下来 2、3 都慢",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-002",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "看下来选 2 的坑比较多",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-003",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "看下来就 2 吧？我还没定",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-004",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "看下来选项 2 贵，先别定",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-005",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "2 的性能最好吗？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-006",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "我觉得 3 风险更高，但还要再比较",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-007",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "2 看着靠谱，不过要等压测结果",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-008",
+    "group": "evaluation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "从成本看 1 更合适？",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-009",
+    "group": "anything-but",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "anything but 2 is risky",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-010",
+    "group": "anything-but",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "option 2 is anything but safe",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-011",
+    "group": "anything-but",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "anything but option 1 would work",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-012",
+    "group": "anything-but",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "2 is anything but my choice",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-013",
+    "group": "works-for-me",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "works for me? I am asking whether the current setup is acceptable",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-014",
+    "group": "works-for-me",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "the current Redis setup works for me so far",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-015",
+    "group": "works-for-me",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "works for me as a description of today, not a decision",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-016",
+    "group": "works-for-me",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "does “works for me” mean you approved option 2?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-017",
+    "group": "background-boundary",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Please choose option 2. Background: Explain why PostgreSQL has lower write latency.",
+    "decision": true,
+    "expectedSelected": [
+      2
+    ]
+  },
+  {
+    "id": "R6IRSK-018",
+    "group": "background-boundary",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Pick 1. Background: Explain the migration steps before we proceed.",
+    "decision": true,
+    "expectedSelected": [
+      1
+    ]
+  },
+  {
+    "id": "R6IRSK-019",
+    "group": "background-boundary",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Choose SQLite. Background: Explain the current backup policy.",
+    "decision": true,
+    "expectedSelected": [
+      3
+    ]
+  },
+  {
+    "id": "R6IRSK-020",
+    "group": "background-boundary",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "I prefer PostgreSQL. Background: Explain the failure modes.",
+    "decision": true,
+    "expectedSelected": [
+      2
+    ]
+  },
+  {
+    "id": "R6IRSK-021",
+    "group": "background-boundary",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Background: Explain the Redis cluster. Which option should we choose?",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-022",
+    "group": "negation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "今天不批准任何一个",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-023",
+    "group": "negation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "None of the three options is approved today",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-024",
+    "group": "negation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "不选 2，先收集更多数据",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-025",
+    "group": "negation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "I am not choosing option 1 yet",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-026",
+    "group": "negation",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "不要把我说的 2 当作批准",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-027",
+    "group": "current-state",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "现在线上用的是 Redis",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-028",
+    "group": "current-state",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "目前生产环境运行 PostgreSQL",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-029",
+    "group": "current-state",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Our current production database is SQLite",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-030",
+    "group": "current-state",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Redis has been in use since last year; no new choice today",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-031",
+    "group": "current-state",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "现在先维持 Redis，不代表做了新决策",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R6IRSK-032",
+    "group": "direct-choice",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "我选 2，今天按 PostgreSQL 方案推进",
+    "decision": true,
+    "expectedSelected": [
+      2
+    ]
+  },
+  {
+    "id": "R6IRSK-033",
+    "group": "direct-choice",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Choose SQLite for the new service; this is the final decision",
+    "decision": true,
+    "expectedSelected": [
+      3
+    ]
+  },
+  {
+    "id": "R6IRSK-034",
+    "group": "direct-choice",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "批准 Redis 作为新环境数据库",
+    "decision": true,
+    "expectedSelected": [
+      1
+    ]
+  },
+  {
+    "id": "R6IRSK-035",
+    "group": "direct-choice",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "选 3。Background: Explain the existing deployment.",
+    "decision": true,
+    "expectedSelected": [
+      3
+    ]
+  },
+  {
+    "id": "R6IRSK-036",
+    "group": "direct-choice",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "Option 2 is selected, subject to the migration date being scheduled later",
+    "decision": true,
+    "expectedSelected": [
+      2
+    ]
+  },
+  {
+    "id": "R6IRSK-037",
+    "group": "direct-choice",
+    "assistantText": "1. Redis\n2. PostgreSQL\n3. SQLite\n\n你选哪个？",
+    "userText": "采用 PostgreSQL，其他选项不再考虑",
+    "decision": true,
+    "expectedSelected": [
+      2
+    ]
+  }
+]

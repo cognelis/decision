@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { DecisionRecord } from "@cognelis/decision-core";
 import { chmodSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
@@ -40,6 +41,21 @@ export class LocalDecisionStore {
     const rows = this.#db.prepare(`SELECT content FROM local_decisions WHERE ${where} ORDER BY project, question, created DESC, id LIMIT 100 OFFSET ?`).all(query, offset);
     const count = this.#db.prepare(`SELECT count(*) AS total FROM local_decisions WHERE ${where}`).get(query)!;
     return { records: rows.map(row => parseDecision(String(row.content))), total: Number(count.total) };
+  }
+  /** Other records kept here from the same capture, matched on the note's own `batch_id` line. */
+  countBatch(batchId: string, exceptId: string): number {
+    // The line ends as the note was written: \n, or \r\n for one kept from a vault edited on Windows.
+    const row = this.#db.prepare("SELECT count(*) AS total FROM local_decisions WHERE state = 'local' AND id != ?1 AND (instr(content, ?2 || char(10)) > 0 OR instr(content, ?2 || char(13, 10)) > 0)")
+      .get(exceptId, `batch_id: ${JSON.stringify(batchId)}`)!;
+    return Number(row.total);
+  }
+  discard(id: string, expectedContentHash: string): void {
+    const content = this.content(id);
+    if (content === null) throw new Error("这条本机决策已删除，请刷新后重试。");
+    if (createHash("sha256").update(content).digest("hex") !== expectedContentHash) throw new Error("本机决策已变化，请刷新后重新确认删除。");
+    // Keep only the replay marker, as resolve does; a repeated capture must not resurrect deleted text.
+    const result = this.#db.prepare("UPDATE local_decisions SET state = 'discarded', content = NULL, project = '', question = '', created = '' WHERE id = ? AND state = 'local' AND content = ?").run(id, content);
+    if (Number(result.changes) !== 1) throw new Error("本机决策已变化，请刷新后重新确认删除。");
   }
   resolve(id: string, state: "published" | "discarded"): void {
     // No question, project or正文 remains after deletion; only the ID and disposition are needed for replay.

@@ -1,0 +1,816 @@
+[
+ {
+  "id": "R13RULE-P01-emphasis-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "note": "R10 blind-test shape: the note is wrapped in emphasis. A closing rules-v9 did not read past places the question; the answer stays a candidate (medium).",
+  "assistantText": "| ID | 任务 |\n|----|------|\n| A | 加导入校验：在导入入口检查字段类型，坏数据直接拒绝。 |\n| B | 换缓存键：把缓存键改成带版本号的格式，并清掉旧键。 |\n| C | 精简告警：合并重复告警，只保留每小时一条。 |\n\n这三项可以单独批准。你现在批准哪几项?(A、B、C 可任选,也可以都不选。)\n\n*注:本次未运行任何测试。*",
+  "userText": "Approve A and C now; leave B for later."
+ },
+ {
+  "id": "R13RULE-P02-separator-emphasis-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "| ID | 任务 |\n|----|------|\n| A | 加导入校验：在导入入口检查字段类型，坏数据直接拒绝。 |\n| B | 换缓存键：把缓存键改成带版本号的格式，并清掉旧键。 |\n| C | 精简告警：合并重复告警，只保留每小时一条。 |\n\n你现在批准哪些任务(A、B、C 中的任意几项,或都不批准)?\n\n---\n\n*备注:测试未运行。*",
+  "userText": "Approve A and C now; leave B for later."
+ },
+ {
+  "id": "R13RULE-P03-this-round-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "可以给导入加一步字段校验，坏数据在入口就被拒绝。\n\n你是否批准我实施？我会等待你的回答。\n\n本轮未调用工具或修改文件；尚未查看代码，兼容性风险待核实。",
+  "userText": "批准，请实施字段校验。"
+ },
+ {
+  "id": "R13RULE-P04-as-required-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "- **A** 给导入接口加限流\n- **B** 把轮询改成推送\n- **C** 清理废弃的配置项\n- **D** 给回调加重放保护\n\n现在批准哪几项？请回复字母，我会等你回答。\n\n按要求未调用工具或修改文件；具体实施风险尚未核对。",
+  "userText": "批准 A 和 D，B 推迟到下个迭代，C 先不做。"
+ },
+ {
+  "id": "R13RULE-P05-as-you-asked-hedge-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "A",
+   "D"
+  ],
+  "assistantText": "- **A** 给导入接口加限流\n- **B** 把轮询改成推送\n- **C** 清理废弃的配置项\n- **D** 给回调加重放保护\n\n现在批准哪几项？请回复对应字母，可多选。\n\n按你的要求，我没有调用工具或修改文件；以上是基于假设的选项，尚未核查实际实现和风险。",
+  "userText": "批准 A 和 D，B 推迟到下个迭代，C 先不做。"
+ },
+ {
+  "id": "R13RULE-P06-reply-with-id",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "| 数字 ID | 字母标签 | 做什么 |\n|---|---|---|\n| 1 | A | 加下载限速。 |\n| 2 | B | 轮换队列凭据。 |\n| 3 | C | 精简访问日志。 |\n\n请回复批准的数字 ID（可多选）；我会等你回答。\n\n按要求未调用工具或检查文件；具体影响和风险尚未核实。",
+  "userText": "批准 B 和 C，A 先放着。",
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out)."
+ },
+ {
+  "id": "R13RULE-P07-bare-wait-after-questions",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "A bare wait after a list of questions: read back, candidate only.",
+  "assistantText": "**我打算怎么做**\n- 给导入命令加 `--check` 开关，只校验不写库。\n- 复用现有的解析函数。\n\n**需要你确认**\n1. 你批准我实施吗？批准后我会先读代码，再改。\n2. 校验结果只看摘要，还是看每一行？我默认摘要。\n\n等你回复。",
+  "userText": "批准，请实施导入校验。"
+ },
+ {
+  "id": "R13RULE-P08-wait-after-options",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "1",
+   "3"
+  ],
+  "note": "The wait follows the options the question introduced: full score, as with rules-v9.",
+  "assistantText": "可以考虑以下三项修改，哪些要做可以只选其中一部分，告诉我编号即可：\n\n1. 把临时文件放到系统缓存目录\n2. 增加一个配置开关\n3. 给失败日志加请求 ID\n\n等你答复。",
+  "userText": "编号 1 和 3 可以，那个开关先别加。"
+ },
+ {
+  "id": "R13RULE-P09-wait-in-question-paragraph",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "C"
+  ],
+  "assistantText": "| ID | 任务 | 影响 |\n|---|---|---|\n| A | 调整空态文案 | 需要翻译 |\n| B | 邮件提醒 | 邮件量增加 |\n| C | 导出筛选条件 | 需保存配置 |\n\n本轮批准哪些，哪些留到以后？我等你的决定。",
+  "userText": "A 和 C 先做，B 等通知方案定下来再说。"
+ },
+ {
+  "id": "R13RULE-P10-unrelated-outcome-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "Old lead-in note read past as in rules-v9 (R11 CR3-F3).",
+  "assistantText": "A. SQLite\nB. PostgreSQL\n\n你选哪种存储？\n\n备注：按你的要求，旧清理任务已经取消。",
+  "userText": "选 B。"
+ },
+ {
+  "id": "R13RULE-P11-old-ticket-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [],
+  "note": "R11 CR3-F2: a call-off word about another ticket does not drop the question.",
+  "assistantText": "是否批准我部署？\n\n备注：旧工单无需回复；本次部署仍请批准。",
+  "userText": "批准部署。"
+ },
+ {
+  "id": "R13RULE-P12-please-use",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged). R12-CR B3-1. R14 holdout 复核（G 段）：用户这一轮其实选定了第 2 项「自动审查」；空选是 main 的已知映射缺口，这里锁的是现状，修映射时一起改。",
+  "assistantText": "A. 人工审查\nB. 自动审查\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Please use B to review every pull request."
+ },
+ {
+  "id": "R13RULE-P13-we-will-use",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "A. 人工审查\nB. 自动审查\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "We will use B to review every pull request.",
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged). R14 holdout 复核（G 段）：用户这一轮其实选定了第 2 项「自动审查」；空选是 main 的已知映射缺口，这里锁的是现状，修映射时一起改。"
+ },
+ {
+  "id": "R13RULE-P14-switch-to",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "A. 人工审查\nB. 自动审查\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Please switch to B to review every pull request.",
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged). R14 holdout 复核（G 段）：用户这一轮其实选定了第 2 项「自动审查」；空选是 main 的已知映射缺口，这里锁的是现状，修映射时一起改。"
+ },
+ {
+  "id": "R13RULE-P15-use-option",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "A. 人工审查\nB. 自动审查\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "We will use option B to review every pull request.",
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged). R14 holdout 复核（G 段）：用户这一轮其实选定了第 2 项「自动审查」；空选是 main 的已知映射缺口，这里锁的是现状，修映射时一起改。"
+ },
+ {
+  "id": "R13RULE-P16-zh-plan",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "就用 B 的方案，直接实施。"
+ },
+ {
+  "id": "R13RULE-N15-measure-then-hand-back",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "B"
+  ],
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged). R12-CR B3-3: picking by a measure hands the choice back in either word order.",
+  "assistantText": "A. Redis\nB. SQLite\n\n你选哪个？",
+  "userText": "都行，按响应时间最短的由你决定。"
+ },
+ {
+  "id": "R13RULE-N16-measure-relative-hand-back",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "B"
+  ],
+  "assistantText": "A. Redis\nB. SQLite\n\n你选哪个？",
+  "userText": "都行，响应时间最短的由你来选。",
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged)."
+ },
+ {
+  "id": "R13RULE-P19-detail-time",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "B"
+  ],
+  "assistantText": "A. Redis\nB. SQLite\n\n你选哪个？",
+  "userText": "都批准，部署的时间由你决定。"
+ },
+ {
+  "id": "R13RULE-P20-detail-order",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "B"
+  ],
+  "assistantText": "A. Redis\nB. SQLite\n\n你选哪个？",
+  "userText": "都做，顺序由你决定。"
+ },
+ {
+  "id": "R13RULE-N01-nothing-run-but-deployed",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "R11 CR3-F1: one clause reports an outcome, so the note is not read past.",
+  "assistantText": "是否批准我部署？\n\n本轮没有运行测试，但已部署到生产。",
+  "userText": "批准部署。"
+ },
+ {
+  "id": "R13RULE-N02-nothing-run-but-modified",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "是否批准我修改配置？\n\n按你的要求，我没有运行测试，但已经修改了配置。",
+  "userText": "批准修改。"
+ },
+ {
+  "id": "R13RULE-N03-nothing-run-but-rollback",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "是否批准我部署？\n\n本轮没有运行测试，但请先执行回滚。",
+  "userText": "批准部署。"
+ },
+ {
+  "id": "R13RULE-N04-emphasis-call-off",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "是否批准我部署？\n\n*注：这项提议已经取消，无需回复。*",
+  "userText": "好的"
+ },
+ {
+  "id": "R13RULE-N05-status-beyond-reach",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "A Status: outcome beyond where rules-v9 reached is not read past.",
+  "assistantText": "是否批准我部署？\n\nStatus: 部署已经完成。\n\n注：本轮未运行测试。\n\n等你回复。",
+  "userText": "好的"
+ },
+ {
+  "id": "R13RULE-N06-status-table-wait",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "A"
+  ],
+  "assistantText": "| 模块 | 状态 |\n|---|---|\n| A 登录 | 完成 |\n| B 导出 | 进行中 |\n\n目前哪个模块已经发布？\n\n等你回复。",
+  "userText": "A 登录",
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out)."
+ },
+ {
+  "id": "R13RULE-N07-fact-wait",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "服务运行在哪个端口？\n\n我会等你回复再动手。",
+  "userText": "8080",
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out)."
+ },
+ {
+  "id": "R13RULE-N08-fact-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "数据库现在是哪个版本？\n\n*注：本轮未运行任何命令。*",
+  "userText": "14",
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out)."
+ },
+ {
+  "id": "R13RULE-N09-look-question-new-note",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "rules-v9 rates the same question without the note high; a newly read-past note keeps it a candidate.",
+  "assistantText": "你想先看哪个方案的日志？\n\n按要求未调用工具或修改文件。",
+  "userText": "A 的日志"
+ },
+ {
+  "id": "R13RULE-N10-look-question-wait",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "assistantText": "Which file should I open to inspect the failing test?\n\nI will wait for your answer.",
+  "userText": "Open package.json."
+ },
+ {
+  "id": "R13RULE-N11-use-diff",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged). R12-CR B3-2.",
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Use B's diff to review the changes, no implementation yet."
+ },
+ {
+  "id": "R13RULE-N12-use-diff-bare",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Use B's diff to review the changes.",
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged)."
+ },
+ {
+  "id": "R13RULE-N13-use-only-to-inspect",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Use B only to inspect its diff first.",
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged)."
+ },
+ {
+  "id": "R13RULE-N14-zh-use-diff",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). Band as rules-v9 (the look question itself is rated high); B is no longer selected.",
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "先用 B 的 diff 看一下改动。"
+ },
+ {
+  "id": "R13RULE-P21-bold-question-then-advice",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). A question in bold, then advice: read back, candidate only.",
+  "assistantText": "**可选项**\n\n- **A. 日志采样**:按级别保留。\n- **B. 查询索引**:加快检索。\n- **C. 历史压缩**:节省存储。\n\n**你批准哪几项?**\n\n我推荐 A,因为它从源头减少数据量;风险是低级别日志会被丢弃,所以\"出错时临时全量保留\"的规则要先定好。",
+  "userText": "批准 A 和 B。"
+ },
+ {
+  "id": "R13RULE-P22-question-then-plan-heading",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "B",
+   "C"
+  ],
+  "assistantText": "可选项：\n\n- A：限制单文件大小\n- B：增加病毒扫描\n- C：把临时文件放到独立目录\n\n你批准哪几项？可以回复 A、B、C 的任意组合。\n\n收到回答后我的下一步计划\n\n- 确认获批项目的实现方式。\n- 只实施获批项目，并验证上传流程。",
+  "userText": "B 和 C 做，A 不用了。"
+ },
+ {
+  "id": "R13RULE-P23-question-tail-then-explanation",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "medium",
+  "expectedSelected": [
+   "1",
+   "3"
+  ],
+  "assistantText": "I found three options:\n\n1. Shorten the session lifetime.\n2. Add device binding.\n3. Rotate signing keys monthly.\n\nWhich of these do you approve? You can pick any combination, or none.\n\nShorter lifetimes cut the window for a stolen session but add refresh traffic. Device binding is the strongest defense and the most work. Key rotation limits the damage from a leaked key and is mostly operational.",
+  "userText": "Do 1 and 3."
+ },
+ {
+  "id": "R13RULE-P24-next-steps-once-you-answer",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "- **A. Stream rows** to reduce memory.\n- **B. Add a row limit** to cap export size.\n- **C. Schedule off-peak** to reduce load.\n\n**Which of these do you approve (any combination, or none)?**\n\n## Next steps once you answer\n\n- If you approve A, I'll replace the buffered read with a streaming one.\n- I'll implement the approved options with a small check.",
+  "userText": "A, then C. Skip B.",
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out)."
+ },
+ {
+  "id": "R13RULE-P25-note-with-reply-instruction",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "可选项：\n\n- A：限制单文件大小\n- B：增加病毒扫描\n- C：把临时文件放到独立目录\n\n你批准哪几项？可以选任意组合。\n\n按要求我没有调用任何工具，请回复字母，我会等你回答。",
+  "userText": "A 和 C。",
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out)."
+ },
+ {
+  "id": "R13RULE-P26-question-above-options-instruction-below",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A",
+   "B",
+   "D"
+  ],
+  "note": "The list right under the question is its options, never a remark on it.",
+  "assistantText": "审查后有四项可做，请问批准哪几项？\n\n- A. 合并重复通知\n- B. 给短信通道加限流\n- C. 下线邮件模板 v1\n- D. 增加推送失败重试\n\n直接回复字母就行，比如\"A、D\"。我等你回答，在此之前不动手。",
+  "userText": "除了 C 都做。"
+ },
+ {
+  "id": "R13RULE-N17-remark-reports-choice-made",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "A remark reporting a choice already made is not read past.",
+  "assistantText": "可选项：\n\n- A：限制单文件大小\n- B：增加病毒扫描\n- C：把临时文件放到独立目录\n\n你批准哪几项？\n\n我已经选了 A，正在实施，其余的之后再说。",
+  "userText": "B 和 C。"
+ },
+ {
+  "id": "R13RULE-N18-remark-starts-work",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "可选项：\n\n- A：限制单文件大小\n- B：增加病毒扫描\n- C：把临时文件放到独立目录\n\n你批准哪几项？\n\n在你回复之前，我会先开始实现 A。\n\n- 先改上传入口。",
+  "userText": "B 和 C。"
+ },
+ {
+  "id": "R13RULE-N19-remark-asks-again",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "assistantText": "可选项：\n\n- A：限制单文件大小\n- B：增加病毒扫描\n- C：把临时文件放到独立目录\n\n你批准哪几项？\n\n另外，上传上限现在是多少？\n\n- 我需要这个数来定阈值。",
+  "userText": "10MB"
+ },
+ {
+  "id": "R13RULE-N20-dash-note-request",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). A request after a dash in the note is a clause of its own, so the note is kept as the request.",
+  "assistantText": "1. Add index\n2. Split table\n\nTests were not run — pick one and I'll proceed.\n\nI'll wait for your answer.",
+  "userText": "explain both first"
+ },
+ {
+  "id": "R13RULE-P27-only-reply-instruction",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "R13-CR A-1: a lone reply instruction under the list is the request; it is not read past.",
+  "assistantText": "A. Redis\nB. SQLite\n\n回复编号即可。",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-P28-only-reply-instruction-en",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "R13-CR A-1.",
+  "assistantText": "A. Redis\nB. SQLite\n\nReply with the letter.",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-P29-only-reply-instruction-table",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "R13-CR A-1.",
+  "assistantText": "| ID | Task |\n| --- | --- |\n| A | Add monitoring |\n| B | Add retry |\n\n回复编号即可。",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-P30-use-by-name",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "R13-CR A-2: adopting an option by its name.",
+  "assistantText": "A. Manual review\nB. Automatic review\n\nWould you like to inspect the diff first, or approve implementation?",
+  "userText": "Use Automatic review to review every pull request."
+ },
+ {
+  "id": "R13RULE-P31-use-by-ordinal",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "R13-CR A-2: adopting by position.",
+  "assistantText": "A. Manual review\nB. Automatic review\n\nWould you like to inspect the diff first, or approve implementation?",
+  "userText": "Use the second option to review every pull request."
+ },
+ {
+  "id": "R13RULE-P32-use-only-for-real-work",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "R13-CR A-2: only limits what B is used for, not a look.",
+  "assistantText": "A. Manual review\nB. Automatic review\n\nWould you like to inspect the diff first, or approve implementation?",
+  "userText": "Use B just to review every pull request."
+ },
+ {
+  "id": "R13RULE-N21-please-use-to-inspect-its-diff",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "R13-CR A-3, the pair of P30-P32: B used to look at its own diff, implementation held off.",
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Please use B to inspect its diff first, no implementation yet."
+ },
+ {
+  "id": "R13RULE-N22-we-use-to-inspect-its-diff",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "R13-CR A-3.",
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "We will use B to inspect its diff first, no implementation yet."
+ },
+ {
+  "id": "R13RULE-N23-use-to-review-its-diff-then-hold",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "R13-CR A-3.",
+  "assistantText": "A. 补监控\nB. 加重试\n\n你想先看哪一项的详细改动，还是直接批准实施？",
+  "userText": "Please use B to review its diff first. Do not implement it yet."
+ },
+ {
+  "id": "R13RULE-N24-already-implemented-then-condition",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-CR A-4: a condition binds only its own sentence.",
+  "assistantText": "A. Add monitoring\nB. Add retries\n\nWhich of these do you approve? I already implemented B. Once you answer, I will report the details.",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-N25-implement-immediately-then-condition",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-CR A-4.",
+  "assistantText": "A. Add monitoring\nB. Add retries\n\nWhich of these do you approve? I will implement B immediately. Once you answer, I will explain the results.",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-N26-zh-implement-immediately",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-CR A-4.",
+  "assistantText": "A. Add monitoring\nB. Add retries\n\nWhich of these do you approve? 我会立即开始实现 B。收到回答后我会解释。",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-N27-cross-block-already-implemented",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-CR A-4, across paragraphs.",
+  "assistantText": "A. Add monitoring\nB. Add retries\n\n**Which do you approve?**\n\nI already implemented B.\n\nOnce you answer, I will report the details.",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-P33-implement-once-you-answer",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). The pair of N24-N27: the doing waits on the reply.",
+  "assistantText": "A. Add monitoring\nB. Add retries\n\nWhich of these do you approve? Once you answer, I will implement B.",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-N28-reply-with-completed-number",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "A reply asked for a fact (已完成的编号) hands no choice over.",
+  "assistantText": "A. 添加监控\nB. 增加重试\n\n回复已完成的编号。",
+  "userText": "A"
+ },
+ {
+  "id": "R13RULE-P34-reply-with-approved-id",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). The pair of N28.",
+  "assistantText": "A. Redis\nB. SQLite\n\n请回复批准的数字 ID。",
+  "userText": "B"
+ },
+ {
+  "id": "R13RULE-N29-question-in-tilde-code",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-SK B1-2: a question in code material is not laid bare as the request.",
+  "assistantText": "模板原文：\n\n~~~text\nWhich option should we use, A or B?\n~~~\n\nI'll wait for your answer.",
+  "userText": "A"
+ },
+ {
+  "id": "R13RULE-N30-question-in-inline-code",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-SK B1-2.",
+  "assistantText": "模板文案是 `你选 A 还是 B？`\n\n本轮未运行测试。",
+  "userText": "A"
+ },
+ {
+  "id": "R13RULE-N31-question-in-chinese-quotes",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-SK B1-2.",
+  "assistantText": "报告引用了旧消息：“你会选择 A 还是 B？”\n\n本轮未运行测试。",
+  "userText": "A"
+ },
+ {
+  "id": "R13RULE-N32-question-in-english-quotes",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-SK B1-2.",
+  "assistantText": "The old ticket says: \"Which option should we use, A or B?\"\n\nI'll wait for your answer.",
+  "userText": "A"
+ },
+ {
+  "id": "R13RULE-N33-question-in-indented-code",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "none",
+  "expectedSelected": [],
+  "note": "R13-SK B1-2.",
+  "assistantText": "Template:\n\n    Which of these do you approve? A or B?\n\nThis text is shown to new users.\n\n## Notes\n\n- It needs no change.",
+  "userText": "A"
+ },
+ {
+  "id": "R13RULE-N34-conditional-without-question",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "low",
+  "expectedSelected": [],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). R13-SK B1-1: \"If you choose A, I will…\" alone asks nothing.",
+  "assistantText": "A. Update the cache TTL.\nB. Keep the current TTL.\n\nIf you choose A, I will update the configuration and add a migration note.",
+  "userText": "A sounds reasonable, but I have not decided yet."
+ },
+ {
+  "id": "R13RULE-P35-conditional-after-question",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": true,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "A"
+  ],
+  "expectedQuestion": "If you choose A, I will update the configuration and add a migration script.",
+  "note": "Reduced: as rules-v9 (the B3 fixes and question-field rewrite were not merged). R13-SK B1-1: the question is the paragraph above the conditional.",
+  "assistantText": "A. 用 PostgreSQL。\nB. 用 SQLite。\n\nWhich option should I adopt, A or B?\n\nIf you choose A, I will update the configuration and add a migration script.",
+  "userText": "Choose A."
+ },
+ {
+  "id": "R13RULE-N35-use-material-to-review",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "high",
+  "expectedSelected": [
+   "B"
+  ],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). R13-SK B1-3: B release notes are material.",
+  "assistantText": "A. 立即发布。\nB. 暂缓发布。\n\nWould you like to review B's release notes or publish A?",
+  "userText": "Use B's release notes to review the risks; do not publish."
+ },
+ {
+  "id": "R13RULE-N36-measure-hand-back-en",
+  "group": "r13-rule",
+  "synthetic": true,
+  "decision": false,
+  "expectedBand": "medium",
+  "expectedSelected": [],
+  "note": "Rework two: as rules-v9 (the rules-v10 path this guarded was taken out). R13-SK B1-4.",
+  "assistantText": "A. Lower latency.\nB. Lower memory use.\n\nWhich option should we use?\n\nLet the option with the shortest response time decide the choice.",
+  "userText": "Either is fine; whichever has the shortest response time is your choice."
+ }
+]

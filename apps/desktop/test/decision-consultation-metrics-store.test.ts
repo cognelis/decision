@@ -76,13 +76,13 @@ describe("DecisionConsultationMetricsStore", () => {
       strongMatches: 1,
       possibleMatches: 1,
       durationMs: 20,
-      byClient: { claudeCode: 1, codex: 1 },
+      byClient: { "claude-code": 1, codex: 1 },
       feedback: {
         total: 2,
         helpful: 1,
         notHelpful: 0,
         misleading: 1,
-        bySource: { claudeCode: 0, codex: 1, preview: 1 },
+        bySource: { codex: 1, preview: 1 },
         byResult: {
           strong: { total: 1, helpful: 1 },
           possible: { total: 1, misleading: 1 },
@@ -119,7 +119,7 @@ describe("DecisionConsultationMetricsStore", () => {
         strongMatches: 0,
         possibleMatches: 0,
         durationMs: 4,
-        byClient: { claudeCode: 0, codex: 1 },
+        byClient: { "claude-code": 0, codex: 1 },
         recent: [
           {
             date: "2026-08-08",

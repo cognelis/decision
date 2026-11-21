@@ -27,9 +27,15 @@ export const cachedPrSnapshotSchema = z.object({
     body: z.string().max(300), createdAt: z.string().max(100),
   }).strict()).max(20),
   commentsFailed: z.boolean(),
-  /** The repository's own guides at the source commit; a snapshot cached before they were read has none. */
-  guides: z.array(z.object({ path: z.string().min(1).max(4_096), text: z.string().max(20_000) }).strict()).max(4).optional(),
+  /** The repository's own guides; a snapshot cached before they were read has none. */
+  guides: z.array(z.object({ path: z.string().min(1).max(4_096), text: z.string().max(20_000) }).strict()).max(5).optional(),
+  /** Where the guides were read: the target branch's commit. Absent: read at the source commit, as before they were read from the target branch, and read again. */
+  guidesAt: z.literal("destination").optional(),
+  /** The target branch's CODEOWNERS, null when it keeps none; absent in a snapshot cached before it was read. */
+  codeowners: z.object({ path: z.string().min(1).max(4_096), text: z.string().max(50_000) }).strict().nullable().optional(),
   updatedAt: z.string().max(100).nullable(),
+  /** Absent in a snapshot cached before the list's comment count was kept. */
+  commentCount: z.number().int().nonnegative().nullable().optional(),
   loadedAt: z.number().int().nonnegative(),
 }).strict();
 export type CachedPrSnapshot = z.infer<typeof cachedPrSnapshotSchema>;

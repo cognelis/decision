@@ -12,7 +12,7 @@ import { mkdtempSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { resolveDecisionUserData } from "../src/main/application-paths.js";
+import { configureElectronUserDataPath } from "../src/main/application-paths.js";
 
 const writeFixture = (
   root: string,
@@ -42,7 +42,8 @@ const hashes = (root: string): Record<string, string> => {
   return result;
 };
 
-describe("Decision data preservation", () => {
+// Decision's data folder, moved whole to Paraself's at the first start after the rename: every byte where it was.
+describe("data preservation across the rename to Paraself", () => {
   it("preserves historical knowledge and every pending local state", () => {
     const home = mkdtempSync(join(tmpdir(), "decision-brand-migration-"));
     const applicationSupport = posix.join(
@@ -51,7 +52,7 @@ describe("Decision data preservation", () => {
       "Application Support",
     );
     const existingData = posix.join(applicationSupport, "Decision");
-    const currentData = posix.join(applicationSupport, "Decision");
+    const currentData = posix.join(applicationSupport, "Paraself");
     const historyVault = posix.join(
       home,
       "Documents",
@@ -100,7 +101,10 @@ describe("Decision data preservation", () => {
 
     const dataBefore = hashes(existingData);
     const vaultBefore = hashes(historyVault);
-    const resolution = resolveDecisionUserData(
+    let configured: string | undefined;
+    const setPath = (_name: "userData", path: string) => { configured = path; };
+    const resolution = configureElectronUserDataPath(
+      { setPath },
       {},
       {
         homeDirectory: home,
@@ -111,11 +115,12 @@ describe("Decision data preservation", () => {
     expect(resolution).toEqual({
       environmentSource: "default",
       path: currentData,
-      state: "current",
+      state: "migrated",
     });
+    expect(configured).toBe(currentData);
     expect(hashes(currentData)).toEqual(dataBefore);
     expect(hashes(historyVault)).toEqual(vaultBefore);
-    expect(existsSync(existingData)).toBe(true);
+    expect(existsSync(existingData)).toBe(false);
     expect(existsSync(currentData)).toBe(true);
 
     const settings = JSON.parse(
@@ -136,7 +141,7 @@ describe("Decision data preservation", () => {
       const home = mkdtempSync(join(tmpdir(), "decision-windows-migration-"));
       const applicationData = join(home, "AppData", "Roaming");
       const existingData = join(applicationData, "Decision");
-      const currentData = join(applicationData, "Decision");
+      const currentData = join(applicationData, "Paraself");
       const historyVault = join(home, "Documents", "Existing Vault");
       mkdirSync(existingData, { recursive: true });
       mkdirSync(historyVault, { recursive: true });
@@ -173,7 +178,8 @@ describe("Decision data preservation", () => {
 
       const dataBefore = hashes(existingData);
       const vaultBefore = hashes(historyVault);
-      const resolution = resolveDecisionUserData(
+      const resolution = configureElectronUserDataPath(
+        { setPath: () => undefined },
         { APPDATA: applicationData },
         {
           homeDirectory: home,
@@ -184,11 +190,11 @@ describe("Decision data preservation", () => {
       expect(resolution).toEqual({
         environmentSource: "default",
         path: currentData,
-        state: "current",
+        state: "migrated",
       });
       expect(hashes(currentData)).toEqual(dataBefore);
       expect(hashes(historyVault)).toEqual(vaultBefore);
-      expect(existsSync(existingData)).toBe(true);
+      expect(existsSync(existingData)).toBe(false);
       expect(existsSync(currentData)).toBe(true);
       expect(
         JSON.parse(readFileSync(join(currentData, "settings.json"), "utf8")),

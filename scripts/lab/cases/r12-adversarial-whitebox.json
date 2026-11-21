@@ -1,0 +1,379 @@
+[
+  {
+    "id": "wb-offer-look-cn-no-commit",
+    "group": "wb-offers-a-look",
+    "decision": false,
+    "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n- C：增加本地缓存\n\n你想先看哪一项的 diff，还是直接批准我实施？",
+    "userText": "先让我看 B 的 diff，展开一下这项改动。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-offer-look-explicit-approve",
+    "group": "wb-offers-a-look",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n- C：增加本地缓存\n\n你想先看哪一项的 diff，还是直接批准我实施？",
+    "userText": "批准实施 B，现在就按 B 做。",
+    "expectedSelected": ["B"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-offer-look-approve-a-view-b",
+    "group": "wb-offers-a-look",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n- C：增加本地缓存\n\n你想先看哪一项的 diff，还是直接批准我实施？",
+    "userText": "A 批准实施；B 先只给我看 diff。",
+    "expectedSelected": ["A"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-offer-look-en-no-commit",
+    "group": "wb-offers-a-look",
+    "decision": false,
+    "assistantText": "Please choose an implementation option:\n- A: add request logging\n- B: change the serializer\n- C: add a local cache\n\nWould you like to see B's diff first or approve implementation now?",
+    "userText": "I'd like to see B's diff first.",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-view-choice-without-approval-path",
+    "group": "wb-offers-a-look",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我可以先展示一个方案的 diff：\n- A：增加访问日志\n- B：切换序列化器\n\n你要我先展示 A 还是 B？",
+    "userText": "B",
+    "expectedSelected": ["B"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-offer-look-explicit-refusal",
+    "group": "wb-offers-a-look",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请从以下实施方案中选择：\n- A：增加访问日志\n- B：切换序列化器\n\n你想先看哪项的 diff，还是直接批准我实施？",
+    "userText": "不批准实施，先只看 B 的 diff。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-approval-opens-chinese-approve",
+    "group": "wb-opens-with-approval",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "补丁已经准备好。你批准我现在应用这个补丁吗？",
+    "userText": "批准——go ahead and apply the patch.",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-approval-opens-yes-implement",
+    "group": "wb-opens-with-approval",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "The migration is ready. Should I apply it now?",
+    "userText": "Yes, implement it.",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-approval-opens-approved-extra-work",
+    "group": "wb-opens-with-approval",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你批准我现在合并这个分支吗？",
+    "userText": "Approved. Please merge it and update the changelog.",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-approval-open-yes-but-after-qa",
+    "group": "wb-opens-with-approval",
+    "decision": false,
+    "assistantText": "Should I deploy this change now?",
+    "userText": "Yes, but wait until QA signs off.",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-approval-historical-status",
+    "group": "wb-opens-with-approval",
+    "decision": false,
+    "assistantText": "Did you approve the release plan in yesterday's meeting? Please answer yes or no.",
+    "userText": "Yes, it was approved yesterday.",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-approval-choice-is-not-yes-no",
+    "group": "wb-opens-with-approval",
+    "decision": false,
+    "assistantText": "Which approval policy should we adopt?\n- A: require one reviewer\n- B: require two reviewers\nPlease choose A or B.",
+    "userText": "Approved.",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-approval-denial-after-prefix",
+    "group": "wb-opens-with-approval",
+    "decision": false,
+    "assistantText": "你批准我现在发布吗？",
+    "userText": "批准，但先不要发布，等评审确认。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-handoff-all-delegate-cost",
+    "group": "wb-hands-choice-back",
+    "decision": false,
+    "assistantText": "请选择一个存储方案：\n- A：SQLite\n- B：PostgreSQL\n- C：JSON 文件",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-handoff-named-both-still-delegates",
+    "group": "wb-hands-choice-back",
+    "decision": false,
+    "assistantText": "请选择一个缓存方案：\n- A：进程内 LRU\n- B：Redis\n- C：不缓存",
+    "userText": "A 和 B 都可以，你选一个就好。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-handoff-one-explicit-other-delegated",
+    "group": "wb-hands-choice-back",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一个发布策略：\n- A：金丝雀\n- B：蓝绿\n- C：滚动发布",
+    "userText": "我选 A，剩下的你按风险决定。",
+    "expectedSelected": ["A"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-handoff-named-option-but-not-chosen",
+    "group": "wb-hands-choice-back",
+    "decision": false,
+    "assistantText": "请选择一个日志库：\n- A：Pino\n- B：Winston\n- C：Bunyan",
+    "userText": "B 也行，具体你来定。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-handoff-explicit-choice-control",
+    "group": "wb-hands-choice-back",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一个构建工具：\n- A：Vite\n- B：Webpack\n- C：Parcel",
+    "userText": "都行，不过这次直接做 A。",
+    "expectedSelected": ["A"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-letter-paired-number-selected",
+    "group": "wb-letter-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一项：\n1. A — 增加重试\n2. B — 提高超时\n3. C — 记录请求 ID\n你选哪些？",
+    "userText": "A and C please, nothing else.",
+    "expectedSelected": ["A", "C"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-letter-bracketed-bullet",
+    "group": "wb-letter-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一个队列：\n- A（Redis Streams）：轻量\n- B（RabbitMQ）：功能丰富\n- C（SQS）：托管服务\n你选哪项？",
+    "userText": "选 B。",
+    "expectedSelected": ["B"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-letter-number-slash-alias",
+    "group": "wb-letter-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "为状态管理选择方案：\n1 / A：Redux Toolkit\n2 / B：Zustand\n3 / C：React context\n请回复数字或字母。",
+    "userText": "3",
+    "expectedSelected": ["C"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-letter-table-code-id-position-alias",
+    "group": "wb-letter-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请从表格选一个方案：\n| ID | 方案 |\n|---|---|\n| T1 | Kafka |\n| T2 | RabbitMQ |\n| T3 | SQS |\n你选哪项？",
+    "userText": "C",
+    "expectedSelected": ["T3"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-letter-table-numeric-id-letter-label",
+    "group": "wb-letter-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请从表格选一个数据库：\n| ID | 标签 | 名称 |\n|---|---|---|\n| 17 | A | SQLite |\n| 29 | B | PostgreSQL |\n| 41 | C | MySQL |\n你选哪项？",
+    "userText": "B",
+    "expectedSelected": ["B"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-readback-options-before-standalone-question",
+    "group": "wb-readback-options",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请考虑以下缓存选择：\n1. 进程内 LRU\n2. Redis\n3. HTTP cache\n\n你想选择哪一个？\n\n我建议选 Redis，因为需要跨实例一致性。",
+    "userText": "2",
+    "expectedSelected": ["2"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-readback-options-before-wait-close",
+    "group": "wb-readback-options",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "方案如下：\n- A：SQLite\n- B：PostgreSQL\n- C：JSON 文件\n\n你会选哪一个？\n\n我会等你回复后再处理。",
+    "userText": "B",
+    "expectedSelected": ["B"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-readback-options-before-english-close",
+    "group": "wb-readback-options",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "The available options are:\n1. in-process LRU\n2. Redis\n3. HTTP cache headers\n\nWhich one do you choose?\n\nI'll wait for your answer.",
+    "userText": "3",
+    "expectedSelected": ["3"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-readback-control-plan-is-not-options",
+    "group": "wb-readback-options",
+    "decision": false,
+    "assistantText": "执行计划：\n1. 添加 preview 子命令\n2. 运行迁移测试\n3. 更新 README\n\n你倾向命令行还是图形界面？\n\n我会等你回复后再继续。",
+    "userText": "先解释图形界面的权限模型。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-number-fullwidth-paren",
+    "group": "wb-number-forms",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "选一种数据格式：\n1）YAML\n2）TOML\n3）JSON\n请告诉我选哪项。",
+    "userText": "2）TOML。",
+    "expectedSelected": ["2"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-number-circled",
+    "group": "wb-number-forms",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选一项：\n①：SQLite\n②：PostgreSQL\n③：MySQL\n你选择哪个？",
+    "userText": "③",
+    "expectedSelected": ["3"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-number-chinese-comma",
+    "group": "wb-number-forms",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选一个部署策略：\n一、金丝雀发布\n二、蓝绿发布\n三、滚动发布\n你选哪种？",
+    "userText": "第二项，蓝绿发布。",
+    "expectedSelected": ["2"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-number-scheme-one",
+    "group": "wb-number-forms",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请从下面方案中选一个：\n方案一：SQLite\n方案二：PostgreSQL\n方案三：JSON 文件\n你倾向哪种？",
+    "userText": "方案三。",
+    "expectedSelected": ["3"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-table-code-ids-only",
+    "group": "wb-tables",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "选择一个消息队列：\n| ID | 描述 |\n|---|---|\n| T1 | Kafka |\n| T2 | RabbitMQ |\n| T3 | SQS |\n你选哪个 ID？",
+    "userText": "T2。",
+    "expectedSelected": ["T2"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-table-first-column-plan-name",
+    "group": "wb-tables",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一个数据库方案：\n| 方案 | 优点 | 风险 |\n|---|---|---|\n| SQLite | 易部署 | 单机写入 |\n| PostgreSQL | 并发能力强 | 运维成本较高 |\n| MySQL | 团队熟悉 | 需要维护副本 |\n你选哪个方案？",
+    "userText": "PostgreSQL。",
+    "expectedSelected": ["2"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-table-first-column-plan-name-long-header",
+    "group": "wb-tables",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一个数据库方案：\n| 方案名称 | 优点 | 风险 |\n|---|---|---|\n| SQLite | 易部署 | 单机写入 |\n| PostgreSQL | 并发能力强 | 运维成本较高 |\n| MySQL | 团队熟悉 | 需要维护副本 |\n你选哪个方案？",
+    "userText": "SQLite。",
+    "expectedSelected": ["1"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-table-status-rows-not-choice",
+    "group": "wb-tables",
+    "decision": false,
+    "assistantText": "当前部署状态：\n| 方案 | 状态 |\n|---|---|\n| SQLite | 已下线 |\n| PostgreSQL | 正在运行 |\n| MySQL | 未部署 |\n目前哪个方案正在运行？",
+    "userText": "PostgreSQL 正在运行。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-table-task-header-not-choice",
+    "group": "wb-tables",
+    "decision": false,
+    "assistantText": "任务状态：\n| 任务 | 状态 |\n|---|---|\n| API | 完成 |\n| UI | 进行中 |\n哪个任务已经完成？",
+    "userText": "API。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-recommend-one-option-keeps-whole-list",
+    "group": "wb-recommendation-list",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "从这些缓存策略选一个：\n- A：进程内 LRU。建议单实例先用它。\n- B：Redis。适合多实例。\n- C：不缓存。适合数据很少的场景。\n你选哪个？",
+    "userText": "选 B。",
+    "expectedSelected": ["B"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-recommend-two-of-three-keeps-whole-list",
+    "group": "wb-recommendation-list",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请从三种发布策略选择：\n- A：金丝雀。建议用于小流量验证。\n- B：蓝绿。大版本切换时推荐。\n- C：滚动发布。逐步替换实例。\n你选哪个？",
+    "userText": "B。",
+    "expectedSelected": ["B"],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-recommend-each-item-is-own-question",
+    "group": "wb-recommendation-list",
+    "decision": false,
+    "assistantText": "逐项确认下面的问题：\n1. 是否需要开启访问日志？建议先在 staging 观察。\n2. 是否需要保留请求正文？建议先咨询安全团队。\n请分别回答每项。",
+    "userText": "第一项可以，第二项不保留。",
+    "expectedSelected": [],
+    "source": "synthetic-handwritten"
+  }
+]

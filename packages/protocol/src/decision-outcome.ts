@@ -15,6 +15,8 @@ export const decisionOutcomeStateSchema = z.object({
   outcome: z.string().max(8_000).nullable(),
   review: decisionOutcomeReviewSchema.nullable(),
   reviewDueDate: date.nullable(),
+  // Why the review was scheduled as the decision was written (IMP-123). With no date, the user cleared it.
+  reviewScheduleReasons: z.array(z.enum(["expected_outcome", "selection", "architecture", "release"])).max(4).optional(),
 }).strict();
 export const decisionOutcomeUpdateSchema = z.object({
   source: z.literal("decisions"),

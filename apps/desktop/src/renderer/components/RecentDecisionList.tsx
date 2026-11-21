@@ -1,4 +1,7 @@
 import type { RecentDecisionSummary } from "../../shared/renderer-api.js";
+import { sourceLabel } from "../client-labels.js";
+import { plainHeadline } from "./question-title.js";
+import { ActionIcon, IconButton } from "./IconButton.js";
 
 const rationaleLabels: Record<
   RecentDecisionSummary["rationaleStatus"],
@@ -9,23 +12,19 @@ const rationaleLabels: Record<
   skipped: "未补理由",
 };
 
-const sourceLabels: Record<string, string> = {
-  codex: "Codex",
-  "claude-code": "Claude Code",
-  manual: "手动记录",
-  "pr-comment": "PR 评论",
-  test: "Test",
-};
 
 export const RecentDecisionList = ({
   decisions,
   onOpenDecision,
   onOpenRetrospective,
+  onDeleteDecision,
 }: {
   decisions: RecentDecisionSummary[];
   onOpenDecision(id: string): void;
   /** Looking back over these as a whole: what was decided and learned. */
   onOpenRetrospective(): void;
+  /** A wrong capture seen here is deleted from here. */
+  onDeleteDecision(id: string): void;
 }) => (
   <section
     className="dashboard-card dashboard-recent-card"
@@ -51,8 +50,8 @@ export const RecentDecisionList = ({
         aria-label="已记录的最近决策"
         tabIndex={0}
       >
-        {decisions.map((decision) => (
-          <li key={decision.id}>
+        {decisions.map((decision, index) => (
+          <li key={decision.id} className="recent-decision-row">
             <button
               type="button"
               className="recent-decision-item"
@@ -60,13 +59,13 @@ export const RecentDecisionList = ({
               onClick={() => onOpenDecision(decision.id)}
             >
               <div className="recent-decision-copy">
-                <strong>{decision.question}</strong>
-                <span>{decision.selectedAnswer}</span>
+                <strong id={`recent-decision-question-${index}`}>{plainHeadline(decision.question)}</strong>
+                <span>{plainHeadline(decision.selectedAnswer)}</span>
               </div>
               <div className="recent-decision-meta">
                 <span>{decision.project}</span>
                 <span>
-                  {sourceLabels[decision.sourceClient] ?? decision.sourceClient}
+                  {sourceLabel(decision.sourceClient)}
                 </span>
                 <time dateTime={decision.created}>
                   {new Intl.DateTimeFormat("zh-CN", {
@@ -79,6 +78,11 @@ export const RecentDecisionList = ({
                 </span>
               </div>
             </button>
+            <IconButton className="row-delete-button" aria-label="删除" title="删除这条决策"
+              aria-describedby={`recent-decision-question-${index}`}
+              onClick={() => onDeleteDecision(decision.id)}>
+              <ActionIcon name="trash" />
+            </IconButton>
           </li>
         ))}
       </ol>

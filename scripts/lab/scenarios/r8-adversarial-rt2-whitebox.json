@@ -1,0 +1,429 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "rt2-function-terms",
+      "description": "验证 CAN、IT、SQL IN、DO、IT asset、can 作为领域词时不被英语停用词表误伤。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8101.md",
+            "content": "---\nid: WB8101\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"CAN 总线采用 120Ω 终端电阻，并使用差分信号。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# CAN 总线终端\n\nCAN 总线采用 120Ω 终端电阻，并使用差分信号。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8102.md",
+            "content": "---\nid: WB8102\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"内部消息总线使用 JSON envelope 和异步路由。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 消息总线协议\n\n内部消息总线使用 JSON envelope 和异步路由。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8103.md",
+            "content": "---\nid: WB8103\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"IT 部门的终端资产权限由 IAM 组管理。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# IT 部门权限\n\nIT 部门的终端资产权限由 IAM 组管理。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8104.md",
+            "content": "---\nid: WB8104\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"设施部门的门禁权限由楼宇系统管理。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 设施部门权限\n\n设施部门的门禁权限由楼宇系统管理。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8105.md",
+            "content": "---\nid: WB8105\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"PostgreSQL 查询使用 SQL IN predicate 过滤成员集合。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# SQL IN 子句\n\nPostgreSQL 查询使用 SQL IN predicate 过滤成员集合。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8106.md",
+            "content": "---\nid: WB8106\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"数据报表使用 SQL JOIN 合并订单和客户表。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# SQL JOIN 查询\n\n数据报表使用 SQL JOIN 合并订单和客户表。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8107.md",
+            "content": "---\nid: WB8107\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"迁移脚本使用 PostgreSQL anonymous DO block 执行一次性变更。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# PostgreSQL DO 块\n\n迁移脚本使用 PostgreSQL anonymous DO block 执行一次性变更。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8108.md",
+            "content": "---\nid: WB8108\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"持久化业务逻辑使用 PL/pgSQL stored function。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# PostgreSQL 函数\n\n持久化业务逻辑使用 PL/pgSQL stored function。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8109.md",
+            "content": "---\nid: WB8109\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"IT asset inventory 使用序列号和资产标签统一盘点。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# IT 资产清单\n\nIT asset inventory 使用序列号和资产标签统一盘点。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8110.md",
+            "content": "---\nid: WB8110\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"软件 license inventory 使用 package id 对账。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 软件资产清单\n\n软件 license inventory 使用 package id 对账。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8111.md",
+            "content": "---\nid: WB8111\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"食品使用密封 steel can 容器保存，仓库按腐蚀等级轮换。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 食品铁罐储存\n\n食品使用密封 steel can 容器保存，仓库按腐蚀等级轮换。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8112.md",
+            "content": "---\nid: WB8112\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"归档数据使用对象存储 bucket 保存并按季度校验。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 归档容器\n\n归档数据使用对象存储 bucket 保存并按季度校验。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "can-bus",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "CAN bus termination resistor differential signal 终端电阻",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8101"
+            ],
+            "mustExclude": [
+              "WB8102"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "it-department",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "IT department endpoint asset access permissions IAM",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8103"
+            ],
+            "mustExclude": [
+              "WB8104"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "sql-in",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "PostgreSQL SQL IN predicate membership filter 子句",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8105"
+            ],
+            "mustExclude": [
+              "WB8106"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "do-block",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "PostgreSQL anonymous DO block one-time migration command",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8107"
+            ],
+            "mustExclude": [
+              "WB8108"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "it-asset",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "IT asset inventory serial number lifecycle tracking",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8109"
+            ],
+            "mustExclude": [
+              "WB8110"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "can-container",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "steel can container corrosion food storage",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8111"
+            ],
+            "mustExclude": [
+              "WB8112"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "rt2-valid-chain-hint",
+      "description": "后继链提示必须追到最终记录，并展示最终选择而非只给编号。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8201.md",
+            "content": "---\nid: WB8201\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"通知使用定时轮询检查待发任务。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: [\"WB8202\"]\n---\n# 通知投递旧方案\n\n通知使用定时轮询检查待发任务。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8202.md",
+            "content": "---\nid: WB8202\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"通知改用直接同步 HTTP 调用。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: [\"WB8201\"]\nsuperseded_by: [\"WB8203\"]\n---\n# 通知投递中间方案\n\n通知改用直接同步 HTTP 调用。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8203.md",
+            "content": "---\nid: WB8203\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"最终采用 transactional outbox，经后台队列投递通知。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: [\"WB8202\"]\nsuperseded_by: []\n---\n# 通知投递最终方案\n\n最终采用 transactional outbox，经后台队列投递通知。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "final-successor-hint",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "通知投递旧方案当前最后采用什么方式",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8201"
+            ],
+            "contains": [
+              "当前有效的是 summarize/WB8203《通知投递最终方案》：最终采用 transactional outbox"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "rt2-missing-vs-unreadable",
+      "description": "引用编号不存在应提示核对；后继文件仍存在但无法解析时必须保留不确定性。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8301.md",
+            "content": "---\nid: WB8301\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"计划任务使用本地内存队列。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: [\"WB8399\"]\n---\n# 计划任务旧结论\n\n计划任务使用本地内存队列。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8302.md",
+            "content": "---\nid: WB8302\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"账务写入先使用双写校验。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: [\"WB8303\"]\n---\n# 账务写入旧结论\n\n账务写入先使用双写校验。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8303.md",
+            "content": "---\nid: WB8303\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: [WB8302]\nsuperseded_by: null\n---\n# 故意不完整的后继笔记\n\n此文件保留 id，但缺少必填的 selected_option，使扫描将该记录标为不可读。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "wrong-successor-id",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "计划任务队列的历史选择是什么",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8301"
+            ],
+            "contains": [
+              "记录的后继已不存在"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "unreadable-successor",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "账务写入的旧方案是什么",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8302"
+            ],
+            "contains": [
+              "部分后继记录不可读取；不能据此确认当前有效结论"
+            ],
+            "notContains": [
+              "记录的后继已不存在"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "rt2-deleted-successor-neutrality",
+      "description": "后继先可读后实际删除；检查中性处理是否同时保留旧记录状态的人工核对提示。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8401.md",
+            "content": "---\nid: WB8401\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"缓存使用本地磁盘。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: [\"WB8403\"]\n---\n# 缓存旧结论已接受\n\n缓存使用本地磁盘。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8402.md",
+            "content": "---\nid: WB8402\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"缓存使用单机内存。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: [\"WB8403\"]\n---\n# 缓存旧结论标记替代\n\n缓存使用单机内存。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8403.md",
+            "content": "---\nid: WB8403\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"缓存改用共享 Redis。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 缓存新结论\n\n缓存改用共享 Redis。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "remove-current-successor",
+          "remove": "Decision Journal/summarize/WB8403.md"
+        },
+        {
+          "id": "deleted-accepted-predecessor",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "缓存旧结论本地磁盘方案",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8401"
+            ],
+            "contains": [
+              "记录的后继已不存在"
+            ],
+            "notContains": [
+              "当前有效的是 summarize/WB8403"
+            ],
+            "k": 8
+          }
+        },
+        {
+          "id": "deleted-superseded-predecessor",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "缓存旧结论单机内存方案",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8402"
+            ],
+            "contains": [
+              "记录的后继已不存在"
+            ],
+            "notContains": [
+              "当前有效的是 summarize/WB8403"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "rt2-unrelated-successor-hint",
+      "description": "错误编号恰好指向一个可读但无关、跨项目的当前记录；提示不得将其说成有效替代选择。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8501.md",
+            "content": "---\nid: WB8501\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"支付写操作使用请求序号去重。\"\nproject: \"payments\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: [\"WB8502\"]\n---\n# 支付幂等旧结论\n\n支付写操作使用请求序号去重。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8502.md",
+            "content": "---\nid: WB8502\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"分析报表使用列式存储压缩。\"\nproject: \"analytics\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 无关的分析存储选择\n\n分析报表使用列式存储压缩。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "wrong-id-unrelated-successor",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "支付请求如何避免重复扣款",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8501"
+            ],
+            "notContains": [
+              "当前有效的是 summarize/WB8502"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "rt2-many-successors-warning-cap",
+      "description": "多个后继时被省略的关系要明确说未列出，避免把所有关系说成均已替代。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8601.md",
+            "content": "---\nid: WB8601\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"事件投递有多个候选分支待核对。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: [\"WB8602\",\"WB8603\",\"WB8604\",\"WB8605\",\"WB8606\"]\n---\n# 多分支旧结论\n\n事件投递有多个候选分支待核对。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8602.md",
+            "content": "---\nid: WB8602\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"采用消息队列 A。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 后继选项二\n\n采用消息队列 A。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8603.md",
+            "content": "---\nid: WB8603\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"采用消息队列 B。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 后继选项三\n\n采用消息队列 B。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8604.md",
+            "content": "---\nid: WB8604\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"采用消息队列 C。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 后继选项四\n\n采用消息队列 C。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8605.md",
+            "content": "---\nid: WB8605\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"采用消息队列 D。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 后继选项五\n\n采用消息队列 D。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8606.md",
+            "content": "---\nid: WB8606\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"采用消息队列 E。\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2\"]\nsupersedes: []\nsuperseded_by: []\n---\n# 后继选项六\n\n采用消息队列 E。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "successor-overflow-wording",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "事件投递多个后继选择的旧记录",
+            "project": "lab",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": [
+              "WB8601"
+            ],
+            "contains": [
+              "另有 2 条后继记录未列出"
+            ],
+            "k": 8
+          }
+        }
+      ]
+    }
+  ]
+}

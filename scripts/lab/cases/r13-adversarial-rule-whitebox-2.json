@@ -1,0 +1,108 @@
+[
+  {
+    "id": "wb2-r13-triple-backtick-question-is-material",
+    "group": "material-question",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 灰度发布。\nB. 全量发布。\n\n```text\nWould you like to deploy A or B?\n```\n\n这是旧工单里的示例问句，本轮没有待确认的发布。",
+    "userText": "旧工单的示例我看到了。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-long-quoted-question-is-material",
+    "group": "material-question",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 保持现有缓存。\nB. 切换到 Redis。\n\n\"Would you like to enable A or B? This question is quoted from an archived incident review, followed by the old timeline, several failed health-check observations, the rollback decision, the names of the reviewers, comments about the previous deployment window, and a long summary of why the issue was closed. The archived record is complete and no new approval is being requested.\"\n\n这段引文来自已结束的事故记录，没有新的选择要用户确认。",
+    "userText": "事故记录已经结束，不需要重新选。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-indented-code-question-is-material",
+    "group": "material-question",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "当前部署已经完成。旧脚本中的提示是：\n\n    Would you like to deploy A or B?\n\n这里只是在展示旧脚本内容。",
+    "userText": "收到，当前部署状态清楚。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-independent-action-comma-condition",
+    "group": "goes-ahead-regardless",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 部署到 staging。\nB. 部署到 production。\n\n你批准 A 还是 B？\n\nI already implemented A, and once you choose I will send the summary.",
+    "userText": "A 已经实施，我知道了。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-independent-action-separate-sentences",
+    "group": "goes-ahead-regardless",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 保留当前认证方式。\nB. 切换到新的认证方式。\n\n你要采用 A 还是 B？\n\nI already implemented A. Once you choose, I will write the migration notes.",
+    "userText": "已经实施 A 了。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-passive-approval-condition",
+    "group": "conditional-action",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "A. 使用 PostgreSQL。\nB. 使用 SQLite。\n\n要我采用 A 还是 B？\n\nOnce approved, I will implement the selected option.",
+    "userText": "批准 A。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-use-option-implementation-while-reviewing",
+    "group": "adopts-by-use",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 保留现有客户端。\nB. 替换为新的客户端。\n\nWould you like me to review A's diff or apply B?",
+    "userText": "Use B's implementation to replace the client and review its behavior afterward.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-use-implementation-only-to-inspect",
+    "group": "adopts-by-use",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. 更新 schema。\nB. 保持 schema 不变。\n\n要我应用 B，还是先检查 B 的实现？",
+    "userText": "Use B's implementation only to inspect it; do not apply the change yet.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-reply-with-approval-id-not-choice",
+    "group": "handoff-factual-id",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "日志里显示一个迁移审批记录。\n\n请回复该审批记录的 ID，我会查询它是否仍然有效。",
+    "userText": "APR-381。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb2-r13-recommendation-then-wait-paraphrase",
+    "group": "closing-remark-regression",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 同步调用。\nB. 异步队列。\n\n这次你要选 A 还是 B？\n\n我建议 B，因为它不会占住请求线程。\n\n我会等你回复后再继续。",
+    "userText": "就按 B。",
+    "source": "synthetic"
+  }
+]

@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "note": "Synthetic partial-approval scenarios (R3-BA). Same format as capture-scenarios.json. Items in `partial:` are 1-based positions of the items in the assistant list (A=1, B=2, ...); 'last', 'names' and 'all-but-N' are resolved by hand because the layout or wording is model-chosen. turns[0] is the agent prompt, turns[1] is the user reply.",
+  "scenarios": [
+    {
+      "id": "p01-range-first-two-zh",
+      "locale": "zh-CN",
+      "shape": "numbered list, range reply (前两个)",
+      "turns": [
+        "假设你审查了一个后端服务，发现四处可以改进：1 给接口加请求日志，2 把重复的校验逻辑抽成公共函数，3 升级一个有安全补丁的依赖，4 重写配置加载。请不要调用任何工具。用编号列表把这四项列给我，问我哪些要做，等我回答。",
+        "前两个做，后面两个先不做"
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:1,2",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p02-all-but-letter-en",
+      "locale": "en",
+      "shape": "lettered options, exclusion reply (all but C)",
+      "turns": [
+        "You reviewed a small CLI project and found four possible cleanups: A) remove dead code in utils, B) add --verbose flag handling, C) migrate the build from Makefile to a task runner, D) add missing docstrings. Do not call any tools. List the four lettered items, then ask me which ones to do and wait.",
+        "Do all of them except C."
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:1,2,4",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p03-bold-paragraphs-zh",
+      "locale": "zh-CN",
+      "shape": "each item bold on its own paragraph, reply picks by name with defer",
+      "turns": [
+        "假设你检查了一个前端项目，想做三件事：重命名样式文件、合并两个重复组件、删除未使用的图片资源。请不要调用任何工具。每一项的标题加粗并单独成段，标题下面用一两句话解释，最后问我做哪些，等我回答。",
+        "合并重复组件做，重命名样式文件先推迟到下个迭代，图片资源不用删"
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:2",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p04-table-en",
+      "locale": "en",
+      "shape": "markdown table of items, reply picks by number with a rejection",
+      "turns": [
+        "Pretend you audited a Node service and found five fixes. Do not call any tools. Present them as a markdown table with columns #, Fix, Effort, Risk (5 rows, invent plausible details), then ask me which ones to apply and wait.",
+        "Apply 1, 2 and 4. Skip 3 and 5, not worth the risk."
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:1,2,4",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p05-checklist-zh",
+      "locale": "zh-CN",
+      "shape": "task checklist with - [ ], reply uses 好的 opener",
+      "turns": [
+        "假设你准备好了一份发版前的待办。请不要调用任何工具。用清单形式（每行以 - [ ] 开头）列出四项：更新 CHANGELOG、跑全量测试、打 tag、通知测试同学。然后问我这次要你执行哪些，等我回答。",
+        "好的，更新 CHANGELOG 和跑全量测试你来做，打 tag 和通知我自己来"
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:1,2",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p06-free-layout-en",
+      "locale": "en",
+      "shape": "free layout, only the task is described, reply uses positions with acknowledgement",
+      "turns": [
+        "I'm about to tidy up a Python repo. Do not call any tools. Suggest three or four improvements you could make (you choose how to format them: lists, headings, whatever reads best), then ask me which ones I want you to do and wait for my answer.",
+        "Got it. Do the first one and the last one, leave the middle ones for later."
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:1,last",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p07-free-layout-zh",
+      "locale": "zh-CN",
+      "shape": "free layout, reply excludes one item (除了第 2 项都做)",
+      "turns": [
+        "我想整理一个小型 Web 项目的目录结构和工程配置。请不要调用任何工具。你自己决定怎么排版，提出三到五项你可以做的整理工作，然后问我要做哪些，等我回答。",
+        "除了第 2 项，其他都做"
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:all-but-2",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p08-approve-defer-zh",
+      "locale": "zh-CN",
+      "shape": "approve some, defer others with timing",
+      "turns": [
+        "假设你完成了代码评审，有三个后续动作：1 补充单元测试，2 重构数据库访问层，3 更新接口文档。请不要调用任何工具。分条列出，问我现在做哪些，等我回答。",
+        "1 和 3 现在做，2 等下个月再说"
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:1,3",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p09-all-but-name-en",
+      "locale": "en",
+      "shape": "numbered items, reply excludes by name (all but the migration)",
+      "turns": [
+        "Pretend you prepared four changes for a release: 1. bump dependency versions, 2. run the database migration, 3. regenerate API docs, 4. clean up old build artifacts. Do not call any tools. List them and ask me which to run now, then wait.",
+        "all but the migration"
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:1,3,4",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "p10-pick-names-en",
+      "locale": "en",
+      "shape": "free layout with recommendation, reply picks two by name",
+      "turns": [
+        "I need to improve the performance of a slow dashboard. Do not call any tools. Propose three or four optimizations in your own format, mark which you recommend, then ask which of them I'd like you to go ahead with and wait.",
+        "Let's do the caching one and the lazy loading one. Not the rewrite."
+      ],
+      "expectations": [
+        {
+          "decision": true,
+          "minBand": "medium",
+          "choice": "partial:names",
+          "kind": "partial-approval"
+        }
+      ]
+    },
+    {
+      "id": "n01-ask-detail-zh",
+      "locale": "zh-CN",
+      "shape": "same list, reply asks about one item instead of deciding",
+      "turns": [
+        "假设你审查了一个模块，发现三处可以改进：1 重命名含糊的变量，2 把一个大函数拆成两个，3 给公共函数补类型注解。请不要调用任何工具。用编号列表把这三项列给我，问我哪些要做，等我回答。",
+        "第 2 项拆函数具体会拆成哪两个？拆完测试要改多少？"
+      ],
+      "expectations": [
+        {
+          "decision": false,
+          "reason": "The reply only asks for details about item 2; it neither approves nor rejects any item."
+        }
+      ]
+    },
+    {
+      "id": "n02-already-done-en",
+      "locale": "en",
+      "shape": "same list, reply says one item was done before (status)",
+      "turns": [
+        "Pretend you reviewed a repo and found three tasks: 1. add a .editorconfig, 2. pin the CI image version, 3. add a CODEOWNERS file. Do not call any tools. List them and ask which ones to do, then wait.",
+        "We already added the CODEOWNERS file last week."
+      ],
+      "expectations": [
+        {
+          "decision": false,
+          "reason": "The reply states that item 3 was done earlier; it makes no choice among the items."
+        }
+      ]
+    },
+    {
+      "id": "n03-defer-all-zh",
+      "locale": "zh-CN",
+      "shape": "list, reply postpones the whole question without choosing",
+      "turns": [
+        "假设你列出了三个可选的清理任务：1 删除旧的迁移脚本，2 统一日志格式，3 清理未使用的环境变量。请不要调用任何工具。用编号列出并问我做哪些，等我回答。",
+        "我还得先问问同事这几项有没有人在用，晚点再告诉你"
+      ],
+      "expectations": [
+        {
+          "decision": false,
+          "reason": "The reply postpones the whole question pending information; no item was chosen or rejected."
+        }
+      ]
+    }
+  ]
+}

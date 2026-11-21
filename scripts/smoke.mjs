@@ -42,7 +42,7 @@ const target = resolvePackagedSmokeTarget({
   }),
   platform,
   productName: packageDocument.productName,
-  packageRoot: process.env.DECISION_SMOKE_PACKAGE_ROOT,
+  packageRoot: process.env.PARASELF_SMOKE_PACKAGE_ROOT,
 });
 const appPath = target.packageRoot;
 const executable = target.packagedExecutable;
@@ -54,12 +54,7 @@ const resourceRoot =
 const foundationHelper = join(
   resourceRoot,
   "semantic",
-  "decision-foundation-model-helper",
-);
-const liquidGlassAddon = join(
-  resourceRoot,
-  "native",
-  "decision-liquid-glass.node",
+  "paraself-foundation-model-helper",
 );
 
 const waitFor = async (operation, description, timeout = 20_000) => {
@@ -226,9 +221,14 @@ const runMcpConsultation = async (environment) => {
     const handoffTool = listed.result?.tools?.find((candidate) => candidate.name === "prepare_decision_handoff");
     const sourceTool = listed.result?.tools?.find((candidate) => candidate.name === "open_decision_source");
     const feedbackWrite = listed.result?.tools?.find((candidate) => candidate.name === "record_decision_context_feedback");
-    const feedbackRead = listed.result?.tools?.find((candidate) => candidate.name === "get_decision_context_feedback");
+    const feedbackRead = listed.result?.tools?.find((candidate) => candidate.name === "list_decision_context_feedback");
     if (feedbackWrite?.annotations?.readOnlyHint !== false || feedbackRead?.annotations?.readOnlyHint !== true) {
       throw new Error("packaged MCP did not advertise decision use feedback tools");
+    }
+    const [benchmarkRecord, benchmarkList, benchmarkGet, benchmarkUpdate] = ["record_review_benchmark_cases", "list_review_benchmark_cases", "get_review_benchmark_case", "update_review_benchmark_case"]
+      .map((name) => listed.result?.tools?.find((candidate) => candidate.name === name));
+    if (benchmarkRecord?.annotations?.readOnlyHint !== false || benchmarkList?.annotations?.readOnlyHint !== true || benchmarkGet?.annotations?.readOnlyHint !== true || benchmarkUpdate?.annotations?.readOnlyHint !== false) {
+      throw new Error("packaged MCP did not advertise the review benchmark tools");
     }
     if (handoffTool?.annotations?.readOnlyHint !== true || sourceTool?.annotations?.readOnlyHint !== false || sourceTool?.annotations?.destructiveHint !== false) {
       throw new Error("packaged MCP did not advertise handoff and source navigation tools");
@@ -358,7 +358,7 @@ const candidateSpoolPath = join(userData, "candidate-spool");
 const textPendingPath = join(userData, "text-pending");
 const transcriptPath = join(root, "session.jsonl");
 const unrelatedTranscriptLine = "smoke unrelated private line";
-const taskBackground = "继续打包验证 Decision。";
+const taskBackground = "继续打包验证 Paraself。";
 const decisionFraming =
   "规则方案便于解释，本地模型可以在积累语料后接入。";
 let child;
@@ -412,9 +412,8 @@ try {
   await scanReleasePayload(appPath);
   if (platform === "darwin") {
     await access(foundationHelper);
-    await access(liquidGlassAddon);
   } else {
-    for (const appleResource of [foundationHelper, liquidGlassAddon]) {
+    for (const appleResource of [foundationHelper]) {
       try {
         await access(appleResource);
         throw new Error(`Apple-only resource was bundled: ${appleResource}`);
@@ -487,11 +486,11 @@ try {
   );
   const appEnvironment = {
     ...process.env,
-    DECISION_SMOKE: "1",
-    DECISION_VAULT_PATH: vault,
-    DECISION_USER_DATA: userData,
-    DECISION_RUNTIME_FILE: runtimeFile,
-    DECISION_CAPTURE_SPOOL: spoolPath,
+    PARASELF_SMOKE: "1",
+    PARASELF_VAULT_PATH: vault,
+    PARASELF_USER_DATA: userData,
+    PARASELF_RUNTIME_FILE: runtimeFile,
+    PARASELF_CAPTURE_SPOOL: spoolPath,
   };
   await rm(obsidianSearchShutdownMarkerPath, { force: true });
   child = spawn(executable, [], {
@@ -524,11 +523,14 @@ try {
     authorization: `Bearer ${runtime.token}`,
     "content-type": "application/json",
   };
+  // The bridge's data folder the App's, as an install has it: none of the reader's own, and so nothing of it moved from
+  // Decision's (an explicit folder is never migrated).
   const hookEnvironment = {
     ...process.env,
-    DECISION_RUNTIME_FILE: runtimeFile,
-    DECISION_CAPTURE_SPOOL: spoolPath,
-    DECISION_TEXT_PENDING: textPendingPath,
+    PARASELF_USER_DATA: userData,
+    PARASELF_RUNTIME_FILE: runtimeFile,
+    PARASELF_CAPTURE_SPOOL: spoolPath,
+    PARASELF_TEXT_PENDING: textPendingPath,
   };
   const feedbackToken = await runMcpConsultation(hookEnvironment);
   const consultationMetricsRaw = await waitFor(
@@ -584,7 +586,7 @@ try {
       { private: "provider child smoke input" },
       {
         ...hookEnvironment,
-        DECISION_PROVIDER_CHILD: "1",
+        PARASELF_PROVIDER_CHILD: "1",
       },
     ),
     runHook(
@@ -592,7 +594,7 @@ try {
       { private: "provider child smoke input" },
       {
         ...hookEnvironment,
-        DECISION_PROVIDER_CHILD: "1",
+        PARASELF_PROVIDER_CHILD: "1",
       },
     ),
     runHook(
@@ -600,7 +602,7 @@ try {
       { private: "provider child smoke input" },
       {
         ...hookEnvironment,
-        DECISION_PROVIDER_CHILD: "1",
+        PARASELF_PROVIDER_CHILD: "1",
       },
     ),
   ]);
@@ -988,7 +990,6 @@ try {
       structuredCapture: true,
       markdownAfterRationale: true,
       foundationHelperStatus,
-      liquidGlassAddon: platform === "darwin",
       // Enforced upstream by scanReleasePayload: ".gguf" is a forbidden
       // release-payload extension, so reaching this line proves the bundle
       // carries no weights.

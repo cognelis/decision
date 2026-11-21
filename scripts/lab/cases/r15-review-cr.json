@@ -1,0 +1,5438 @@
+[
+  {
+    "id": "cr15-a-polite-zh-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "如果你没意见，就采用快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=polite-zh；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-polite-zh-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "如果你没意见，就采用快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=polite-zh；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-polite-en-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If you have no objections, ship Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=polite-en；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-polite-en-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If you have no objections, ship Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=polite-en；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-polite-en-happy-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If you would be so kind, ship Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=polite-en-happy；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-polite-en-happy-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If you would be so kind, ship Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=polite-en-happy；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-condition-met-pronoun-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If QA signs off, ship Snapshot export. They did.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-pronoun；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-condition-met-pronoun-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. They did.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-pronoun；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-condition-met-not-only-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If QA signs off, ship Snapshot export. QA not only signed off but asked us to proceed.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-not-only；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-condition-met-not-only-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. QA not only signed off but asked us to proceed.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-not-only；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-condition-met-synonym-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If funding arrives, ship Snapshot export. The money is in our account.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-synonym；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-condition-met-synonym-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If funding arrives, ship Snapshot export. The money is in our account.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-synonym；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-condition-met-fullwidth-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "如果 QA 签字，就采用快照导出。已经签好了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-fullwidth；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-condition-met-fullwidth-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "如果 QA 签字，就采用快照导出。已经签好了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-met-fullwidth；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-en-skip-discussion-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Skip further discussion: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-skip-discussion；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-en-skip-discussion-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Skip further discussion: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-skip-discussion；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-en-reject-alternatives-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Reject the alternatives: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-reject-alternatives；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-en-reject-alternatives-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Reject the alternatives: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-reject-alternatives；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-en-remove-doubt-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Remove any doubt: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-remove-doubt；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-en-remove-doubt-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Remove any doubt: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-remove-doubt；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-en-not-delaying-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Not delaying any longer: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-not-delaying；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-en-not-delaying-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Not delaying any longer: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-en-not-delaying；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-zh-skip-discussion-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "跳过讨论：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-zh-skip-discussion；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-zh-skip-discussion-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "跳过讨论：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-zh-skip-discussion；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-en-no-longer-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I cannot approve anything except Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-no-longer；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-en-no-longer-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot approve anything except Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-no-longer；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-en-double-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I cannot approve not using Snapshot export; use it.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-double；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-en-double-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot approve not using Snapshot export; use it.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-double；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-en-unless-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I cannot approve a plan unless it includes Snapshot export; use it.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-unless；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-en-unless-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot approve a plan unless it includes Snapshot export; use it.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-unless；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-zh-other-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "不能做别的，快照导出就行。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-zh-other；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-zh-other-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "不能做别的，快照导出就行。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-zh-other；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-zh-except-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我不能批准其他方案，只同意快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-zh-except；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-zh-except-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我不能批准其他方案，只同意快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-zh-except；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-zh-selected-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出我不能不批准。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-zh-selected；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-zh-selected-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出我不能不批准。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-zh-selected；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-en-scope-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I cannot ship a release without Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-scope；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-en-scope-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot ship a release without Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-scope；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-pronoun-other-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export. Defer that.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-pronoun-other；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-pronoun-other-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Defer that.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-pronoun-other；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-next-other-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export. Next quarter.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-next-other；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-next-other-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Next quarter.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-next-other；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-later-select-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export next year.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-later-select；规则逐行列表；裸写未来时期按既有推迟口径标空选中"
+  },
+  {
+    "id": "cr15-a-defer-later-select-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export next year.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-later-select；模型选项模板，probeLabels 为离线分类桩选项；裸写未来时期按既有推迟口径标空选中",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-next-year-use-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Use Snapshot export next year.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-next-year-use；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-next-year-use-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Use Snapshot export next year.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-next-year-use；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-zh-future-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出明年再做。",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-zh-future；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-zh-future-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出明年再做。",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-zh-future；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-zh-noun-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出用于明年的项目。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-zh-noun；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-zh-noun-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出用于明年的项目。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-zh-noun；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-next-version-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export for the next release.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-next-version；规则逐行列表；裸写未来时期按既有推迟口径标空选中"
+  },
+  {
+    "id": "cr15-a-defer-next-version-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export for the next release.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-next-version；模型选项模板，probeLabels 为离线分类桩选项；裸写未来时期按既有推迟口径标空选中",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-quote-en-agree-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "QA said “ship Snapshot export”, and I agree.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-en-agree；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-quote-en-agree-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "QA said “ship Snapshot export”, and I agree.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-en-agree；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-quote-en-endorse-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "As QA wrote, “ship Snapshot export”. That is my decision too.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-en-endorse；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-quote-en-endorse-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "As QA wrote, “ship Snapshot export”. That is my decision too.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-en-endorse；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-quote-zh-agree-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "就按工单写的“采用快照导出”执行。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-zh-agree；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-quote-zh-agree-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "就按工单写的“采用快照导出”执行。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-zh-agree；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-quote-zh-confirm-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "原话“采用快照导出”，我同意。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-zh-confirm；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-quote-zh-confirm-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "原话“采用快照导出”，我同意。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-zh-confirm；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-before-en-order-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Ship Snapshot export before deciding the rollout date.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-order；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-en-order-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export before deciding the rollout date.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-order；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-before-zh-order-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "做决定前先选快照导出作为本次方案。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-zh-order；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-zh-order-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "做决定前先选快照导出作为本次方案。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-zh-order；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-withheld-en-third-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Ship Snapshot export. I have not approved any additional spending.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-third；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-withheld-en-third-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export. I have not approved any additional spending.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-third；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-withheld-en-testing-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Ship Snapshot export. No test is approved yet.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-testing；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-withheld-en-testing-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export. No test is approved yet.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-testing；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-withheld-en-question-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Ship Snapshot export. Who says I have not approved an option?",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-question；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-withheld-en-question-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export. Who says I have not approved an option?",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-question；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-withheld-zh-scope-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "就采用快照导出，供应商我还没选定。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-zh-scope；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-withheld-zh-scope-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "就采用快照导出，供应商我还没选定。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-zh-scope；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-withheld-zh-impl-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "就采用快照导出，细节我还没拍板。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-zh-impl；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-withheld-zh-impl-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "就采用快照导出，细节我还没拍板。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-zh-impl；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-withheld-en-quoted-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Ship Snapshot export. The old note says “no option is approved”.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-quoted；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-withheld-en-quoted-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Snapshot export. The old note says “no option is approved”.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=withheld-en-quoted；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-category-similar-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "本地缓存 Redis 都要。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-similar；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-category-similar-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "本地缓存 Redis 都要。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-similar；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a-category-fragment-real-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 都要。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-fragment-real；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-category-fragment-real-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 都要。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-fragment-real；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a-category-fragment-en-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. Remote cache\nB. Redis\nC. PostgreSQL\n\nWhich option should I implement?",
+    "userText": "Use cache Redis.",
+    "decision": true,
+    "expectedSelected": [
+      "B"
+    ],
+    "expectedPositions": [
+      2
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-fragment-en；规则逐行列表；按总控传达的盲判：cache 是用途，仅选 Redis"
+  },
+  {
+    "id": "cr15-a-category-fragment-en-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: Remote cache, Redis, PostgreSQL.\n\nPer your instruction I did not call tools.",
+    "userText": "Use cache Redis.",
+    "decision": true,
+    "expectedSelected": [
+      "Redis"
+    ],
+    "expectedPositions": [
+      2
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-fragment-en；模型选项模板，probeLabels 为离线分类桩选项；按总控传达的盲判：cache 是用途，仅选 Redis",
+    "probeLabels": [
+      "Remote cache",
+      "Redis",
+      "PostgreSQL"
+    ]
+  },
+  {
+    "id": "cr15-a-handback-pronoun-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我倾向快照导出，就用它吧，别的你来定。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=handback-pronoun；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-handback-pronoun-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我倾向快照导出，就用它吧，别的你来定。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=handback-pronoun；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-handback-preference-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I prefer Snapshot export; do it. The rest is your call.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=handback-preference；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-handback-preference-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export; do it. The rest is your call.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=handback-preference；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-handback-later-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出更合适；我没有拍板上线时间。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=handback-later；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-handback-later-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出更合适；我没有拍板上线时间。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=handback-later；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-token-out-of-range-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "采用快照导出 ⟦999⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-out-of-range；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-token-out-of-range-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "采用快照导出 ⟦999⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-out-of-range；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-token-leading-zero-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "采用快照导出 ⟦000999⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-leading-zero；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-token-leading-zero-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "采用快照导出 ⟦000999⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-leading-zero；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-token-collision-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "采用快照导出 ⟦1⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-collision；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-token-collision-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "采用快照导出 ⟦1⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-collision；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-token-condition-collision-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If QA approves ⟦0⟧, ship Snapshot export.",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-condition-collision；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-token-condition-collision-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA approves ⟦0⟧, ship Snapshot export.",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=token-condition-collision；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-before-en-date-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Select Snapshot export before making a decision on its release date.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-date；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-en-date-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Select Snapshot export before making a decision on its release date.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-date；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-before-en-pick-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I choose Snapshot export before deciding when to deploy it.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-pick；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-en-pick-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I choose Snapshot export before deciding when to deploy it.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-pick；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-before-en-approve-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I approve Snapshot export before deciding the schedule.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-approve；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-en-approve-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I approve Snapshot export before deciding the schedule.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-en-approve；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-before-zh-detail-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出做决定前就选它。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-zh-detail；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-zh-detail-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出做决定前就选它。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-zh-detail；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-before-zh-now-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "先采用快照导出做决定前的准备工作。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-zh-now；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-zh-now-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "先采用快照导出做决定前的准备工作。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-zh-now；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-en-enough-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I can't approve Snapshot export enough; ship it.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-enough；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-en-enough-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't approve Snapshot export enough; ship it.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-enough；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-en-without-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I can't do without Snapshot export; ship it.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-without；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-en-without-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't do without Snapshot export; ship it.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-without；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-cannot-en-but-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I can't choose anything but Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-but；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-cannot-en-but-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't choose anything but Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=cannot-en-but；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-category-two-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 两个都做。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-two；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-category-two-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 两个都做。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-two；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a-category-choose-both-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 两项都选。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-choose-both；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-category-choose-both-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 两项都选。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=category-choose-both；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-zh-reject-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "拒绝这个功能：快照导出。",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-zh-reject；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-zh-reject-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "拒绝这个功能：快照导出。",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-zh-reject；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-zh-skip-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "跳过这个功能：快照导出。",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-zh-skip；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-zh-skip-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "跳过这个功能：快照导出。",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-zh-skip；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-condition-token-inject-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "如果预算够 ⟦0⟧，就采用快照导出。",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-token-inject；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-condition-token-inject-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "如果预算够 ⟦0⟧，就采用快照导出。",
+    "decision": false,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-token-inject；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-label-later-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export is my choice for next year.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-label-later；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-label-later-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is my choice for next year.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-label-later；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-period-approved-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export next quarter is approved.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-period-approved；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-period-approved-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export next quarter is approved.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-period-approved；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-zh-adopt-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出是我明年的选择。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-zh-adopt；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-zh-adopt-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出是我明年的选择。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-zh-adopt；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-condition-unrelated-not-met-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If QA signs off, ship Snapshot export. QA has signed off. The marketing plan is not ready.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-unrelated-not-met；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-condition-unrelated-not-met-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. QA has signed off. The marketing plan is not ready.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-unrelated-not-met；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-condition-polite-unrelated-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If you have no objections, ship Snapshot export. The calendar is not updated.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-polite-unrelated；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-condition-polite-unrelated-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If you have no objections, ship Snapshot export. The calendar is not updated.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=condition-polite-unrelated；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-colon-debate-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Skip the debate: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-debate；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-colon-debate-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Skip the debate: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=colon-debate；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-before-detail-explain-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Select Snapshot export now and explain the risks before making a decision on the rollout date.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-detail-explain；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-before-detail-explain-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Select Snapshot export now and explain the risks before making a decision on the rollout date.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=before-detail-explain；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-quote-detail-background-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "QA said “ship Snapshot export”, and I agree. Use only background music for the launch video.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-detail-background；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-quote-detail-background-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "QA said “ship Snapshot export”, and I agree. Use only background music for the launch video.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=quote-detail-background；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-dot-positive-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Ship Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=dot-positive；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-dot-positive-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Ship Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=dot-positive；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-dot-bare-positive-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Cache v1.2 responses please.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=dot-bare-positive；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-dot-bare-positive-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Cache v1.2 responses please.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=dot-bare-positive；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-dot-negative-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Defer Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=dot-negative；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-dot-negative-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Defer Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [],
+    "expectedPositions": [],
+    "source": "R15-CR A 独立合成；原始 target=previous id=dot-negative；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-mixed-dot-positive-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "采用 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=mixed-dot-positive；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-mixed-dot-positive-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "采用 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=mixed-dot-positive；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-pronoun-positive-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export, ship it.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-pronoun-positive；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-pronoun-positive-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export, ship it.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-pronoun-positive；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-other-positive-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出现在做，暗色主题明年再做。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-other-positive；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-other-positive-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出现在做，暗色主题明年再做。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-other-positive；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-selected-future-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出下个月的版本，就选它。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-selected-future；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-selected-future-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出下个月的版本，就选它。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-selected-future；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-future-confirmed-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出作为下个月的发布内容，我现在就选它。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-future-confirmed；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-future-confirmed-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出作为下个月的发布内容，我现在就选它。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-future-confirmed；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a-defer-future-confirmed-en-rules",
+    "group": "r15-cr-deferral-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export for next year; I choose it now.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-future-confirmed-en；规则逐行列表"
+  },
+  {
+    "id": "cr15-a-defer-future-confirmed-en-model",
+    "group": "r15-cr-deferral-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export for next year; I choose it now.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A 独立合成；原始 target=previous id=defer-future-confirmed-en；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-en-environment-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I prefer Snapshot export; the test environment is your call.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-environment；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-en-environment-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export; the test environment is your call.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-environment；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-zh-environment-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我倾向快照导出；测试环境由你定。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-environment；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-zh-environment-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我倾向快照导出；测试环境由你定。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-environment；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-en-lunch-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I haven't decided on the lunch venue. I prefer Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-lunch；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-en-lunch-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I haven't decided on the lunch venue. I prefer Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-lunch；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-zh-lunch-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我还没决定午餐吃什么；快照导出更合适。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-lunch；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-zh-lunch-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我还没决定午餐吃什么；快照导出更合适。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-lunch；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-en-go-ahead-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I haven't decided where to eat lunch. I prefer Snapshot export; go ahead.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-go-ahead；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-en-go-ahead-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I haven't decided where to eat lunch. I prefer Snapshot export; go ahead.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-go-ahead；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-zh-follow-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我还没决定午餐吃什么。快照导出更合适，照做。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-follow；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-zh-follow-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我还没决定午餐吃什么。快照导出更合适，照做。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-follow；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-en-evaluation-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I prefer Snapshot export; you can decide the color.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-evaluation；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-en-evaluation-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export; you can decide the color.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-en-evaluation；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-pref-zh-same-rules",
+    "group": "r15-cr-preferenceHandedBack-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我倾向快照导出，就这样定案，具体怎么做由你定。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-same；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-pref-zh-same-model",
+    "group": "r15-cr-preferenceHandedBack-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我倾向快照导出，就这样定案，具体怎么做由你定。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=preferenceHandedBack id=pref-zh-same；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-withdraw-en-reviewer-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I choose Snapshot export. No reviewer has been selected yet.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-reviewer；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-withdraw-en-reviewer-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I choose Snapshot export. No reviewer has been selected yet.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-reviewer；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-withdraw-en-old-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I choose Snapshot export. The old approval is withdrawn.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-old；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-withdraw-en-old-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I choose Snapshot export. The old approval is withdrawn.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-old；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-withdraw-zh-training-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我采用快照导出。培训方案还没有选定。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-zh-training；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-withdraw-zh-training-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我采用快照导出。培训方案还没有选定。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-zh-training；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-withdraw-en-hypothetical-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I choose Snapshot export. If no option is approved we can meet again.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-hypothetical；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-withdraw-en-hypothetical-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I choose Snapshot export. If no option is approved we can meet again.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-hypothetical；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-withdraw-en-reported-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I choose Snapshot export. Someone reported that no option is approved.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-reported；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-withdraw-en-reported-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I choose Snapshot export. Someone reported that no option is approved.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-reported；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-withdraw-zh-old-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我决定采用快照导出。昨天的情况是没有拍板。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-zh-old；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-withdraw-zh-old-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我决定采用快照导出。昨天的情况是没有拍板。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-zh-old；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-withdraw-en-font-rules",
+    "group": "r15-cr-withdrawn-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "My choice is Snapshot export. No font has been selected yet.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-font；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-withdraw-en-font-model",
+    "group": "r15-cr-withdrawn-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "My choice is Snapshot export. No font has been selected yet.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=withdrawn id=withdraw-en-font；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-en-strongly-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I can't approve Snapshot export any more strongly than I already do.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-strongly；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-en-strongly-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't approve Snapshot export any more strongly than I already do.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-strongly；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-en-strongly-now-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I cannot approve Snapshot export more strongly: it is exactly what I want.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-strongly-now；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-en-strongly-now-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I cannot approve Snapshot export more strongly: it is exactly what I want.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-strongly-now；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-en-question-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Who says I can't approve Snapshot export? I just approved it.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-question；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-en-question-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Who says I can't approve Snapshot export? I just approved it.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-question；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-zh-question-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出我不能批准？我已经批准了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-zh-question；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-zh-question-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出我不能批准？我已经批准了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-zh-question；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-en-previous-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I can't approve Snapshot export under the old policy; I have now approved it under the new policy.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-previous；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-en-previous-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't approve Snapshot export under the old policy; I have now approved it under the new policy.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-previous；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-zh-no-better-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出我不会选错，就是它了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-zh-no-better；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-zh-no-better-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出我不会选错，就是它了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-zh-no-better；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-en-failed-refusal-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I can't approve Snapshot export? Of course I can. It has my approval.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-failed-refusal；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-en-failed-refusal-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I can't approve Snapshot export? Of course I can. It has my approval.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-en-failed-refusal；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-before-en-already-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I choose Snapshot export because I now understand why you asked for tests before making a decision.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-en-already；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-before-en-already-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I choose Snapshot export because I now understand why you asked for tests before making a decision.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-en-already；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-before-zh-already-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我采用快照导出而且明白为什么你要在做决定前先跑测试。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-zh-already；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-before-zh-already-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我采用快照导出而且明白为什么你要在做决定前先跑测试。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-zh-already；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-before-en-release-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I have chosen Snapshot export and want to understand the rollout risks before making a decision tomorrow.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-en-release；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-before-en-release-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I have chosen Snapshot export and want to understand the rollout risks before making a decision tomorrow.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-en-release；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-before-zh-risk-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我选快照导出，做决定前解释清楚的风险我都接受。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-zh-risk；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-before-zh-risk-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我选快照导出，做决定前解释清楚的风险我都接受。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-zh-risk；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-before-en-final-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "My decision is Snapshot export; I understand why you asked before deciding.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-en-final；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-before-en-final-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "My decision is Snapshot export; I understand why you asked before deciding.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-en-final；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-before-zh-caused-rules",
+    "group": "r15-cr-beforeDeciding-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "我选定快照导出是因为在做决定前已经弄清了风险。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-zh-caused；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-before-zh-caused-model",
+    "group": "r15-cr-beforeDeciding-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "我选定快照导出是因为在做决定前已经弄清了风险。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=beforeDeciding id=before-zh-caused；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-zh-final-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出明年再做，方案就这么定了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-final；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-zh-final-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出明年再做，方案就这么定了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-final；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-zh-decision-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出下个季度，我拍板了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-decision；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-zh-decision-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出下个季度，我拍板了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-decision；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-en-final-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export next quarter; my selection is final.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-final；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-en-final-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export next quarter; my selection is final.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-final；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-en-vote-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export for next year is my final choice.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-vote；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-en-vote-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export for next year is my final choice.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-vote；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-zh-project-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出是明年项目的首选，方案就这么定。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-project；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-zh-project-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出是明年项目的首选，方案就这么定。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-project；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-zh-own-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出下个月的版本，就选这个方案了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-own；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-zh-own-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出下个月的版本，就选这个方案了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-zh-own；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-deferred-en-final-rules",
+    "group": "r15-cr-deferredNext-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export. Next quarter. My selection is final.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-en-final；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-deferred-en-final-model",
+    "group": "r15-cr-deferredNext-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Next quarter. My selection is final.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-en-final；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-deferred-zh-final-rules",
+    "group": "r15-cr-deferredNext-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出。下个季度再做。方案就这么定了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-zh-final；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-deferred-zh-final-model",
+    "group": "r15-cr-deferredNext-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出。下个季度再做。方案就这么定了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-zh-final；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-deferred-en-selected-rules",
+    "group": "r15-cr-deferredNext-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export. Next year. That is the option I have selected.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-en-selected；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-deferred-en-selected-model",
+    "group": "r15-cr-deferredNext-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export. Next year. That is the option I have selected.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-en-selected；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-deferred-zh-approval-rules",
+    "group": "r15-cr-deferredNext-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出，暂缓。只是部署暂缓，方案已经确定了。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-zh-approval；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-deferred-zh-approval-model",
+    "group": "r15-cr-deferredNext-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出，暂缓。只是部署暂缓，方案已经确定了。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-zh-approval；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-deferred-en-keep-rules",
+    "group": "r15-cr-deferredNext-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export, hold it until the end of the migration. That is the option I selected.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-en-keep；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-deferred-en-keep-model",
+    "group": "r15-cr-deferredNext-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export, hold it until the end of the migration. That is the option I selected.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=deferredNext id=deferred-en-keep；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-condition-en-duty-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If QA signs off, ship Snapshot export. QA has signed off. QA is not doing the deployment.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-duty；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-condition-en-duty-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA signs off, ship Snapshot export. QA has signed off. QA is not doing the deployment.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-duty；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-condition-zh-archive-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "如果审计通过，就采用快照导出。审计已经通过。审计还没归档。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-zh-archive；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-condition-zh-archive-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "如果审计通过，就采用快照导出。审计已经通过。审计还没归档。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-zh-archive；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-condition-en-shared-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If approval arrives, ship Snapshot export. Approval has arrived. The approval email has not been archived.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-shared；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-condition-en-shared-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If approval arrives, ship Snapshot export. Approval has arrived. The approval email has not been archived.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-shared；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-condition-zh-polite-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "如果你方便，就采用快照导出。你还没发邮件不影响这项决定。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-zh-polite；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-condition-zh-polite-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "如果你方便，就采用快照导出。你还没发邮件不影响这项决定。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-zh-polite；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-condition-en-collision-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If testing passes, ship Snapshot export. Testing passed. The testimony has not arrived.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-collision；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-condition-en-collision-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If testing passes, ship Snapshot export. Testing passed. The testimony has not arrived.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-collision；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-condition-en-confirm-rules",
+    "group": "r15-cr-condition-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "If QA approves, ship Snapshot export. QA has approved it. QA is not onsite today.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-confirm；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-condition-en-confirm-model",
+    "group": "r15-cr-condition-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "If QA approves, ship Snapshot export. QA has approved it. QA is not onsite today.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=condition id=condition-en-confirm；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-colon-en-choice-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Current choice: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-choice；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-colon-en-choice-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Current choice: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-choice；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-colon-en-selection-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Current selection: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-selection；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-colon-en-selection-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Current selection: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-selection；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-colon-en-answer-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Current answer: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-answer；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-colon-en-answer-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Current answer: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-answer；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-colon-zh-choice-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "目前的选择：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-zh-choice；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-colon-zh-choice-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "目前的选择：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-zh-choice；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-colon-zh-answer-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "当前答案：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-zh-answer；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-colon-zh-answer-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "当前答案：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-zh-answer；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-colon-zh-final-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "当前最终方案：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-zh-final；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-colon-zh-final-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "当前最终方案：快照导出。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-zh-final；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-colon-en-response-rules",
+    "group": "r15-cr-colonHead-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "At present my answer is: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-response；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-colon-en-response-model",
+    "group": "r15-cr-colonHead-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "At present my answer is: Snapshot export.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=colonHead id=colon-en-response；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-quote-en-endorse-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "The old ticket says “ship Snapshot export”. It is an outdated example; I endorse that choice for this release.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-en-endorse；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-quote-en-endorse-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The old ticket says “ship Snapshot export”. It is an outdated example; I endorse that choice for this release.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-en-endorse；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-quote-zh-follow-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "旧工单写着“采用快照导出”，这只是例子，不过本次照此执行。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-zh-follow；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-quote-zh-follow-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "旧工单写着“采用快照导出”，这只是例子，不过本次照此执行。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-zh-follow；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-quote-en-now-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "The old ticket says “ship Snapshot export”; the old ticket is outdated. That is my decision now.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-en-now；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-quote-en-now-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The old ticket says “ship Snapshot export”; the old ticket is outdated. That is my decision now.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-en-now；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-quote-zh-chosen-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "工单写着“采用快照导出”。工单虽然过时了，本次就照此落实。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-zh-chosen；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-quote-zh-chosen-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "工单写着“采用快照导出”。工单虽然过时了，本次就照此落实。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-zh-chosen；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-quote-en-concur-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "The old example says “ship Snapshot export”. It is just an example; I concur with that recommendation.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-en-concur；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-quote-en-concur-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The old example says “ship Snapshot export”. It is just an example; I concur with that recommendation.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-en-concur；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-quote-zh-music-rules",
+    "group": "r15-cr-quotedOnly-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "工单写着“采用快照导出”，本次照此执行。视频只是背景。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-zh-music；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-quote-zh-music-model",
+    "group": "r15-cr-quotedOnly-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "工单写着“采用快照导出”，本次照此执行。视频只是背景。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=quotedOnly id=quote-zh-music；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-zh-together-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 一并采用。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-together；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-zh-together-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 一并采用。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-together；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-zh-pair-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 一起做。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-pair；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-zh-pair-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 一起做。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-pair；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-zh-each-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 各上一套。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-each；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-zh-each-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 各上一套。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-each；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-zh-plus-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 一并选择。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-plus；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-zh-plus-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 一并选择。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-plus；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-zh-not-or-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis 是组合方案，不是二选一。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-not-or；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-zh-not-or-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis 是组合方案，不是二选一。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-not-or；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-en-pair-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. Remote cache\nB. Redis\nC. PostgreSQL\n\nWhich option should I implement?",
+    "userText": "The pair is my choice: cache Redis.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-pair；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-en-pair-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: Remote cache, Redis, PostgreSQL.\n\nPer your instruction I did not call tools.",
+    "userText": "The pair is my choice: cache Redis.",
+    "decision": true,
+    "expectedSelected": [
+      "Remote cache",
+      "Redis"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-pair；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Remote cache",
+      "Redis",
+      "PostgreSQL"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-en-take-pair-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. Remote cache\nB. Redis\nC. PostgreSQL\n\nWhich option should I implement?",
+    "userText": "cache Redis. Take the pair.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-take-pair；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-en-take-pair-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: Remote cache, Redis, PostgreSQL.\n\nPer your instruction I did not call tools.",
+    "userText": "cache Redis. Take the pair.",
+    "decision": true,
+    "expectedSelected": [
+      "Remote cache",
+      "Redis"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-take-pair；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Remote cache",
+      "Redis",
+      "PostgreSQL"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-en-combo-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. Remote cache\nB. Redis\nC. PostgreSQL\n\nWhich option should I implement?",
+    "userText": "Choose the combination: cache Redis.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-combo；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-en-combo-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: Remote cache, Redis, PostgreSQL.\n\nPer your instruction I did not call tools.",
+    "userText": "Choose the combination: cache Redis.",
+    "decision": true,
+    "expectedSelected": [
+      "Remote cache",
+      "Redis"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-combo；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Remote cache",
+      "Redis",
+      "PostgreSQL"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-en-vote-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I vote for Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-vote；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-en-vote-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I vote for Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-vote；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-en-vote-goes-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "My vote goes to Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-vote-goes；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-en-vote-goes-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "My vote goes to Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-vote-goes；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-en-settle-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I settle on Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-settle；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-en-settle-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I settle on Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-settle；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-en-choice-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "My choice is Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-choice；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-en-choice-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "My choice is Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-choice；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-en-going-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I am going for Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-going；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-en-going-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I am going for Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-going；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-en-chosen-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "The chosen option is Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-chosen；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-en-chosen-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "The chosen option is Cache v1.2 responses.",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-en-chosen；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-zh-choice-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "我的选择是 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-choice；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-zh-choice-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "我的选择是 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-choice；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-zh-answer-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "答案是 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-answer；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-zh-answer-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "答案是 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-answer；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-zh-commit-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "本次确定为 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-commit；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-zh-commit-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "本次确定为 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-commit；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-dot-zh-final-rules",
+    "group": "r15-cr-dottedLabel-rules",
+    "assistantText": "A. Cache v1.2 responses\nB. Cache user requests\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "最终方案就是 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-final；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-dot-zh-final-model",
+    "group": "r15-cr-dottedLabel-model",
+    "assistantText": "Work items: Cache v1.2 responses, Cache user requests, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "最终方案就是 Cache v1.2 responses。",
+    "decision": true,
+    "expectedSelected": [
+      "Cache v1.2 responses"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=dottedLabel id=dot-zh-final；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Cache v1.2 responses",
+      "Cache user requests",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-guard-token-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "采用快照导出 ⟦999⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-token；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-guard-token-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "采用快照导出 ⟦999⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-token；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-guard-close-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "采用快照导出 ⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-close；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-guard-close-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "采用快照导出 ⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-close；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-guard-nfkc-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "采用快照导出 ⟦９９９⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-nfkc；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-guard-nfkc-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "采用快照导出 ⟦９９９⟧。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-nfkc；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-guard-open-rules",
+    "group": "r15-cr-safety-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "采用快照导出 ⟦。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-open；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-guard-open-model",
+    "group": "r15-cr-safety-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "采用快照导出 ⟦。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=safety id=guard-open；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-zh-two-systems-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis，二者一并采用。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-two-systems；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-zh-two-systems-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis，二者一并采用。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-two-systems；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-zh-separate-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. PostgreSQL\nB. MySQL\nC. Redis\nD. 本地缓存\n\nWhich option should I implement?",
+    "userText": "缓存 Redis，分别采用，缺一不可。",
+    "decision": true,
+    "expectedSelected": [
+      "C",
+      "D"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-separate；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-zh-separate-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: PostgreSQL, MySQL, Redis, 本地缓存.\n\nPer your instruction I did not call tools.",
+    "userText": "缓存 Redis，分别采用，缺一不可。",
+    "decision": true,
+    "expectedSelected": [
+      "Redis",
+      "本地缓存"
+    ],
+    "expectedPositions": [
+      3,
+      4
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-zh-separate；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "本地缓存"
+    ]
+  },
+  {
+    "id": "cr15-a2-cat-en-two-systems-rules",
+    "group": "r15-cr-categoryPiece-rules",
+    "assistantText": "A. Remote cache\nB. Redis\nC. PostgreSQL\n\nWhich option should I implement?",
+    "userText": "cache Redis. Each is a separate system; take the pair.",
+    "decision": true,
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-two-systems；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cat-en-two-systems-model",
+    "group": "r15-cr-categoryPiece-model",
+    "assistantText": "Work items: Remote cache, Redis, PostgreSQL.\n\nPer your instruction I did not call tools.",
+    "userText": "cache Redis. Each is a separate system; take the pair.",
+    "decision": true,
+    "expectedSelected": [
+      "Remote cache",
+      "Redis"
+    ],
+    "expectedPositions": [
+      1,
+      2
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=categoryPiece id=cat-en-two-systems；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Remote cache",
+      "Redis",
+      "PostgreSQL"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-en-prefer-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "I prefer Snapshot export for next quarter; the decision is final.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-prefer；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-en-prefer-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "I prefer Snapshot export for next quarter; the decision is final.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-prefer；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-en-better-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export is better for next quarter; that is my final choice.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-better；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-en-better-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is better for next quarter; that is my final choice.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-better；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-later-en-preference-rules",
+    "group": "r15-cr-laterPeriod-rules",
+    "assistantText": "A. Snapshot export\nB. Snapshot compression\nC. Dark theme\n\nWhich option should I implement?",
+    "userText": "Snapshot export is my preference for next year.",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-preference；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-later-en-preference-model",
+    "group": "r15-cr-laterPeriod-model",
+    "assistantText": "Work items: Snapshot export, Snapshot compression, Dark theme.\n\nPer your instruction I did not call tools.",
+    "userText": "Snapshot export is my preference for next year.",
+    "decision": true,
+    "expectedSelected": [
+      "Snapshot export"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=laterPeriod id=later-en-preference；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "Snapshot export",
+      "Snapshot compression",
+      "Dark theme"
+    ]
+  },
+  {
+    "id": "cr15-a2-cannot-zh-positive-control-rules",
+    "group": "r15-cr-cannotTake-rules",
+    "assistantText": "A. 快照导出\nB. 快照压缩\nC. 暗色主题\n\nWhich option should I implement?",
+    "userText": "快照导出我可以批准，就这么办。",
+    "decision": true,
+    "expectedSelected": [
+      "A"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-zh-positive-control；规则逐行列表"
+  },
+  {
+    "id": "cr15-a2-cannot-zh-positive-control-model",
+    "group": "r15-cr-cannotTake-model",
+    "assistantText": "Work items: 快照导出, 快照压缩, 暗色主题.\n\nPer your instruction I did not call tools.",
+    "userText": "快照导出我可以批准，就这么办。",
+    "decision": true,
+    "expectedSelected": [
+      "快照导出"
+    ],
+    "expectedPositions": [
+      1
+    ],
+    "source": "R15-CR A2 独立合成；原始 target=cannotTake id=cannot-zh-positive-control；模型选项模板，probeLabels 为离线分类桩选项",
+    "probeLabels": [
+      "快照导出",
+      "快照压缩",
+      "暗色主题"
+    ]
+  }
+]

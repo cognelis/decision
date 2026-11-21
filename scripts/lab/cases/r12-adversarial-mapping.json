@@ -1,0 +1,1986 @@
+[
+  {
+    "id": "negated-both-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "**A（进程内 LRU）**\n- 优点：延迟最低，无额外依赖/运维成本\n- 缺点：多实例间不共享、不一致；重启丢失；内存随实例数线性浪费\n\n**B（Redis）**\n- 优点：多实例共享一致、容量大、支持过期/淘汰策略、可做分布式锁等扩展\n- 缺点：多一次网络往返，多一个运维依赖（部署、监控、连接池、故障点)\n\n**C（HTTP 缓存头）**\n- 优点：把缓存决策交给客户端/CDN/代理，服务端零状态，扩展性最好\n- 缺点：只适合可被公共缓存的只读响应，无法用于个性化/需要主动失效的数据；失效控制较粗（依赖 max-age/ETag，难做即时清除）\n\n关键区分点：A/B 解决的是\"服务端计算结果要不要重复算\"，C 解决的是\"要不要让客户端/CDN 免去这次请求\"——两者可以共存，不是互斥选项。\n\n请告诉我：是单实例还是多实例部署？缓存的是什么数据（是否需要跨实例一致、是否对外可公开缓存）？我再帮你收敛到具体选择。",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "negated-both-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A/B/C 简要对比:\n\n**A. 进程内 LRU**(如 Caffeine、`lru-cache`)\n- 优点:延迟最低(无网络往返),实现最简单,无额外运维成本\n- 缺点:多实例间不共享、不一致;重启丢失;占用应用内存;水平扩展时命中率下降\n\n**B. Redis**\n- 优点:多实例共享一致视图,容量大、可独立扩展,支持过期/淘汰策略丰富,可做分布式锁等扩展用途\n- 缺点:多一次网络往返(延迟高于 A),引入外部依赖(部署、监控、故障点),有一定运维与成本开销\n\n**C. HTTP 缓存头**(`Cache-Control`/`ETag`等)\n- 优点:利用浏览器/CDN/网关现有能力,服务端几乎零改造,对公开可缓存的 GET 响应效果好\n- 缺点:只适用于 HTTP 层可缓存的请求(不适合内部函数调用/私有数据/非 GET),控制粒度和主动失效能力弱,依赖客户端或中间层遵守头\n\n一般判断依据:只有单实例、数据量小、容忍重启丢失 → A;多实例/需要一致性和失效控制 → B;流量是对外 HTTP 接口且内容可公开缓存 → C;也可以 A+B 分层或 B+C 分层组合。\n\n你更偏向哪种部署场景(单实例 vs 多实例、是否对外 HTTP 接口、数据一致性要求)?这决定了选哪个。",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "negated-both-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A/B/C 三种缓存方案简要比较:\n\n**A. 进程内 LRU**\n- 优点:延迟最低(无网络开销),实现简单,无额外运维成本\n- 缺点:多实例部署时各节点缓存不一致,重启即丢失,内存随实例数重复占用\n\n**B. Redis**\n- 优点:多实例共享一致视图,容量和过期策略灵活,支持跨服务复用\n- 缺点:引入网络往返和额外组件依赖,需要运维/监控,是个新的故障点\n\n**C. HTTP 缓存头(如 Cache-Control/ETag)**\n- 优点:利用浏览器/CDN/网关现有能力,服务端几乎零维护成本,天然适合静态或可公共缓存的响应\n- 缺点:仅适用于可被 HTTP 层缓存的场景(通常是 GET、对客户端可见的响应),无法用于内部计算结果缓存或精细化的失效控制\n\n一个关键判断维度是:是否多实例部署(影响 A vs B),以及缓存的对象是不是\"HTTP 响应\"本身(影响 C 是否适用,它和 A/B 也可以叠加使用而非互斥)。\n\n你想选哪个,或者要我针对你的具体场景(是否多实例、缓存对象类型)再细化?",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "negated-both-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "**A（进程内 LRU）**\n- 优点：零外部依赖、延迟最低\n- 缺点：多实例间不共享/不一致，重启丢失，容量受单机内存限制\n\n**B（Redis）**\n- 优点：多实例共享一致、容量大、支持过期/淘汰策略、可做分布式锁等扩展\n- 缺点：引入外部依赖，多一次网络往返，需要运维/高可用保障\n\n**C（HTTP 缓存头）**\n- 优点：实现简单，能利用浏览器/CDN/网关层缓存，减少回源\n- 缺点：只适用于可缓存的 GET 响应，服务端无法主动失效（依赖客户端/中间层行为），不解决后端计算/查询本身的重复开销\n\n一句话取舍：只是单机内存计算结果复用 → A；多实例部署且要求缓存一致 → B；缓存对象是面向客户端的 HTTP 响应且想借助浏览器/CDN → C。\n\n你倾向哪个,或者可以告诉我你的部署形态（单实例/多实例）和缓存对象（计算结果 vs HTTP 响应),我再帮你确认。",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "negated-both-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 方案 | 适合场景 | 主要取舍 |\n|---|---|---|\n| A：进程内 LRU | 单实例、热点数据 | 接入简单、延迟低；多实例之间缓存不共享 |\n| B：Redis | 多实例共享缓存 | 能集中管理；需要额外服务和网络访问 |\n| C：HTTP 缓存头 | 可由浏览器或 CDN 复用的响应 | 减少请求和服务器负载；依赖客户端遵守缓存策略 |\n\n你选 **A、B 还是 C**？",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "negated-both-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 方案 | 适合场景 | 主要代价 |\n|---|---|---|\n| A：进程内 LRU | 单实例、热点数据、追求低延迟 | 多实例缓存不共享，重启后清空 |\n| B：Redis | 多实例共享缓存、需要集中管理 | 增加服务和网络开销 |\n| C：HTTP 缓存头 | 可由浏览器或 CDN 复用的 HTTP 响应 | 需要设计好过期与更新规则 |\n\n你选择 **A、B 还是 C**？",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "negated-both-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 方案 | 适合场景 | 主要限制 |\n|---|---|---|\n| A：进程内 LRU | 单实例、追求低延迟 | 多实例之间缓存不共享，重启后失效 |\n| B：Redis | 多实例需要共享缓存 | 需要部署和维护，访问有网络开销 |\n| C：HTTP 缓存头 | 可由浏览器或 CDN 缓存的 HTTP 响应 | 不适合缓存服务内部的计算结果 |\n\n你选 **A、B 还是 C**？",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "negated-both-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 方案 | 适合场景 | 主要代价 |\n|---|---|---|\n| A：进程内 LRU | 单实例、低延迟、数据允许短暂不一致 | 多实例缓存不共享，重启即清空 |\n| B：Redis | 多实例共享缓存，需要统一过期与失效 | 增加服务、网络开销和运维成本 |\n| C：HTTP 缓存头 | 可缓存的 HTTP 响应，希望浏览器或 CDN 复用 | 主要作用于 HTTP 响应，不适合通用服务端数据缓存 |\n\n你选 **A、B 还是 C**？",
+    "userText": "A 提到得不错，但我不选 A；B 也先别上，暂时都不做。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "compare-not-choose-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "简要比较:\n\n- **A（SQLite）**：零部署成本，单文件、无需独立服务，适合单机应用、嵌入式场景或原型。但并发写入能力弱，不适合多用户/高并发或需要网络访问的服务端场景。\n- **B（PostgreSQL）**：功能最全面，事务、JSON、复杂查询、扩展性都强，社区和生态成熟，适合绝大多数中大型应用和需要复杂查询/数据完整性的场景。\n- **C（MySQL）**：生态同样成熟，读写性能好、运维工具丰富，尤其在简单读写为主、已有 MySQL 运维经验或云厂商托管方案成熟的团队中是稳妥选择。\n\n建议：如果是单机/嵌入式/原型用途选 A；如果是正式的网络服务且不确定未来需求复杂度，默认选 B（功能更全、不容易后期受限）；如果团队已有 MySQL 运维经验或对接的生态（如某些 CMS/框架）明确要求 MySQL，选 C。\n\n你的场景更接近哪种——单机工具、还是需要联网的后端服务？想选哪个？",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "compare-not-choose-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A/SQLite:零配置、单文件,适合单机、小流量、嵌入式场景,并发写入弱。\n\nB/PostgreSQL:功能最全(JSON、窗口函数、扩展、并发控制好),复杂查询和多用户场景首选,运维成本比 MySQL 略高但生态成熟。\n\nC/MySQL:简单好懂,中小型 Web 应用生态广,事务和复杂查询能力不如 PostgreSQL。\n\n一般建议:如果是单机工具/原型/嵌入式 → A;如果是正常的多用户 Web/后端服务 → B(目前综合最优);如果团队已经熟 MySQL 或托管平台限定 → C。\n\n你倾向哪个,或者能说下用途(并发量、部署环境、团队熟悉度)吗?",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "compare-not-choose-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "SQLite(A)、PostgreSQL(B)、MySQL(C)简单对比:\n\n- **A SQLite**:嵌入式、零配置、单文件,没有网络服务。适合单机应用、嵌入式场景、原型或数据量/并发不大的场景;不适合多进程高并发写入。\n- **B PostgreSQL**:功能最全(JSONB、窗口函数、复杂查询、扩展性强、事务一致性好),社区活跃,适合复杂业务逻辑和需要长期演进的系统。\n- **C MySQL**:生态成熟、运维资料多、主从复制简单,互联网场景常见,适合读多写少、简单查询为主的业务。\n\n建议:如果是服务端/多用户应用且后续业务会变复杂,优先选 B;如果只是单机工具/原型/嵌入式场景,选 A;如果团队已有 MySQL 运维经验或要接入现成的 MySQL 生态,选 C。\n\n你更倾向哪个场景(单机工具 / 服务端应用 / 已有运维经验倾向)?选哪个?",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "compare-not-choose-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "**A（SQLite）**：零配置、单文件、无需独立服务，适合本地应用、原型、嵌入式/低并发场景；但不支持高并发写入、无网络访问能力，纵向扩展有限。\n\n**B（PostgreSQL）**：功能最全（JSON、全文检索、窗口函数、扩展生态强），事务和并发控制优秀，社区和工具链成熟，是目前通用场景的默认首选。\n\n**C（MySQL）**：生态同样成熟，读多写少场景性能不错，很多云厂商和老项目默认用它；但高级特性（如复杂 JSON 查询、CTE 早期支持）不如 Postgres 丰富。\n\n简短建议：如果是本地/单机小工具，选 A；如果是常规 Web/服务端项目且没有历史包袱，选 B；如果团队已有 MySQL 经验或要接入现成的 MySQL 生态，选 C。\n\n你想选哪个？",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "compare-not-choose-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 选项 | 适合场景 | 主要取舍 |\n|---|---|---|\n| A：SQLite | 本地应用、原型、单机部署 | 最省事；多人同时写入时受限 |\n| B：PostgreSQL | 多用户服务、复杂查询、长期扩展 | 功能全面；需要运维数据库服务 |\n| C：MySQL | 常规 Web 服务、团队已有 MySQL 经验 | 成熟易用；选型优势主要来自现有经验和生态 |\n\n**简短建议：**没有特殊约束，选 **B（PostgreSQL）**；只做单机应用，选 A；团队已经熟悉 MySQL，选 C。\n\n你选 **A、B 还是 C**？",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "compare-not-choose-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 选项 | 适合场景 | 主要取舍 |\n|---|---|---|\n| A：SQLite | 单机应用、原型、小型服务 | 部署最简单；不适合大量并发写入 |\n| B：PostgreSQL | 多用户应用、复杂查询、长期扩展 | 功能强；需要维护数据库服务 |\n| C：MySQL | 常规 Web 应用、已有 MySQL 团队或系统 | 成熟易用；选型优势通常取决于现有环境 |\n\n**简短建议：**没有既有技术约束，选 **B（PostgreSQL）**；只需本地存储或快速做原型，选 **A（SQLite）**。\n\n你选 A、B 还是 C？",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "compare-not-choose-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 选项 | 适合场景 | 主要取舍 |\n|---|---|---|\n| A：SQLite | 本地应用、原型、单机部署 | 配置最简单；并发写入能力有限 |\n| B：PostgreSQL | 多用户服务、复杂查询 | 功能丰富；需要运维数据库服务 |\n| C：MySQL | 常规网站、已有 MySQL 技术栈 | 成熟易用；复杂查询能力通常不如 PostgreSQL 灵活 |\n\n**简短建议：**没有现成技术栈约束时，单机项目选 A，多用户服务选 B；团队已熟悉 MySQL 则选 C。\n\n你选 **A、B 还是 C**？",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "compare-not-choose-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 选项 | 适合的情况 | 主要取舍 |\n|---|---|---|\n| A：SQLite | 本地应用、原型、单机服务 | 部署简单；大量并发写入时受限 |\n| B：PostgreSQL | 多用户应用、复杂查询、长期扩展 | 功能强；需要维护数据库服务 |\n| C：MySQL | 常规 Web 应用，或团队已有 MySQL 经验 | 成熟易用；同样需要维护数据库服务 |\n\n**简短建议：**没有现成技术栈约束的话，单机应用选 A，多用户服务选 B；团队已经熟悉 MySQL 则选 C。\n\n你选 **A、B 还是 C**？",
+    "userText": "A 比 B 简单，B 比 C 更适合扩展；我还没决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "view-only-a-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A（金丝雀）/B（蓝绿）/C（滚动）简短对比：\n\n- **A 金丝雀**：先放一小部分流量到新版本，观察指标再逐步扩大。风险最小、回滚快，但需要流量分配和监控能力，发布周期较长。\n- **B 蓝绿**：新旧两套环境并存，切换流量瞬间完成新旧版本全量切换。回滚最快（切回旧环境即可），但需要双倍资源，数据库/状态兼容性要处理好。\n- **C 滚动**：逐批替换旧实例为新实例，资源消耗最低（不需要双倍资源）。但发布中新旧版本同时在线，出问题时回滚较慢（要再滚一轮）。\n\n你选哪个？",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "view-only-a-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A/B/C 简短比较:\n\n- **A 金丝雀发布**:先给小流量,观察无误再逐步扩大。风险最低,但需要流量分割和监控能力,发布周期长。\n- **B 蓝绿发布**:两套环境整版切换,回滚快(切回旧环境即可)。资源要双倍,数据库/状态兼容是难点。\n- **C 滚动发布**:逐批替换实例,资源开销小,是大多数 K8s/云平台的默认方式。但发布过程中新旧版本并存,出问题回滚较慢且不好做精细化流量控制。\n\n你选哪个?",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "view-only-a-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A（金丝雀）/B（蓝绿）/C（滚动）简单对比：\n\n- **A 金丝雀**：先放一小部分流量验证，风险最低，发现问题影响面小；但需要流量分割和监控能力支撑，回滚和全量推进都较慢。\n- **B 蓝绿**：新旧两套环境并存，切换和回滚都是瞬时的，适合要求\"一刀切\"的场景；代价是需要双倍资源，数据库/状态兼容性处理麻烦。\n- **C 滚动**：逐批替换实例，资源开销最小、实现简单（大多数编排工具原生支持，如 K8s Deployment）；但过程中新旧版本同时在线，回滚较慢，出问题时影响面比金丝雀大。\n\n你倾向选哪个？",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "view-only-a-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A/B/C 简短对比:\n\n**A 金丝雀发布**:先给一小部分流量/实例用新版本,观察指标,逐步放大。优点:风险最小,出问题影响面小;缺点:需要流量分割和监控能力,发布周期长。\n\n**B 蓝绿发布**:新旧两套完整环境并存,直接切流量/切负载均衡器。优点:切换快、回滚快(切回旧环境即可);缺点:需要两倍资源,数据库/状态兼容是难点。\n\n**C 滚动发布**:逐批替换旧实例为新版本,无需双倍资源。优点:资源开销小,实现简单(K8s 原生支持);缺点:发布过程中新旧版本并存时间较长,出问题要等批次回滚,不如蓝绿快。\n\n你倾向选哪个?或者需要我再结合你的具体场景(规模、是否 K8s、是否能接受双倍资源)给建议?",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "view-only-a-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "- **A 金丝雀发布**：先让少量用户使用新版本，观察稳定后逐步扩大范围。能较早发现问题，但需要流量分配和监控能力。\n- **B 蓝绿发布**：同时保留新旧两套环境，验证新环境后一次切换流量。切换和回退快，但资源成本较高。\n- **C 滚动发布**：逐批替换运行中的实例。通常不需要双倍资源，但发布期间新旧版本会同时运行，回退也可能较慢。\n\n你选 A、B 还是 C？",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "view-only-a-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 方式 | 做法 | 优点 | 主要代价 |\n|---|---|---|---|\n| A 金丝雀发布 | 先让少量用户使用新版本，再逐步扩大范围 | 能较早发现问题，影响范围较小 | 需要流量分配和监控 |\n| B 蓝绿发布 | 同时保留新旧两套环境，验证后切换流量 | 切换和回退都快 | 需要额外环境资源 |\n| C 滚动发布 | 分批替换运行中的实例 | 资源开销较低，服务可持续运行 | 发布期间新旧版本会并存，回退通常较慢 |\n\n你选 A、B 还是 C？",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "view-only-a-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 方式 | 做法 | 优点 | 代价 |\n|---|---|---|---|\n| A 金丝雀发布 | 先让少量用户使用新版本，再逐步扩大范围 | 能较早发现问题，影响范围较小 | 需要流量分配和监控 |\n| B 蓝绿发布 | 同时保留新旧两套环境，切换流量完成发布 | 切换和回退都快 | 需要两套环境，资源成本较高 |\n| C 滚动发布 | 分批替换运行中的实例 | 通常无需额外完整环境，发布期间服务可用 | 发布过程中版本并存，回退可能较慢 |\n\n你选 **A、B 还是 C**？",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "view-only-a-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "| 方案 | 做法 | 优点 | 主要代价 |\n|---|---|---|---|\n| A 金丝雀发布 | 先让少量流量使用新版本，再逐步扩大 | 能较早发现问题，影响范围可控 | 需要流量分配和监控 |\n| B 蓝绿发布 | 同时保留新旧两套环境，验证后切换流量 | 切换和回退都快 | 需要更多资源 |\n| C 滚动发布 | 分批替换运行中的实例 | 资源开销较小，发布过程服务不中断 | 回退通常较慢，期间会有版本并存 |\n\n你选 A、B 还是 C？",
+    "userText": "先只打开 A 的预览让我看看，不要开始部署，也先不做选择。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "number-letter-crossref-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | 标签 | 格式 |\n|----|------|------|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n选哪一个?",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "number-letter-crossref-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | 字母 | 格式 |\n|----|------|------|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n选哪一个?",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "number-letter-crossref-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | 字母 | 格式 |\n|----|------|------|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n选哪个?",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "number-letter-crossref-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | 标签 | 格式 |\n|----|------|------|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n选哪个?",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "number-letter-crossref-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 数字 ID | 字母标签 | 文件格式 |\n|---|---|---|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n你选哪一个？可以回复数字 ID 或字母标签。",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "number-letter-crossref-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 数字 ID | 字母标签 | 文件格式 |\n|---:|:---:|---|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n你选哪一个？请回复数字 ID 或字母标签。",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "number-letter-crossref-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 数字 ID | 字母标签 | 文件格式 |\n|---|---|---|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n你选哪一个？可以回复数字 ID 或字母标签。",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "number-letter-crossref-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 数字 ID | 字母标签 | 文件格式 |\n|---|---|---|\n| 17 | A | YAML |\n| 29 | B | TOML |\n| 41 | C | JSON |\n\n你选哪一个？可以回复数字 ID 或字母标签。",
+    "userText": "选 29，也就是 B（TOML）。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "letter-id-crossref-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择队列方案：\n\n| ID | 标签 | 选项 |\n|----|------|------|\n| 5 | A | Redis Streams |\n| 8 | B | RabbitMQ |\n| 13 | C | SQS |\n\n选哪项?",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "letter-id-crossref-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "为队列做选择，请从下面选项中告诉我选哪项：\n\n| ID | 标签 | 选项 |\n|----|------|------|\n| 5  | A | Redis Streams |\n| 8  | B | RabbitMQ |\n| 13 | C | SQS |\n\n你选哪个？",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "letter-id-crossref-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "队列选型，三个选项：\n\n| ID | 标签 | 选项 |\n|----|------|------|\n| 5 | A | Redis Streams |\n| 8 | B | RabbitMQ |\n| 13 | C | SQS |\n\n选哪项?",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "letter-id-crossref-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择队列方案:\n\n| ID | 标签 | 选项 |\n|----|------|------|\n| 5 | A | Redis Streams |\n| 8 | B | RabbitMQ |\n| 13 | C | SQS |\n\n选哪一项?",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "letter-id-crossref-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "队列方案有三项：\n\n- ID 5 / A = Redis Streams\n- ID 8 / B = RabbitMQ\n- ID 13 / C = SQS\n\n你选哪项？",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "letter-id-crossref-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "队列选项如下：\n\n- **ID 5 / A：Redis Streams**\n- **ID 8 / B：RabbitMQ**\n- **ID 13 / C：SQS**\n\n你选哪项？",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "letter-id-crossref-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "队列选项如下：\n\n- **ID 5 / A：Redis Streams**\n- **ID 8 / B：RabbitMQ**\n- **ID 13 / C：SQS**\n\n你选哪项？",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "letter-id-crossref-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "队列方案有三个选项：**ID 5 / A = Redis Streams**，**ID 8 / B = RabbitMQ**，**ID 13 / C = SQS**。你选哪项？",
+    "userText": "我决定用 C；对应 ID 13。",
+    "expectedSelected": [
+      "13"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "partial-negation-a-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这次重构有三项独立选项：\n\n- A = 拆分函数\n- B = 重命名变量\n- C = 改公开接口\n\n要执行哪些？",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "partial-negation-a-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A/拆分函数、B/重命名变量、C/改公开接口——三项互不依赖，可任意组合执行。要做哪些？",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "partial-negation-a-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这次重构有三项独立选项：\n\n- **A（拆分函数）**：把当前过长/多职责的函数拆成若干小函数，提高可读性和可测试性。\n- **B（重命名变量）**：把含义不清或容易误导的变量名改成更贴切的名字。\n- **C（改公开接口）**：调整对外暴露的函数签名/接口形态。\n\n这三项互相独立，可以单选、多选或全选。你想执行哪些？",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "partial-negation-a-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "本次重构有三项独立选项：\n\n- A：拆分函数\n- B：重命名变量\n- C：改公开接口\n\n要执行哪些？",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "partial-negation-a-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这次重构可独立选择：\n\n- A：拆分函数，缩短较长的函数。\n- B：重命名变量，让含义更清楚。\n- C：修改公开接口，调整对外调用方式。\n\n你要执行哪些？请回复 A、B、C 中的一个或多个。",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "partial-negation-a-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这次重构有三项独立选项，可以单选或多选：\n\n- **A：拆分函数**，将较长的函数拆成职责清晰的小函数。\n- **B：重命名变量**，让变量名更准确、易读。\n- **C：改公开接口**，调整对外提供的函数或类型接口。\n\n请回复要执行的字母，例如「A、B」。",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "partial-negation-a-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这次重构有三项独立选项，可任选多项：\n\n- **A：拆分函数**，将职责较多的函数拆成更小的函数。\n- **B：重命名变量**，让变量名更清楚地表达用途。\n- **C：改公开接口**，调整对外提供的调用方式。\n\n请回复要执行的选项，例如“A、B”。",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "partial-negation-a-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这次重构可以分别选择：\n\n- **A：拆分函数**——把较长的函数拆成职责明确的小函数。\n- **B：重命名变量**——让变量名更清楚地表达含义。\n- **C：改公开接口**——调整对外暴露的函数或参数，可能需要同步修改调用方。\n\n你希望执行哪些？可以回复 **A、B、C** 中的任意组合。",
+    "userText": "A 可以做，B 先别做，C 也先不要动。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "partial-negation-c-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前可选改动，请选择要执行哪些:\n\n- A（补监控）：补充部署相关的监控/告警\n- B（加重试）：为关键调用路径加重试逻辑\n- C（改超时）：调整超时时间配置\n\n请回复选择（如 \"A\"、\"A+C\" 或 \"都要\"）。",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "partial-negation-c-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前可选改动,请选择要执行哪些:\n\n- **A（补监控）**:增加部署相关的监控/告警覆盖\n- **B（加重试）**:对关键调用增加重试机制\n- **C（改超时）**:调整现有超时配置\n\n请回复 A/B/C 中的一个或多个组合。",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "partial-negation-c-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前有三项可选改动，请选择要执行哪些:\n\n- **A（补监控）**：补充部署相关的监控/告警\n- **B（加重试）**：给关键调用加重试机制\n- **C（改超时）**：调整超时时间配置\n\n请回复你要执行的选项（可多选）。",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "partial-negation-c-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前有三项可选改动，请选择要执行哪些：\n\n- **A（补监控）**：补充部署相关的监控/告警\n- **B（加重试）**：给关键调用加重试机制\n- **C（改超时）**：调整超时时间配置\n\n请回复你要执行的选项（如 A、B、C 或组合）。",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "partial-negation-c-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前可选三项改动：\n\n- **A：补监控**——增加关键指标和告警，便于发现部署后的异常。\n- **B：加重试**——为临时失败的请求增加重试，提高成功率。\n- **C：改超时**——调整超时阈值，减少过早失败或等待过久。\n\n请选择 **A、B、C** 中的一项，也可以选多项。",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "partial-negation-c-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前有三项可选改动，请选一项：\n\n- **A：补监控**，便于部署后发现异常。\n- **B：加重试**，减少临时故障造成的失败。\n- **C：改超时**，调整请求的等待时间。\n\n你选 A、B 还是 C？",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "partial-negation-c-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前可选改动：\n\n- A：补监控，增加关键指标和告警。\n- B：加重试，处理临时失败。\n- C：改超时，调整请求等待时间。\n\n请选择 A、B、C 中的一项或多项，也可以回复“都不做”。",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "partial-negation-c-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "部署前可选改动：\n\n- **A：补监控**，增加关键指标和告警。\n- **B：加重试**，为可恢复的失败增加重试机制。\n- **C：改超时**，调整请求或任务的超时设置。\n\n你选择哪项？可以多选，也可以回复“都不选”。",
+    "userText": "A 和 B 可以先上；C 先别改，免得扩大范围。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "approve-name-deny-number-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择迁移策略:\n\nA（原地迁移）\nB（双写迁移）\nC（停机迁移）\n\n你选哪个?",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "approve-name-deny-number-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择迁移策略：\n\n- **A（原地迁移）**:直接在现有数据/环境上迁移,简单快速,但出问题难回退,期间可能有停机或不一致窗口\n- **B（双写迁移）**:新老系统并行写入,逐步切流量,可平滑回退,但实现复杂、周期长,需处理双写一致性\n- **C（停机迁移）**:停服后一次性迁移,逻辑最简单、风险最低,但有明确的业务中断时间\n\n你选哪个?",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "approve-name-deny-number-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择迁移策略：\n\n- **A（原地迁移）**：直接在现有数据/环境上迁移，无需额外资源，但迁移期间风险较高、不易回滚。\n- **B（双写迁移）**：新旧系统并行写入，逐步切换，风险低、可回滚，但实现复杂、周期长。\n- **C（停机迁移）**：停机窗口内一次性迁移，简单直接,但会造成服务中断。\n\n你选 A、B 还是 C？",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "approve-name-deny-number-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择迁移策略：\n\n- **A（原地迁移）**：直接在现有系统上迁移，简单但迁移期间存在风险窗口。\n- **B（双写迁移）**：新旧系统并行写入，切换平滑但实现复杂、周期长。\n- **C（停机迁移）**：停服后一次性迁移，操作简单但有业务中断时间。\n\n选哪个？",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "approve-name-deny-number-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "- **A 原地迁移**：直接在现有系统中转换数据，改动路径短，但迁移期间可能影响服务。\n- **B 双写迁移**：新旧系统同时写入，核对数据后切换，便于逐步验证，但实现较复杂。\n- **C 停机迁移**：暂停服务后完成迁移，流程清晰，但需要安排停机窗口。\n\n你选 **A、B 还是 C**？",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "approve-name-deny-number-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择迁移策略：\n\n- **A 原地迁移**：直接修改现有系统，步骤较少，但迁移期间可能影响服务。\n- **B 双写迁移**：新旧系统同时写入，逐步切换；便于验证和回退，但实现较复杂。\n- **C 停机迁移**：暂停服务后一次性迁移，流程清晰，但需要停机窗口。\n\n你选 A、B 还是 C？",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "approve-name-deny-number-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一种迁移策略：\n\n- **A 原地迁移**：直接修改现有数据或系统，步骤较少，但回滚可能较难。\n- **B 双写迁移**：迁移期间同时写入新旧系统，便于逐步切换，但实现和校验更复杂。\n- **C 停机迁移**：暂停服务后完成迁移，流程较直接，但会有停机时间。\n\n你选 **A、B 还是 C**？",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "approve-name-deny-number-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一种迁移策略：\n\n- **A 原地迁移**：直接在现有系统中迁移，步骤较少，但迁移期间需要控制变更风险。\n- **B 双写迁移**：新旧系统同时写入，验证后再切换，便于逐步迁移，但实现和核对成本较高。\n- **C 停机迁移**：暂停服务后完成迁移，流程相对简单，但会产生停机时间。\n\n你选 **A、B 还是 C**？",
+    "userText": "双写这个名字听起来可以，不过我否决 B；暂时选 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "mention-then-delay-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "缓存方案三选一:\n\n- **A(本地缓存)** — 进程内/本地磁盘缓存,无额外依赖,简单但不跨实例共享\n- **B(Redis)** — 独立缓存服务,跨实例共享、可持久化,但多一个运维依赖\n- **C(不缓存)** — 最简单,零维护成本,但每次都走全量计算/查询\n\n今天用哪个?",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "mention-then-delay-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "今天缓存方案有三个可选项:\n\n- **A（本地缓存）**:进程内缓存,简单快,但多实例间不共享、重启丢失\n- **B（Redis）**:跨实例共享、可持久化,但多了外部依赖和网络开销\n- **C（不缓存）**:最简单,零维护成本,但每次都要重新计算/查询\n\n今天用哪个?",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "mention-then-delay-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "缓存方案三选一:\n\n- **A（本地缓存）**：进程内/本机缓存（如内存字典、lru_cache），简单但多实例间不共享、重启丢失。\n- **B（Redis）**：独立缓存服务，多实例共享、支持过期和持久化，但多一个依赖和运维成本。\n- **C（不缓存）**：直接每次计算/查询，最简单，但性能和负载上没有缓冲。\n\n今天采用哪项？",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "mention-then-delay-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "今天缓存方案可选三项:\n\nA. 本地缓存(进程内,如 lru_cache/内存字典)\nB. Redis(外部缓存服务,支持跨进程/跨实例共享)\nC. 不缓存\n\n今天采用哪项?",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "mention-then-delay-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "今天可选的缓存方案：\n\n- A：本地缓存\n- B：Redis\n- C：不缓存\n\n今天采用哪项？回复 A、B 或 C 即可。",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "mention-then-delay-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "今天可选的缓存方案：\n\n- A：本地缓存\n- B：Redis\n- C：不缓存\n\n今天采用哪项？回复 A、B 或 C 即可。",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "mention-then-delay-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "今天有三项可选缓存方案：\n\n- A：本地缓存\n- B：Redis\n- C：不缓存\n\n你今天采用哪项？",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "mention-then-delay-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "今天可选的缓存方案：\n\n- A：本地缓存\n- B：Redis\n- C：不缓存\n\n今天采用哪项？回复 A、B 或 C 即可。",
+    "userText": "A 看起来合适，但先别定，等压测数据出来再说。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "inspect-option-2-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择存储方案：\n\n1. **SQLite** —— 单文件、零运维，适合单机或小规模场景\n2. **PostgreSQL** —— 功能完整的关系型数据库，适合需要并发、扩展性的场景\n3. **JSON 文件** —— 最简单，适合数据量很小、不需要查询能力的场景\n\n你选哪个？",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "inspect-option-2-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "1. SQLite\n2. PostgreSQL\n3. JSON 文件\n\n选哪个?",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "inspect-option-2-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择存储方案：\n\n1. **SQLite** —— 单文件、零配置，适合单机/轻量场景，支持标准 SQL 查询\n2. **PostgreSQL** —— 功能完整的关系型数据库，适合需要并发写入、复杂查询或后续扩展到多实例的场景\n3. **JSON 文件** —— 最简单，无需额外依赖，但不支持并发写入、查询能力弱，适合数据量很小且结构简单的场景\n\n你选哪个？",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "inspect-option-2-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "1. SQLite\n2. PostgreSQL\n3. JSON 文件\n\n选哪个?",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "inspect-option-2-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择数据存储方案：\n\n1. SQLite\n2. PostgreSQL\n3. JSON 文件\n\n请回复编号 1、2 或 3。",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "inspect-option-2-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择数据存储方案：\n\n1. SQLite\n2. PostgreSQL\n3. JSON 文件\n\n请回复编号 1、2 或 3。",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "inspect-option-2-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择数据存储方案：\n\n1. SQLite\n2. PostgreSQL\n3. JSON 文件\n\n请回复编号 1、2 或 3。",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "inspect-option-2-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择数据存储方案：\n\n1. SQLite\n2. PostgreSQL\n3. JSON 文件\n\n请回复编号 1、2 或 3。",
+    "userText": "先检查 2 的文档和迁移示例，不代表我选了它。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "all-fine-delegate-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "日志库选哪个?\n\nA（Pino）\nB（Winston）\nC（Bunyan）",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "all-fine-delegate-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "日志库选哪个?\n\n- A（Pino）\n- B（Winston）\n- C（Bunyan）",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "all-fine-delegate-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选一个日志库：\n\nA（Pino）— 性能最好，JSON 输出，生态围绕 Node.js 后端服务\nB（Winston）— 最成熟/最常见，灵活的 transport 体系，功能多但相对重\nC（Bunyan）— 纯 JSON 结构化日志，历史较早，社区活跃度已不如前两者\n\n你选哪个？",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "all-fine-delegate-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "三个日志库可选：\n\n- **A（Pino）**— 性能最好，JSON 结构化日志，Node.js 生态常用\n- **B（Winston）**— 最成熟、生态最广，多 transport 支持灵活\n- **C（Bunyan）**— 结构化日志的早期代表，功能简单直接\n\n你选哪个？",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "all-fine-delegate-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "可选日志库：\n\n- A：Pino\n- B：Winston\n- C：Bunyan\n\n你选哪个？",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "all-fine-delegate-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择日志库：\n\n- A：Pino\n- B：Winston\n- C：Bunyan\n\n你选哪个？",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "all-fine-delegate-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择一个日志库：\n\n- A：Pino\n- B：Winston\n- C：Bunyan\n\n你选哪个？",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "all-fine-delegate-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "可选日志库：\n\n- A：Pino\n- B：Winston\n- C：Bunyan\n\n你选哪个？",
+    "userText": "都行，你按维护成本最低的决定。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "whatever-no-preference-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "两种 API 版本策略:\n\n**A（保持 v1）**:在现有 v1 路径上做兼容式扩展/修复,不新开版本号。优点是迁移成本为零,客户端无感;缺点是如果本次改动涉及破坏性变更(字段语义、删字段等),会被迫做成妥协方案,v1 逐渐变得臃肿。\n\n**B（直接升 v2）**:新开 v2 路径,v1 保留一段时间后下线。优点是可以干净地做破坏性调整,接口语义清晰;缺点是要维护双版本、写迁移文档,给客户端切换时间,短期工作量更大。\n\n你更倾向哪个?如果本次改动是向后兼容的(加字段、加接口),选 A 更省事;如果涉及破坏性变更,选 B。你选哪个?",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "whatever-no-preference-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A（保持 v1）、B（直接升 v2），选哪个？\n\nA：在现有 v1 路径上扩展/修改，兼容旧客户端，改动小、风险低，但历史包袱会累积。\nB：新开 v2 端点，可以甩掉旧设计债、接口更干净，但需要维护双版本、迁移成本和沟通成本更高。",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "whatever-no-preference-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "A（保持 v1）：在现有路径上新增/修改字段或行为，走兼容性演进，不破坏现有客户端；适合改动范围小、能向后兼容的场景。\n\nB（直接升 v2）：新开一套 `/v2` 路径，旧客户端继续用 v1，新客户端切到 v2；适合有破坏性变更（字段删除/语义变化/鉴权方式调整等）、需要并行过渡期的场景。\n\n你选 A 还是 B？",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "whatever-no-preference-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "用户要求不调用工具，我直接用文字提问即可：\n\n你选 A 还是 B？",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "whatever-no-preference-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "有两种 API 版本策略：\n\n- **A：保持 v1**。在现有版本中做兼容性调整，现有调用方无需切换版本。\n- **B：直接升 v2**。用新版本承载不兼容的改动，调用方需要迁移。\n\n你选 **A** 还是 **B**？",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "whatever-no-preference-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "有两种 API 版本策略：\n\n- **A：保持 v1**。在现有版本内做兼容改动，避免现有客户端立即迁移；新能力需受 v1 的兼容约束。\n- **B：直接升 v2**。允许调整接口和数据结构，设计空间更大；客户端需要迁移。\n\n你选 **A** 还是 **B**？",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "whatever-no-preference-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "有两种 API 版本策略：\n\n- **A：保持 v1**。继续在现有版本中演进，调用方暂时不用切换版本。\n- **B：直接升 v2**。为新接口启用新版本，调用方需要迁移。\n\n你选 **A** 还是 **B**？",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "whatever-no-preference-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "有两种 API 版本策略：\n\n- **A：保持 v1**。继续兼容现有客户端，在 v1 中演进接口。\n- **B：直接升 v2**。用新版本承载变更，客户端需要迁移。\n\n你选 **A** 还是 **B**？",
+    "userText": "随便吧，我没有偏好，你先把方案和影响列出来。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "negate-selected-name-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "三个编译器选项：\n\n- **A（esbuild）**：基于 Go 实现，构建速度极快，生态成熟，但对某些 TypeScript 类型检查等高级特性支持有限（仅做转译，不做类型检查）。\n- **B（tsc）**：官方 TypeScript 编译器，类型检查最权威、最准确，但编译速度相对较慢，不适合作为唯一的快速构建工具。\n- **C（SWC）**：基于 Rust 实现，速度与 esbuild 相近甚至更快，插件生态和对 TS/JSX 特性的支持更完整，但同样不做类型检查。\n\n你想选择哪一个？（A/B/C）",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "negate-selected-name-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择编译器方案：\n\n- **A（esbuild）**：速度最快，Go 实现，但类型检查需单独跑 tsc --noEmit 配合\n- **B（tsc）**：官方 TypeScript 编译器，类型检查与编译一体，但构建速度较慢\n- **C（SWC）**：Rust 实现，速度接近 esbuild，生态集成（如 Next.js）更成熟\n\n你选 A、B 还是 C？",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "negate-selected-name-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "三个编译器选项：\n\n- **A（esbuild）**：速度最快，Go 编写，适合纯转译场景，但类型检查需另外跑 tsc。\n- **B（tsc）**：官方 TypeScript 编译器，类型检查最准确、生态支持最好，但编译速度较慢。\n- **C（SWC）**：Rust 编写，速度接近 esbuild，对 TS/JSX 的兼容性比 esbuild 更细致，但生态和调试工具不如前两者成熟。\n\n你选哪个？",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "negate-selected-name-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "编译器选项如下，请选择：\n\n- **A（esbuild）**：基于 Go，构建速度最快，生态内置支持有限（如无原生类型检查）\n- **B（tsc）**：官方 TypeScript 编译器，类型检查最完整，但编译速度较慢\n- **C（SWC）**：基于 Rust，速度接近 esbuild，对 TypeScript/JSX 支持更完整，常用于替代 Babel\n\n你选 A、B 还是 C？",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "negate-selected-name-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择一个编译器选项：\n\n- A：esbuild\n- B：tsc\n- C：SWC\n\n请回复 A、B 或 C。",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "negate-selected-name-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择一个编译器选项：\n\n- A：esbuild\n- B：tsc\n- C：SWC\n\n你选择哪一个？",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "negate-selected-name-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择一个编译器选项：\n\n- A：esbuild\n- B：tsc\n- C：SWC\n\n请回复 A、B 或 C。",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "negate-selected-name-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": false,
+    "assistantText": "请选择一个编译器选项：\n\n- A：esbuild\n- B：tsc\n- C：SWC\n\n你选哪一个？",
+    "userText": "不要用 SWC。A 和 B 我只是想再比较一下，还没选。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "choose-name-other-denied-claude-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "三种认证方案：\n\n- **A（Cookie Session）**：服务端维护会话状态，浏览器自动带 Cookie，适合传统 Web 应用，天然防 XSS 窃取（HttpOnly），但跨域/多端场景麻烦，服务端需存储会话。\n- **B（JWT）**：无状态令牌，自带签名信息，适合前后端分离、多服务场景，水平扩展容易；缺点是撤销/失效控制较弱，令牌泄露风险需额外处理。\n- **C（mTLS）**：双向证书认证，安全级别最高，适合服务间（机器对机器）或高安全要求场景；但证书分发和运维成本高，不适合普通用户登录场景。\n\n你选哪一种？",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "choose-name-other-denied-claude-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "三种认证方案供你选择：\n\n- **A（Cookie session）**：服务端维护会话状态，浏览器自动带 Cookie，适合传统 Web 应用，天然支持 CSRF 防护机制但需处理跨域问题。\n- **B（JWT）**：无状态令牌，自包含声明信息，适合前后端分离/多服务场景，但撤销单个 token 较麻烦。\n- **C（mTLS）**：双向 TLS 证书认证，安全性最高，适合服务间通信或高安全要求场景，但证书分发与轮换运维成本较高。\n\n你选哪种？",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "choose-name-other-denied-claude-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "三种认证方案：\n\n- **A（Cookie Session）**：服务端维护会话状态，浏览器自动带 Cookie，适合传统 Web 应用，天然支持服务端踢人/失效。\n- **B（JWT）**：无状态令牌，自包含用户信息，适合前后端分离、多服务场景，但撤销/强制失效较麻烦。\n- **C（mTLS）**：双向证书认证，安全性最高，常用于服务间通信或零信任网络，但证书分发和轮换运维成本较高。\n\n你想选哪种？",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "choose-name-other-denied-claude-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "这里是三种认证方案，供你选择：\n\n- **A（Cookie Session）**：服务端维护会话状态，浏览器自动带 Cookie，适合传统 Web 应用，天然支持 CSRF 防护但扩展到多服务时需要共享会话存储。\n- **B（JWT）**：无状态令牌，自带签名校验，适合前后端分离或多服务架构，但撤销/过期管理相对麻烦。\n- **C（mTLS）**：双向 TLS 证书认证，安全级别最高，适合服务间通信或高安全要求场景，但证书分发和轮换的运维成本较高。\n\n你想选哪一种？",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "choose-name-other-denied-codex-1",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选一种认证方案：\n\n- **A：Cookie session**——服务端保存会话，适合浏览器应用。\n- **B：JWT**——客户端携带令牌，适合跨服务或多端调用。\n- **C：mTLS**——双方使用证书验证身份，适合服务间通信。\n\n你选 A、B 还是 C？",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "choose-name-other-denied-codex-2",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "有三种认证方案可选：\n\n- **A：Cookie session** — 服务端保存会话状态，适合浏览器应用。\n- **B：JWT** — 客户端持有令牌，适合 API 和跨服务调用。\n- **C：mTLS** — 双向证书认证，适合受控的服务间通信。\n\n你选哪种？回复 A、B 或 C 即可。",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "choose-name-other-denied-codex-3",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一种认证方案：\n\n- **A：Cookie session** — 服务端保存会话状态，适合浏览器应用。\n- **B：JWT** — 客户端持有令牌，适合需要跨服务传递身份的场景。\n- **C：mTLS** — 双方使用证书验证身份，适合服务间通信。\n\n你选 A、B 还是 C？",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "choose-name-other-denied-codex-4",
+    "group": "r12-adversarial-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "三种认证方案：\n\n- **A：Cookie session**：服务端保存会话，适合浏览器应用。\n- **B：JWT**：客户端持有令牌，适合跨服务或多客户端调用。\n- **C：mTLS**：客户端和服务端通过证书双向认证，适合服务间通信。\n\n你选哪种？",
+    "userText": "JWT 先排除。请用 Cookie session，也就是 A。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-table-status-claude-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 备注 |\n|---|---|---|---|\n| 17 | A | SQLite | 零配置、单文件，适合小规模/本地/嵌入式场景，不支持高并发写入 |\n| 29 | B | PostgreSQL | 功能最全（事务、JSON、扩展），适合中大型生产系统，运维成本略高 |\n| 41 | C | MySQL | 生态成熟、易上手、云托管选择多，复杂查询/扩展性弱于 PostgreSQL |\n\n最后采用哪个（17/A、29/B 还是 41/C）？",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-table-status-claude-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 备注 |\n|---|---|---|---|\n| 17 | A | SQLite | 零部署成本，单文件嵌入式，适合轻量/单机场景，但并发写入和多实例扩展能力弱 |\n| 29 | B | PostgreSQL | 功能最全（事务、JSON、扩展），生态成熟，适合中大型业务，但运维成本高于 SQLite |\n| 41 | C | MySQL | 轻量易用、生态广泛，适合读多写少的常规业务，复杂查询和扩展性弱于 PostgreSQL |\n\n最后采用哪一个？",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-table-status-claude-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 备注 |\n|---|---|---|---|\n| 17 | A | SQLite | 无服务依赖，单文件存储，适合小规模/本地场景，并发写入弱 |\n| 29 | B | PostgreSQL | 功能最全面，支持复杂查询与扩展，适合中大型生产系统 |\n| 41 | C | MySQL | 生态成熟、运维资料多，读写性能均衡，适合通用 Web 应用 |\n\n最后采用哪一个？",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-table-status-claude-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 备注 |\n|---|---|---|---|\n| 17 | A | SQLite | 零配置、单文件，适合小型/嵌入式场景，并发写入能力弱 |\n| 29 | B | PostgreSQL | 功能全面（事务、JSON、扩展），适合中大型生产系统，运维成本略高 |\n| 41 | C | MySQL | 生态成熟、读多写少场景表现好，复杂查询/扩展性弱于 PostgreSQL |\n\n最后采用哪个,17/A,29/B,还是41/C？",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-table-status-codex-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 简短备注 |\n|---|---|---|---|\n| ID 17 | A | SQLite | 部署简单，适合轻量应用 |\n| ID 29 | B | PostgreSQL | 功能丰富，适合复杂查询 |\n| ID 41 | C | MySQL | 应用广泛，运维经验成熟 |\n\n最后采用哪个方案？请回复 A、B 或 C。",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-table-status-codex-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 简短备注 |\n|---|---|---|---|\n| ID 17 | A | SQLite | 部署简单，适合轻量场景 |\n| ID 29 | B | PostgreSQL | 功能丰富，适合复杂查询 |\n| ID 41 | C | MySQL | 应用广泛，生态成熟 |\n\n最后采用哪个方案？请回复编号或字母。",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-table-status-codex-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 简短备注 |\n|---|---|---|---|\n| ID 17 | A | SQLite | 轻量，适合本地或小型应用 |\n| ID 29 | B | PostgreSQL | 功能丰富，适合复杂业务 |\n| ID 41 | C | MySQL | 应用广泛，适合常见 Web 业务 |\n\n最后采用哪个？请回复编号或字母。",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-table-status-codex-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | 字母 | 名称 | 简短备注 |\n|---:|:---:|---|---|\n| 17 | A | SQLite | 部署简单，适合轻量应用 |\n| 29 | B | PostgreSQL | 功能丰富，适合复杂查询 |\n| 41 | C | MySQL | 应用广泛，适合常见业务系统 |\n\n最后采用哪个方案？请回复 A、B 或 C。",
+    "userText": "用 PostgreSQL（B，ID 29）。团队目前还小，先接受它。",
+    "expectedSelected": [
+      "29"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-numbered-partial-claude-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 备注 |\n|---|---|---|---|\n| 1 | A | 锁定 pnpm 版本 | 固定 packageManager 字段/版本号，避免团队间版本漂移 |\n| 2 | B | 迁移到 workspace | 改为 pnpm workspace 多包结构，适合有多个子包/需要共享依赖的场景 |\n| 3 | C | 加缓存 | CI 或本地加 pnpm store 缓存，加快安装速度 |\n\n最后采用哪个（1/A、2/B 还是 3/C)?",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-numbered-partial-claude-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 编号 | 字母 | 名称 | 备注 |\n|---|---|---|---|\n| 1 | A | 锁定 pnpm 版本 | 固定 packageManager/engines 字段，避免团队间版本漂移 |\n| 2 | B | 迁移到 workspace | 拆分为 pnpm workspace 多包结构，适合多子项目/包共享依赖 |\n| 3 | C | 加缓存 | CI/本地构建加 pnpm store 缓存，加快安装速度 |\n\n最后采用哪个（1/A、2/B 或 3/C）？",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-numbered-partial-claude-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "以下是可选的包管理改动，请选择要做哪些（可多选）：\n\n| 编号/字母 | 改动 | 说明 |\n|---|---|---|\n| 1 / A | 锁定 pnpm 版本 | 在 `package.json` 加 `packageManager` 字段（或 `.npmrc`/CI 配置固定版本），避免本地与 CI 用到不同 pnpm 版本导致 lockfile 不一致 |\n| 2 / B | 迁移到 workspace | 引入 `pnpm-workspace.yaml`，把多个包/应用纳入单一 monorepo 管理，统一依赖提升与跨包引用 |\n| 3 / C | 加缓存 | 在 CI 中为 pnpm store 添加缓存（如 GitHub Actions 的 `actions/cache` 配 pnpm store 路径），加速安装 |\n\n要做哪些？可以回复编号或字母组合（如 \"1 2\" 或 \"A C\"）。",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-numbered-partial-claude-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "以下是三项可选的包管理改动，请告诉我选哪个（可多选）：\n\n| 编号 / 字母 | 改动 | 简要说明 |\n|---|---|---|\n| 1 / A | 锁定 pnpm 版本 | 在 `package.json` 的 `packageManager` 字段（或 `.npmrc`/CI 配置）固定 pnpm 版本号，避免不同机器/CI 上版本漂移导致 lockfile 不一致或行为差异 |\n| 2 / B | 迁移到 workspace | 引入 `pnpm-workspace.yaml`，把当前单仓库结构改为多包 workspace，便于拆分和共享内部包 |\n| 3 / C | 加缓存 | 在 CI（或本地）为 pnpm store 配置缓存，减少重复安装依赖的时间 |\n\n要做哪一项（或哪几项）？",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-numbered-partial-codex-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "包管理改动有三项，请回复要做的编号或字母，可多选：\n\n1 / A：锁定 pnpm 版本  \n2 / B：迁移到 workspace  \n3 / C：加缓存\n\n例如回复「A、C」或「全部」。",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-numbered-partial-codex-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "可选的包管理改动：\n\n1. **A：锁定 pnpm 版本**\n2. **B：迁移到 pnpm workspace**\n3. **C：增加依赖缓存**\n\n请回复要做的编号或字母，可多选，例如「1、3」。",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-numbered-partial-codex-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "可选的包管理改动：\n\n- **1 / A：锁定 pnpm 版本**，让本地和 CI 使用同一版本。\n- **2 / B：迁移到 workspace**，统一管理多个包。\n- **3 / C：加缓存**，缩短依赖安装时间。\n\n请回复要做哪些，可多选，例如「A+C」或「全部」。",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-numbered-partial-codex-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "可以选择以下包管理改动（可多选）：\n\n1 / A：锁定 pnpm 版本\n2 / B：迁移到 workspace\n3 / C：加缓存\n\n请回复要做的编号或字母，例如「1、3」或「A、C」。",
+    "userText": "1 和 3 可以做；2 这次先不迁移。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-mixed-language-claude-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择存储后端：\n\n- **A（SQLite）**\n- **B（PostgreSQL）**\n- **C（DynamoDB）**\n\n选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-mixed-language-claude-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "三种存储后端选项：\n\n- **A（SQLite）**：单文件、零运维，适合小规模/本地场景，并发写入能力弱\n- **B（PostgreSQL）**：成熟关系型数据库，支持高并发和复杂查询，需要独立部署运维\n- **C（DynamoDB）**：AWS 托管 NoSQL，弹性伸缩免运维，但有供应商锁定、查询灵活性较差\n\n你选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-mixed-language-claude-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "三种存储后端供选择：\n\n- **A（SQLite）**：单文件、零配置，适合单机/轻量场景，但并发写入和多实例部署能力弱。\n- **B（PostgreSQL）**：成熟的关系型数据库，事务、索引、并发支持完善，适合需要复杂查询和多实例访问的场景。\n- **C（DynamoDB）**：AWS 托管的 NoSQL，弹性扩展、免运维，适合云原生、高并发读写但查询模式相对固定的场景。\n\n你选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-mixed-language-claude-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "三种存储后端：\n\n- **A（SQLite）**：单文件、零配置，适合小规模/单机场景，不支持高并发写入。\n- **B（PostgreSQL）**：关系型数据库，功能全面、生态成熟，支持事务和复杂查询，需要单独部署维护。\n- **C（DynamoDB）**：AWS 托管 NoSQL，弹性伸缩、免运维，但有厂商锁定，查询能力不如关系型灵活。\n\n选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-mixed-language-codex-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一种存储后端：\n\n- A：SQLite\n- B：PostgreSQL\n- C：DynamoDB\n\n你选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-mixed-language-codex-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一种存储后端：\n\n- A：SQLite\n- B：PostgreSQL\n- C：DynamoDB\n\n你选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-mixed-language-codex-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一种存储后端：\n\n- A：SQLite\n- B：PostgreSQL\n- C：DynamoDB\n\n你选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-mixed-language-codex-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择一种存储后端：\n\n- A：SQLite\n- B：PostgreSQL\n- C：DynamoDB\n\n你选哪一个？",
+    "userText": "Let’s go with PostgreSQL — B. 后面再评估是否需要分片。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-direct-name-delay-claude-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "构建工具有三种：A（Vite）、B（Webpack）、C（Parcel）。您选哪一个？",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-direct-name-delay-claude-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择构建工具：\n\nA（Vite）\nB（Webpack）\nC（Parcel）",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-direct-name-delay-claude-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择要采用的构建工具：\n\n- A（Vite）\n- B（Webpack）\n- C（Parcel）",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-direct-name-delay-claude-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "构建工具有三种常见选项：A（Vite）、B（Webpack）、C（Parcel）。您想选哪一个？",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude",
+    "modelId": "claude-sonnet-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-positive-direct-name-delay-codex-1",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择构建工具：\n\n- A：Vite\n- B：Webpack\n- C：Parcel\n\n你想采用哪一个？",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-positive-direct-name-delay-codex-2",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "可选的构建工具：\n\n- A：Vite\n- B：Webpack\n- C：Parcel\n\n你想采用哪一个？回复 A、B 或 C 即可。",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-positive-direct-name-delay-codex-3",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择构建工具：\n\n- A：Vite\n- B：Webpack\n- C：Parcel\n\n请回复 A、B 或 C。",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-positive-direct-name-delay-codex-4",
+    "group": "r12-hard-positive-mapping",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "请选择构建工具：\n\n- A：Vite\n- B：Webpack\n- C：Parcel\n\n你想采用哪一个？",
+    "userText": "就按 Vite 来，选择 A；Parcel 以后如果有需要再看。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  }
+]

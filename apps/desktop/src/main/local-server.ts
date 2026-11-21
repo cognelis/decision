@@ -1,4 +1,169 @@
+import {
+  prListToolQuerySchema,
+  prListToolResultSchema,
+  prDescriptionDraftQuerySchema,
+  prDescriptionDraftResultSchema,
+  prReviewRunToolRequestSchema,
+  prReviewRunToolResultSchema,
+  type PrReviewRunToolRequest,
+  type PrReviewRunToolResult,
+  localReviewJobRecordSchema,
+  localReviewJobRecordResultSchema,
+  localReviewJobsQuerySchema,
+  localReviewJobsResultSchema,
+  localReviewJobRequestSchema,
+  localReviewJobResultSchema,
+  localReviewJobUpdateSchema,
+  localReviewJobUpdateResultSchema,
+  type LocalReviewJobRecord,
+  type LocalReviewJobRecordResult,
+  type LocalReviewJobsQuery,
+  type LocalReviewJobsResult,
+  type LocalReviewJobRequest,
+  type LocalReviewJobResult,
+  type LocalReviewJobUpdate,
+  type LocalReviewJobUpdateResult,
+  prReviewSettingsQuerySchema,
+  prReviewSettingsResultSchema,
+  reviewQualityQuerySchema,
+  reviewQualityResultSchema,
+  reviewEscapeRecordSchema,
+  reviewEscapeRecordResultSchema,
+  reviewBenchmarkRunRequestSchema,
+  reviewBenchmarkRunStartSchema,
+  reviewPromotionsQuerySchema,
+  reviewPromotionsResultSchema,
+  type ReviewPromotionsQuery,
+  type ReviewPromotionsResult,
+  reviewBenchmarkRunsQuerySchema,
+  reviewBenchmarkRunsResultSchema,
+  reviewBenchmarkRunQuerySchema,
+  reviewBenchmarkRunResultSchema,
+  type ReviewBenchmarkRunRequest,
+  type ReviewBenchmarkRunStart,
+  type ReviewBenchmarkRunsQuery,
+  type ReviewBenchmarkRunsResult,
+  type ReviewBenchmarkRunQuery,
+  type ReviewBenchmarkRunResult,
+  reviewEscapesQuerySchema,
+  reviewEscapesResultSchema,
+  reviewEscapeUpdateSchema,
+  reviewEscapeUpdateResultSchema,
+  type ReviewEscapeRecord,
+  type ReviewEscapeRecordResult,
+  type ReviewEscapesQuery,
+  type ReviewEscapesResult,
+  type ReviewEscapeUpdate,
+  type ReviewEscapeUpdateResult,
+  reviewRuleUpdateSchema,
+  reviewRuleUpdateResultSchema,
+  type ReviewQualityQuery,
+  type ReviewQualityResult,
+  type ReviewRuleUpdate,
+  type ReviewRuleUpdateResult,
+  prReviewSettingsUpdateSchema,
+  prReviewSettingsUpdateResultSchema,
+  type PrReviewSettingsQuery,
+  type PrReviewSettingsResult,
+  type PrReviewSettingsUpdate,
+  type PrReviewSettingsUpdateResult,
+  prCommentsToolQuerySchema,
+  prCommentsToolResultSchema,
+  prCommentUpdateToolSchema,
+  prCommentUpdateToolResultSchema,
+  type PrCommentsToolQuery,
+  type PrCommentsToolResult,
+  type PrCommentUpdateTool,
+  type PrCommentUpdateToolResult,
+  prUpdateRequestSchema,
+  prUpdateResultSchema,
+  type PrDescriptionDraftQuery,
+  type PrDescriptionDraftResult,
+  type PrUpdateRequest,
+  type PrUpdateResult,
+  prReviewCommentsRecordSchema,
+  prReviewCommentsResultSchema,
+  prReviewFindingUpdateSchema,
+  prReviewFindingUpdateResultSchema,
+  prReviewRecordRequestSchema,
+  prReviewRecordResultSchema,
+  prReviewRecordsQuerySchema,
+  prReviewRecordsResultSchema,
+  type PrListToolQuery,
+  type PrListToolResult,
+  type PrReviewCommentsRecord,
+  type PrReviewCommentsResult,
+  type PrReviewFindingUpdate,
+  type PrReviewFindingUpdateResult,
+  type PrReviewRecordRequest,
+  type PrReviewRecordResult,
+  type PrReviewRecordsQuery,
+  type PrReviewRecordsResult,
+  reviewBenchmarkGetRequestSchema,
+  reviewBenchmarkGetResultSchema,
+  reviewBenchmarkListRequestSchema,
+  reviewBenchmarkListResultSchema,
+  reviewBenchmarkRecordRequestSchema,
+  reviewBenchmarkRecordResultSchema,
+  reviewBenchmarkUpdateRequestSchema,
+  reviewBenchmarkUpdateResultSchema,
+  type ReviewBenchmarkGetRequest,
+  type ReviewBenchmarkGetResult,
+  type ReviewBenchmarkListRequest,
+  type ReviewBenchmarkListResult,
+  type ReviewBenchmarkRecordRequest,
+  type ReviewBenchmarkRecordResult,
+  type ReviewBenchmarkUpdateRequest,
+  type ReviewBenchmarkUpdateResult,
+} from "@cognelis/decision-protocol";
 import { DecisionFeedbackUpdate, DecisionFeedbackUpdateResult, decisionFeedbackUpdateSchema, decisionFeedbackUpdateResultSchema, DecisionFeedbackQuery, DecisionFeedbackResponse, decisionFeedbackQuerySchema, decisionFeedbackResponseSchema } from "@cognelis/decision-protocol";
+import {
+  TODO_SHAPE_HEADER,
+  decisionAmendmentRequestSchema,
+  decisionAmendmentResultSchema,
+  proactiveResultAsReleased,
+  type DecisionAmendmentRequest,
+  type DecisionAmendmentResult,
+  contextShapeLevel,
+  contextShapeNeeded,
+  CONTEXT_SHAPE_HEADER,
+  contextAsReleased,
+  todoAnswerFor,
+  todoItemUpdateRequestSchema,
+  todoItemUpdateResultSchema,
+  todoListQuerySchema,
+  todoListResponseSchema,
+  todoRecordRequestSchema,
+  todoRecordResultSchema,
+  type TodoItemUpdateRequest,
+  type TodoItemUpdateResult,
+  type TodoListQuery,
+  type TodoListResponse,
+  type TodoRecordRequest,
+  type TodoRecordResult,
+} from "@cognelis/decision-protocol";
+import {
+  getHistoricalDecisionRequestSchema,
+  getHistoricalDecisionResultSchema,
+  listHistoricalDecisionsRequestSchema,
+  listHistoricalDecisionsResultSchema,
+  recordHistoricalDecisionRequestSchema,
+  recordHistoricalDecisionResultSchema,
+  updateHistoricalDecisionRequestSchema,
+  openHistoricalDecisionRequestSchema,
+  openHistoricalDecisionResultSchema,
+  type OpenHistoricalDecisionRequest,
+  type OpenHistoricalDecisionResult,
+  updateHistoricalDecisionResultSchema,
+  type GetHistoricalDecisionRequest,
+  type GetHistoricalDecisionResult,
+  type ListHistoricalDecisionsRequest,
+  type ListHistoricalDecisionsResult,
+  type RecordHistoricalDecisionRequest,
+  type RecordHistoricalDecisionResult,
+  type UpdateHistoricalDecisionRequest,
+  type UpdateHistoricalDecisionResult,
+} from "@cognelis/decision-protocol";
 import { fileSystemRefusal, type RationaleQueue } from "@cognelis/decision-core";
 import {
   PROTOCOL_VERSION,
@@ -47,6 +212,14 @@ import {
   type SemanticDecisionPair,
   type ProactiveRecordRequest,
   type ProactiveRecordResult,
+  obsidianNoteReadRequestSchema,
+  obsidianNoteReadResponseSchema,
+  obsidianNoteSearchRequestSchema,
+  obsidianNoteSearchResponseSchema,
+  type ObsidianNoteReadRequest,
+  type ObsidianNoteReadResponse,
+  type ObsidianNoteSearchRequest,
+  type ObsidianNoteSearchResponse,
 } from "@cognelis/decision-protocol";
 import { runtimeIdentityProof } from "@cognelis/decision-storage";
 import { timingSafeEqual } from "node:crypto";
@@ -94,9 +267,15 @@ const DEFAULT_BODY_LIMIT = 256 * 1024;
 // these slots; a Unix socket in the App's own folder, which no other account can reach, is the way past that.
 const UNTRUSTED_SLOTS = 16;
 const UNTRUSTED_DEADLINE_MS = 2_000;
+/** How long record_pr_comments may take, its comments posted one after another: past the bridge's 55 seconds for it. */
+const PR_COMMENTS_SOCKET_MS = 60_000;
+/** A local review's worker is checked before comments are handed to it: up to a couple of minutes. */
+const LOCAL_REVIEW_SOCKET_MS = 180_000;
 
 export interface LocalCaptureServerOptions {
   queue: RationaleQueue;
+  /** Each request but a health check: an agent at work, which a background organization run gives way to (IMP-191). */
+  onRequest?: (path: string) => void;
   ingest?: (
     event: z.infer<typeof capturedDecisionEventSchema>,
   ) => CaptureReceipt | Promise<CaptureReceipt>;
@@ -119,12 +298,72 @@ export interface LocalCaptureServerOptions {
   ) => ProactiveRecordResult | Promise<ProactiveRecordResult>;
   searchContext?: (input: DecisionContextQuery) => DecisionContextResponse | Promise<DecisionContextResponse>;
   updateContextScope?: (input: DecisionScopeUpdate) => Promise<DecisionScopeUpdateResult>;
+  updateDecisionAmendment?: (input: DecisionAmendmentRequest) => Promise<DecisionAmendmentResult>;
   prepareDecisionHandoff?: (input: DecisionHandoffRequest) => Promise<DecisionHandoffResponse>;
   openDecisionSource?: (input: DecisionSourceReference) => Promise<DecisionSourceOpenResult>;
+  /** The reader's ordinary notes the note index keeps, read-only (obsidian-note-tools.ts). */
+  searchObsidianNotes?: (input: ObsidianNoteSearchRequest) => Promise<ObsidianNoteSearchResponse>;
+  readObsidianNote?: (input: ObsidianNoteReadRequest) => Promise<ObsidianNoteReadResponse>;
   saveDecisionContextFeedback?: (input: DecisionFeedbackUpdate) => Promise<DecisionFeedbackUpdateResult>;
   getDecisionContextFeedback?: (input: DecisionFeedbackQuery) => Promise<DecisionFeedbackResponse>;
   updateDecisionOutcome?: (input: DecisionOutcomeUpdate) => Promise<DecisionOutcomeUpdateResult>;
   updateContextRelation?: (input: DecisionRelationUpdate) => Promise<DecisionRelationUpdateResult>;
+  /** 待办清单: an agent reads them, saves its findings as one, and records progress on an item. */
+  /** 历史决定: an agent records one, lists them, reads one, and changes one, each only when the user asks. */
+  recordHistoricalDecision?: (input: RecordHistoricalDecisionRequest) => Promise<RecordHistoricalDecisionResult>;
+  listHistoricalDecisions?: (input: ListHistoricalDecisionsRequest) => Promise<ListHistoricalDecisionsResult>;
+  getHistoricalDecision?: (input: GetHistoricalDecisionRequest) => Promise<GetHistoricalDecisionResult>;
+  updateHistoricalDecision?: (input: UpdateHistoricalDecisionRequest) => Promise<UpdateHistoricalDecisionResult>;
+  /** Opens a record's note, or a link or related note it names, on this machine: only when the user asks. */
+  openHistoricalDecision?: (input: OpenHistoricalDecisionRequest) => Promise<OpenHistoricalDecisionResult>;
+  listTodos?: (input: TodoListQuery) => Promise<TodoListResponse>;
+  recordTodos?: (input: TodoRecordRequest) => Promise<TodoRecordResult>;
+  /**
+   * `oldHigh`: the request came from a bridge from before P0–P3 (shape below 4) and said 「high」, which that bridge was
+   * told for P0 and P1 alike: on an item that is P0 it changes nothing.
+   */
+  updateTodoItem?: (input: TodoItemUpdateRequest, context?: { oldHigh: boolean }) => Promise<TodoItemUpdateResult>;
+  /** 评审评测集: an agent records candidate cases, lists and reads them, and changes one (review-benchmark-service.ts). */
+  recordReviewBenchmarkCases?: (input: ReviewBenchmarkRecordRequest) => Promise<ReviewBenchmarkRecordResult>;
+  listReviewBenchmarkCases?: (input: ReviewBenchmarkListRequest) => Promise<ReviewBenchmarkListResult>;
+  getReviewBenchmarkCase?: (input: ReviewBenchmarkGetRequest) => Promise<ReviewBenchmarkGetResult>;
+  updateReviewBenchmarkCase?: (input: ReviewBenchmarkUpdateRequest) => Promise<ReviewBenchmarkUpdateResult>;
+  /** PR 评审, read-only for an agent: the platform's PR lists, and the review records the App keeps (pr-review-records.ts). */
+  listPrsForAgent?: (input: PrListToolQuery) => Promise<PrListToolResult>;
+  listPrReviewRecords?: (input: PrReviewRecordsQuery) => Promise<PrReviewRecordsResult>;
+  getPrReviewRecord?: (input: PrReviewRecordRequest) => Promise<PrReviewRecordResult>;
+  /** And what an agent writes, as the review page does: 不采纳 or 撤回 a finding, and post findings to the PR. */
+  updatePrReviewFinding?: (input: PrReviewFindingUpdate) => Promise<PrReviewFindingUpdateResult>;
+  recordPrComments?: (input: PrReviewCommentsRecord) => Promise<PrReviewCommentsResult>;
+  /** PR 描述三段: drafted where the description lacks them, and written back as the user confirmed it. */
+  prDescriptionDraft?: (input: PrDescriptionDraftQuery) => Promise<PrDescriptionDraftResult>;
+  updatePr?: (input: PrUpdateRequest) => Promise<PrUpdateResult>;
+  /** A review an agent starts: answered once it is running, its record the way back to the result. */
+  runPrReview?: (input: PrReviewRunToolRequest) => Promise<PrReviewRunToolResult>;
+  /** 作者回应: the comments on the user's own PR, and one answered with a standard reply. */
+  listPrComments?: (input: PrCommentsToolQuery) => Promise<PrCommentsToolResult>;
+  updatePrComment?: (input: PrCommentUpdateTool) => Promise<PrCommentUpdateToolResult>;
+  /** 自动预评审's settings for agents: read, and turned on or off when the user says so. */
+  getPrReviewSettings?: (input: PrReviewSettingsQuery) => Promise<PrReviewSettingsResult>;
+  updatePrReviewSettings?: (input: PrReviewSettingsUpdate) => Promise<PrReviewSettingsUpdateResult>;
+  /** 评审质量 for agents: read one link's, and one of Paraself's own rules turned off or on when the user says so. */
+  getReviewQuality?: (input: ReviewQualityQuery) => Promise<ReviewQualityResult>;
+  updateReviewRule?: (input: ReviewRuleUpdate) => Promise<ReviewRuleUpdateResult>;
+  /** 漏网复盘 for agents: one the user names recorded, the list read, its four lines written or settled when the user says so. */
+  recordReviewEscape?: (input: ReviewEscapeRecord) => Promise<ReviewEscapeRecordResult>;
+  listReviewEscapes?: (input: ReviewEscapesQuery) => Promise<ReviewEscapesResult>;
+  updateReviewEscape?: (input: ReviewEscapeUpdate) => Promise<ReviewEscapeUpdateResult>;
+  /** 评测运行 for agents: started when the user asks, runs listed, one read with its comparison. */
+  runReviewBenchmark?: (input: ReviewBenchmarkRunRequest) => Promise<ReviewBenchmarkRunStart>;
+  listReviewBenchmarkRuns?: (input: ReviewBenchmarkRunsQuery) => Promise<ReviewBenchmarkRunsResult>;
+  getReviewBenchmarkRun?: (input: ReviewBenchmarkRunQuery) => Promise<ReviewBenchmarkRunResult>;
+  /** 晋升提议 for agents, read-only. */
+  listRulePromotionCandidates?: (input: ReviewPromotionsQuery) => Promise<ReviewPromotionsResult>;
+  /** 本地审阅 for agents: a batch of comments handed over, and its tasks read, cancelled or retried. */
+  recordLocalReviewJob?: (input: LocalReviewJobRecord) => Promise<LocalReviewJobRecordResult>;
+  listLocalReviewJobs?: (input: LocalReviewJobsQuery) => Promise<LocalReviewJobsResult>;
+  getLocalReviewJob?: (input: LocalReviewJobRequest) => Promise<LocalReviewJobResult>;
+  updateLocalReviewJob?: (input: LocalReviewJobUpdate) => Promise<LocalReviewJobUpdateResult>;
   token: string;
   /** The vault in use, named only as 仓库目录 in what a refusal tells the bridge. */
   vaultPath?: string;
@@ -160,6 +399,12 @@ const smokeCompletionSchema = z.discriminatedUnion("status", [
     })
     .strict(),
 ]);
+
+/** The todo answer shape a bridge asked for (see TODO_SHAPE_HEADER); none: IMP-183's. */
+const shapeOf = (request: IncomingMessage): string | undefined => {
+  const header = request.headers[TODO_SHAPE_HEADER];
+  return Array.isArray(header) ? header[0] : header;
+};
 
 const sendJson = (
   response: ServerResponse,
@@ -262,13 +507,40 @@ export class LocalCaptureServer {
   readonly #submitConsultationFeedback: LocalCaptureServerOptions["submitConsultationFeedback"];
   readonly #recordJournalEntry: LocalCaptureServerOptions["recordJournalEntry"];
   readonly #searchContext: LocalCaptureServerOptions["searchContext"];
+  readonly #onRequest: LocalCaptureServerOptions["onRequest"];
   readonly #updateContextScope: LocalCaptureServerOptions["updateContextScope"];
+  readonly #updateDecisionAmendment: LocalCaptureServerOptions["updateDecisionAmendment"];
   readonly #prepareDecisionHandoff: LocalCaptureServerOptions["prepareDecisionHandoff"];
   readonly #openDecisionSource: LocalCaptureServerOptions["openDecisionSource"];
+  readonly #searchObsidianNotes: LocalCaptureServerOptions["searchObsidianNotes"];
+  readonly #readObsidianNote: LocalCaptureServerOptions["readObsidianNote"];
   readonly #saveDecisionContextFeedback: LocalCaptureServerOptions["saveDecisionContextFeedback"];
   readonly #getDecisionContextFeedback: LocalCaptureServerOptions["getDecisionContextFeedback"];
   readonly #updateDecisionOutcome: LocalCaptureServerOptions["updateDecisionOutcome"];
   readonly #updateContextRelation: LocalCaptureServerOptions["updateContextRelation"];
+  readonly #recordHistoricalDecision: LocalCaptureServerOptions["recordHistoricalDecision"];
+  readonly #listHistoricalDecisions: LocalCaptureServerOptions["listHistoricalDecisions"];
+  readonly #getHistoricalDecision: LocalCaptureServerOptions["getHistoricalDecision"];
+  readonly #updateHistoricalDecision: LocalCaptureServerOptions["updateHistoricalDecision"];
+  readonly #openHistoricalDecision: LocalCaptureServerOptions["openHistoricalDecision"];
+  readonly #listTodos: LocalCaptureServerOptions["listTodos"];
+  readonly #recordTodos: LocalCaptureServerOptions["recordTodos"];
+  readonly #updateTodoItem: LocalCaptureServerOptions["updateTodoItem"];
+  readonly #recordReviewBenchmarkCases: LocalCaptureServerOptions["recordReviewBenchmarkCases"];
+  readonly #listReviewBenchmarkCases: LocalCaptureServerOptions["listReviewBenchmarkCases"];
+  readonly #getReviewBenchmarkCase: LocalCaptureServerOptions["getReviewBenchmarkCase"];
+  readonly #updateReviewBenchmarkCase: LocalCaptureServerOptions["updateReviewBenchmarkCase"];
+  readonly #listPrsForAgent: LocalCaptureServerOptions["listPrsForAgent"];
+  readonly #listPrReviewRecords: LocalCaptureServerOptions["listPrReviewRecords"];
+  readonly #getPrReviewRecord: LocalCaptureServerOptions["getPrReviewRecord"];
+  readonly #updatePrReviewFinding: LocalCaptureServerOptions["updatePrReviewFinding"];
+  readonly #recordPrComments: LocalCaptureServerOptions["recordPrComments"];
+  readonly #prDescriptionDraft: LocalCaptureServerOptions["prDescriptionDraft"];
+  readonly #updatePr: LocalCaptureServerOptions["updatePr"];
+  readonly #runPrReview: LocalCaptureServerOptions["runPrReview"];
+  readonly #listPrComments: LocalCaptureServerOptions["listPrComments"];
+  readonly #updatePrComment: LocalCaptureServerOptions["updatePrComment"];
+  readonly #localReviewTools: { [K in "recordLocalReviewJob" | "listLocalReviewJobs" | "getLocalReviewJob" | "updateLocalReviewJob" | "getPrReviewSettings" | "updatePrReviewSettings" | "getReviewQuality" | "updateReviewRule" | "recordReviewEscape" | "listReviewEscapes" | "updateReviewEscape" | "runReviewBenchmark" | "listReviewBenchmarkRuns" | "getReviewBenchmarkRun" | "listRulePromotionCandidates"]: LocalCaptureServerOptions[K] };
   readonly #bodyLimit: number;
   readonly #idleTimeoutMs: number;
   readonly #smokeMode: boolean;
@@ -289,13 +561,44 @@ export class LocalCaptureServer {
     this.#submitConsultationFeedback = options.submitConsultationFeedback;
     this.#recordJournalEntry = options.recordJournalEntry;
     this.#searchContext = options.searchContext;
+    this.#onRequest = options.onRequest;
     this.#updateContextScope = options.updateContextScope;
+    this.#updateDecisionAmendment = options.updateDecisionAmendment;
     this.#prepareDecisionHandoff = options.prepareDecisionHandoff;
     this.#openDecisionSource = options.openDecisionSource;
+    this.#searchObsidianNotes = options.searchObsidianNotes;
+    this.#readObsidianNote = options.readObsidianNote;
     this.#saveDecisionContextFeedback = options.saveDecisionContextFeedback;
     this.#getDecisionContextFeedback = options.getDecisionContextFeedback;
     this.#updateDecisionOutcome = options.updateDecisionOutcome;
     this.#updateContextRelation = options.updateContextRelation;
+    this.#recordHistoricalDecision = options.recordHistoricalDecision;
+    this.#listHistoricalDecisions = options.listHistoricalDecisions;
+    this.#getHistoricalDecision = options.getHistoricalDecision;
+    this.#updateHistoricalDecision = options.updateHistoricalDecision;
+    this.#openHistoricalDecision = options.openHistoricalDecision;
+    this.#listTodos = options.listTodos;
+    this.#recordTodos = options.recordTodos;
+    this.#updateTodoItem = options.updateTodoItem;
+    this.#recordReviewBenchmarkCases = options.recordReviewBenchmarkCases;
+    this.#listReviewBenchmarkCases = options.listReviewBenchmarkCases;
+    this.#getReviewBenchmarkCase = options.getReviewBenchmarkCase;
+    this.#updateReviewBenchmarkCase = options.updateReviewBenchmarkCase;
+    this.#listPrsForAgent = options.listPrsForAgent;
+    this.#listPrReviewRecords = options.listPrReviewRecords;
+    this.#getPrReviewRecord = options.getPrReviewRecord;
+    this.#updatePrReviewFinding = options.updatePrReviewFinding;
+    this.#recordPrComments = options.recordPrComments;
+    this.#prDescriptionDraft = options.prDescriptionDraft;
+    this.#updatePr = options.updatePr;
+    this.#runPrReview = options.runPrReview;
+    this.#listPrComments = options.listPrComments;
+    this.#updatePrComment = options.updatePrComment;
+    this.#localReviewTools = { recordLocalReviewJob: options.recordLocalReviewJob, listLocalReviewJobs: options.listLocalReviewJobs, getLocalReviewJob: options.getLocalReviewJob, updateLocalReviewJob: options.updateLocalReviewJob,
+      getPrReviewSettings: options.getPrReviewSettings, updatePrReviewSettings: options.updatePrReviewSettings, getReviewQuality: options.getReviewQuality, updateReviewRule: options.updateReviewRule,
+      recordReviewEscape: options.recordReviewEscape, listReviewEscapes: options.listReviewEscapes, updateReviewEscape: options.updateReviewEscape,
+      runReviewBenchmark: options.runReviewBenchmark, listReviewBenchmarkRuns: options.listReviewBenchmarkRuns, getReviewBenchmarkRun: options.getReviewBenchmarkRun,
+      listRulePromotionCandidates: options.listRulePromotionCandidates };
     this.#bodyLimit = options.bodyLimit ?? DEFAULT_BODY_LIMIT;
     this.#idleTimeoutMs = options.idleTimeoutMs ?? 10_000;
     this.#smokeMode = options.smokeMode ?? false;
@@ -321,8 +624,8 @@ export class LocalCaptureServer {
         // Which route failed and how, never what was sent: enough to find it, nothing of the reader's.
         const route = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
         const reason = (error as NodeJS.ErrnoException | undefined)?.code ?? (error instanceof Error ? error.name : "error");
-        console.error(`[decision] ${request.method ?? "?"} ${route} failed: ${reason}`);
-        // Why, to the bridge that holds the token: told nothing, it told an agent Decision might not be running,
+        console.error(`[paraself] ${request.method ?? "?"} ${route} failed: ${reason}`);
+        // Why, to the bridge that holds the token: told nothing, it told an agent Paraself might not be running,
         // and the reader went to start an App that was running and refused (a vault it could not find). Without the
         // reader's home folder: a vault's path, the account's name in it, went on to the agent and its provider.
         sendJson(response, 500, {
@@ -343,10 +646,20 @@ export class LocalCaptureServer {
           oldest.destroy();
         }
       }
-      const deadline = setTimeout(() => {
+      // Checked after the loop's next read, not as the timer fires: held by a long synchronous stretch (the first
+      // getLlama builds Metal kernels for seconds), the timer ran before the read of a request that had arrived
+      // meanwhile, and a bridge's identity was cut unanswered: told Paraself was not running (IMP-134). One that has
+      // sent something gets the same time again to finish, then goes as one that has sent nothing.
+      const expire = (graced: boolean) => setImmediate(() => {
+        if (!untrusted.has(socket)) return;
+        if (!graced && socket.bytesRead > 0) {
+          untrusted.set(socket, setTimeout(() => expire(true), UNTRUSTED_DEADLINE_MS).unref());
+          return;
+        }
         letGo(socket);
         socket.destroy();
-      }, UNTRUSTED_DEADLINE_MS);
+      });
+      const deadline = setTimeout(() => expire(false), UNTRUSTED_DEADLINE_MS);
       deadline.unref();
       untrusted.set(socket, deadline);
       socket.once("close", () => letGo(socket));
@@ -403,7 +716,11 @@ export class LocalCaptureServer {
     response: ServerResponse,
   ): Promise<void> {
     const url = new URL(request.url ?? "/", `http://${HOST}`);
+    if (url.pathname !== "/health") this.#onRequest?.(url.pathname);
+    // Neither asks for the token, so the connection they came on is closed after them: kept alive, a client sent its
+    // next request, with the token, on a socket the 2 s deadline for those that have not shown it then cut (IMP-134).
     if (request.method === "GET" && url.pathname === "/health") {
+      response.setHeader("connection", "close");
       sendJson(response, 200, {
         ok: true,
         protocolVersion: PROTOCOL_VERSION,
@@ -413,6 +730,7 @@ export class LocalCaptureServer {
 
     // Asked by a bridge before it sends the token: proof that this server holds it, and nothing else.
     if (request.method === "GET" && url.pathname === "/v1/identity") {
+      response.setHeader("connection", "close");
       const nonce = request.headers["x-decision-challenge"];
       if (typeof nonce !== "string" || !/^[A-Za-z0-9_-]{16,128}$/u.test(nonce)) {
         sendJson(response, 400, { error: "invalid_challenge" });
@@ -437,7 +755,23 @@ export class LocalCaptureServer {
       if (input === undefined) return;
       const parsed = decisionContextQuerySchema.safeParse(input);
       if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
-      sendJson(response, 200, decisionContextResponseSchema.parse(await this.#searchContext(parsed.data)));
+      // Asked without the header by a bridge from before it, still running in an open session: it cannot have asked for
+      // what only the new shape sends, and is answered in the shape it reads.
+      // By level: a shape-2 bridge still gets signals; only a shape-3 one may name experiences (IMP-191).
+      const level = contextShapeLevel(request.headers[CONTEXT_SHAPE_HEADER]);
+      if (parsed.data.mode === "semantic" && (parsed.data.query === "" || parsed.data.recordId !== undefined)) { sendJson(response, 400, { error: "semantic_needs_query" }); return; }
+      if (contextShapeNeeded(parsed.data) > level) { sendJson(response, 400, { error: "context_shape_required" }); return; }
+      const answer = decisionContextResponseSchema.parse(await this.#searchContext(parsed.data));
+      sendJson(response, 200, contextAsReleased(answer, level));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/decision-context/amend" && this.#updateDecisionAmendment !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = decisionAmendmentRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, decisionAmendmentResultSchema.parse(await this.#updateDecisionAmendment(parsed.data)));
       return;
     }
 
@@ -501,6 +835,241 @@ export class LocalCaptureServer {
       const parsed = decisionOutcomeUpdateSchema.safeParse(input);
       if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
       sendJson(response, 200, decisionOutcomeUpdateResultSchema.parse(await this.#updateDecisionOutcome(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/obsidian-notes/search" && this.#searchObsidianNotes !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = obsidianNoteSearchRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, obsidianNoteSearchResponseSchema.parse(await this.#searchObsidianNotes(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/obsidian-notes/read" && this.#readObsidianNote !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = obsidianNoteReadRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, obsidianNoteReadResponseSchema.parse(await this.#readObsidianNote(parsed.data)));
+      return;
+    }
+
+    // 历史决定: its own five routes. No decision-context or consultation route reads them.
+    const historical = (
+      [
+        ["/v1/historical-decisions", recordHistoricalDecisionRequestSchema, recordHistoricalDecisionResultSchema, this.#recordHistoricalDecision],
+        ["/v1/historical-decisions/query", listHistoricalDecisionsRequestSchema, listHistoricalDecisionsResultSchema, this.#listHistoricalDecisions],
+        ["/v1/historical-decisions/get", getHistoricalDecisionRequestSchema, getHistoricalDecisionResultSchema, this.#getHistoricalDecision],
+        ["/v1/historical-decisions/update", updateHistoricalDecisionRequestSchema, updateHistoricalDecisionResultSchema, this.#updateHistoricalDecision],
+        ["/v1/historical-decisions/open", openHistoricalDecisionRequestSchema, openHistoricalDecisionResultSchema, this.#openHistoricalDecision],
+      ] as const
+    ).find(([path, , , handle]) => request.method === "POST" && url.pathname === path && handle !== undefined);
+    if (historical !== undefined) {
+      const [, requestSchema, resultSchema, handle] = historical;
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = requestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      // Each handler takes what its own schema read: paired above, told apart here only by the route.
+      sendJson(response, 200, resultSchema.parse(await (handle as (value: unknown) => Promise<unknown>)(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/todos/query" && this.#listTodos !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = todoListQuerySchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      const answer = todoListResponseSchema.parse(await this.#listTodos(parsed.data));
+      // Asked without the header by a bridge from IMP-183, still running in an open session.
+      sendJson(response, 200, todoAnswerFor(shapeOf(request)).list(answer));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/todos" && this.#recordTodos !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = todoRecordRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      const answer = todoRecordResultSchema.parse(await this.#recordTodos(parsed.data));
+      sendJson(response, 200, todoAnswerFor(shapeOf(request)).record(answer));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/todos/item" && this.#updateTodoItem !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = todoItemUpdateRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      const shape = shapeOf(request);
+      const oldHigh = shape !== "4" && shape !== "5" && (input as { priority?: unknown }).priority === "high";
+      const answer = todoItemUpdateResultSchema.parse(await this.#updateTodoItem(parsed.data, { oldHigh }));
+      sendJson(response, 200, todoAnswerFor(shapeOf(request)).item(answer));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/prs/query" && this.#listPrsForAgent !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prListToolQuerySchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, prListToolResultSchema.parse(await this.#listPrsForAgent(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/pr-reviews/query" && this.#listPrReviewRecords !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prReviewRecordsQuerySchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, prReviewRecordsResultSchema.parse(await this.#listPrReviewRecords(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/pr-reviews/record" && this.#getPrReviewRecord !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prReviewRecordRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, prReviewRecordResultSchema.parse(await this.#getPrReviewRecord(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/pr-reviews/finding" && this.#updatePrReviewFinding !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prReviewFindingUpdateSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, prReviewFindingUpdateResultSchema.parse(await this.#updatePrReviewFinding(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/prs/description/draft" && this.#prDescriptionDraft !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prDescriptionDraftQuerySchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, prDescriptionDraftResultSchema.parse(await this.#prDescriptionDraft(parsed.data)));
+      return;
+    }
+
+    const localReviewRoutes = {
+      "/v1/local-review/jobs/record": [this.#localReviewTools.recordLocalReviewJob, localReviewJobRecordSchema, localReviewJobRecordResultSchema],
+      "/v1/local-review/jobs/list": [this.#localReviewTools.listLocalReviewJobs, localReviewJobsQuerySchema, localReviewJobsResultSchema],
+      "/v1/local-review/jobs/get": [this.#localReviewTools.getLocalReviewJob, localReviewJobRequestSchema, localReviewJobResultSchema],
+      "/v1/local-review/jobs/update": [this.#localReviewTools.updateLocalReviewJob, localReviewJobUpdateSchema, localReviewJobUpdateResultSchema],
+      "/v1/pr-reviews/settings": [this.#localReviewTools.getPrReviewSettings, prReviewSettingsQuerySchema, prReviewSettingsResultSchema],
+      "/v1/pr-reviews/settings/update": [this.#localReviewTools.updatePrReviewSettings, prReviewSettingsUpdateSchema, prReviewSettingsUpdateResultSchema],
+      "/v1/review-quality": [this.#localReviewTools.getReviewQuality, reviewQualityQuerySchema, reviewQualityResultSchema],
+      "/v1/review-rules/update": [this.#localReviewTools.updateReviewRule, reviewRuleUpdateSchema, reviewRuleUpdateResultSchema],
+      "/v1/review-escapes/record": [this.#localReviewTools.recordReviewEscape, reviewEscapeRecordSchema, reviewEscapeRecordResultSchema],
+      "/v1/review-escapes": [this.#localReviewTools.listReviewEscapes, reviewEscapesQuerySchema, reviewEscapesResultSchema],
+      "/v1/review-escapes/update": [this.#localReviewTools.updateReviewEscape, reviewEscapeUpdateSchema, reviewEscapeUpdateResultSchema],
+      "/v1/review-benchmark/runs/start": [this.#localReviewTools.runReviewBenchmark, reviewBenchmarkRunRequestSchema, reviewBenchmarkRunStartSchema],
+      "/v1/review-benchmark/runs": [this.#localReviewTools.listReviewBenchmarkRuns, reviewBenchmarkRunsQuerySchema, reviewBenchmarkRunsResultSchema],
+      "/v1/review-benchmark/runs/get": [this.#localReviewTools.getReviewBenchmarkRun, reviewBenchmarkRunQuerySchema, reviewBenchmarkRunResultSchema],
+      "/v1/review-promotions": [this.#localReviewTools.listRulePromotionCandidates, reviewPromotionsQuerySchema, reviewPromotionsResultSchema],
+    } as const;
+    const localReviewRoute = request.method === "POST" ? localReviewRoutes[url.pathname as keyof typeof localReviewRoutes] : undefined;
+    if (localReviewRoute?.[0] !== undefined) {
+      const [handle, input, output] = localReviewRoute as unknown as [(value: unknown) => Promise<unknown>, { safeParse(value: unknown): { success: boolean; data?: unknown } }, { parse(value: unknown): unknown }];
+      const body = await this.#readJson(request, response);
+      if (body === undefined) return;
+      const parsed = input.safeParse(body);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      // Handing comments over checks the worker first, which may take a couple of minutes.
+      request.socket.setTimeout(LOCAL_REVIEW_SOCKET_MS);
+      sendJson(response, 200, output.parse(await handle(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/prs/comments/list" && this.#listPrComments !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prCommentsToolQuerySchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      // Ten pages of a busy PR's comments: the connection is kept open for them.
+      request.socket.setTimeout(PR_COMMENTS_SOCKET_MS);
+      sendJson(response, 200, prCommentsToolResultSchema.parse(await this.#listPrComments(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/prs/comments/respond" && this.#updatePrComment !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prCommentUpdateToolSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      request.socket.setTimeout(PR_COMMENTS_SOCKET_MS);
+      sendJson(response, 200, prCommentUpdateToolResultSchema.parse(await this.#updatePrComment(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/pr-reviews/run" && this.#runPrReview !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prReviewRunToolRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      // Reading a large PR fresh takes a while before the review can start: the connection is kept open for it.
+      request.socket.setTimeout(PR_COMMENTS_SOCKET_MS);
+      sendJson(response, 200, prReviewRunToolResultSchema.parse(await this.#runPrReview(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/prs/description/update" && this.#updatePr !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prUpdateRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, prUpdateResultSchema.parse(await this.#updatePr(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/pr-reviews/comments" && this.#recordPrComments !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = prReviewCommentsRecordSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      // Each comment is a few platform calls: the connection is kept open past the idle limit while they go out.
+      request.socket.setTimeout(PR_COMMENTS_SOCKET_MS);
+      sendJson(response, 200, prReviewCommentsResultSchema.parse(await this.#recordPrComments(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/review-benchmark/cases" && this.#recordReviewBenchmarkCases !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = reviewBenchmarkRecordRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, reviewBenchmarkRecordResultSchema.parse(await this.#recordReviewBenchmarkCases(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/review-benchmark/cases/query" && this.#listReviewBenchmarkCases !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = reviewBenchmarkListRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, reviewBenchmarkListResultSchema.parse(await this.#listReviewBenchmarkCases(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/review-benchmark/case" && this.#getReviewBenchmarkCase !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = reviewBenchmarkGetRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, reviewBenchmarkGetResultSchema.parse(await this.#getReviewBenchmarkCase(parsed.data)));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/v1/review-benchmark/case/update" && this.#updateReviewBenchmarkCase !== undefined) {
+      const input = await this.#readJson(request, response);
+      if (input === undefined) return;
+      const parsed = reviewBenchmarkUpdateRequestSchema.safeParse(input);
+      if (!parsed.success) { sendJson(response, 400, { error: "invalid_request" }); return; }
+      sendJson(response, 200, reviewBenchmarkUpdateResultSchema.parse(await this.#updateReviewBenchmarkCase(parsed.data)));
       return;
     }
 
@@ -693,7 +1262,9 @@ export class LocalCaptureServer {
       sendJson(response, 503, { error: "recording_unavailable" });
       return;
     }
-    sendJson(response, 200, proactiveRecordResultSchema.parse(result));
+    const answer = proactiveRecordResultSchema.parse(result);
+    // Asked without the header by a bridge from before it: told nothing its strict schema refuses.
+    sendJson(response, 200, contextShapeLevel(request.headers[CONTEXT_SHAPE_HEADER]) >= 2 ? answer : proactiveResultAsReleased(answer));
   }
 
   async #handleConsultationFeedback(

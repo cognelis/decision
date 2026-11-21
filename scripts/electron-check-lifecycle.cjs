@@ -1,5 +1,7 @@
 /** Bounded shutdown for layout probes, including Dock quit, signals and a lost test parent. */
 exports.createElectronCheckLifecycle = ({ app, getWindow, getServer, runtime = process }) => {
+  // Every check run put an Electron in the Dock, over the reader's work (IMP-133): taken at load, before any window.
+  app.dock?.hide();
   let closing = false;
   const parentPid = runtime.ppid;
   const dispose = () => {

@@ -1,0 +1,753 @@
+{
+ "version": 1,
+ "synthetic": true,
+ "description": "R17 开发集（全部合成）：两条有效记录未登记关系却对同一件事给出不同值时，检索是否陈述这一事实（IMP-175）。search 步骤确定性地检查提示出现与否，agent 步骤按最后一行「答案：」计分；kind：conflict 未登记的矛盾，negative 反例，trap 已登记的替代。",
+ "scenarios": [
+  {
+   "id": "c01",
+   "mechanism": "reworded",
+   "description": "措辞不同的矛盾：较新的一条换了说法",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17C01A.md",
+      "content": "---\nid: R17C01A\ncreated: \"2026-02-03\"\nstatus: \"accepted\"\nselected_option: \"业务异步消息使用 RabbitMQ。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 消息队列选型\n\n## 决策\n业务异步消息使用 RabbitMQ。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C01B.md",
+      "content": "---\nid: R17C01B\ncreated: \"2026-09-08\"\nstatus: \"accepted\"\nselected_option: \"业务事件改为异步投递到 Kafka。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 事件投递\n\n## 决策\n业务事件改为异步投递到 Kafka。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C01N1.md",
+      "content": "---\nid: R17C01N1\ncreated: \"2026-05-01\"\nstatus: \"accepted\"\nselected_option: \"消息队列的死信保留七天。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 消息队列死信\n\n## 决策\n消息队列的死信保留七天。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C01N2.md",
+      "content": "---\nid: R17C01N2\ncreated: \"2026-05-02\"\nstatus: \"accepted\"\nselected_option: \"消息队列消费者并发数为八。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 消息队列并发\n\n## 决策\n消息队列消费者并发数为八。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "c01-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "业务异步消息用什么消息队列？",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "记录日期 2026-02-03。",
+       "记录日期 2026-09-08。"
+      ],
+      "mustInclude": [
+       "R17C01A",
+       "R17C01B"
+      ]
+     }
+    },
+    {
+     "id": "c01",
+     "tool": "agent",
+     "prompt": "业务异步消息用什么消息队列？",
+     "kind": "conflict",
+     "mechanism": "reworded",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "Kafka"
+       ],
+       "mustExclude": [
+        "RabbitMQ"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "c02",
+   "mechanism": "older-detailed",
+   "description": "较旧的那条写得更详细，较新的一条很短",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17C02A.md",
+      "content": "---\nid: R17C02A\ncreated: \"2026-01-12\"\nstatus: \"accepted\"\nselected_option: \"前端状态管理使用 Redux Toolkit。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端状态管理选型\n\n## 决策\n前端状态管理使用 Redux Toolkit。\n\n## 理由\n团队熟悉 Redux 的单向数据流，Redux Toolkit 减少了样板代码，createSlice 和 RTK Query 覆盖了缓存与请求状态。\n\n## 考虑过的方案\n- MobX：响应式写法上手快，但调试链路不直观。\n- Context + useReducer：页面多了以后重渲染难以控制。\n\n## 约束\n需要时间旅行调试和中间件生态。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C02B.md",
+      "content": "---\nid: R17C02B\ncreated: \"2026-08-21\"\nstatus: \"accepted\"\nselected_option: \"前端状态管理用 Zustand。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端状态\n\n## 决策\n前端状态管理用 Zustand。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C02N1.md",
+      "content": "---\nid: R17C02N1\ncreated: \"2026-04-01\"\nstatus: \"accepted\"\nselected_option: \"前端状态按页面拆分模块。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端状态拆分\n\n## 决策\n前端状态按页面拆分模块。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C02N2.md",
+      "content": "---\nid: R17C02N2\ncreated: \"2026-04-02\"\nstatus: \"accepted\"\nselected_option: \"前端状态里不存放服务端分页数据。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端状态边界\n\n## 决策\n前端状态里不存放服务端分页数据。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "c02-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "前端状态管理用什么库？",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "记录日期 2026-01-12。",
+       "记录日期 2026-08-21。"
+      ],
+      "mustInclude": [
+       "R17C02A",
+       "R17C02B"
+      ]
+     }
+    },
+    {
+     "id": "c02",
+     "tool": "agent",
+     "prompt": "前端状态管理用什么库？",
+     "kind": "conflict",
+     "mechanism": "older-detailed",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "Zustand"
+       ],
+       "mustExclude": [
+        "Redux"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "c03",
+   "mechanism": "mixed-source",
+   "description": "summarize 与 App 决策混合：较新的是 App 决策",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17C03A.md",
+      "content": "---\nid: R17C03A\ncreated: \"2026-02-14\"\nstatus: \"accepted\"\nselected_option: \"CI 流水线运行在 Jenkins 上。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# CI 平台\n\n## 决策\nCI 流水线运行在 Jenkins 上。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C03N1.md",
+      "content": "---\nid: R17C03N1\ncreated: \"2026-05-01\"\nstatus: \"accepted\"\nselected_option: \"CI 流水线单次运行不超过二十分钟。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# CI 时长\n\n## 决策\nCI 流水线单次运行不超过二十分钟。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ],
+    "calls": [
+     {
+      "id": "b",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "CI 流水线平台",
+       "content": "CI 流水线运行在 GitHub Actions 上。",
+       "project": "lab",
+       "occurredAt": "2026-09-17T00:00:00Z"
+      }
+     },
+     {
+      "id": "n2",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "CI 流水线缓存",
+       "content": "CI 流水线缓存依赖目录。",
+       "project": "lab",
+       "occurredAt": "2026-05-02T00:00:00Z"
+      }
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "c03-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "CI 流水线跑在哪个平台上？",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "记录日期 2026-02-14。",
+       "决策日期 2026-09-17。",
+       "GitHub Actions"
+      ],
+      "mustInclude": [
+       "R17C03A"
+      ]
+     }
+    },
+    {
+     "id": "c03",
+     "tool": "agent",
+     "prompt": "CI 流水线跑在哪个平台上？",
+     "kind": "conflict",
+     "mechanism": "mixed-source",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "GitHub Actions"
+       ],
+       "mustExclude": [
+        "Jenkins"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "c04",
+   "mechanism": "three-values",
+   "description": "三个值先后出现，彼此都没有登记关系",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17C04A.md",
+      "content": "---\nid: R17C04A\ncreated: \"2026-01-09\"\nstatus: \"accepted\"\nselected_option: \"接口文档用 Swagger UI 发布。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 接口文档发布\n\n## 决策\n接口文档用 Swagger UI 发布。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C04B.md",
+      "content": "---\nid: R17C04B\ncreated: \"2026-05-06\"\nstatus: \"accepted\"\nselected_option: \"接口文档用 Redoc 发布。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 接口文档发布方式\n\n## 决策\n接口文档用 Redoc 发布。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C04C.md",
+      "content": "---\nid: R17C04C\ncreated: \"2026-09-19\"\nstatus: \"accepted\"\nselected_option: \"接口文档用 Stoplight 发布。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 接口文档发布工具\n\n## 决策\n接口文档用 Stoplight 发布。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17C04N1.md",
+      "content": "---\nid: R17C04N1\ncreated: \"2026-03-01\"\nstatus: \"accepted\"\nselected_option: \"接口文档随每次发版更新。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 接口文档更新\n\n## 决策\n接口文档随每次发版更新。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "c04-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "接口文档用什么发布？",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "记录日期 2026-01-09。",
+       "记录日期 2026-05-06。",
+       "记录日期 2026-09-19。"
+      ],
+      "mustInclude": [
+       "R17C04A",
+       "R17C04B",
+       "R17C04C"
+      ]
+     }
+    },
+    {
+     "id": "c04",
+     "tool": "agent",
+     "prompt": "接口文档用什么发布？",
+     "kind": "conflict",
+     "mechanism": "three-values",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "Stoplight"
+       ],
+       "mustExclude": [
+        "Swagger",
+        "Redoc"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "c05",
+   "mechanism": "reworded",
+   "description": "English, two App decisions, reworded",
+   "seed": {
+    "calls": [
+     {
+      "id": "a",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "Feature flag service",
+       "content": "Feature flags are managed in LaunchDarkly.",
+       "project": "lab",
+       "occurredAt": "2026-02-10T00:00:00Z"
+      }
+     },
+     {
+      "id": "b",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "Runtime toggles",
+       "content": "Feature toggles are served by a self-hosted Unleash.",
+       "project": "lab",
+       "occurredAt": "2026-09-12T00:00:00Z"
+      }
+     },
+     {
+      "id": "n1",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "Feature flag naming",
+       "content": "Feature flags are named after the team that owns them.",
+       "project": "lab",
+       "occurredAt": "2026-05-01T00:00:00Z"
+      }
+     },
+     {
+      "id": "n2",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "Feature flag cleanup",
+       "content": "Feature flags are removed within two releases of full rollout.",
+       "project": "lab",
+       "occurredAt": "2026-05-02T00:00:00Z"
+      }
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "c05-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "Which service manages our feature flags?",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "决策日期 2026-02-10。",
+       "LaunchDarkly",
+       "Unleash",
+       "决策日期 2026-09-12。"
+      ]
+     },
+     "expectByMode": {
+      "off": {
+       "contains": [
+        "决策日期 2026-02-10。",
+        "LaunchDarkly"
+       ],
+       "notContains": [
+        "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录"
+       ]
+      }
+     }
+    },
+    {
+     "id": "c05",
+     "tool": "agent",
+     "prompt": "Which service manages our feature flags?",
+     "kind": "conflict",
+     "mechanism": "reworded",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "Unleash"
+       ],
+       "mustExclude": [
+        "LaunchDarkly"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "n06",
+   "mechanism": "other-service",
+   "description": "不同服务：较新的一条属于另一个服务",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17N06A.md",
+      "content": "---\nid: R17N06A\ncreated: \"2026-02-05\"\nstatus: \"accepted\"\nselected_option: \"支付服务的数据库使用 PostgreSQL。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付服务数据库\n\n## 决策\n支付服务的数据库使用 PostgreSQL。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17N06B.md",
+      "content": "---\nid: R17N06B\ncreated: \"2026-09-09\"\nstatus: \"accepted\"\nselected_option: \"推荐服务的数据库使用 MongoDB。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 推荐服务数据库\n\n## 决策\n推荐服务的数据库使用 MongoDB。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17N06N1.md",
+      "content": "---\nid: R17N06N1\ncreated: \"2026-05-01\"\nstatus: \"accepted\"\nselected_option: \"支付服务的数据库每小时备份一次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 支付服务备份\n\n## 决策\n支付服务的数据库每小时备份一次。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "n06-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "支付服务用什么数据库？",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "记录日期 2026-02-05。",
+       "记录日期 2026-09-09。"
+      ],
+      "mustInclude": [
+       "R17N06A",
+       "R17N06B"
+      ]
+     }
+    },
+    {
+     "id": "n06",
+     "tool": "agent",
+     "prompt": "支付服务用什么数据库？",
+     "kind": "negative",
+     "mechanism": "other-service",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "PostgreSQL"
+       ],
+       "mustExclude": [
+        "MongoDB"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "n07",
+   "mechanism": "partial-scope",
+   "description": "只替代部分范围：较新的一条只管网关",
+   "seed": {
+    "calls": [
+     {
+      "id": "a",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "服务日志格式",
+       "content": "所有服务的日志格式统一为 JSON。",
+       "project": "lab",
+       "occurredAt": "2026-01-20T00:00:00Z"
+      }
+     },
+     {
+      "id": "b",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "网关访问日志格式",
+       "content": "仅网关的访问日志改为 CLF 格式，其他服务保持不变。",
+       "project": "lab",
+       "occurredAt": "2026-09-03T00:00:00Z"
+      }
+     },
+     {
+      "id": "n1",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "服务日志保留",
+       "content": "服务日志保留三十天。",
+       "project": "lab",
+       "occurredAt": "2026-05-01T00:00:00Z"
+      }
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "n07-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "订单服务的日志用什么格式？",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "决策日期 2026-01-20。",
+       "决策日期 2026-09-03。",
+       "JSON",
+       "CLF"
+      ]
+     }
+    },
+    {
+     "id": "n07",
+     "tool": "agent",
+     "prompt": "订单服务的日志用什么格式？",
+     "kind": "negative",
+     "mechanism": "partial-scope",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "JSON"
+       ],
+       "mustExclude": [
+        "CLF"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "n08",
+   "mechanism": "other-attribute",
+   "description": "同一主题的不同属性",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17N08A.md",
+      "content": "---\nid: R17N08A\ncreated: \"2026-02-11\"\nstatus: \"accepted\"\nselected_option: \"HTTP 客户端请求超时设为五秒。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# HTTP 客户端超时\n\n## 决策\nHTTP 客户端请求超时设为五秒。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17N08B.md",
+      "content": "---\nid: R17N08B\ncreated: \"2026-09-15\"\nstatus: \"accepted\"\nselected_option: \"HTTP 客户端失败后最多重试三次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# HTTP 客户端重试\n\n## 决策\nHTTP 客户端失败后最多重试三次。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "n08-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "HTTP 客户端请求超时是多少？",
+      "project": "lab"
+     },
+     "expect": {
+      "contains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录",
+       "记录日期 2026-02-11。",
+       "R17N08B",
+       "记录日期 2026-09-15。"
+      ],
+      "mustInclude": [
+       "R17N08A"
+      ]
+     },
+     "expectByMode": {
+      "off": {
+       "contains": [
+        "记录日期 2026-02-11。"
+       ],
+       "notContains": [
+        "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录"
+       ]
+      }
+     }
+    },
+    {
+     "id": "n08",
+     "tool": "agent",
+     "prompt": "HTTP 客户端请求超时是多少？",
+     "kind": "negative",
+     "mechanism": "other-attribute",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "五秒"
+       ],
+       "mustExclude": [
+        "三次"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "n09",
+   "mechanism": "unrelated-registered",
+   "description": "相近两条，用户已登记为没有关联",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17N09A.md",
+      "content": "---\nid: R17N09A\ncreated: \"2026-02-16\"\nstatus: \"accepted\"\nselected_option: \"国内站的静态资源存放在阿里云 OSS。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 静态资源存储\n\n## 决策\n国内站的静态资源存放在阿里云 OSS。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17N09B.md",
+      "content": "---\nid: R17N09B\ncreated: \"2026-09-10\"\nstatus: \"accepted\"\nselected_option: \"海外站的静态资源存放在 AWS S3。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 静态资源存储位置\n\n## 决策\n海外站的静态资源存放在 AWS S3。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ],
+    "calls": [
+     {
+      "id": "n09-a",
+      "tool": "search_decision_context",
+      "args": {
+       "recordId": "R17N09A",
+       "source": "summarize",
+       "includeOutOfScope": true
+      },
+      "expect": {
+       "mustInclude": [
+        "R17N09A"
+       ]
+      }
+     },
+     {
+      "id": "n09-b",
+      "tool": "search_decision_context",
+      "args": {
+       "recordId": "R17N09B",
+       "source": "summarize",
+       "includeOutOfScope": true
+      },
+      "expect": {
+       "mustInclude": [
+        "R17N09B"
+       ]
+      }
+     },
+     {
+      "id": "n09-relation",
+      "tool": "record_decision_relation",
+      "args": {
+       "first": {
+        "source": "summarize",
+        "recordId": "R17N09A",
+        "contentHash": {
+         "$ref": "n09-a.context.results.0.sourceRef.contentHash"
+        }
+       },
+       "second": {
+        "source": "summarize",
+        "recordId": "R17N09B",
+        "contentHash": {
+         "$ref": "n09-b.context.results.0.sourceRef.contentHash"
+        }
+       },
+       "disposition": "unrelated",
+       "successor": null,
+       "expectedRevision": 0,
+       "reason": "合成用户确认：两条分属国内站与海外站，互不影响。"
+      },
+      "expect": {
+       "equals": {
+        "relationUpdate.status": "saved"
+       }
+      }
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "n09-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "国内站的静态资源存放在哪里？",
+      "project": "lab"
+     },
+     "expect": {
+      "notContains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录"
+      ],
+      "contains": [
+       "记录日期 2026-02-16。",
+       "记录日期 2026-09-10。"
+      ],
+      "mustInclude": [
+       "R17N09A",
+       "R17N09B"
+      ]
+     }
+    },
+    {
+     "id": "n09",
+     "tool": "agent",
+     "prompt": "国内站的静态资源存放在哪里？",
+     "kind": "negative",
+     "mechanism": "unrelated-registered",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "OSS"
+       ],
+       "mustExclude": [
+        "S3"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "t10",
+   "mechanism": "registered-supersedes",
+   "description": "已登记的替代（frontmatter），对照：不出现新提示",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R17T10A.md",
+      "content": "---\nid: R17T10A\ncreated: \"2026-02-02\"\nstatus: \"superseded\"\nselected_option: \"定时任务调度使用 Quartz。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: \"R17T10B\"\n---\n# 定时任务调度\n\n## 决策\n定时任务调度使用 Quartz。\n\n合成数据，仅用于 R17 开发。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R17T10B.md",
+      "content": "---\nid: R17T10B\ncreated: \"2026-09-02\"\nstatus: \"accepted\"\nselected_option: \"定时任务调度改用 XXL-JOB。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [\"R17T10A\"]\nsuperseded_by: null\n---\n# 定时任务调度调整\n\n## 决策\n定时任务调度改用 XXL-JOB。\n\n合成数据，仅用于 R17 开发。\n"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "t10-search",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "定时任务调度用什么框架？",
+      "project": "lab"
+     },
+     "expect": {
+      "notContains": [
+       "本页有未标记被替代、相互之间也没有登记替代、冲突或无关关系的决策记录"
+      ],
+      "contains": [
+       "记录日期 2026-02-02。",
+       "记录日期 2026-09-02。"
+      ],
+      "mustInclude": [
+       "R17T10A",
+       "R17T10B"
+      ]
+     }
+    },
+    {
+     "id": "t10",
+     "tool": "agent",
+     "prompt": "定时任务调度用什么框架？",
+     "kind": "trap",
+     "mechanism": "registered-supersedes",
+     "expect": {
+      "answer": {
+       "mustInclude": [
+        "XXL-JOB"
+       ],
+       "mustExclude": [
+        "Quartz"
+       ]
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

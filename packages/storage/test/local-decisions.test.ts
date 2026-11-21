@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, it } from "vitest";
-import { DecisionStore, LocalDecisionStore, MarkdownRepository, SqliteIndex } from "../src/index.js";
+import { DecisionStore, LocalDecisionStore, MarkdownRepository, SqliteIndex, serializeDecision } from "../src/index.js";
 import { recordFixture } from "./fixtures.js";
 
 it("keeps local primary records across vault rebuilds, database reopening and disposal replay", async () => {
@@ -72,4 +72,21 @@ it("copies a deferred note before removing it, and keeps local data on a failed 
     expect(await readFile(published.note.path, "utf8")).toContain("用户在 Obsidian 中改过");
     expect(local.get(record.id)).not.toBeNull();
   } finally { local.close(); index.close(); await rm(root, { recursive: true, force: true }); }
+});
+
+it("counts the other records of a capture kept here, whatever line endings their note was written with", async () => {
+  const root = await mkdtemp(join(tmpdir(), "local-decision-batch-"));
+  const local = new LocalDecisionStore(join(root, "local-decisions.sqlite"));
+  try {
+    const first = recordFixture({ id: "first", batchId: "batch-x", questionIndex: 0 });
+    const crlf = recordFixture({ id: "crlf", batchId: "batch-x", questionIndex: 1 });
+    local.save(first);
+    // A vault note written on Windows, kept locally with its own line endings.
+    local.save(crlf, serializeDecision(crlf).replaceAll("\n", "\r\n"));
+    expect(local.countBatch("batch-x", "first")).toBe(1);
+    expect(local.countBatch("batch-x", "crlf")).toBe(1);
+    expect(local.countBatch("batch-x", "nobody")).toBe(2);
+    // A prefix of another batch's ID is not the same batch.
+    expect(local.countBatch("batch", "nobody")).toBe(0);
+  } finally { local.close(); await rm(root, { recursive: true, force: true }); }
 });

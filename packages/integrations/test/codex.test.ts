@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DECISION_HOOK_MARKER,
+  PARASELF_HOOK_MARKER,
   codexMcpCommands,
   mergeCodexHooks,
 } from "../src/index.js";
 import { existingCodexHooks } from "./fixtures.js";
 
 const bridgePath =
-  "/Applications/Decision.app/Contents/Resources/bridge/decision-bridge";
+  "/Applications/Paraself.app/Contents/Resources/bridge/paraself-bridge";
 
 describe("Codex integration", () => {
   it("preserves unrelated hooks and adds supported command hooks", () => {
@@ -18,7 +18,7 @@ describe("Codex integration", () => {
     expect(merged.hooks.PreToolUse).toEqual(
       existingCodexHooks.hooks.PreToolUse,
     );
-    expect(JSON.stringify(merged)).toContain(DECISION_HOOK_MARKER);
+    expect(JSON.stringify(merged)).toContain(PARASELF_HOOK_MARKER);
     expect(merged.hooks.PostToolUse!.at(-1)).toMatchObject({
       matcher: "^(request_user_input|AskUserQuestion)$",
       hooks: [
@@ -53,19 +53,19 @@ describe("Codex integration", () => {
     expect(JSON.stringify(merged)).not.toContain("statusMessage");
   });
 
-  it("upgrades Decision hooks idempotently", () => {
+  it("upgrades Paraself hooks idempotently", () => {
     const once = mergeCodexHooks(existingCodexHooks, bridgePath);
     const twice = mergeCodexHooks(once, bridgePath);
 
     expect(twice).toEqual(once);
     expect(
-      JSON.stringify(twice).match(/DECISION_HOOK=1/gu),
+      JSON.stringify(twice).match(/PARASELF_HOOK=1/gu),
     ).toHaveLength(3);
   });
 
   it("renders Windows hooks as one line PowerShell and cmd both read", () => {
     const windowsBridge =
-      "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd";
+      "C:\\Program Files\\Paraself\\resources\\bridge\\paraself-bridge.cmd";
     const merged = mergeCodexHooks(
       existingCodexHooks,
       windowsBridge,
@@ -75,7 +75,7 @@ describe("Codex integration", () => {
 
     // Codex runs it in PowerShell (where `&&` and `set "…"` are not its syntax), or in cmd when it has no shell.
     expect(command).toBe(
-      'cmd /d /v:off /c call "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" hook stop codex DECISION_HOOK=2',
+      'cmd /d /v:off /c call "C:\\Program Files\\Paraself\\resources\\bridge\\paraself-bridge.cmd" hook stop codex PARASELF_HOOK=2',
     );
   });
 
@@ -91,21 +91,21 @@ describe("Codex integration", () => {
     expect(serialized.match(new RegExp(bridgePath, "gu"))).toHaveLength(3);
   });
 
-  it("replaces the Codex MCP with the read-only bridge server", () => {
+  it("replaces the Codex MCP with the read-only bridge server, then takes out the one Decision registered", () => {
     expect(codexMcpCommands(bridgePath)).toEqual([
-      { command: "codex", args: ["mcp", "get", "decision"], tolerateFailure: true, expectsBridgeFor: "codex" },
+      { command: "codex", args: ["mcp", "get", "paraself"], tolerateFailure: true, expectsBridgeFor: "codex", absentMcpName: "paraself" },
       {
         command: "codex",
-        args: ["mcp", "remove", "decision"],
+        args: ["mcp", "remove", "paraself"],
         tolerateFailure: true,
-        absentMcpName: "decision",
+        absentMcpName: "paraself",
       },
       {
         command: "codex",
         args: [
           "mcp",
           "add",
-          "decision",
+          "paraself",
           "--",
           bridgePath,
           "mcp",
@@ -113,6 +113,8 @@ describe("Codex integration", () => {
         ],
         tolerateFailure: false,
       },
+      { command: "codex", args: ["mcp", "get", "decision"], tolerateFailure: true, expectsBridgeFor: "codex", absentMcpName: "decision", legacy: true },
+      { command: "codex", args: ["mcp", "remove", "decision"], tolerateFailure: true, absentMcpName: "decision", legacy: true },
     ]);
   });
 });

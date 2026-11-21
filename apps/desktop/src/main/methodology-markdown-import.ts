@@ -181,7 +181,7 @@ const structuredImport = (markdown: string): MethodologyRecord | null => {
   } catch (error) {
     if (/^type:\s*decision-methodology\s*$/mu.test(markdown)) {
       throw new Error(
-        `Decision 方法论文件结构不完整：${noteProblem(
+        `Paraself 方法论文件结构不完整：${noteProblem(
           error instanceof Error ? error.message : String(error),
         )}`,
       );
@@ -230,7 +230,7 @@ const genericDraft = (
       matchingSection(
         sections,
         /^(证据摘要|证据|来源|依据|验证记录)$/u,
-      ) ?? "从本地 Markdown 导入，尚未关联 Decision 中的复盘证据。",
+      ) ?? "从本地 Markdown 导入，尚未关联 Paraself 中的复盘证据。",
       3_000,
     ),
     sourceDecisionIds: [],

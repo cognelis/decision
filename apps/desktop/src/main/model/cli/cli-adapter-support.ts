@@ -1,5 +1,6 @@
+import { ModelProviderError } from "../http-model-transport.js";
 import type { ModelProxy } from "@cognelis/decision-protocol";
-import { providerProxyEnvironment, proxyEnvironmentNames } from "../provider-network.js";
+import { ModelNetworkPolicy } from "../provider-network.js";
 import {
   mkdtemp,
   rm,
@@ -74,6 +75,7 @@ export const minimalClientEnvironment = (
     "VOLTA_HOME",
     "SSL_CERT_FILE",
     "NODE_EXTRA_CA_CERTS",
+    "CODEX_CA_CERTIFICATE",
     // What a process needs on Windows to start, reach the network (Winsock wants SystemRoot), find its own
     // files and sign in; there for no one else.
     "SystemRoot",
@@ -96,8 +98,11 @@ export const minimalClientEnvironment = (
       environment[name] = value;
     }
   }
-  for (const name of proxyEnvironmentNames) delete environment[name];
-  Object.assign(environment, providerProxyEnvironment(source, proxy));
+  for (const name of Object.keys(environment)) if (/proxy/iu.test(name)) delete environment[name];
+  try { Object.assign(environment, new ModelNetworkPolicy(source).cliEnvironment(proxy)); }
+  catch { throw new ModelProviderError("invalid_configuration", "CLI model network policy requires a valid proxy and forbids DIRECT/bypass rules"); }
+  environment.PARASELF_PROVIDER_CHILD = "1";
+  // A Decision-era bridge still hooked into the client until it reconnects reads only the old name.
   environment.DECISION_PROVIDER_CHILD = "1";
   return environment;
 };

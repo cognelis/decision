@@ -58,7 +58,7 @@ export const queryCliServerModels = async (
     const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: "application/json", "Cache-Control": "no-cache, no-store", Pragma: "no-cache" };
     if (client === "claude-code") Object.assign(headers, { "anthropic-version": "2023-06-01", "anthropic-beta": "oauth-2025-04-20" });
     // Native CLI OAuth is scoped for Codex's catalog, not the public API model-list route.
-    if (client === "codex") Object.assign(headers, { originator: "decision_model_catalog", "User-Agent": `decision_model_catalog/${clientVersion}`, ...(accountId ? { "ChatGPT-Account-ID": accountId } : {}) });
+    if (client === "codex") Object.assign(headers, { originator: "paraself_model_catalog", "User-Agent": `paraself_model_catalog/${clientVersion}`, ...(accountId ? { "ChatGPT-Account-ID": accountId } : {}) });
     const endpoint = client === "codex" ? "https://chatgpt.com/backend-api/codex/models" : "https://api.anthropic.com/v1/models";
     const models = new Map<string, { id: string; label: string }>();
     let cursor: string | undefined;
@@ -69,7 +69,7 @@ export const queryCliServerModels = async (
       if (client === "claude-code") { url.searchParams.set("limit", "100"); if (cursor) url.searchParams.set("after_id", cursor); }
       const remaining = deadline - Date.now();
       if (remaining <= 0) return undefined;
-      const response = await transport.getJson({ url: url.toString(), headers, timeoutMs: remaining, maximumResponseBytes: 1024 * 1024, secrets: [token, ...(accountId ? [accountId] : [])] });
+      const response = await transport.getJson({ provider: client, model: "catalog", url: url.toString(), headers, timeoutMs: remaining, maximumResponseBytes: 1024 * 1024, secrets: [token, ...(accountId ? [accountId] : [])] });
       if (client === "codex") {
         const catalog = z.object({ models: z.array(z.unknown()).max(1000) }).parse(response.json);
         for (const item of catalog.models) {

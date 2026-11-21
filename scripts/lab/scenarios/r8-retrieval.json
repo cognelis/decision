@@ -1,0 +1,1265 @@
+{
+ "version": 1,
+ "synthetic": true,
+ "scenarios": [
+  {
+   "id": "r8-lifecycle",
+   "description": "合成数据：删除（笔记移出 Journal）、替代、复盘结果、项目范围、中英混合与同义改写下的找回；标签在首次实跑前固定。",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/HIST-DLQ-死信队列.md",
+      "content": "---\nid: HIST-DLQ\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"消费失败三次的消息转入死信队列，人工排查后再重放。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 死信队列\n\n## 决策\n消费失败三次的消息转入死信队列，人工排查后再重放。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-AUTH-登录会话存储.md",
+      "content": "---\nid: HIST-AUTH\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"登录会话存放在 Redis，TTL 30 分钟，每次请求续期。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 登录会话存储\n\n## 决策\n登录会话存放在 Redis，TTL 30 分钟，每次请求续期。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-FLAG-功能开关灰度.md",
+      "content": "---\nid: HIST-FLAG\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"新功能默认通过 feature flag 灰度发布，先开放给 5% 用户。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 功能开关灰度\n\n## 决策\n新功能默认通过 feature flag 灰度发布，先开放给 5% 用户。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-BILL-LIMIT-计费服务限流.md",
+      "content": "---\nid: HIST-BILL-LIMIT\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"计费服务的 API 限流采用固定窗口，每分钟 100 次。\"\nproject: \"billing\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 计费服务限流\n\n## 决策\n计费服务的 API 限流采用固定窗口，每分钟 100 次。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-IMG-OLD-图片上传旧方案.md",
+      "content": "---\nid: HIST-IMG-OLD\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"图片上传直接写入应用服务器本地磁盘。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: \"HIST-IMG-NEW\"\n---\n# 图片上传旧方案\n\n## 决策\n图片上传直接写入应用服务器本地磁盘。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-IMG-NEW-图片上传对象存储.md",
+      "content": "---\nid: HIST-IMG-NEW\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"图片上传改存对象存储，按日期分目录。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 图片上传对象存储\n\n## 决策\n图片上传改存对象存储，按日期分目录。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-NOISE-CDN-CDN刷新.md",
+      "content": "---\nid: HIST-NOISE-CDN\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"CDN 缓存刷新按目录批量提交，每天不超过十次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# CDN刷新\n\n## 决策\nCDN 缓存刷新按目录批量提交，每天不超过十次。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-NOISE-AVATAR-头像裁剪.md",
+      "content": "---\nid: HIST-NOISE-AVATAR\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"用户头像上传后裁剪为正方形并压缩到 200KB 以内。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 头像裁剪\n\n## 决策\n用户头像上传后裁剪为正方形并压缩到 200KB 以内。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/HIST-NOISE-RETRY-前端重试按钮.md",
+      "content": "---\nid: HIST-NOISE-RETRY\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"前端请求失败时弹出重试按钮，不自动重发。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 前端重试按钮\n\n## 决策\n前端请求失败时弹出重试按钮，不自动重发。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     }
+    ],
+    "calls": [
+     {
+      "id": "rate",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "接口限流",
+       "content": "对外 API 采用令牌桶限流，每个租户每秒 50 次请求。",
+       "project": "lab",
+       "occurredAt": "2026-09-03T00:00:00Z",
+       "rationale": "合成：防止单个租户占满资源。",
+       "expectedOutcome": "高峰期接口错误率低于 1%。"
+      }
+     },
+     {
+      "id": "logs",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "日志保留期限",
+       "content": "应用日志保留 14 天后归档到对象存储。",
+       "project": "lab",
+       "occurredAt": "2026-09-03T00:00:00Z"
+      }
+     },
+     {
+      "id": "rate2",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "接口限流新方案",
+       "content": "对外 API 改用滑动窗口限流，每个租户每秒 80 次请求。",
+       "project": "lab",
+       "occurredAt": "2026-09-10T00:00:00Z"
+      }
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "del-before",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "死信队列"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-DLQ"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "del-remove",
+     "remove": "Decision Journal/summarize/HIST-DLQ-死信队列.md"
+    },
+    {
+     "id": "del-keyword",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "死信队列"
+     },
+     "expect": {
+      "mustExclude": [
+       "HIST-DLQ"
+      ]
+     }
+    },
+    {
+     "id": "del-meaning",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "消费者处理失败的消息最后去哪里"
+     },
+     "expect": {
+      "mustExclude": [
+       "HIST-DLQ"
+      ]
+     }
+    },
+    {
+     "id": "logs-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "logs.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "logs.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "logs-remove",
+     "remove": {
+      "$ref": "logs-read.context.results.0.sourceRef.relativePath"
+     }
+    },
+    {
+     "id": "logs-del-keyword",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "日志保留"
+     },
+     "expect": {
+      "mustExclude": [
+       {
+        "$ref": "logs.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "logs-del-meaning",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "运行记录要存多久再清理"
+     },
+     "expect": {
+      "mustExclude": [
+       {
+        "$ref": "logs.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "logs-del-id",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "logs.record.recordId"
+      }
+     },
+     "expect": {
+      "mustExclude": [
+       {
+        "$ref": "logs.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "rate-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "rate.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "rate-outcome",
+     "tool": "record_decision_outcome",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "rate.record.recordId"
+      },
+      "expectedContentHash": {
+       "$ref": "rate-read.context.results.0.sourceRef.contentHash"
+      },
+      "outcome": "合成观察：大客户促销时突发流量被大量拒绝。",
+      "review": {
+       "verdict": "worse",
+       "lesson": "合成教训：令牌桶需要按租户配置突发容量。"
+      }
+     },
+     "expect": {
+      "equals": {
+       "outcomeUpdate.status": "saved"
+      }
+     }
+    },
+    {
+     "id": "review-keyword",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "突发容量"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate.record.recordId"
+       }
+      ],
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "rate.record.recordId"
+        },
+        "path": "outcomeState.review.verdict",
+        "equals": "worse"
+       }
+      ],
+      "writeReadback": true,
+      "k": 3
+     }
+    },
+    {
+     "id": "review-meaning",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "促销高峰时大客户请求被拒绝的经验"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate.record.recordId"
+       }
+      ],
+      "writeReadback": true,
+      "k": 3
+     }
+    },
+    {
+     "id": "rate-read2",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "rate.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "rate2-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "rate2.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate2.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "supersede",
+     "tool": "record_decision_relation",
+     "args": {
+      "first": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "rate.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "rate-read2.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "second": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "rate2.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "rate2-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "disposition": "supersedes",
+      "successor": "second",
+      "expectedRevision": 0,
+      "reason": "合成用户确认滑动窗口方案替代令牌桶方案。"
+     },
+     "expect": {
+      "equals": {
+       "relationUpdate.status": "saved"
+      }
+     }
+    },
+    {
+     "id": "sup-keyword",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "限流",
+      "project": "lab"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate2.record.recordId"
+       }
+      ],
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "rate.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "superseded"
+       }
+      ],
+      "mustExclude": [
+       "HIST-BILL-LIMIT"
+      ],
+      "k": 1
+     }
+    },
+    {
+     "id": "sup-meaning",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "how many requests per second each tenant may send"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate2.record.recordId"
+       }
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "sup-summary-meaning",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "用户上传的照片最后保存在哪里"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-IMG-NEW"
+      ],
+      "k": 1
+     }
+    },
+    {
+     "id": "project-case",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "限流",
+      "project": "Lab"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate2.record.recordId"
+       }
+      ],
+      "mustExclude": [
+       "HIST-BILL-LIMIT"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "project-meaning",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "rate limiting for public endpoints",
+      "project": "lab"
+     },
+     "expect": {
+      "mustExclude": [
+       "HIST-BILL-LIMIT"
+      ]
+     }
+    },
+    {
+     "id": "mixed-glued",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "Redis会话过期时间"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-AUTH"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "mixed-en-zh",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "session 存在 Redis 里吗"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-AUTH"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "mixed-flag",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "feature toggle 灰度"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-FLAG"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "mixed-en-only",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "gradual rollout of new features to a small share of users"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-FLAG"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "para-flag",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "上线新特性时先让一小部分人试用"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-FLAG"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "para-auth",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "用户登录以后多久需要重新登录"
+     },
+     "expect": {
+      "mustInclude": [
+       "HIST-AUTH"
+      ],
+      "k": 3
+     }
+    },
+    {
+     "id": "para-rate",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "怎么防止某个客户把接口打满"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "rate2.record.recordId"
+       }
+      ],
+      "k": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "r8-relations-english",
+   "description": "合成数据：替代后继被复盘或删除后的排序与标注；英文笔记与英文查询的常用词噪声；标签在首次实跑前固定。",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R8E-01-Session storage.md",
+      "content": "---\nid: R8E-01\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"Store login sessions in Redis with a 30 minute TTL, refreshed on every request.\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# Session storage\n\n## 决策\nStore login sessions in Redis with a 30 minute TTL, refreshed on every request.\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8E-02-Payment idempotency.md",
+      "content": "---\nid: R8E-02\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"Every payment request carries an idempotency key so a retried submission never charges twice.\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# Payment idempotency\n\n## 决策\nEvery payment request carries an idempotency key so a retried submission never charges twice.\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8E-03-Release cadence.md",
+      "content": "---\nid: R8E-03\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"Ship a release every two weeks, and the release branch is cut on Monday.\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# Release cadence\n\n## 决策\nShip a release every two weeks, and the release branch is cut on Monday.\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8E-04-Log format.md",
+      "content": "---\nid: R8E-04\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"All services write logs as JSON lines with a request id in each line.\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# Log format\n\n## 决策\nAll services write logs as JSON lines with a request id in each line.\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8E-05-缓存失效.md",
+      "content": "---\nid: R8E-05\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"商品详情缓存在价格变更时主动失效，不等待过期。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 缓存失效\n\n## 决策\n商品详情缓存在价格变更时主动失效，不等待过期。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8E-06-缓存预热.md",
+      "content": "---\nid: R8E-06\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"大促前一小时预热首页缓存。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 缓存预热\n\n## 决策\n大促前一小时预热首页缓存。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8E-07-缓存目录.md",
+      "content": "---\nid: R8E-07\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"构建缓存目录放在仓库外，CI 每周清理一次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 缓存目录\n\n## 决策\n构建缓存目录放在仓库外，CI 每周清理一次。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     }
+    ],
+    "calls": [
+     {
+      "id": "old",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "商品缓存过期",
+       "content": "商品详情缓存固定 10 分钟过期。",
+       "project": "lab",
+       "occurredAt": "2026-09-03T00:00:00Z"
+      }
+     },
+     {
+      "id": "new",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "商品缓存过期新方案",
+       "content": "商品详情缓存改为 2 分钟过期，并在价格变更时主动刷新。",
+       "project": "lab",
+       "occurredAt": "2026-09-10T00:00:00Z"
+      }
+     },
+     {
+      "id": "old2",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "队列消费并发",
+       "content": "订单队列消费者并发数固定为 4。",
+       "project": "lab",
+       "occurredAt": "2026-09-03T00:00:00Z"
+      }
+     },
+     {
+      "id": "new2",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "队列消费并发新方案",
+       "content": "订单队列消费者按积压量自动扩到 16 个并发。",
+       "project": "lab",
+       "occurredAt": "2026-09-10T00:00:00Z"
+      }
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "en-stopwords",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "what is the policy for retrying a request in the queue"
+     },
+     "expect": {
+      "mustExclude": [
+       "R8E-03"
+      ]
+     },
+     "labelNote": "2026-10-22 看过 main 首跑后更正：R8E-01/02/04 与查询共享实词 request，不算泄漏；只靠功能词命中的是 R8E-03。"
+    },
+    {
+     "id": "en-target",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "how do we avoid charging a customer twice"
+     },
+     "expect": {
+      "mustInclude": [
+       "R8E-02"
+      ],
+      "mustExclude": [
+       "R8E-01",
+       "R8E-03",
+       "R8E-04"
+      ],
+      "k": 1
+     },
+     "labelNote": "2026-10-22 看过 main 首跑后追加排除：R8E-01/03/04 与查询只共享功能词。"
+    },
+    {
+     "id": "en-session",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "where are user sessions kept and when do they expire"
+     },
+     "expect": {
+      "mustInclude": [
+       "R8E-01"
+      ],
+      "k": 1
+     }
+    },
+    {
+     "id": "old-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "old.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "old.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "new-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "new.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "new.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "old2-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "old2.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "old2.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "new2-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "new2.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "new2.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "sup1",
+     "tool": "record_decision_relation",
+     "args": {
+      "first": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "old.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "old-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "second": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "new.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "new-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "disposition": "supersedes",
+      "successor": "second",
+      "expectedRevision": 0,
+      "reason": "合成用户确认新过期时间替代旧方案。"
+     },
+     "expect": {
+      "equals": {
+       "relationUpdate.status": "saved"
+      }
+     }
+    },
+    {
+     "id": "sup2",
+     "tool": "record_decision_relation",
+     "args": {
+      "first": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "old2.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "old2-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "second": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "new2.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "new2-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "disposition": "supersedes",
+      "successor": "second",
+      "expectedRevision": 0,
+      "reason": "合成用户确认自动扩容替代固定并发。"
+     },
+     "expect": {
+      "equals": {
+       "relationUpdate.status": "saved"
+      }
+     }
+    },
+    {
+     "id": "sup-fresh",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "商品详情缓存过期"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "new.record.recordId"
+       }
+      ],
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "old.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "superseded"
+       }
+      ],
+      "k": 1
+     }
+    },
+    {
+     "id": "new-outcome",
+     "tool": "record_decision_outcome",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "new.record.recordId"
+      },
+      "expectedContentHash": {
+       "$ref": "new-read.context.results.0.sourceRef.contentHash"
+      },
+      "outcome": "合成观察：价格变更后页面在一秒内更新。",
+      "review": {
+       "verdict": "as_expected",
+       "lesson": "合成经验：主动刷新比缩短过期更有效。"
+      }
+     },
+     "expect": {
+      "equals": {
+       "outcomeUpdate.status": "saved"
+      }
+     }
+    },
+    {
+     "id": "sup-after-review",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "商品详情缓存过期"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "new.record.recordId"
+       }
+      ],
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "old.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "superseded"
+       },
+       {
+        "id": {
+         "$ref": "new.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "current"
+       }
+      ],
+      "writeReadback": true,
+      "k": 1
+     }
+    },
+    {
+     "id": "sup-after-review-noise",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "缓存"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "new.record.recordId"
+       }
+      ],
+      "writeReadback": true,
+      "k": 3
+     }
+    },
+    {
+     "id": "new2-read2",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "new2.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "new2.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "new2-remove",
+     "remove": {
+      "$ref": "new2-read2.context.results.0.sourceRef.relativePath"
+     }
+    },
+    {
+     "id": "sup-successor-deleted",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "订单队列消费者并发"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "old2.record.recordId"
+       }
+      ],
+      "mustExclude": [
+       {
+        "$ref": "new2.record.recordId"
+       }
+      ],
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "old2.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "current"
+       }
+      ],
+      "writeReadback": true,
+      "k": 1
+     },
+     "labelNote": "2026-10-22 按总控裁定更正（删除的一端按中性处理）：原标签 uncertain 是按旧行为写的；main 上仍是 uncertain。"
+    }
+   ]
+  },
+  {
+   "id": "r8-deleted-counterpart",
+   "description": "合成数据：错误写入被记成真决定的后继或冲突方，删除错误写入后，真决定恢复为当前并排在当前噪声之前；标签在首次实跑前固定。",
+   "seed": {
+    "files": [
+     {
+      "path": "Decision Journal/summarize/R8D-01-配置文件格式.md",
+      "content": "---\nid: R8D-01\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"服务配置统一用 YAML 文件。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 配置文件格式\n\n## 决策\n服务配置统一用 YAML 文件。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8D-02-配置热加载.md",
+      "content": "---\nid: R8D-02\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"配置变更后通过信号热加载，不重启进程。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 配置热加载\n\n## 决策\n配置变更后通过信号热加载，不重启进程。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     },
+     {
+      "path": "Decision Journal/summarize/R8D-03-配置中心.md",
+      "content": "---\nid: R8D-03\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"暂不引入配置中心，配置随代码发布。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 配置中心\n\n## 决策\n暂不引入配置中心，配置随代码发布。\n\n合成数据，仅用于 R8-RT 实跑。\n"
+     }
+    ],
+    "calls": [
+     {
+      "id": "a",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "服务配置的存放位置",
+       "content": "服务配置放在仓库 config 目录，按环境分文件。",
+       "project": "lab",
+       "occurredAt": "2026-09-03T00:00:00Z"
+      }
+     },
+     {
+      "id": "w",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "服务配置的存放位置（误识别）",
+       "content": "配置放到环境变量里。",
+       "project": "lab",
+       "occurredAt": "2026-09-10T00:00:00Z"
+      }
+     },
+     {
+      "id": "b",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "配置密钥管理",
+       "content": "配置里的密钥统一从密钥管理服务读取。",
+       "project": "lab",
+       "occurredAt": "2026-09-03T00:00:00Z"
+      }
+     },
+     {
+      "id": "w2",
+      "tool": "record_decision_journal_entry",
+      "args": {
+       "kind": "decision",
+       "title": "配置密钥（误识别）",
+       "content": "密钥直接写在配置文件里。",
+       "project": "lab",
+       "occurredAt": "2026-09-10T00:00:00Z"
+      }
+     }
+    ]
+   },
+   "steps": [
+    {
+     "id": "a-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "a.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "a.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "w-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "w.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "w.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "b-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "b.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "b.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "w2-read",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "w2.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "w2.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "sup-wrong",
+     "tool": "record_decision_relation",
+     "args": {
+      "first": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "a.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "a-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "second": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "w.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "w-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "disposition": "supersedes",
+      "successor": "second",
+      "expectedRevision": 0,
+      "reason": "合成：误把误识别记录确认为后继。"
+     },
+     "expect": {
+      "equals": {
+       "relationUpdate.status": "saved"
+      }
+     }
+    },
+    {
+     "id": "conflict-wrong",
+     "tool": "record_decision_relation",
+     "args": {
+      "first": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "b.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "b-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "second": {
+       "source": "decisions",
+       "recordId": {
+        "$ref": "w2.record.recordId"
+       },
+       "contentHash": {
+        "$ref": "w2-read.context.results.0.sourceRef.contentHash"
+       }
+      },
+      "disposition": "conflict",
+      "successor": null,
+      "expectedRevision": 0,
+      "reason": "合成：误识别记录与密钥决定冲突。"
+     },
+     "expect": {
+      "equals": {
+       "relationUpdate.status": "saved"
+      }
+     }
+    },
+    {
+     "id": "before-delete",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "服务配置存放位置"
+     },
+     "expect": {
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "a.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "superseded"
+       }
+      ]
+     }
+    },
+    {
+     "id": "w-read2",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "w.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "w.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "w2-read2",
+     "tool": "search_decision_context",
+     "args": {
+      "source": "decisions",
+      "recordId": {
+       "$ref": "w2.record.recordId"
+      }
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "w2.record.recordId"
+       }
+      ]
+     }
+    },
+    {
+     "id": "w-remove",
+     "remove": {
+      "$ref": "w-read2.context.results.0.sourceRef.relativePath"
+     }
+    },
+    {
+     "id": "w2-remove",
+     "remove": {
+      "$ref": "w2-read2.context.results.0.sourceRef.relativePath"
+     }
+    },
+    {
+     "id": "after-delete-sup",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "服务配置"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "a.record.recordId"
+       }
+      ],
+      "mustExclude": [
+       {
+        "$ref": "w.record.recordId"
+       }
+      ],
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "a.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "current"
+       }
+      ],
+      "writeReadback": true,
+      "k": 1
+     }
+    },
+    {
+     "id": "after-delete-conflict",
+     "tool": "search_decision_context",
+     "args": {
+      "query": "配置密钥"
+     },
+     "expect": {
+      "mustInclude": [
+       {
+        "$ref": "b.record.recordId"
+       }
+      ],
+      "mustExclude": [
+       {
+        "$ref": "w2.record.recordId"
+       }
+      ],
+      "mustFlag": [
+       {
+        "id": {
+         "$ref": "b.record.recordId"
+        },
+        "path": "lifecycleState",
+        "equals": "current"
+       }
+      ],
+      "writeReadback": true,
+      "k": 1
+     }
+    }
+   ]
+  }
+ ]
+}

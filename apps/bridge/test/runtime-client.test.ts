@@ -15,6 +15,9 @@ import {
   CONSULTATION_SHAPE,
   CONSULTATION_SHAPE_HEADER,
   DECISION_CONSULTATION_VERSION,
+  TODO_SHAPE,
+  TODO_SHAPE_HEADER,
+  TODO_VERSION,
   type DecisionConsultationRequest,
   type ProactiveRecordRequest,
   type SemanticDecisionPair,
@@ -37,7 +40,7 @@ const withIdentity = (fetcher: (input: string | URL | Request, init?: RequestIni
       : fetcher(input, init)) as typeof fetch;
 
 const makeRuntimeFile = async () => {
-  const root = await mkdtemp(join(tmpdir(), "decision-bridge-"));
+  const root = await mkdtemp(join(tmpdir(), "paraself-bridge-"));
   const path = join(root, "runtime.json");
   await writeFile(path, JSON.stringify(descriptor), "utf8");
   return path;
@@ -104,21 +107,21 @@ const proactiveRecordFixture = (): ProactiveRecordRequest => ({
 describe("RuntimeClient", () => {
   it("discovers the platform runtime file", () => {
     expect(defaultRuntimeFile("darwin", "/Users/demo")).toBe(
-      "/Users/demo/Library/Application Support/Decision/runtime.json",
+      "/Users/demo/Library/Application Support/Paraself/runtime.json",
     );
     expect(defaultRuntimeFile("linux", "/home/demo", "/tmp/config")).toBe(
-      "/tmp/config/decision/runtime.json",
+      "/tmp/config/paraself/runtime.json",
     );
     expect(
       defaultRuntimeFile("win32", "C:\\Users\\demo", undefined, "C:\\AppData"),
-    ).toBe("C:\\AppData\\Decision\\runtime.json");
+    ).toBe("C:\\AppData\\Paraself\\runtime.json");
 
   });
 
   it("reports a missing configured runtime as unavailable", async () => {
     const root = await mkdtemp(join(tmpdir(), "decision-runtime-missing-"));
     const client = new RuntimeClient({ runtimeFile: join(root, "runtime.json") });
-    expect(await client.doctor()).toMatchObject({ appStatus: "unavailable", message: expect.stringContaining("请启动 Decision") });
+    expect(await client.doctor()).toMatchObject({ appStatus: "unavailable", message: expect.stringContaining("请启动 Paraself") });
   });
 
   it("delivers an authenticated capture without waiting for health", async () => {
@@ -212,7 +215,7 @@ describe("RuntimeClient", () => {
   it("tells an App too old for its challenge from no App, and sends it nothing", async () => {
     const runtimeFile = await makeRuntimeFile();
     const seen: string[] = [];
-    // Decision from before the challenge: the route is unknown, and refused as any without the token.
+    // Paraself from before the challenge: the route is unknown, and refused as any without the token.
     const older = (async (input: string | URL | Request, init?: RequestInit) => {
       const path = new URL(String(input)).pathname;
       seen.push(`${path} ${new Headers(init?.headers).get("authorization") ?? "-"}`);
@@ -224,7 +227,7 @@ describe("RuntimeClient", () => {
     // Read as not running: the reader was told to start an App that was running, and only needed a restart.
     await expect(client.record(proactiveRecordFixture(), (failure) => reports.push(failure))).resolves.toBeNull();
     expect(reports).toEqual([{ reason: "outdated" }]);
-    await expect(client.doctor()).resolves.toMatchObject({ appStatus: "outdated", message: expect.stringContaining("重启或更新 Decision") });
+    await expect(client.doctor()).resolves.toMatchObject({ appStatus: "outdated", message: expect.stringContaining("重启或更新 Paraself") });
     expect(seen).toEqual(["/v1/identity -", "/health -", "/v1/identity -", "/health -"]);
   });
 
@@ -250,7 +253,7 @@ describe("RuntimeClient", () => {
     }) as typeof fetch;
     const client = new RuntimeClient({ runtimeFile, fetcher: late, healthTimeoutMs: 50, contextTimeoutMs: 1_000 });
 
-    // Asked within a hook's time, the agent was told Decision was not running.
+    // Asked within a hook's time, the agent was told Paraself was not running.
     await client.record(proactiveRecordFixture());
     expect(seen).toEqual(["/v1/journal-entries"]);
     // A hook keeps to its own time, the capture left in the spool for the App to take in.
@@ -495,6 +498,44 @@ describe("RuntimeClient", () => {
     );
   });
 
+  it("reads, saves and updates todo lists through the running app", async () => {
+    const runtimeFile = await makeRuntimeFile();
+    const list = {
+      id: "list-1", title: "遗留问题调研", project: "decision", revision: 1, updatedAt: "2026-11-09T09:00:00.000Z",
+      relativePath: "Decision Journal/todos/2026/11/遗留问题调研-0123456789ab.md", counts: { open: 1, inProgress: 0, done: 0, dropped: 0 },
+    };
+    const answers: Record<string, unknown> = {
+      "/v1/todos/query": { todoVersion: TODO_VERSION, lists: [], total: 0, nextOffset: null, unreadable: [] },
+      "/v1/todos": { todoVersion: TODO_VERSION, status: "created", list, added: [{ number: 1, title: "取消后残留临时目录" }], skipped: [] },
+      "/v1/todos/item": { todoVersion: TODO_VERSION, status: "unchanged", list: { ...list, addedLater: "a newer App's field" }, item: null },
+    };
+    const fetcher = vi.fn(async (input: string | URL | globalThis.Request, _init?: RequestInit) =>
+      Response.json(answers[new URL(String(input)).pathname]));
+    const client = new RuntimeClient({ runtimeFile, fetcher: withIdentity(fetcher) });
+    const record = { todoVersion: TODO_VERSION, requestId: "todo-1", sourceClient: "codex", title: "遗留问题调研", project: "decision", tags: [], items: [{ title: "取消后残留临时目录" }] };
+    const update = { todoVersion: TODO_VERSION, sourceClient: "codex", listId: "list-1", item: 1, status: "in_progress" as const };
+
+    await expect(client.listTodos({ project: "decision" })).resolves.toEqual(answers["/v1/todos/query"]);
+    // An answer from an App before long-term lists reads as one that is not; one from a newer App with a field this
+    // bridge does not know is read without it, not refused (IMP-184).
+    await expect(client.recordTodos(record)).resolves.toEqual({ ...(answers["/v1/todos"] as object), list: { ...list, longTerm: false } });
+    await expect(client.updateTodoItem(update)).resolves.toEqual({ ...(answers["/v1/todos/item"] as object), list: { ...list, longTerm: false } });
+    expect(fetcher.mock.calls.map(([url, init]) => [url, JSON.parse(String(init?.body))])).toEqual([
+      // The query as the App reads it, its defaults filled in.
+      ["http://127.0.0.1:43123/v1/todos/query", { project: "decision", includeClosed: false, limit: 20, offset: 0 }],
+      ["http://127.0.0.1:43123/v1/todos", record],
+      ["http://127.0.0.1:43123/v1/todos/item", update],
+    ]);
+    // Each asks for the answer in full: without the header, the App answers as the IMP-183 bridge reads.
+    expect(fetcher.mock.calls.map(([, init]) => new Headers(init?.headers).get(TODO_SHAPE_HEADER))).toEqual([TODO_SHAPE, TODO_SHAPE, TODO_SHAPE]);
+
+    // Not the App's answer: nothing it could read came back, and whether it was saved is not known.
+    const reports: unknown[] = [];
+    fetcher.mockImplementation(async () => Response.json({ status: "saved" }));
+    await expect(client.recordTodos(record, (failure) => reports.push(failure))).resolves.toBeNull();
+    expect(reports).toEqual([{ reason: "no_answer" }]);
+  });
+
   it.each(["missing-runtime", "failed-fetch", "non-2xx"] as const)(
     "never launches the app for consultation: %s",
     async (scenario) => {
@@ -610,7 +651,7 @@ describe("RuntimeClient", () => {
 
     await expect(client.doctor()).resolves.toMatchObject({
       appStatus: "invalid_runtime",
-      message: expect.stringContaining("请重启 Decision"),
+      message: expect.stringContaining("请重启 Paraself"),
     });
     await expect(readFile(runtimeFile, "utf8")).resolves.toBe(invalid);
   });

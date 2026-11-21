@@ -2,10 +2,11 @@ import { mkdtemp, mkdir, readFile, rename, rm, symlink, writeFile } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DecisionContextRepository, MarkdownRepository, ObsidianVaultRepository } from "@cognelis/decision-storage";
+import { DecisionAmendmentRepository, DecisionContextRepository, MarkdownRepository, ObsidianVaultRepository } from "@cognelis/decision-storage";
 import { decisionHandoffRequestSchema, decisionSourceReferenceSchema } from "@cognelis/decision-protocol";
 import { recordFixture } from "../../../packages/storage/test/fixtures.js";
 import { DecisionHandoffService } from "../src/main/decision-handoff-service.js";
+import { amendedRepository, annotateResults } from "../src/main/decision-context-amendments.js";
 
 const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))); });
@@ -28,6 +29,30 @@ const setup = async () => {
 };
 
 describe("decision sources and handoff", () => {
+  it("tells a decision as it stands: the rewrite in, the first words beside it, a stale one said not to apply", async () => {
+    const { root, repository, reference } = await setup();
+    const amendments = new DecisionAmendmentRepository(root);
+    const ref = await reference();
+    expect(await amendments.save({ amendVersion: 1, source: "summarize", recordId: "A", sourceClient: "codex", action: "revise", basis: "user_said", expectedContentHash: ref.expectedContentHash, expectedRevision: 0, fields: { summary: "选择业务编号，并保留旧编号映射" }, reason: "用户补充" } as never,
+      { contentHash: ref.expectedContentHash, effective: { summary: "选择业务编号", appliesWhen: null, caution: null } })).toMatchObject({ status: "saved" });
+    const service = new DecisionHandoffService(amendedRepository(repository, amendments), new ObsidianVaultRepository(root), vi.fn(async () => undefined), () => new Date("2026-09-11T00:00:00Z"),
+      (results) => annotateResults(results, { scan: () => amendments.scan(), relativePath: (source, id) => amendments.relativePath(source, id) }));
+    const request = decisionHandoffRequestSchema.parse({ objective: "继续", project: "demo", references: [ref], taskScope: { layer: "frontend" } });
+    const result = await service.prepare(request);
+    expect(result.markdown).toContain("已记录内容：选择业务编号，并保留旧编号映射");
+    expect(result.markdown).toContain("改写（以下是改写后的值，不是原文）：summary=选择业务编号，并保留旧编号映射");
+    expect(result.markdown).toContain("最初版本：summary=选择业务编号");
+    expect(result.markdown).toContain("并叠加了用户或 agent 对它的修改");
+    // The note is changed in Obsidian: the rewrite no longer holds, and the handoff says so instead of passing it off.
+    const path = join(root, "Decision Journal/summarize/A + #中文.md");
+    await writeFile(path, `${await readFile(path, "utf8")}\n后来在 Obsidian 里加的一句。\n`);
+    const changed = await reference();
+    const later = await service.prepare(decisionHandoffRequestSchema.parse({ objective: "继续", project: "demo", references: [changed], taskScope: { layer: "frontend" } }));
+    expect(later.markdown).toContain("改写（已失效，原笔记已变化，未应用）");
+    expect(later.markdown).toContain("已记录内容：选择业务编号\n");
+    expect(later.markdown).toContain("修改已失效（原笔记已变化）");
+  });
+
   it("builds a read-only handoff from one scan, separating task claims from sourced evidence", async () => {
     const { path, scan, service, open, request } = await setup();
     const before = await readFile(path, "utf8"); scan.mockClear();
@@ -36,8 +61,8 @@ describe("decision sources and handoff", () => {
     expect(result.markdown).toContain("避免排序后引用错位");
     expect(result.markdown).toContain('"layer": "frontend"');
     expect(result.markdown).toContain('"project": "demo"');
-    // In the words search_decision_context uses, not historical_decision / current / scope_match / inline and an instant in UTC.
-    expect(result.markdown).toContain("类型：历史决策；原文状态：accepted；当前有效状态：未标记被替代");
+    // In the words search_decision_context uses, not summarized_decision / current / scope_match / inline and an instant in UTC.
+    expect(result.markdown).toContain("类型：历史沉淀；原文状态：accepted；当前有效状态：未标记被替代");
     expect(result.markdown).toContain("范围核对：结构化范围匹配，仍需核对当前需求");
     expect(result.markdown).toContain("范围元数据：写在原笔记中；版本：0");
     expect(result.markdown).toMatch(/生成时间：2026年9月1[01]日 \d{2}:\d{2}；所选来源覆盖：完整。/u);
@@ -79,7 +104,8 @@ describe("decision sources and handoff", () => {
     expect(result).toMatchObject({ status: "needs_review", coverage: "partial" });
     expect(result.evidence[0]?.record?.unresolvedSuccessorIds).toContain("B");
     expect(result.markdown).toContain("````text");
-    expect(result.markdown).toContain("部分后继记录不可读取");
+    // B is in no note of a source read whole: gone, not unread; the note still marks itself replaced, so it is in doubt.
+    expect(result.markdown).toContain("这条记录自己标为已替代，但后继已不存在，请核对是否仍然有效。");
     expect(result.reviewItems).toContain("summarize/A：可能已有后续决策，未能确认，请核对后继与关系。");
   });
 

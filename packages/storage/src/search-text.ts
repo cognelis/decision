@@ -1,3 +1,5 @@
+import { CONTEXT_SUMMARY_LINES } from "@cognelis/decision-protocol";
+
 /**
  * Text as the app's own searches hold it, in one width and one case: typed with the IME in full-width mode
  * (ＳＱＬｉｔｅ), or written so in a note (ＡＰＩ), a word was not found under the other width, and É not under é
@@ -26,3 +28,13 @@ export const searchTokens = (query: string): string[] => {
   const typed = foldedText(query.replace(/\p{Cc}/gu, "")).trim();
   return typed === "" ? [] : [typed];
 };
+
+const SUMMARY_LINES: ReadonlySet<string> = new Set(Object.values(CONTEXT_SUMMARY_LINES));
+
+/**
+ * A decision's context as its search row and its vector are made from: without the lines the App writes around an
+ * adopted local summary (CONTEXT_SUMMARY_LINES), which the decision-context search leaves out as template lines too.
+ * Kept, every decision with one was found by 上下文, 采用 and 本机模型总结. What is shown is the context as written.
+ */
+export const searchedContext = (context: string): string =>
+  context.split("\n").filter((line) => !SUMMARY_LINES.has(line.trim())).join("\n");

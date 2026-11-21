@@ -106,6 +106,24 @@ describe("preview API fidelity", () => {
     );
   });
 
+  it("summarizes a record's context only with Qwen on, as the app does, and stops one cancelled", async () => {
+    window.history.replaceState({}, "", "?preview=models");
+    const api = createPreviewApi();
+    const input = { requestId: crypto.randomUUID(), context: "PR：示例：调整请求超时（sample/app#123）\n位置：src/request.ts:12", title: "超时由谁决定？", choice: "超时由调用方传入。" };
+
+    // The form's states are drawn from these answers in every screenshot and layout check of it.
+    await expect(api.summarizeRecordContext(input)).resolves.toMatchObject({
+      status: "summarized", clipped: false, summary: expect.stringMatching(/^在做什么：\nPR：示例：调整请求超时[\s\S]*\n定了什么：\n超时由调用方传入。$/u),
+    });
+    const requestId = crypto.randomUUID();
+    const running = api.summarizeRecordContext({ ...input, requestId });
+    await api.cancelRecordContextSummary(requestId);
+    await expect(running).rejects.toThrow("总结已取消。");
+    const qwen = (await api.listModelProviderProfiles()).find((profile) => profile.kind === "qwen")!;
+    await api.saveModelProviderProfile({ profile: { ...qwen, enabled: false } });
+    await expect(api.summarizeRecordContext(input)).resolves.toMatchObject({ status: "unavailable", reason: expect.stringContaining("Qwen 本机模型") });
+  });
+
   it("caps a filtered read too, not only the unfiltered one", async () => {
     const api = createPreviewApi();
 

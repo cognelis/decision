@@ -1,4 +1,4 @@
-import { prReviewProgressSchema } from "@cognelis/decision-protocol";
+import { prReviewHistoryChangedSchema, prReviewProgressSchema } from "@cognelis/decision-protocol";
 import { contextBridge, ipcRenderer } from "electron";
 
 import type { AssistantProgress } from "@cognelis/decision-protocol";
@@ -31,6 +31,54 @@ const invoke = (
   });
 
 const api: DecisionApi = {
+  listHistoricalDecisions: input => invoke(IPC_CHANNELS.listHistoricalDecisions, input),
+  getHistoricalDecision: id => invoke(IPC_CHANNELS.getHistoricalDecision, id),
+  recordHistoricalDecision: input => invoke(IPC_CHANNELS.recordHistoricalDecision, input),
+  updateHistoricalDecision: input => invoke(IPC_CHANNELS.updateHistoricalDecision, input),
+  rebuildHistoricalDecisionIndex: () => invoke(IPC_CHANNELS.rebuildHistoricalDecisionIndex),
+  openHistoricalDecision: target => invoke(IPC_CHANNELS.openHistoricalDecision, target),
+  listTodoLists: input => invoke(IPC_CHANNELS.listTodoLists, input),
+  recordTodoList: input => invoke(IPC_CHANNELS.recordTodoList, input),
+  changeTodoItem: input => invoke(IPC_CHANNELS.changeTodoItem, input),
+  updateTodoList: input => invoke(IPC_CHANNELS.updateTodoList, input),
+  moveTodoItem: input => invoke(IPC_CHANNELS.moveTodoItem, input),
+  changeTodoItems: input => invoke(IPC_CHANNELS.changeTodoItems, input),
+  deleteTodoItems: input => invoke(IPC_CHANNELS.deleteTodoItems, input),
+  moveTodoItemsToList: input => invoke(IPC_CHANNELS.moveTodoItemsToList, input),
+  deleteTodoList: input => invoke(IPC_CHANNELS.deleteTodoList, input),
+  getOrganization: input => invoke(IPC_CHANNELS.getOrganization, input),
+  runOrganization: input => invoke(IPC_CHANNELS.runOrganization, input),
+  controlOrganizationRun: input => invoke(IPC_CHANNELS.controlOrganizationRun, input),
+  decideSuggestion: input => invoke(IPC_CHANNELS.decideSuggestion, input),
+  adoptSuggestions: input => invoke(IPC_CHANNELS.adoptSuggestions, input),
+  saveSuggestionDraft: input => invoke(IPC_CHANNELS.saveSuggestionDraft, input),
+  undoSuggestion: input => invoke(IPC_CHANNELS.undoSuggestion, input),
+  regenerateSuggestion: input => invoke(IPC_CHANNELS.regenerateSuggestion, input),
+  setOrganizationSettings: input => invoke(IPC_CHANNELS.setOrganizationSettings, input),
+  previewOrganizationForget: input => invoke(IPC_CHANNELS.previewOrganizationForget, input),
+  forgetOrganizationSource: input => invoke(IPC_CHANNELS.forgetOrganizationSource, input),
+  getTodoAnnotations: input => invoke(IPC_CHANNELS.getTodoAnnotations, input),
+  getLocalReviewState: () => invoke(IPC_CHANNELS.getLocalReviewState),
+  chooseLocalReviewRepository: input => invoke(IPC_CHANNELS.chooseLocalReviewRepository, input),
+  startLocalReviewSession: input => invoke(IPC_CHANNELS.startLocalReviewSession, input),
+  clearLocalReviewDependencies: input => invoke(IPC_CHANNELS.clearLocalReviewDependencies, input),
+  saveLocalReviewSettings: input => invoke(IPC_CHANNELS.saveLocalReviewSettings, input),
+  loadLocalReviewFiles: input => invoke(IPC_CHANNELS.loadLocalReviewFiles, input),
+  readLocalReviewFile: input => invoke(IPC_CHANNELS.readLocalReviewFile, input),
+  saveLocalReviewAnnotation: input => invoke(IPC_CHANNELS.saveLocalReviewAnnotation, input),
+  removeLocalReviewAnnotation: input => invoke(IPC_CHANNELS.removeLocalReviewAnnotation, input),
+  submitLocalReview: input => invoke(IPC_CHANNELS.submitLocalReview, input),
+  submitLocalReviewFromPr: input => invoke(IPC_CHANNELS.submitLocalReviewFromPr, input),
+  actOnLocalReview: input => invoke(IPC_CHANNELS.actOnLocalReview, input),
+  sendLocalReviewMessage: input => invoke(IPC_CHANNELS.sendLocalReviewMessage, input),
+  executeLocalReviewPlan: input => invoke(IPC_CHANNELS.executeLocalReviewPlan, input),
+  markLocalReviewRead: input => invoke(IPC_CHANNELS.markLocalReviewRead, input),
+  actOnLocalReviewConversation: input => invoke(IPC_CHANNELS.actOnLocalReviewConversation, input),
+  onLocalReviewNavigate: listener => {
+    const handler = (_event: Electron.IpcRendererEvent, id: unknown) => { if (typeof id === "string" && /^[a-f0-9-]{36}$/u.test(id)) listener(id); };
+    ipcRenderer.on(IPC_CHANNELS.localReviewNavigate, handler);
+    return () => { ipcRenderer.removeListener(IPC_CHANNELS.localReviewNavigate, handler); };
+  },
   saveDecisionContextFeedback: (input) => invoke(IPC_CHANNELS.saveDecisionContextFeedback, input),
   getDecisionContextFeedback: (input) => invoke(IPC_CHANNELS.getDecisionContextFeedback, input),
 
@@ -64,6 +112,8 @@ const api: DecisionApi = {
     invoke(IPC_CHANNELS.confirmCandidate, candidateId),
   ignoreCandidate: (candidateId) =>
     invoke(IPC_CHANNELS.ignoreCandidate, candidateId),
+  skipCandidate: (candidateId) =>
+    invoke(IPC_CHANNELS.skipCandidate, candidateId),
   retryCandidate: (candidateId) =>
     invoke(IPC_CHANNELS.retryCandidate, candidateId),
   openSurface: (surface) =>
@@ -76,8 +126,12 @@ const api: DecisionApi = {
     invoke(IPC_CHANNELS.listDecisionProjects),
   createProactiveRecord: (input) =>
     invoke(IPC_CHANNELS.createProactiveRecord, input),
+  summarizeRecordContext: (input) => invoke(IPC_CHANNELS.summarizeRecordContext, input),
+  cancelRecordContextSummary: (requestId) => invoke(IPC_CHANNELS.cancelRecordContextSummary, requestId),
   listJournalEntries: (query) =>
     invoke(IPC_CHANNELS.listJournalEntries, query),
+  listDecisionAmendments: () => invoke(IPC_CHANNELS.listDecisionAmendments),
+  updateDecisionAmendment: (request) => invoke(IPC_CHANNELS.updateDecisionAmendment, request),
   reviseJournalEntry: (id, input) =>
     invoke(IPC_CHANNELS.reviseJournalEntry, { id, ...input }),
   getObsidianSearchStatus: () =>
@@ -154,6 +208,10 @@ const api: DecisionApi = {
     invoke(IPC_CHANNELS.saveManualFormDraft, input),
   deleteManualFormDraft: (key) =>
     invoke(IPC_CHANNELS.deleteManualFormDraft, key),
+  listPrompts: () => invoke(IPC_CHANNELS.listPrompts),
+  createPrompt: (input) => invoke(IPC_CHANNELS.createPrompt, input),
+  updatePrompt: (input) => invoke(IPC_CHANNELS.updatePrompt, input),
+  deletePrompt: (id) => invoke(IPC_CHANNELS.deletePrompt, id),
   generateMethodology: (sourceDecisionIds) =>
     invoke(IPC_CHANNELS.generateMethodology, sourceDecisionIds),
   createMethodologyMergeDraft: (sourcePrincipleIds, input) =>
@@ -292,13 +350,20 @@ const api: DecisionApi = {
     }),
   chooseVault: () => invoke(IPC_CHANNELS.chooseVault),
   revealVault: () => invoke(IPC_CHANNELS.revealVault),
-  installIntegrations: (mode) =>
-    invoke(IPC_CHANNELS.installIntegrations, mode),
-  removeIntegrations: () => invoke(IPC_CHANNELS.removeIntegrations),
+  installIntegrations: (mode, clients) =>
+    invoke(IPC_CHANNELS.installIntegrations, clients === undefined ? mode : { mode, clients }),
+  removeIntegrations: (clients) => invoke(IPC_CHANNELS.removeIntegrations, clients),
+  listCustomClients: () => invoke(IPC_CHANNELS.listCustomClients),
+  saveCustomClient: (input) => invoke(IPC_CHANNELS.saveCustomClient, input),
+  deleteCustomClient: (id) => invoke(IPC_CHANNELS.deleteCustomClient, id),
   rebuildIndex: () => invoke(IPC_CHANNELS.rebuildIndex),
+  previewDecisionDeletion: (input) => invoke(IPC_CHANNELS.previewDecisionDeletion, input),
+  deleteDecision: (input) => invoke(IPC_CHANNELS.deleteDecision, input),
+  getMisrecognitionSummary: () => invoke(IPC_CHANNELS.getMisrecognitionSummary),
   listLocalDecisions: (query, offset) => invoke(IPC_CHANNELS.listLocalDecisions, { query, offset }),
   resolveLocalDecision: (id, action) => invoke(IPC_CHANNELS.resolveLocalDecision, { id, action }),
   setTheme: (theme) => invoke(IPC_CHANNELS.setTheme, theme),
+  setAccent: (accent) => invoke(IPC_CHANNELS.setAccent, accent),
   listModelTraces: () => invoke(IPC_CHANNELS.listModelTraces),
   deleteModelTrace: (traceId) =>
     invoke(IPC_CHANNELS.deleteModelTrace, traceId),
@@ -307,6 +372,7 @@ const api: DecisionApi = {
   forgetAssistantTurns: (turnIds) =>
     invoke(IPC_CHANNELS.forgetAssistantTurns, turnIds),
   clearModelTraces: () => invoke(IPC_CHANNELS.clearModelTraces),
+  setModelProxyUrl: (url) => invoke(IPC_CHANNELS.setModelProxyUrl, url),
   setModelTraceContentEnabled: (enabled) =>
     invoke(IPC_CHANNELS.setModelTraceContentEnabled, enabled),
   setLocalCredentialsEnabled: (enabled) =>
@@ -330,12 +396,29 @@ const api: DecisionApi = {
   reevaluatePrReviewFinding: (input) => invoke(IPC_CHANNELS.reevaluatePrReviewFinding, input),
   openReviewRulesDirectory: () => invoke(IPC_CHANNELS.openReviewRulesDirectory),
   listPrDiscussion: (input) => invoke(IPC_CHANNELS.listPrDiscussion, input),
+  recognizePrDiscussion: (input) => invoke(IPC_CHANNELS.recognizePrDiscussion, input),
+  dismissPrCommentCandidate: (url) => invoke(IPC_CHANNELS.dismissPrCommentCandidate, url),
+  listPrCommentCandidates: () => invoke(IPC_CHANNELS.listPrCommentCandidates),
   openPrLink: (url) => invoke(IPC_CHANNELS.openPrLink, url),
   openPr: (input) => invoke(IPC_CHANNELS.openPr, input),
   loadPrReviewDiff: (input) => invoke(IPC_CHANNELS.loadPrReviewDiff, input),
   loadPrReview: (input) => invoke(IPC_CHANNELS.loadPrReview, input),
   peekPrReview: (input) => invoke(IPC_CHANNELS.peekPrReview, input),
   prefetchPrReviews: (input) => invoke(IPC_CHANNELS.prefetchPrReviews, input),
+  listPrReviewHistory: () => invoke(IPC_CHANNELS.listPrReviewHistory),
+  savePrReviewHistory: (input) => invoke(IPC_CHANNELS.savePrReviewHistory, input),
+  listPrReviewStatuses: (input) => invoke(IPC_CHANNELS.listPrReviewStatuses, input),
+  getPrDescription: (input) => invoke(IPC_CHANNELS.getPrDescription, input),
+  updatePrDescription: (input) => invoke(IPC_CHANNELS.updatePrDescription, input),
+  listPrReceivedComments: (input) => invoke(IPC_CHANNELS.listPrReceivedComments, input),
+  respondToPrComment: (input) => invoke(IPC_CHANNELS.respondToPrComment, input),
+  readPrReviewOutcomes: (input) => invoke(IPC_CHANNELS.readPrReviewOutcomes, input),
+  getReviewQuality: (input) => invoke(IPC_CHANNELS.getReviewQuality, input),
+  updateReviewRule: (input) => invoke(IPC_CHANNELS.updateReviewRule, input),
+  updateReviewEscape: (input) => invoke(IPC_CHANNELS.updateReviewEscape, input),
+  reviewBenchmarkPage: (request) => invoke(IPC_CHANNELS.reviewBenchmarkPage, request),
+  actOnReviewPromotion: (action) => invoke(IPC_CHANNELS.actOnReviewPromotion, action),
+  getPrReviewSettings: () => invoke(IPC_CHANNELS.getPrReviewSettings),
   runPrReview: (input) => invoke(IPC_CHANNELS.runPrReview, input),
   followUpPrReview: (input) => invoke(IPC_CHANNELS.followUpPrReview, input),
   cancelPrReview: (id) => invoke(IPC_CHANNELS.cancelPrReview, id),
@@ -347,8 +430,17 @@ const api: DecisionApi = {
     ipcRenderer.on(IPC_CHANNELS.prReviewProgress, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.prReviewProgress, handler);
   },
+  onPrReviewHistoryChanged: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, input: unknown) => {
+      const parsed = prReviewHistoryChangedSchema.safeParse(input);
+      if (parsed.success) listener(parsed.data);
+    };
+    ipcRenderer.on(IPC_CHANNELS.prReviewHistoryChanged, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.prReviewHistoryChanged, handler);
+  },
   runAssistantTurn: (input) =>
     invoke(IPC_CHANNELS.runAssistantTurn, input),
+  sendOnboarding: (input) => invoke(IPC_CHANNELS.sendOnboarding, input),
   listAssistantModels: () =>
     invoke(IPC_CHANNELS.listAssistantModels),
   listManagedQwenModels: () => invoke(IPC_CHANNELS.listManagedQwenModels),

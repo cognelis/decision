@@ -1,3 +1,8 @@
+import { createLocalReviewPreview } from "../src/renderer/preview-local-review.js";
+import { createTodoPreview } from "../src/renderer/preview-todos.js";
+import { createHistoricalDecisionPreview } from "../src/renderer/preview-historical-decisions.js";
+import { createOrganizationPreview } from "../src/renderer/preview-organization.js";
+import { BUILT_IN_CLIENTS, clientSummary } from "@cognelis/decision-integrations";
 import { createEvidencePreviewApi } from "../src/renderer/evidence-preview-api.js";
 // @vitest-environment jsdom
 
@@ -49,7 +54,14 @@ const obsidianSearchStatus = {
 };
 
 const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
+  ...createLocalReviewPreview(),
+  ...createTodoPreview(),
+  ...createHistoricalDecisionPreview(),
+  ...createOrganizationPreview(null),
   ...createEvidencePreviewApi(),
+  previewDecisionDeletion: vi.fn(async () => { throw new Error("test preview unavailable"); }),
+  deleteDecision: vi.fn(async () => ({ deleted: true as const, warnings: [] })),
+  getMisrecognitionSummary: vi.fn(async () => ({ days: 30, total: 0, byMode: { transcript: 0, structured_tool: 0 }, byBand: { high: 0, medium: 0, unknown: 0 }, bySignal: {}, byDetector: {} })),
   listLocalDecisions: vi.fn(async () => ({ records: [], total: 0 })),
   resolveLocalDecision: vi.fn(async () => undefined),
   getSnapshot: vi.fn(async () => snapshot),
@@ -60,13 +72,18 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   closeCandidateReview: vi.fn(),
   confirmCandidate: vi.fn(),
   ignoreCandidate: vi.fn(),
+  skipCandidate: vi.fn(),
   retryCandidate: vi.fn(),
   openSurface: vi.fn(),
   closePrimarySurface: vi.fn(),
   listDecisions: vi.fn(async () => []),
   listDecisionProjects: vi.fn(async () => []),
   createProactiveRecord: vi.fn(),
+  summarizeRecordContext: vi.fn(),
+  cancelRecordContextSummary: vi.fn(async () => undefined),
   listJournalEntries: vi.fn(async () => []),
+  listDecisionAmendments: vi.fn(async () => ({ records: [], unavailable: false })),
+  updateDecisionAmendment: vi.fn(),
   reviseJournalEntry: vi.fn(),
   getObsidianSearchStatus: vi.fn(async () => obsidianSearchStatus),
   searchObsidian: vi.fn(async (input) => ({
@@ -107,6 +124,10 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
     listManualFormDrafts: vi.fn(async () => []),
     saveManualFormDraft: vi.fn(),
     deleteManualFormDraft: vi.fn(),
+    listPrompts: vi.fn(async () => []),
+    createPrompt: vi.fn(),
+    updatePrompt: vi.fn(),
+    deletePrompt: vi.fn(),
     generateMethodology: vi.fn(),
   createMethodologyMergeDraft: vi.fn(),
   createMethodologyRevisionDraft: vi.fn(),
@@ -184,13 +205,13 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
     strongMatches: 0,
     possibleMatches: 0,
     durationMs: 0,
-    byClient: { claudeCode: 0, codex: 0 },
+    byClient: { "claude-code": 0, codex: 0 },
     feedback: {
       total: 0,
       helpful: 0,
       notHelpful: 0,
       misleading: 0,
-      bySource: { claudeCode: 0, codex: 0, preview: 0 },
+      bySource: { "claude-code": 0, codex: 0, preview: 0 },
       byResult: {
         strong: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
         possible: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
@@ -250,13 +271,18 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   revealVault: vi.fn(async () => false),
   installIntegrations: vi.fn(),
   removeIntegrations: vi.fn(),
+  listCustomClients: vi.fn(async () => []),
+  saveCustomClient: vi.fn(async () => []),
+  deleteCustomClient: vi.fn(),
   rebuildIndex: vi.fn(),
   setTheme: vi.fn(),
+  setAccent: vi.fn(),
   listModelTraces: vi.fn(async () => []),
   deleteModelTrace: vi.fn(async () => false),
   deleteModelTraceRequest: vi.fn(async () => 0),
   forgetAssistantTurns: vi.fn(async () => undefined),
   clearModelTraces: vi.fn(async () => 0),
+  setModelProxyUrl: vi.fn(async () => undefined),
   setModelTraceContentEnabled: vi.fn(),
   setLocalCredentialsEnabled: vi.fn(async () => undefined),
   setReviewRemindersEnabled: vi.fn(async () => undefined),
@@ -274,6 +300,7 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   })),
   checkAssistantSource: vi.fn(async () => ({ status: "matched" as const, content: "当前内容", truncated: false })),
   searchAssistantSources: vi.fn(async () => ({ sources: [], issues: [] })),
+  sendOnboarding: vi.fn(async () => { throw new Error("no onboarding in this fixture"); }),
   runAssistantTurn: vi.fn(async () => ({
     version: 1 as const,
     status: "unavailable" as const,
@@ -287,6 +314,20 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   loadPrReview: vi.fn(),
   peekPrReview: vi.fn(),
   prefetchPrReviews: vi.fn(),
+  listPrReviewHistory: vi.fn(async () => ({ entries: [], unreadable: 0 })),
+  savePrReviewHistory: vi.fn(async () => ({ dropped: 0, logDropped: [], refused: [] })),
+  listPrReviewStatuses: vi.fn(async () => ({ statuses: [] })),
+  getPrDescription: vi.fn(),
+  updatePrDescription: vi.fn(),
+  listPrReceivedComments: vi.fn(),
+  respondToPrComment: vi.fn(),
+  readPrReviewOutcomes: vi.fn(async () => ({ changed: false })),
+  getReviewQuality: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "ok" as const, connections: [], quality: null })),
+  actOnReviewPromotion: vi.fn(async () => ({ ok: true, message: "这条提议不再列出。", jobId: null })),
+  reviewBenchmarkPage: vi.fn(async () => ({ ok: true, message: null, overview: null, run: null })),
+  updateReviewEscape: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "updated" as const, reason: null, escape: null })),
+  updateReviewRule: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "updated" as const, reason: null })),
+  getPrReviewSettings: vi.fn(async () => ({ prReviewToolsVersion: 1 as const, status: "ok" as const, connections: [], models: [], settings: [] })),
   loadPrReviewDiff: vi.fn(),
   getPrActionContext: vi.fn(),
   performPrAction: vi.fn(),
@@ -294,7 +335,10 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   publishPrGeneralComment: vi.fn(),
   reevaluatePrReviewFinding: vi.fn(),
   openReviewRulesDirectory: vi.fn(),
-  listPrDiscussion: vi.fn(async () => ({ comments: [], more: false })),
+  listPrDiscussion: vi.fn(async () => ({ comments: [], more: false, recognition: null })),
+  recognizePrDiscussion: vi.fn(async () => ({ comments: [], more: false, recognition: null })),
+  dismissPrCommentCandidate: vi.fn(async () => undefined),
+  listPrCommentCandidates: vi.fn(async () => ({ prs: [], links: [] })),
   openPrLink: vi.fn(),
   openPr: vi.fn(),
   loadPrReviewFile: vi.fn(),
@@ -302,6 +346,7 @@ const apiFor = (snapshot: AppSnapshot): DecisionApi => ({
   followUpPrReview: vi.fn(),
   cancelPrReview: vi.fn(async () => undefined),
   onPrReviewProgress: () => () => undefined,
+  onPrReviewHistoryChanged: () => () => undefined,
   listAssistantModels: vi.fn(async () => []),
   listManagedQwenModels: vi.fn(async () => []),
   installManagedQwenModel: vi.fn(async () => undefined),
@@ -345,10 +390,12 @@ describe("renderer accessibility", () => {
         count: 1,
       },
       theme: "auto",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
       integrationStatus: {
-        claudeCode: "installed",
+        "claude-code": "installed",
         codex: "installed",
       },
       pendingRationales: [],
@@ -404,10 +451,12 @@ describe("renderer accessibility", () => {
         count: 0,
       },
       theme: "auto",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
       integrationStatus: {
-        claudeCode: "installed",
+        "claude-code": "installed",
         codex: "installed",
       },
       pendingRationales: [],
@@ -428,7 +477,9 @@ describe("renderer accessibility", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
-        name: "选择本地服务协议",
+        level: 1,
+        name: "补充理由",
+        description: "选择本地服务协议",
       }),
     ).toBeVisible();
     expect(
@@ -464,10 +515,12 @@ describe("renderer accessibility", () => {
         count: 0,
       },
       theme: "dark",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
       integrationStatus: {
-        claudeCode: "installed",
+        "claude-code": "installed",
         codex: "installed",
       },
       pendingRationales: [],
@@ -496,9 +549,11 @@ describe("renderer accessibility", () => {
       candidateReviewProgress: null,
       decisionCandidates: { current: null, count: 0 },
       theme: "dark",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
-      integrationStatus: { claudeCode: "installed", codex: "installed" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
+      integrationStatus: { "claude-code": "installed", codex: "installed" },
       pendingRationales: [],
       modelTraceContentEnabled: true,
       semanticRecognition,
@@ -531,9 +586,11 @@ describe("renderer accessibility", () => {
       candidateReviewProgress: null,
       decisionCandidates: { current: null, count: 0 },
       theme: "dark",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
-      integrationStatus: { claudeCode: "installed", codex: "installed" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
+      integrationStatus: { "claude-code": "installed", codex: "installed" },
       pendingRationales: [],
       modelTraceContentEnabled: true,
       semanticRecognition,
@@ -585,9 +642,11 @@ describe("renderer accessibility", () => {
       candidateReviewProgress: null,
       decisionCandidates: { current: null, count: 0 },
       theme: "dark",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
-      integrationStatus: { claudeCode: "installed", codex: "installed" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
+      integrationStatus: { "claude-code": "installed", codex: "installed" },
       pendingRationales: [],
       modelTraceContentEnabled: true,
       semanticRecognition,
@@ -624,10 +683,12 @@ describe("renderer accessibility", () => {
         count: 0,
       },
       theme: "dark",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
       integrationStatus: {
-        claudeCode: "installed",
+        "claude-code": "installed",
         codex: "installed",
       },
       pendingRationales: [],
@@ -652,6 +713,54 @@ describe("renderer accessibility", () => {
     }
   });
 
+  it("names the todo page, its lists, an opened item and every control", async () => {
+    const snapshot: AppSnapshot = {
+      current: null,
+      waitingCount: 0,
+      primarySurface: "todos",
+      dashboard,
+      candidateReviewOpen: false,
+      candidateReviewProgress: null,
+      decisionCandidates: { current: null, count: 0 },
+      theme: "dark",
+      accent: "blue",
+      vaultPath: "/vault",
+      health: { index: "healthy", recovery: "healthy" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
+      integrationStatus: { "claude-code": "installed", codex: "installed" },
+      pendingRationales: [],
+      modelTraceContentEnabled: true,
+      semanticRecognition,
+    };
+
+    render(<App api={apiFor(snapshot)} />);
+
+    const page = await screen.findByRole("region", { name: "待办" });
+    expect(within(page).getByRole("heading", { level: 1, name: "待办" })).toBeVisible();
+    expect(within(page).getByRole("searchbox", { name: "搜索待办清单" })).toBeVisible();
+    expect(within(page).getByRole("group", { name: "清单范围" })).toBeVisible();
+    expect(await within(page).findByRole("button", { name: "Paraself 遗留问题调研" })).toHaveAccessibleDescription(/3\/6/u);
+    // A long-term list says so with its row; the setting is a checkbox item in the 更多 menu.
+    expect(within(page).getByRole("button", { name: "学习" })).toHaveAccessibleDescription(/^长期清单 /u);
+    fireEvent.click(await within(page).findByRole("button", { name: "Paraself 遗留问题调研" }));
+    fireEvent.click(await within(page).findByRole("button", { name: "更多" }));
+    expect(within(page).getByRole("menuitemcheckbox", { name: "长期清单" })).toBeVisible();
+    fireEvent.keyDown(within(page).getByRole("menu"), { key: "Escape" });
+    const toggle = await within(page).findByRole("button", { name: /第 2 项：Windows 上 bridge 路径含空格时接入失败/u });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    // The drawer names the item, and each control in it says what it is.
+    const drawer = within(page).getByRole("complementary", { name: "第 2 项详情" });
+    expect(within(drawer).getByRole("combobox", { name: "优先级" })).toBeVisible();
+    expect(within(drawer).getByLabelText("截止日期")).toBeVisible();
+    expect(within(drawer).getByRole("textbox", { name: "写一句进展" })).toBeVisible();
+    expect(within(page).getByRole("checkbox", { name: "选择第 2 项" })).toHaveAccessibleDescription(/Windows 上 bridge 路径含空格时接入失败/u);
+    expect(within(page).getByRole("textbox", { name: "添加事项" })).toBeVisible();
+    for (const button of within(page).getAllByRole("button")) {
+      expect(button).toHaveAccessibleName();
+    }
+  });
+
   it("names every control in the Markdown import preview", async () => {
     const snapshot: AppSnapshot = {
       current: null,
@@ -662,9 +771,11 @@ describe("renderer accessibility", () => {
       candidateReviewProgress: null,
       decisionCandidates: { current: null, count: 0 },
       theme: "dark",
+      accent: "blue",
       vaultPath: "/vault",
       health: { index: "healthy", recovery: "healthy" },
-      integrationStatus: { claudeCode: "installed", codex: "installed" },
+      clients: BUILT_IN_CLIENTS.map(clientSummary),
+      integrationStatus: { "claude-code": "installed", codex: "installed" },
       pendingRationales: [],
       modelTraceContentEnabled: true,
       semanticRecognition,

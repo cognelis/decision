@@ -1,0 +1,386 @@
+[
+  {
+    "id": "R7RV-001",
+    "group": "release-meeting",
+    "kind": "decision",
+    "text": "发布会安排在下周，议程还没定。",
+    "expected": "no_schedule",
+    "attack": "发布会是活动，不是软件发布决策。"
+  },
+  {
+    "id": "R7RV-002",
+    "group": "release-doc",
+    "kind": "decision",
+    "text": "请补一份发布说明，描述已经完成的功能。",
+    "expected": "no_schedule",
+    "attack": "发布说明文档请求。"
+  },
+  {
+    "id": "R7RV-003",
+    "group": "already-released",
+    "kind": "decision",
+    "text": "该版本已经发布，这里只同步链接。",
+    "expected": "no_schedule",
+    "attack": "已经发布的完成陈述。"
+  },
+  {
+    "id": "R7RV-004",
+    "group": "release-word",
+    "kind": "decision",
+    "text": "新闻稿将在周五发布，和产品上线无关。",
+    "expected": "no_schedule",
+    "attack": "发布新闻稿的普通用法。"
+  },
+  {
+    "id": "R7RV-005",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "界面状态显示 RELEASED。",
+    "expected": "no_schedule",
+    "attack": "界面状态标签。"
+  },
+  {
+    "id": "R7RV-006",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "工单标签是 READY FOR RELEASE。",
+    "expected": "no_schedule",
+    "attack": "状态标签而非排期决定。"
+  },
+  {
+    "id": "R7RV-007",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "Dashboard 上标着 DEPLOYED。",
+    "expected": "no_schedule",
+    "attack": "界面既有状态。"
+  },
+  {
+    "id": "R7RV-008",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "按钮显示“即将上线”，这是设计稿里的文案。",
+    "expected": "no_schedule",
+    "attack": "设计稿标签。"
+  },
+  {
+    "id": "R7RV-009",
+    "group": "ownership-doc",
+    "kind": "decision",
+    "text": "架构文档写明事件数据归订单服务所有。",
+    "expected": "no_schedule",
+    "attack": "归属描述，不是新决定。"
+  },
+  {
+    "id": "R7RV-010",
+    "group": "ownership-doc",
+    "kind": "decision",
+    "text": "The API contract is owned by the platform team, per the handbook.",
+    "expected": "no_schedule",
+    "attack": "文档归属事实。"
+  },
+  {
+    "id": "R7RV-011",
+    "group": "ownership-doc",
+    "kind": "decision",
+    "text": "这份数据由账务模块持有，是现行约定。",
+    "expected": "no_schedule",
+    "attack": "当前归属说明。"
+  },
+  {
+    "id": "R7RV-012",
+    "group": "ownership-doc",
+    "kind": "decision",
+    "text": "谁负责该契约已记录在 ADR-12。",
+    "expected": "no_schedule",
+    "attack": "引用既有记录。"
+  },
+  {
+    "id": "R7RV-013",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经完成灰度，本条只汇报结果。",
+    "expected": "no_schedule",
+    "attack": "已经开头的完成陈述。"
+  },
+  {
+    "id": "R7RV-014",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经把补丁提交到应用商店，不需要再安排。",
+    "expected": "no_schedule",
+    "attack": "已完成动作。"
+  },
+  {
+    "id": "R7RV-015",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经交付企业客户，公开下载也已开放。",
+    "expected": "no_schedule",
+    "attack": "完成陈述。"
+  },
+  {
+    "id": "R7RV-016",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经部署到生产，观察期结束。",
+    "expected": "no_schedule",
+    "attack": "完成状态。"
+  },
+  {
+    "id": "R7RV-017",
+    "group": "release-doc",
+    "kind": "decision",
+    "text": "发布说明中写着“下周开放下载”。",
+    "expected": "no_schedule",
+    "attack": "文档引用里的发布词。"
+  },
+  {
+    "id": "R7RV-018",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "版本卡片的状态为“待发布”。",
+    "expected": "no_schedule",
+    "attack": "UI 状态。"
+  },
+  {
+    "id": "R7RV-019",
+    "group": "ownership-doc",
+    "kind": "decision",
+    "text": "设计文档标注“由核心服务拥有”，这只是责任矩阵。",
+    "expected": "no_schedule",
+    "attack": "文档中的归属标签。"
+  },
+  {
+    "id": "R7RV-020",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经在所有区域完成切换，记录如下。",
+    "expected": "no_schedule",
+    "attack": "已经开头的已完成陈述。"
+  },
+  {
+    "id": "R7RV-021",
+    "group": "press-release",
+    "kind": "decision",
+    "text": "The press release will be published after the event.",
+    "expected": "no_schedule",
+    "attack": "新闻发布计划。"
+  },
+  {
+    "id": "R7RV-022",
+    "group": "meeting",
+    "kind": "decision",
+    "text": "发布评审会议定在周四，不代表发布窗口已决定。",
+    "expected": "no_schedule",
+    "attack": "会议安排不是产品发布安排。"
+  },
+  {
+    "id": "R7RV-023",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "设置页的 “LIVE” badge 是静态示例。",
+    "expected": "no_schedule",
+    "attack": "界面状态标签。"
+  },
+  {
+    "id": "R7RV-024",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经发出发布公告，当前只讨论措辞。",
+    "expected": "no_schedule",
+    "attack": "已发公告并讨论文案。"
+  },
+  {
+    "id": "R7RV-025",
+    "group": "ownership-doc",
+    "kind": "decision",
+    "text": "存档文件注明客户数据归数据平台主管。",
+    "expected": "no_schedule",
+    "attack": "文档归属描述。"
+  },
+  {
+    "id": "R7RV-026",
+    "group": "release-doc",
+    "kind": "decision",
+    "text": "请把发布说明发布到知识库。",
+    "expected": "no_schedule",
+    "attack": "发布文档的动词同形。"
+  },
+  {
+    "id": "R7RV-027",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经通过应用商店审核，团队只在复盘。",
+    "expected": "no_schedule",
+    "attack": "已完成陈述。"
+  },
+  {
+    "id": "R7RV-028",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "表格里的状态列显示 SHIPPED。",
+    "expected": "no_schedule",
+    "attack": "界面/表格状态。"
+  },
+  {
+    "id": "R7RV-029",
+    "group": "ownership-doc",
+    "kind": "decision",
+    "text": "服务目录说缓存由边缘团队负责维护。",
+    "expected": "no_schedule",
+    "attack": "目录归属说明。"
+  },
+  {
+    "id": "R7RV-030",
+    "group": "already-done",
+    "kind": "decision",
+    "text": "已经给生产用户打开该功能，暂无后续动作。",
+    "expected": "no_schedule",
+    "attack": "已经开头且明确完成。"
+  },
+  {
+    "id": "R7RV-031",
+    "group": "release-meeting",
+    "kind": "decision",
+    "text": "发布会的直播页面什么时候发布由市场团队安排。",
+    "expected": "no_schedule",
+    "attack": "活动/页面内容发布。"
+  },
+  {
+    "id": "R7RV-032",
+    "group": "status-label",
+    "kind": "decision",
+    "text": "弹窗的状态徽标写着“已上线”。",
+    "expected": "no_schedule",
+    "attack": "UI 标签。"
+  },
+  {
+    "id": "R7RV-033",
+    "group": "real-release",
+    "kind": "decision",
+    "text": "Should we gradually open the feature to 10% of customers next week?",
+    "expected": "schedule",
+    "attack": "真实灰度开放排期问题。"
+  },
+  {
+    "id": "R7RV-034",
+    "group": "real-release",
+    "kind": "decision",
+    "text": "桌面补丁什么时候提交应用商店？",
+    "expected": "schedule",
+    "attack": "真实商店发布时点。"
+  },
+  {
+    "id": "R7RV-035",
+    "group": "real-release",
+    "kind": "decision",
+    "text": "企业客户交付应先于公开下载吗？",
+    "expected": "schedule",
+    "attack": "真实交付顺序决策。"
+  },
+  {
+    "id": "R7RV-036",
+    "group": "real-release",
+    "kind": "decision",
+    "text": "When do we enable this for production users?",
+    "expected": "schedule",
+    "attack": "真实生产开放时点。"
+  },
+  {
+    "id": "R7RV-037",
+    "group": "ownership-decision",
+    "kind": "decision",
+    "text": "Should the billing service own this event data going forward?",
+    "expected": "schedule",
+    "attack": "询问未来架构归属。"
+  },
+  {
+    "id": "R7RV-038",
+    "group": "ownership-decision",
+    "kind": "decision",
+    "text": "Who should own the API contract, gateway or catalog team?",
+    "expected": "schedule",
+    "attack": "要求确定契约负责人。"
+  },
+  {
+    "id": "R7RV-039",
+    "group": "ownership-decision",
+    "kind": "decision",
+    "text": "这份数据以后由订单服务还是账务服务持有？",
+    "expected": "schedule",
+    "attack": "真实归属选型。"
+  },
+  {
+    "id": "R7RV-040",
+    "group": "ownership-decision",
+    "kind": "decision",
+    "text": "Which module should own customer consent records?",
+    "expected": "schedule",
+    "attack": "模块责任决策。"
+  },
+  {
+    "id": "R7RV-041",
+    "group": "migration",
+    "kind": "decision",
+    "text": "旧文件采用渐进转换还是一次性批量转换？",
+    "expected": "schedule",
+    "attack": "真实迁移策略二选一。"
+  },
+  {
+    "id": "R7RV-042",
+    "group": "migration",
+    "kind": "decision",
+    "text": "Should we migrate the archive in waves or all at once?",
+    "expected": "schedule",
+    "attack": "分批或整体迁移决策。"
+  },
+  {
+    "id": "R7RV-043",
+    "group": "migration",
+    "kind": "decision",
+    "text": "上线前做双写，还是安排停机窗口切换？",
+    "expected": "schedule",
+    "attack": "真实迁移实施方案。"
+  },
+  {
+    "id": "R7RV-044",
+    "group": "real-release",
+    "kind": "decision",
+    "text": "已完成 staging 验证；现在决定下周分批开放给客户。",
+    "expected": "schedule",
+    "attack": "完成事实后有新发布决定。"
+  },
+  {
+    "id": "R7RV-045",
+    "group": "real-release",
+    "kind": "decision",
+    "text": "已经通过审核；生产流量何时切到新版本？",
+    "expected": "schedule",
+    "attack": "已完成前提后的新问题。"
+  },
+  {
+    "id": "R7RV-046",
+    "group": "ownership-decision",
+    "kind": "decision",
+    "text": "We have the current owner documented; should ownership move to Search?",
+    "expected": "schedule",
+    "attack": "已有状态后提出新归属决策。"
+  },
+  {
+    "id": "R7RV-047",
+    "group": "migration",
+    "kind": "decision",
+    "text": "已经复制了历史表，本次要选双写还是停机迁移。",
+    "expected": "schedule",
+    "attack": "完成事实后新迁移决定。"
+  },
+  {
+    "id": "R7RV-048",
+    "group": "real-release",
+    "kind": "decision",
+    "text": "候选版本已打包，先给企业客户交付还是先开放下载？",
+    "expected": "schedule",
+    "attack": "真实交付顺序。"
+  }
+]

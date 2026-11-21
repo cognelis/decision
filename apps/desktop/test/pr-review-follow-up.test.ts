@@ -11,7 +11,8 @@ const pr = { title: "请求超时", description: "为请求添加超时", source
 const local = modelProviderProfileSchema.parse({ version: 1, profileId: "local", kind: "qwen", model: "qwen3.5-2b-q4-k-m", label: "本机", enabled: true, priority: 0, timeoutMs: 30_000 });
 const remote = modelProviderProfileSchema.parse({ version: 1, profileId: "remote", kind: "openai-compatible", model: "test-model", label: "远端", enabled: true, priority: 1,
   baseUrl: "https://llm.example.com/v1", apiProtocol: "chat-completions", credentialRef: "remote-key", timeoutMs: 30_000 });
-const GUIDE = /^(CLAUDE|AGENTS)\.md$/u;
+// The guides read from the target branch, CODEOWNERS where each platform keeps it among them.
+const GUIDE = /^(?:(?:REVIEW|CLAUDE|AGENTS)\.md|(?:\.bitbucket\/|\.github\/|\.gitlab\/|docs\/)?CODEOWNERS)$/u;
 
 /** The fake service of pr-review.test.ts: the model answers from a queue, the platform from a stub. */
 function setup(actions: unknown[], files: Array<{ path: string; status: string }>, diff: string, retryAfterMs?: number) {

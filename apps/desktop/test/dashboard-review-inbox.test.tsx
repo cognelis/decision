@@ -91,10 +91,10 @@ describe("DashboardReviewInbox", () => {
     expect(within(form).getByText("实际结果：命中率达标。")).toBeVisible();
     await user.click(within(form).getByRole("button", { name: "优于预期" }));
     await user.type(within(form).getByLabelText("复盘经验（可选）"), "先验证再推广。");
-    await user.click(within(form).getByRole("button", { name: /保存复盘/u }));
+    await user.click(screen.getByRole("button", { name: /保存复盘/u }));
     expect(await screen.findByRole("alert")).toHaveTextContent("暂时无法写入");
     expect(within(form).getByLabelText("复盘经验（可选）")).toHaveValue("先验证再推广。");
-    await user.click(within(form).getByRole("button", { name: /保存复盘/u }));
+    await user.click(screen.getByRole("button", { name: /保存复盘/u }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(onSaveOutcome).toHaveBeenCalledTimes(1);
     expect(onSaveReview).toHaveBeenLastCalledWith("decision-1", { verdict: "better", lesson: "先验证再推广。" });
@@ -126,7 +126,7 @@ describe("DashboardReviewInbox", () => {
       within(form).getByLabelText("结果说明"),
       "读取端缓存命中率达标，没有回退。",
     );
-    await user.click(within(form).getByRole("button", { name: /保存结果/u }));
+    await user.click(screen.getByRole("button", { name: /保存结果/u }));
 
     expect(onSaveOutcome).toHaveBeenCalledWith(
       "decision-1",
@@ -152,7 +152,7 @@ describe("DashboardReviewInbox", () => {
       within(form).getByLabelText("复盘经验（可选）"),
       "读取端的命中率假设没有验证过。",
     );
-    await user.click(within(form).getByRole("button", { name: /保存复盘/u }));
+    await user.click(screen.getByRole("button", { name: /保存复盘/u }));
 
     expect(onSaveReview).toHaveBeenCalledWith("decision-1", {
       verdict: "worse",
@@ -169,7 +169,7 @@ describe("DashboardReviewInbox", () => {
     await user.click(screen.getByRole("button", { name: "完成复盘" }));
     const form = screen.getByRole("form", { name: "完成复盘表单" });
     await user.type(within(form).getByLabelText("复盘经验（可选）"), "   ");
-    await user.click(within(form).getByRole("button", { name: /保存复盘/u }));
+    await user.click(screen.getByRole("button", { name: /保存复盘/u }));
 
     expect(onSaveReview).toHaveBeenCalledWith("decision-1", {
       verdict: "as_expected",
@@ -184,7 +184,7 @@ describe("DashboardReviewInbox", () => {
     await user.click(screen.getByRole("button", { name: "回填结果" }));
     const form = screen.getByRole("form", { name: "回填实际结果表单" });
     // A blank result would close the todo while recording nothing.
-    expect(within(form).getByRole("button", { name: /保存结果/u })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /保存结果/u })).toBeDisabled();
   });
 
   it("keeps the typing when the save fails", async () => {
@@ -198,7 +198,7 @@ describe("DashboardReviewInbox", () => {
     await user.click(screen.getByRole("button", { name: "回填结果" }));
     const form = screen.getByRole("form", { name: "回填实际结果表单" });
     await user.type(within(form).getByLabelText("结果说明"), "命中率达标。");
-    await user.click(within(form).getByRole("button", { name: /保存结果/u }));
+    await user.click(screen.getByRole("button", { name: /保存结果/u }));
 
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent(

@@ -1,0 +1,258 @@
+[
+  {
+    "id": "R6RV2SK-001",
+    "group": "vendor-homograph-no-choice",
+    "kind": "decision",
+    "text": "The payment service currently uses Stripe; no vendor change is requested.",
+    "expected": "no_schedule",
+    "attack": "供应商同形普通词只作当前状态，没有 X/Y 对举。"
+  },
+  {
+    "id": "R6RV2SK-002",
+    "group": "vendor-homograph-no-choice",
+    "kind": "decision",
+    "text": "Temporal ordering controls workflow retries; no provider choice is being discussed.",
+    "expected": "no_schedule",
+    "attack": "Temporal 是时间/排序形容词，不是供应商选择。"
+  },
+  {
+    "id": "R6RV2SK-003",
+    "group": "vendor-homograph-no-choice",
+    "kind": "decision",
+    "text": "Render the billing page after the invoice arrives.",
+    "expected": "no_schedule",
+    "attack": "Render 作动词，没有服务位选型。"
+  },
+  {
+    "id": "R6RV2SK-004",
+    "group": "vendor-homograph-no-choice",
+    "kind": "decision",
+    "text": "Resend the receipt if the confirmation email bounces.",
+    "expected": "no_schedule",
+    "attack": "Resend 作动词，没有服务位选型。"
+  },
+  {
+    "id": "R6RV2SK-005",
+    "group": "vendor-homograph-no-choice",
+    "kind": "decision",
+    "text": "The Stripe integration is named in the incident summary.",
+    "expected": "no_schedule",
+    "attack": "Stripe 只作为事故说明中的实体提及。"
+  },
+  {
+    "id": "R6RV2SK-006",
+    "group": "vendor-homograph-no-choice",
+    "kind": "decision",
+    "text": "The workflow runs on Temporal today; its temporal coupling is documented.",
+    "expected": "no_schedule",
+    "attack": "提到供应商和普通形容词，但只是现状描述。"
+  },
+  {
+    "id": "R6RV2SK-007",
+    "group": "vendor-homograph-doc-quote",
+    "kind": "decision",
+    "text": "The guide quotes “For payments: Stripe or Resend?” as an example, not a decision.",
+    "expected": "no_schedule",
+    "attack": "引述看似命中槽位的语句，但上下文是指南示例。"
+  },
+  {
+    "id": "R6RV2SK-008",
+    "group": "vendor-homograph-doc-quote",
+    "kind": "decision",
+    "text": "The changelog contains the line “Choose Render or Resend for hosting”.",
+    "expected": "no_schedule",
+    "attack": "变更日志引用命令式模板，不是当前选择。"
+  },
+  {
+    "id": "R6RV2SK-009",
+    "group": "vendor-homograph-doc-quote",
+    "kind": "decision",
+    "text": "教程举例写着“收款服务用 Stripe 还是 Paddle”。",
+    "expected": "no_schedule",
+    "attack": "教程中提到服务位句型。"
+  },
+  {
+    "id": "R6RV2SK-010",
+    "group": "vendor-homograph-no-choice",
+    "kind": "decision",
+    "text": "For analytics, the report lists Stripe and Temporal as historical examples.",
+    "expected": "no_schedule",
+    "attack": "供应商并列使用 and，且是历史列表。"
+  },
+  {
+    "id": "R6RV2SK-011",
+    "group": "vendor-slot-plain-words",
+    "kind": "decision",
+    "text": "Billing service: Public or Private?",
+    "expected": "no_schedule",
+    "attack": "服务位中的普通可见性词，名单不应把它们提升为供应商。"
+  },
+  {
+    "id": "R6RV2SK-012",
+    "group": "vendor-slot-plain-words",
+    "kind": "decision",
+    "text": "For hosting: Annual or Quarterly?",
+    "expected": "no_schedule",
+    "attack": "服务位中的普通周期词。"
+  },
+  {
+    "id": "R6RV2SK-013",
+    "group": "vendor-slot-plain-words",
+    "kind": "decision",
+    "text": "For payments: Success or Failure?",
+    "expected": "no_schedule",
+    "attack": "支付状态枚举，不是供应商。"
+  },
+  {
+    "id": "R6RV2SK-014",
+    "group": "vendor-slot-plain-words",
+    "kind": "decision",
+    "text": "监控服务用 Red 还是 Blue？",
+    "expected": "no_schedule",
+    "attack": "颜色值伪装服务名。"
+  },
+  {
+    "id": "R6RV2SK-015",
+    "group": "done-negative",
+    "kind": "decision",
+    "text": "We already migrated the orders table last month; nothing remains to choose.",
+    "expected": "no_schedule",
+    "attack": "DONE 描述已完成迁移。"
+  },
+  {
+    "id": "R6RV2SK-016",
+    "group": "done-negative",
+    "kind": "decision",
+    "text": "The rollout is already complete.",
+    "expected": "no_schedule",
+    "attack": "DONE 描述已完成发布。"
+  },
+  {
+    "id": "R6RV2SK-017",
+    "group": "done-negative",
+    "kind": "decision",
+    "text": "灰度已经完成，这里只记录结果。",
+    "expected": "no_schedule",
+    "attack": "已经完成的灰度，不是新的上线决定。"
+  },
+  {
+    "id": "R6RV2SK-018",
+    "group": "done-negative",
+    "kind": "decision",
+    "text": "The email service is already using Resend.",
+    "expected": "no_schedule",
+    "attack": "供应商只作当前状态说明。"
+  },
+  {
+    "id": "R6RV2SK-019",
+    "group": "done-exception-positive",
+    "kind": "decision",
+    "text": "We already decided to use Temporal for workflow orchestration.",
+    "expected": "schedule",
+    "attack": "DONE 对 already decided 应放行已作出的决定。"
+  },
+  {
+    "id": "R6RV2SK-020",
+    "group": "done-exception-positive",
+    "kind": "decision",
+    "text": "We already chose Render for hosting.",
+    "expected": "schedule",
+    "attack": "DONE 对 already chose 应放行。"
+  },
+  {
+    "id": "R6RV2SK-021",
+    "group": "done-exception-positive",
+    "kind": "decision",
+    "text": "We already agreed to adopt Resend for email delivery.",
+    "expected": "schedule",
+    "attack": "DONE 对 already agreed 应放行。"
+  },
+  {
+    "id": "R6RV2SK-022",
+    "group": "done-exception-positive",
+    "kind": "decision",
+    "text": "Already decided: choose Stripe or Paddle for payments.",
+    "expected": "schedule",
+    "attack": "已决定后明确写出供应商选型。"
+  },
+  {
+    "id": "R6RV2SK-023",
+    "group": "done-then-new-clause",
+    "kind": "decision",
+    "text": "We already migrated the billing service; choose Temporal or Restate for workflows.",
+    "expected": "schedule",
+    "attack": "DONE 只抑制已完成分句，后续分句有新选择。"
+  },
+  {
+    "id": "R6RV2SK-024",
+    "group": "done-then-new-clause",
+    "kind": "decision",
+    "text": "Stripe is already connected; choose Resend for outgoing mail.",
+    "expected": "schedule",
+    "attack": "已连接的状态后另起分句选择供应商。"
+  },
+  {
+    "id": "R6RV2SK-025",
+    "group": "done-then-new-clause",
+    "kind": "decision",
+    "text": "The table is already migrated. Now select Postgres or SQLite for the new store.",
+    "expected": "schedule",
+    "attack": "完成事实之后另作存储选型。"
+  },
+  {
+    "id": "R6RV2SK-026",
+    "group": "done-then-new-clause",
+    "kind": "decision",
+    "text": "We already have a gateway; choose Render for hosting.",
+    "expected": "schedule",
+    "attack": "已有网关的事实后选择托管方。"
+  },
+  {
+    "id": "R6RV2SK-027",
+    "group": "done-same-clause-action",
+    "kind": "decision",
+    "text": "We already use Stripe, but switch to Paddle for payments now.",
+    "expected": "schedule",
+    "attack": "已存在的状态与同句新决定并存。"
+  },
+  {
+    "id": "R6RV2SK-028",
+    "group": "done-same-clause-action",
+    "kind": "decision",
+    "text": "Temporal is already running, so migrate the workflow to Restate.",
+    "expected": "schedule",
+    "attack": "DONE 词与同句明确迁移决定并存。"
+  },
+  {
+    "id": "R6RV2SK-029",
+    "group": "done-same-clause-action",
+    "kind": "decision",
+    "text": "已经有 Redis 在跑，现在决定加 Kafka 还是保持单队列。",
+    "expected": "schedule",
+    "attack": "已经描述现状后，同句继续作架构决策。"
+  },
+  {
+    "id": "R6RV2SK-030",
+    "group": "done-same-clause-action",
+    "kind": "decision",
+    "text": "The release is already finished, but now choose Stripe or Resend for email.",
+    "expected": "schedule",
+    "attack": "已完成的发布与新的服务商选择同句。"
+  },
+  {
+    "id": "R6RV2SK-031",
+    "group": "done-same-clause-action",
+    "kind": "decision",
+    "text": "已经迁移完旧表；本次仍要选 PostgreSQL 还是 SQLite。",
+    "expected": "schedule",
+    "attack": "DONE 过去事实后有本次新选型。"
+  },
+  {
+    "id": "R6RV2SK-032",
+    "group": "vendor-position-positive",
+    "kind": "decision",
+    "text": "Choose Sentry or Bugsnag for crash reporting.",
+    "expected": "schedule",
+    "attack": "新增英文 choose X or Y for service 语序，两个已知供应商。"
+  }
+]

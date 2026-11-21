@@ -9,6 +9,14 @@ type CitationTarget =
   | { kind: "journal"; id: string }
   | { kind: "document"; reference: string };
 
+const CITATION_KIND_LABELS: Record<RetrievalAnswerCitation["kind"], string> = {
+  decision: "决策",
+  principle: "原则",
+  note: "笔记",
+  preference: "偏好",
+  idea: "想法",
+};
+
 const CITATION_TARGET_LABELS: Record<CitationTarget["kind"], string> = {
   decision: "打开决策详情",
   principle: "打开原则详情",
@@ -20,7 +28,7 @@ const CITATION_TARGET_LABELS: Record<CitationTarget["kind"], string> = {
  * A decision or principle this app holds goes to its own page, where its
  * scope, relations and review live — the Markdown behind it is the same
  * record with all of that stripped off. Notes, and decisions in the
- * historical format the index does not carry, still open in the vault.
+ * summarized format the index does not carry, still open in the vault.
  *
  * The label and the action both come from here, so the button cannot say one
  * and do the other.
@@ -71,8 +79,8 @@ const SourceComparison = ({ citation, checkSource }: {
     }}>{pending ? "正在核对来源…" : "核对当前来源"}</button>
     {error ? <p role="alert">无法核对来源，请重试。历史摘录已保留。</p> : null}
     {result === null ? null : <>
-      <p role="status">{result.status === "matched" ? "历史摘录仍能在当前来源中找到；这不代表全文没有变化。" : result.status === "review" ? "历史摘录未在当前来源中完整匹配，来源可能已修改，请对照核对。" : "当前来源无法读取，可能已移动、删除或暂不可用。历史摘录已保留。"}</p>
-      {result.status === "unavailable" ? null : <details open>
+      <p role="status" data-status={result.status}>{result.status === "matched" ? <ActionIcon name="check" /> : null}{result.status === "matched" ? "历史摘录仍能在当前来源中找到；这不代表全文没有变化。" : result.status === "review" ? "历史摘录未在当前来源中完整匹配，来源可能已修改，请对照核对。" : "当前来源无法读取，可能已移动、删除或暂不可用。历史摘录已保留。"}</p>
+      {result.status === "unavailable" ? null : <details className="disclosure" open>
         <summary>当前来源{result.truncated ? "（仅展示前 20,000 字符）" : ""}</summary>
         <pre>{result.content}</pre>
       </details>}
@@ -104,7 +112,7 @@ export const AnswerEvidence = memo(function AnswerEvidence({ content, citations,
             <span className="assistant-citation-copy"><strong>{citation.title}</strong><span>{citation.reference}</span></span>
             <span className="assistant-citation-kind">
               {citationStanding(citation) === null ? null : <small className={citation.lifecycle === "uncertain" ? "assistant-citation-stale uncertain" : "assistant-citation-stale"}>{citationStanding(citation)}</small>}
-              {citation.matchReason}
+              {[CITATION_KIND_LABELS[citation.kind], citation.matchReason].filter(Boolean).join(" · ")}
             </span>
           </summary>
           <div className="assistant-evidence-preview">

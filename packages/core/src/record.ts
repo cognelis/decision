@@ -11,6 +11,7 @@ import type {
 } from "./rationale-queue.js";
 import { rationaleSemanticKey } from "./rationale-queue.js";
 import { createHash } from "node:crypto";
+import { defaultReviewSchedule, type ReviewScheduleReason } from "./review-schedule.js";
 
 import type {
   ProactiveSourceKind,
@@ -64,11 +65,15 @@ export interface RecordedCaptureDetection {
   band: "high" | "medium";
   score: number;
   detectorVersion: string;
+  /** The rule's own labels for why it fired (no text of the conversation), kept for a misrecognition receipt. */
+  signals?: string[];
 }
 
 export interface DecisionRecord {
   id: string;
   created: string;
+  /** When it was confirmed for recording; the original capture date stays in created. */
+  confirmedAt?: string;
   status: PersistedDecisionStatus;
   sourceClient: DecisionRecordSourceClient;
   project: string;
@@ -94,6 +99,11 @@ export interface DecisionRecord {
   appliedPrincipleIds: string[];
   supersedes: string | null;
   reviewDueDate: string | null;
+  /**
+   * Why the review date was set when the decision was written (IMP-123); empty when the writer gave the date or
+   * none was set. Kept when the user changes or clears the date: reasons with no date is a schedule cleared.
+   */
+  reviewScheduleReasons?: ReviewScheduleReason[];
   outcome: string | null;
   outcomeReview: OutcomeReview | null;
   sourceKind?: ProactiveSourceKind | null;
@@ -190,9 +200,10 @@ export const createDecisionRecord = (
   ) {
     throw new Error("Applied principle IDs are invalid");
   }
-  return {
+  return scheduled({
     id,
     created: now.toISOString(),
+    ...(submission.confirmedAt === undefined ? {} : { confirmedAt: submission.confirmedAt }),
     status: persistentStatus(submission.status),
     sourceClient: candidate.event.sourceClient,
     project: candidate.event.project,
@@ -212,6 +223,7 @@ export const createDecisionRecord = (
             score: candidate.event.detection.score,
             detectorVersion:
               candidate.event.detection.detectorVersion,
+            signals: [...candidate.event.detection.signals],
           },
     options: candidate.question.options.map((option) => ({
       ...(option.id === undefined ? {} : { id: option.id }),
@@ -222,7 +234,7 @@ export const createDecisionRecord = (
       tradeoffs: [],
     })),
     selectedAnswer: {
-      kind: candidate.question.answer.kind,
+      ...candidate.question.answer,
       values: [...candidate.question.answer.values],
     },
     llmRecommendation: null,
@@ -256,7 +268,17 @@ export const createDecisionRecord = (
     sensitivity: "private",
     // Written while the choice was fresh, whether or not the rationale was given then.
     expectedOutcome: expectedOutcomeText(submission.expectedOutcome),
-  };
+  }, now);
+};
+
+/** Every new decision, captured or written down, is scheduled here and nowhere else. */
+const scheduled = (record: DecisionRecord, now: Date): DecisionRecord => {
+  const schedule = record.reviewDueDate === null
+    ? defaultReviewSchedule([record.question, ...record.selectedAnswer.values], record.expectedOutcome, now)
+    : null;
+  return schedule === null
+    ? record
+    : { ...record, reviewDueDate: schedule.reviewDueDate, reviewScheduleReasons: schedule.reasons };
 };
 
 const manualText = (value: string, label: string, maximum: number): string => {
@@ -342,7 +364,7 @@ export const createManualDecisionRecord = (
           .update(`manual\n${project.normalize("NFKC")}\n${question.normalize("NFKC")}\n${decision.normalize("NFKC")}`)
           .digest("hex");
   const rationaleStatus = rationale === null ? "deferred" : "captured";
-  return {
+  return scheduled({
     id: normalizedId,
     created: now.toISOString(),
     status: rationale === null ? "deferred_rationale" : "completed",
@@ -378,5 +400,5 @@ export const createManualDecisionRecord = (
     occurredAt,
     sensitivity: input.sensitivity ?? "private",
     expectedOutcome,
-  };
+  }, now);
 };

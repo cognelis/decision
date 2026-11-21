@@ -6,16 +6,9 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary.js";
 import { createPreviewApi } from "./preview-api.js";
 import "./styles.css";
 
-if (
-  new URLSearchParams(window.location.search).get("nativeGlass") ===
-  "1"
-) {
-  document.documentElement.dataset.nativeGlass = "true";
-}
-
 const container = document.getElementById("root");
 if (container === null) {
-  throw new Error("Decision renderer root is missing");
+  throw new Error("Paraself renderer root is missing");
 }
 
 createRoot(container).render(

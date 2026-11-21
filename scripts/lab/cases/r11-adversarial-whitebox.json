@@ -1,0 +1,375 @@
+[
+  {
+    "id": "wb-tail-wait-basic",
+    "group": "r11-whitebox-trailing",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备把本地缓存改为 Redis。你批准现在实施吗？\n\n我会等你回复再继续。",
+    "userText": "批准，请实施。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-tail-markdown-note",
+    "group": "r11-whitebox-trailing",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "1. SQLite：继续用本地文件。\n2. PostgreSQL：迁移到服务端。\n\n你选哪种？\n\n**备注：**本轮没有执行任何操作。",
+    "userText": "选 2。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-tail-two-dropped-blocks",
+    "group": "r11-whitebox-trailing",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "是否批准我现在合并补丁？\n\n我会等你的回复。\n\n本轮没有执行代码。",
+    "userText": "可以，合并吧。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-tail-three-disclaimers",
+    "group": "r11-whitebox-trailing",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 保留当前策略\nB. 改用指数退避\n\n请选 A 或 B。\n\n我会等你回复。\n\n备注：没有实际改动。\n\nStatus: no changes.",
+    "userText": "选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-tail-historical-approval",
+    "group": "r11-whitebox-trailing",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "昨天你批准了合并吗？\n\n我等你回复。",
+    "userText": "批准了。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-tail-view-only",
+    "group": "r11-whitebox-trailing",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "Which file should I open to inspect the failing test?\n\nI will wait for your answer.",
+    "userText": "Open package.json.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-view-you-prefix-log",
+    "group": "r11-whitebox-view",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "日志如下：\n1. INFO server started\n2. WARN retry exhausted\n3. INFO shutdown\n\n你看哪条日志的上下文？",
+    "userText": "第 2 条，给我看看前后几行。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-view-which-file",
+    "group": "r11-whitebox-view",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "I found config/app.yml and config/prod.yml. Which file should I open first to inspect the current setting?",
+    "userText": "Open config/prod.yml.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-view-chinese-file",
+    "group": "r11-whitebox-view",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "当前目录有 config.yml 和 config.local.yml。你看哪个文件里配置了超时？",
+    "userText": "config.local.yml 里有。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-view-what-think",
+    "group": "r11-whitebox-view",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 保留现有重试\nB. 改为指数退避\n\n你看哪些可以合并？",
+    "userText": "A 和 B 都可以合并。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-view-weighing",
+    "group": "r11-whitebox-view",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. 进程内缓存\nB. Redis\n\n你看哪种方案更适合高并发？",
+    "userText": "B 更适合。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-act-token-mismatched-object",
+    "group": "r11-whitebox-act-tokens",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "Do you approve deploying the retry patch?",
+    "userText": "I approve updating the changelog, but not deploying the patch.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-act-token-bare-approval",
+    "group": "r11-whitebox-act-tokens",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你是否批准我现在合并这个补丁？",
+    "userText": "批准。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-act-token-explicit-english",
+    "group": "r11-whitebox-act-tokens",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "Would you approve applying the cache fix?",
+    "userText": "I approve.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-act-token-substantive-match",
+    "group": "r11-whitebox-act-tokens",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "Would you approve deploying the retry patch?",
+    "userText": "I approve deploying the retry patch.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-act-token-mixed-agreement",
+    "group": "r11-whitebox-act-tokens",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你是否同意现在把方案 B 部署到预发？",
+    "userText": "同意。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-name-act-select-by-label",
+    "group": "r11-whitebox-acts-on-name",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "A. SQLite\nB. Redis\nC. PostgreSQL\n\n你选择哪种存储？",
+    "userText": "B，就按 Redis 来吧。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-name-act-unnumbered-table-choice",
+    "group": "r11-whitebox-acts-on-name",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 方案 | 说明 |\n|---|---|\n| SQLite | 无服务依赖 |\n| Redis | 共享缓存 |\n\n你更倾向哪种方案？",
+    "userText": "就用 Redis。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-name-act-compare-only",
+    "group": "r11-whitebox-acts-on-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. SQLite\nB. Redis\n\n你选哪个？",
+    "userText": "先按 Redis 的吞吐量解释一下，暂时不选。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-name-act-think-only",
+    "group": "r11-whitebox-acts-on-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. SQLite\nB. Redis\n\n你选哪个？",
+    "userText": "先按 Redis 思路想想，等看完数据再决定。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-name-act-quoted-example",
+    "group": "r11-whitebox-acts-on-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. SQLite\nB. Redis\n\n你选哪个？",
+    "userText": "用 Redis 举例说明连接池，不代表选择 Redis。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-name-act-name-not-verb",
+    "group": "r11-whitebox-acts-on-name",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "A. SQLite\nB. Redis\n\n你选哪个？",
+    "userText": "Redis 的方案在吞吐量上比较好，不过我还没有决定。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-rows-select-name",
+    "group": "r11-whitebox-table-rows",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 方案 | 特点 |\n|---|---|\n| SQLite | 无服务依赖 |\n| PostgreSQL | 支持多客户端 |\n\n你更倾向哪种方案？",
+    "userText": "PostgreSQL。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-rows-select-number",
+    "group": "r11-whitebox-table-rows",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 迁移方式 | 风险 |\n|---|---|---|\n| 原地升级 | 停机短 | 中 |\n| 蓝绿迁移 | 可回滚 | 低 |\n\n从上面两种方式选一种，哪种更合适？",
+    "userText": "第二种。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-rows-explicit-id-column",
+    "group": "r11-whitebox-table-rows",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Option | Description |\n|---|---|---|\n| A | SQLite | local file |\n| B | PostgreSQL | shared service |\n\nWhich option should we adopt?",
+    "userText": "B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-rows-status-column-choice",
+    "group": "r11-whitebox-table-rows",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 方案 | 当前状态 | 说明 |\n|---|---|---|\n| SQLite | 已验证 | 单机可用 |\n| PostgreSQL | 待验证 | 多机可用 |\n\n你更倾向哪种方案？",
+    "userText": "PostgreSQL。",
+    "expectedSelected": [
+      "2"
+    ],
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-rows-noncanonical-status-fact",
+    "group": "r11-whitebox-table-rows",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 执行阶段 | 当前负责人 |\n|---|---|---|\n| SQLite | 已完成 | Lin |\n| PostgreSQL | 正在迁移 | Mei |\n\n目前哪项已经完成？",
+    "userText": "SQLite 已完成。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-status-owner-state",
+    "group": "r11-whitebox-status-table",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 任务 | Owner | State |\n|---|---|---|\n| 导出 | Lin | done |\n| 校验 | Mei | pending |\n\nWhich task is currently done?",
+    "userText": "The export task is done.",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-status-progress-table",
+    "group": "r11-whitebox-status-table",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | Task | Progress |\n|---|---|---|\n| A | 导出 | 80% |\n| B | 校验 | 40% |\n\n目前哪一项进度已经过半？",
+    "userText": "A。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-status-table-plus-distinct-approval",
+    "group": "r11-whitebox-status-table",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 任务 | 状态 |\n|---|---|\n| 更新依赖 | 已完成 |\n| 跑集成测试 | 进行中 |\n\n你是否批准我现在合并补丁？",
+    "userText": "批准。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-you-approve-now",
+    "group": "r11-whitebox-approval-phrasing",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你批准我现在发布这个补丁吗？",
+    "userText": "批准。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-you-approve-past",
+    "group": "r11-whitebox-approval-phrasing",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你批准过上周的发布吗？",
+    "userText": "批准过，已经发布了。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-you-agree-now",
+    "group": "r11-whitebox-approval-phrasing",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "你同意我现在把 B 部署到预发吗？",
+    "userText": "同意。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-you-agree-past",
+    "group": "r11-whitebox-approval-phrasing",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你上周同意把 B 部署到预发了吗？",
+    "userText": "上周同意了，今天还没有部署。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-you-approve-unrelated-question",
+    "group": "r11-whitebox-approval-phrasing",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你批准过那次数据库迁移吗？\n\n我等你答复。",
+    "userText": "批准了，迁移已经完成。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-picking-independent-actions",
+    "group": "r11-whitebox-question-lists",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "- 是否启用缓存？\n- 是否扩展失败重试？\n\n请分别告诉我怎么处理。",
+    "userText": "启用缓存，重试先不扩展。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-picking-own-options-not-plan",
+    "group": "r11-whitebox-question-lists",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "- 部署 A 还是 B？\n- 日志保留 7 天还是 30 天？\n\n请分别给出选择。",
+    "userText": "第一项选 B，第二项保留 30 天。",
+    "source": "synthetic-handwritten"
+  },
+  {
+    "id": "wb-picking-independent-facts",
+    "group": "r11-whitebox-question-lists",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "- Which file is open now?\n- Which process is active?\n\nI will wait for your answers.",
+    "userText": "The config file is open; the API process is active.",
+    "source": "synthetic-handwritten"
+  }
+]

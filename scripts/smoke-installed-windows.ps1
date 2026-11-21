@@ -2,12 +2,12 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 $package = Get-Content -Raw -Path "package.json" | ConvertFrom-Json
-$installer = Join-Path $PWD "out\make\squirrel.windows\x64\Decision-$($package.version)-win-x64-Setup.exe"
+$installer = Join-Path $PWD "out\make\squirrel.windows\x64\Paraself-$($package.version)-win-x64-Setup.exe"
 if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
   throw "Windows installer was not produced: $installer"
 }
 
-$installRoot = Join-Path $env:LOCALAPPDATA "Decision"
+$installRoot = Join-Path $env:LOCALAPPDATA "Paraself"
 $packageRoot = Join-Path $installRoot "app-$($package.version)"
 $update = Join-Path $installRoot "Update.exe"
 
@@ -18,15 +18,15 @@ try {
   }
 
   $deadline = [DateTime]::UtcNow.AddSeconds(30)
-  while (-not (Test-Path -LiteralPath (Join-Path $packageRoot "Decision.exe") -PathType Leaf)) {
+  while (-not (Test-Path -LiteralPath (Join-Path $packageRoot "Paraself.exe") -PathType Leaf)) {
     if ([DateTime]::UtcNow -ge $deadline) {
-      throw "Installed Decision executable was not found in $packageRoot"
+      throw "Installed Paraself executable was not found in $packageRoot"
     }
     Start-Sleep -Milliseconds 250
   }
 
-  $installedExecutable = Join-Path $packageRoot "Decision.exe"
-  Get-Process -Name "Decision" -ErrorAction SilentlyContinue |
+  $installedExecutable = Join-Path $packageRoot "Paraself.exe"
+  Get-Process -Name "Paraself" -ErrorAction SilentlyContinue |
     Where-Object { $_.Path -eq $installedExecutable } |
     Stop-Process -Force
 
@@ -37,7 +37,7 @@ try {
     Remove-Item -LiteralPath $squirrelLog -Force
   }
 
-  $env:DECISION_SMOKE_PACKAGE_ROOT = $packageRoot
+  $env:PARASELF_SMOKE_PACKAGE_ROOT = $packageRoot
   npm run smoke
   if ($LASTEXITCODE -ne 0) {
     throw "Installed Windows smoke failed with code $LASTEXITCODE"
@@ -45,7 +45,7 @@ try {
 
   # The launcher the app keeps at the install root, which updates leave in place, run through cmd as the hooks
   # and MCP registrations run it: the bridge starts behind it, and gives out the launcher's path, not the version's.
-  $launcher = Join-Path $installRoot "decision-bridge.cmd"
+  $launcher = Join-Path $installRoot "paraself-bridge.cmd"
   if (-not (Test-Path -LiteralPath $launcher -PathType Leaf)) {
     throw "Install-root bridge launcher was not written: $launcher"
   }
@@ -58,7 +58,7 @@ try {
     throw "Install-root bridge launcher did not give out its own path: $($named -join ' ')"
   }
 } finally {
-  Remove-Item Env:DECISION_SMOKE_PACKAGE_ROOT -ErrorAction SilentlyContinue
+  Remove-Item Env:PARASELF_SMOKE_PACKAGE_ROOT -ErrorAction SilentlyContinue
   if (Test-Path -LiteralPath $update -PathType Leaf) {
     $uninstall = Start-Process -FilePath $update -ArgumentList "--uninstall", "-s" -Wait -PassThru
     if ($uninstall.ExitCode -ne 0) {

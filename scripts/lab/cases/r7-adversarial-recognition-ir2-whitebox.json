@@ -1,0 +1,460 @@
+[
+  {
+    "id": "R7IR2-001",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second one.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "极短口语指代第二项。"
+  },
+  {
+    "id": "R7IR2-002",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "后者，现有表结构不用动。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "简短描述式选择并给出理由。"
+  },
+  {
+    "id": "R7IR2-003",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "PostgreSQL 方向，主要是事务支持更稳。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "以方向名作描述式选择并解释理由。"
+  },
+  {
+    "id": "R7IR2-004",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "For this setup, PostgreSQL — it fits the existing schema.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "直接报选项名并说明兼容理由。"
+  },
+  {
+    "id": "R7IR2-005",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "PostgreSQL seems the natural fit for our current schema.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "描述式判断表达选择。"
+  },
+  {
+    "id": "R7IR2-006",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 has the smaller migration footprint; that is the route I want.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "先比较迁移成本，再描述选择。"
+  },
+  {
+    "id": "R7IR2-007",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 更稳妥，省掉一次回填；就这个。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "先评价再用指示语落决定。"
+  },
+  {
+    "id": "R7IR2-008",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "A is the one I would put forward, because it keeps the SQL unchanged.",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ],
+    "attack": "委婉提出选项并说明理由。"
+  },
+  {
+    "id": "R7IR2-009",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "My call: 2. This avoids a second migration.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "短语式定案并附原因。"
+  },
+  {
+    "id": "R7IR2-010",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second option, given the release deadline.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "名词短语式选择并给出条件理由。"
+  },
+  {
+    "id": "R7IR2-011",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Less risk with PostgreSQL; that is where I land.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "比较风险后用 land 描述定案。"
+  },
+  {
+    "id": "R7IR2-012",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "B, since that keeps the existing SQL intact.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "简短字母式答复并附理由。"
+  },
+  {
+    "id": "R7IR2-013",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I would put PostgreSQL at the top because it avoids a rewrite.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "描述排序实际上选出首位。"
+  },
+  {
+    "id": "R7IR2-014",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The PostgreSQL path — fewer moving parts, and the rollback stays simple.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "用路径描述选择并附理由。"
+  },
+  {
+    "id": "R7IR2-015",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 这一支，迁移步骤最少。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "简短口语描述选择并给理由。"
+  },
+  {
+    "id": "R7IR2-016",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I am leaning PostgreSQL: it matches our production schema.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "倾向性描述表达当前选择并解释。"
+  },
+  {
+    "id": "R7IR2-017",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is the sensible one under this deadline.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "评价式陈述隐含选择。"
+  },
+  {
+    "id": "R7IR2-018",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Honestly, the PostgreSQL route; it requires the least backfill.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "省略谓语的口语选择并给理由。"
+  },
+  {
+    "id": "R7IR2-019",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The one with PostgreSQL, mostly because we already have the tooling.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "按方案特征指认选择。"
+  },
+  {
+    "id": "R7IR2-020",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 seems safer; let us stay on that path for this release.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "先评价后确定当前采用方案。"
+  },
+  {
+    "id": "R7IR2-021",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I would put my weight behind the second one — simpler rollback.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "隐喻式支持表达选择。"
+  },
+  {
+    "id": "R7IR2-022",
+    "group": "commitment-vocabulary-gap",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "For me, the PostgreSQL option, because the team already knows it.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "口语短语式选择并给出理由。"
+  },
+  {
+    "id": "R7IR2-023",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 needs a restart window.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "需求说明而非选择。"
+  },
+  {
+    "id": "R7IR2-024",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 更稳，但还要继续比较成本。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "评价后明确仍在比较。"
+  },
+  {
+    "id": "R7IR2-025",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "If option 2 passes the load test, we could consider it.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "条件假设。"
+  },
+  {
+    "id": "R7IR2-026",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The second option is mentioned in the migration note as an example.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "文档纯提及。"
+  },
+  {
+    "id": "R7IR2-027",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I do not approve option 2 yet.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "否决而非选中该项。"
+  },
+  {
+    "id": "R7IR2-028",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Should we choose 2, or run another benchmark first?",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "继续询问，没有决定。"
+  },
+  {
+    "id": "R7IR2-029",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Please explain the risks of option 2.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "只请求说明。"
+  },
+  {
+    "id": "R7IR2-030",
+    "group": "no-commitment-control",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Production still runs option 2; this is only a status update.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "描述现状。"
+  },
+  {
+    "id": "R7IR2-031",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Let me know how you'd like to proceed.",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "options 后把下一步交给用户决定。"
+  },
+  {
+    "id": "R7IR2-032",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "Reply with the numbers, please.",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "要求用户回复选项编号。"
+  },
+  {
+    "id": "R7IR2-033",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "你来定。",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "明确把选项决定权交给用户。"
+  },
+  {
+    "id": "R7IR2-034",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "回复编号即可。",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "要求用编号回复。"
+  },
+  {
+    "id": "R7IR2-035",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "由你来决定用哪一个。",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "明确让用户决定使用哪一项。"
+  },
+  {
+    "id": "R7IR2-036",
+    "group": "handover-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite",
+    "userText": "The call is yours; tell me which option to implement.",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "将实施选项交由用户决定。"
+  },
+  {
+    "id": "R7IR2-037",
+    "group": "handover-and-tail-negative",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nFor the report template, include the sentence “Let me know how you'd like to proceed.”",
+    "userText": "For the report template, include the sentence “Let me know how you'd like to proceed.”",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "模板中引用请求句，不是在问用户。"
+  },
+  {
+    "id": "R7IR2-038",
+    "group": "handover-and-tail-negative",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nThe transcript ends with the instruction “Reply with the numbers”.",
+    "userText": "The transcript ends with the instruction “Reply with the numbers”.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "转录稿引用句，不是当前请求。"
+  },
+  {
+    "id": "R7IR2-039",
+    "group": "handover-and-tail-negative",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nThis is a summary of the options considered; no answer is needed now.",
+    "userText": "This is a summary of the options considered; no answer is needed now.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "总结结尾不是请求。"
+  },
+  {
+    "id": "R7IR2-040",
+    "group": "handover-and-tail-negative",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nStatus: we already selected option 2 yesterday and completed the rollout.",
+    "userText": "Status: we already selected option 2 yesterday and completed the rollout.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "已完成汇报结尾，不应重新请求选择。"
+  },
+  {
+    "id": "R7IR2-041",
+    "group": "handover-and-tail-negative",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nThe implementation is complete; this paragraph only records the outcome.",
+    "userText": "The implementation is complete; this paragraph only records the outcome.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "完成说明不是请求。"
+  },
+  {
+    "id": "R7IR2-042",
+    "group": "handover-and-tail-negative",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?\n\nClosing note: the team chose PostgreSQL last week; nothing remains for you to decide.",
+    "userText": "Closing note: the team chose PostgreSQL last week; nothing remains for you to decide.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "收尾汇报表明已决策。"
+  },
+  {
+    "id": "R7IR2-043",
+    "group": "reject-all-is-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "今天不批准任何一个。",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "拒绝所有选项，按 R5 边界属于决定（medium）。"
+  },
+  {
+    "id": "R7IR2-044",
+    "group": "reject-all-is-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Neither.",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "明确拒绝两项，属于决定（medium）。"
+  },
+  {
+    "id": "R7IR2-045",
+    "group": "reject-all-is-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "都不选。",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "明确拒绝全部选项，属于决定（medium）。"
+  },
+  {
+    "id": "R7IR2-046",
+    "group": "reject-all-is-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "None of these.",
+    "decision": true,
+    "expectedSelected": [],
+    "attack": "明确拒绝全部选项，属于决定（medium）。"
+  }
+]

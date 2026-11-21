@@ -4,12 +4,11 @@ import {
   pendingWorkTotal,
   rationalesToGive,
   type AppSnapshot,
+  type DecisionApi,
   type DesktopPrimarySurface,
-  type ProactiveRecordResult,
 } from "../../shared/renderer-api.js";
 import { modifierKeyLabel } from "../keyboard.js";
 import { ActionIcon, IconButton } from "./IconButton.js";
-import { BrandIcon } from "./BrandIcon.js";
 import { focusPageHeading, pageFocusLost } from "./ModalDialog.js";
 import {
   QuickJumpDialog,
@@ -19,7 +18,10 @@ import {
 import {
   ActiveRecordDialog,
   type ActiveRecordApi,
+  type ActiveRecordSaved,
 } from "./pages/decisions/ActiveRecordDialog.js";
+import { TodoQuickAddDialog } from "./pages/todos/TodoQuickAddDialog.js";
+import { getTodoViewContext } from "./pages/todos/todo-quick-add-context.js";
 import { ShortcutHelpDialog } from "./ShortcutHelpDialog.js";
 import { FindBar } from "./FindBar.js";
 
@@ -31,6 +33,7 @@ interface DesktopShellProps {
   children: ReactNode;
   quickJumpApi: QuickJumpApi;
   recordApi: ActiveRecordApi;
+  todoApi: Pick<DecisionApi, "listTodoLists" | "recordTodoList" | "updateTodoList">;
   /** Raised by a page that wants the manual record dialog, as ⌘N opens it. */
   recordRequest?: number;
   /** A PR review running, or finished while the reader was on another page. */
@@ -38,7 +41,7 @@ interface DesktopShellProps {
   /** Which step of a capture has the window (its review, a question's rationale, its save): each takes the last's place. */
   taskKey?: string | null;
   onNavigate(surface: DesktopPrimarySurface): void;
-  onRecorded(result: ProactiveRecordResult): void;
+  onRecorded(result: ActiveRecordSaved): void;
   onOpenDecision(id: string): void;
   onOpenJournalEntry(id: string): void;
   onOpenPrinciple(id: string): void;
@@ -68,6 +71,13 @@ const MethodologyIcon = () => (
     <path d="M10 17V9" />
     <path d="M10 11c-3.8 0-6-2.1-6-5.5 3.8 0 6 1.7 6 5.5Z" />
     <path d="M10 9.5c3.8 0 6-2.1 6-5.5-3.8 0-6 1.7-6 5.5Z" />
+  </svg>
+);
+
+const PromptIcon = () => (
+  <svg viewBox="0 0 20 20" aria-hidden="true">
+    <path d="M4 4.5h12v8.5H9l-3.5 3v-3H4Z" />
+    <path d="M7 8l1.8 1.5L7 11M10.5 11H13" />
   </svg>
 );
 
@@ -121,6 +131,22 @@ const TaskIcon = () => (
   </svg>
 );
 
+const CodeIcon = () => (
+  <svg viewBox="0 0 20 20" aria-hidden="true">
+    <path d="m7 5-5 5 5 5m6-10 5 5-5 5" />
+  </svg>
+);
+
+/** 待办: a list whose first line is ticked, the rest still to do. */
+const TodoIcon = () => (
+  <svg viewBox="0 0 20 20" aria-hidden="true">
+    <path d="m3 5.3 1.4 1.4 2.5-2.7" />
+    <path d="M9.5 5.5H17M9.5 10.5H17M9.5 15.5H17" />
+    <rect x="3.2" y="9" width="3.2" height="3.2" rx="0.8" />
+    <rect x="3.2" y="14" width="3.2" height="3.2" rx="0.8" />
+  </svg>
+);
+
 const PlusIcon = () => (
   <svg viewBox="0 0 20 20" aria-hidden="true">
     <path d="M10 5v10M5 10h10" />
@@ -149,7 +175,12 @@ const WORKSPACE_NAVIGATION: readonly NavigationItem[] = [
   // 页头仍叫「PR 评审」，侧栏只留「评审」：最长的一条标签原本一个人撑着整条
   // 导航的宽度，而那些像素每一页都要还回去。
   { surface: "pr-review", label: "评审", Icon: TaskIcon },
+  { surface: "local-review", label: "本地审阅", Icon: CodeIcon },
+  // agent 存下的调研结果与自己记下的事项，逐项跟进；不是首页的「待处理」（Paraself 自己的确认、补理由、复盘）。
+  { surface: "todos", label: "待办", Icon: TodoIcon },
   { surface: "methodology", label: "方法论", Icon: MethodologyIcon },
+  // 存着备用、随时复制给 agent 的提示词；只在这台电脑上，不进 Vault，也不被当作笔记召回。
+  { surface: "prompts", label: "提示词", Icon: PromptIcon },
 ];
 
 /**
@@ -176,14 +207,18 @@ export const SETTINGS_SURFACES: ReadonlySet<DesktopPrimarySurface> = new Set(
   SETTINGS_SECTIONS.map((item) => item.surface),
 );
 
-/** Cmd/Ctrl+1 … Cmd/Ctrl+6 follow the sidebar order top to bottom. */
+/**
+ * Cmd/Ctrl+1 … Cmd/Ctrl+9. The first eight are what they were before 提示词 was added (the seven pages above it, then
+ * 设置 as ⌘8), so no one's ⌘8 moved; 提示词, added later, takes ⌘9 although it sits above 设置 in the sidebar.
+ */
 export const SURFACE_SHORTCUT_ORDER: readonly DesktopPrimarySurface[] = [
-  ...WORKSPACE_NAVIGATION,
-  SETTINGS_ENTRY,
-].map((item) => item.surface);
+  ...WORKSPACE_NAVIGATION.map((item) => item.surface).filter((surface) => surface !== "prompts"),
+  SETTINGS_ENTRY.surface,
+  "prompts",
+];
 
 /** The shell's own dialogs. Exactly one of them is on screen, or none. */
-type ShellOverlay = "help" | "quick-jump" | "record";
+type ShellOverlay = "help" | "quick-jump" | "record" | "todo-quick-add";
 
 /** A plain modifier chord, which is what makes it safe to use while typing. */
 const isChord = (event: KeyboardEvent, key: string): boolean =>
@@ -192,6 +227,10 @@ const isChord = (event: KeyboardEvent, key: string): boolean =>
   !event.altKey &&
   !event.isComposing &&
   event.key.toLowerCase() === key;
+
+/** ⇧⌘N: 快速添加 a todo; ⌘N alone stays 主动记录. */
+const isTodoQuickAddChord = (event: KeyboardEvent): boolean =>
+  (event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey && !event.isComposing && event.key.toLowerCase() === "n";
 
 const surfaceForShortcut = (
   event: KeyboardEvent,
@@ -215,6 +254,7 @@ export const DesktopShell = ({
   children,
   quickJumpApi,
   recordApi,
+  todoApi,
   recordRequest = 0,
   reviewActivity = null,
   taskKey = null,
@@ -234,7 +274,7 @@ export const DesktopShell = ({
   const pendingBreakdown =
     pendingCount === 0
       ? ""
-      : ` · ${pendingCount} 项待办：待确认 ${snapshot.decisionCandidates.count} · 待补理由 ${pendingRationales} · 需复盘 ${snapshot.dashboard.reviewAttention}`;
+      : snapshot.dashboard.organizationAutomatic ? ` · ${pendingCount} 项需要判断` : ` · ${pendingCount} 项待处理：待确认 ${snapshot.decisionCandidates.count} · 待补理由 ${pendingRationales} · 需复盘 ${snapshot.dashboard.reviewAttention}`;
   /**
    * One at a time, by construction. Three booleans could all be true, and a
    * shortcut fired while focus sat outside an open dialog would have done it.
@@ -243,6 +283,14 @@ export const DesktopShell = ({
   const toggleSidebar = () => setCollapsed(previous => !previous);
   const [overlay, setOverlay] = useState<ShellOverlay | null>(null);
   const closeOverlay = (): void => setOverlay(null);
+  // A short line after 快速添加 from a page that shows nothing of it; gone after a few seconds.
+  const [notice, setNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (notice === null) return;
+    const timer = setTimeout(() => setNotice(null), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+  const announce = setNotice;
   useEffect(() => {
     if (recordRequest > 0) setOverlay("record");
   }, [recordRequest]);
@@ -319,7 +367,9 @@ export const DesktopShell = ({
         ? "quick-jump"
         : isChord(event, "n")
           ? "record"
-          : null;
+          : isTodoQuickAddChord(event)
+            ? "todo-quick-add"
+            : null;
       if (opening === null) return;
       if (
         event.target instanceof Element &&
@@ -373,14 +423,6 @@ export const DesktopShell = ({
   return (
     <main className="desktop-app app-shell" data-sidebar-collapsed={collapsed}>
       <aside id="desktop-sidebar" className="desktop-sidebar drag-region">
-        <div className="desktop-brand">
-          <BrandIcon className="desktop-brand-icon" />
-          <div>
-            <strong>Decision</strong>
-            <span>决策平台</span>
-          </div>
-        </div>
-
         {/*
           两个全局命令原本压在侧栏最底下，长得跟「键盘快捷键」一样，是两行灰字。
           它们其实是这个 app 仅有的两个随时可用的动作，所以提到品牌下方、给上
@@ -465,6 +507,15 @@ export const DesktopShell = ({
           }}
         />
       ) : null}
+      {overlay === "todo-quick-add" ? (
+        <TodoQuickAddDialog
+          api={todoApi}
+          currentListId={getTodoViewContext()}
+          onClose={closeOverlay}
+          onAdded={(result) => announce(`已添加到「${result.list?.title ?? "待办"}」。`)}
+        />
+      ) : null}
+      {notice === null ? null : <p className="todo-quick-add-notice" role="status">{notice}</p>}
       {overlay === "quick-jump" ? (
         <QuickJumpDialog
           api={quickJumpApi}

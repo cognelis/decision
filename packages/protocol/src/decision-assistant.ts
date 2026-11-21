@@ -43,7 +43,7 @@ export const retrievalAnswerCitationSchema = z
     /**
      * The record's own id, when this app holds it — which is what lets a
      * citation open the decision or principle page rather than the Markdown
-     * behind it. Absent for notes and for decisions in the historical format,
+     * behind it. Absent for notes and for summarized decisions,
      * whose ids the current index does not carry.
      */
     recordId: z.string().min(1).max(200).optional(),

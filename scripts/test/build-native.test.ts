@@ -4,10 +4,9 @@ import { describe, expect, it } from "vitest";
 import { nativeBuildPlan } from "../build-native.mjs";
 
 describe("native build plan", () => {
-  it("builds both Apple helpers only on macOS", () => {
+  it("builds the Apple helper only on macOS", () => {
     expect(nativeBuildPlan("darwin")).toEqual([
       "scripts/build-foundation-model-helper.sh",
-      "scripts/build-liquid-glass-addon.sh",
     ]);
     expect(nativeBuildPlan("win32")).toEqual([]);
     expect(nativeBuildPlan("linux")).toEqual([]);

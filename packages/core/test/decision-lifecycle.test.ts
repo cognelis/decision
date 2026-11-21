@@ -33,6 +33,28 @@ describe("decision lifecycle projection", () => {
     expect(missing.states.get(decisionRelationKey(relation()))).toBe("missing_source");
     expect(missing.state(document("A"))).toBe("uncertain");
   });
+  // A wrong write deleted (IMP-121) took the decision it had a relationship with to the end of every search, for good.
+  it("leaves a record as it stands when the other end of its relationship was deleted, and doubts it only when unread", () => {
+    const gone = () => true;
+    const survivor = document("A");
+    const deleted = buildDecisionLifecycle([survivor], [relation()], false, gone);
+    expect(deleted.states.get(decisionRelationKey(relation()))).toBe("missing_source");
+    expect(deleted.state(survivor)).toBe("current");
+    const pointed = document("A", { supersededBy: ["B"] });
+    expect(buildDecisionLifecycle([pointed], [], false, gone).state(pointed)).toBe("current");
+    // Not read this time (a note in iCloud), the other end may still stand.
+    expect(buildDecisionLifecycle([pointed], [], false, () => false).state(pointed)).toBe("uncertain");
+    expect(buildDecisionLifecycle([survivor], [relation()]).state(survivor)).toBe("uncertain");
+  });
+  // Marked replaced in its own note, by a record since deleted: "replaced" and "the replacement no longer holds" at once.
+  it("doubts a record marked replaced by its own note once every successor it names is gone", () => {
+    const marked = document("A", { status: "superseded", supersededBy: ["B"] });
+    expect(buildDecisionLifecycle([marked], [], false, () => true).state(marked)).toBe("uncertain");
+    // Retired stands on its own; with a successor still there, replaced it is.
+    const retired = document("R", { status: "retired", supersededBy: ["B"] });
+    expect(buildDecisionLifecycle([retired], [], false, () => true).state(retired)).toBe("superseded");
+    expect(buildDecisionLifecycle([marked, document("B")], [], false, () => true).state(marked)).toBe("superseded");
+  });
   it("keeps equal IDs from different sources distinct", () => {
     const docs = [document("A"), document("A", { source: "decisions", status: "completed" })];
     const cross = relation({ second: { source: "decisions", recordId: "A", contentHash: hash } });

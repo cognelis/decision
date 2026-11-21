@@ -32,6 +32,7 @@ const fixturePath = fileURLToPath(
 );
 
 const profile: ModelProviderProfile = {
+  proxy: { mode: "custom", url: "http://127.0.0.1:7890" },
   version: 1,
   profileId: "builtin-claude-code",
   kind: "claude-code-cli",
@@ -95,6 +96,7 @@ const setup = (
       profile: { ...profile, ...(proxy === undefined ? {} : { proxy }) },
       runner: { run },
       environment: {
+        MODEL_PROXY_URL: "http://127.0.0.1:7890",
         HOME: "/Users/demo",
         USER: "demo",
         PATH: "/usr/bin:/bin",
@@ -109,11 +111,23 @@ const setup = (
 };
 
 describe("ClaudeCodeCliAdapter", () => {
+  it("leaves the model choice to Claude Code when no model was configured", async () => {
+    const { model: _model, ...defaultProfile } = profile;
+    const requests: ManagedProcessRequest[] = [];
+    const adapter = new ClaudeCodeCliAdapter({ profile: defaultProfile, runner: { run: async (request) => { requests.push(request); return success(); } } });
+    // Left empty, the field said the client's own model would answer; Haiku answered every question and draft.
+    await adapter.invoke(input);
+    await adapter.generate(methodologyRequest);
+    expect(requests).toHaveLength(2);
+    for (const request of requests) expect(request.args).not.toContain("--model");
+    expect(await adapter.status()).toMatchObject({ modelVersion: "claude-default" });
+  });
+
   it("passes the configured proxy to semantic and structured CLI child requests", async () => {
-    const { adapter, requests } = setup(success, { mode: "custom", url: "http://127.0.0.1:7890", noProxy: "localhost" });
+    const { adapter, requests } = setup(success, { mode: "custom", url: "http://127.0.0.1:7890" });
     await adapter.invoke(input); await adapter.generate(methodologyRequest);
     expect(requests).toHaveLength(2);
-    for (const request of requests) expect(request.environment).toMatchObject({ HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", NO_PROXY: "localhost", no_proxy: "localhost", DECISION_PROVIDER_CHILD: "1" });
+    for (const request of requests) expect(request.environment).toMatchObject({ HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", NO_PROXY: "", no_proxy: "", PARASELF_PROVIDER_CHILD: "1" });
   });
 
   it("cross-checks visible and structured methodology output", async () => {
@@ -147,6 +161,19 @@ describe("ClaudeCodeCliAdapter", () => {
     expect(requests[0]?.args).toContain("--safe-mode");
   });
 
+  it("leaves out the schema dialect Claude Code refuses", async () => {
+    const structuredOutput = { title: "可逆优先" };
+    const { adapter, requests } = setup({
+      exitCode: 0,
+      stdout: JSON.stringify({ type: "result", subtype: "success", is_error: false, result: JSON.stringify(structuredOutput), structured_output: structuredOutput }),
+      stderr: "",
+      durationMs: 100,
+    });
+    await adapter.generate({ ...methodologyRequest, outputSchema: { $schema: "https://json-schema.org/draft/2020-12/schema", ...methodologyRequest.outputSchema } });
+    const schema = requests[0]!.args[requests[0]!.args.indexOf("--json-schema") + 1]!;
+    expect(JSON.parse(schema)).toEqual(methodologyRequest.outputSchema);
+  });
+
   it("runs one safe stateless print request and cross-checks structured output", async () => {
     const { adapter, requests } = setup();
 
@@ -157,6 +184,8 @@ describe("ClaudeCodeCliAdapter", () => {
     expect(request.args).toEqual([
       "-p",
       "--safe-mode",
+      "--setting-sources",
+      "",
       "--tools",
       "",
       "--disallowedTools",
@@ -180,11 +209,15 @@ describe("ClaudeCodeCliAdapter", () => {
       buildSemanticUserPrompt(input),
     );
     expect(request.environment).toEqual({
+      MODEL_PROXY_URL: "http://127.0.0.1:7890",
+      HTTP_PROXY: "http://127.0.0.1:7890", HTTPS_PROXY: "http://127.0.0.1:7890", ALL_PROXY: "http://127.0.0.1:7890",
+      http_proxy: "http://127.0.0.1:7890", https_proxy: "http://127.0.0.1:7890", all_proxy: "http://127.0.0.1:7890", NO_PROXY: "", no_proxy: "",
       HOME: "/Users/demo",
       USER: "demo",
       PATH: "/usr/bin:/bin",
       VOLTA_HOME: "/Users/demo/.volta",
       CLAUDE_CONFIG_DIR: "/Users/demo/.claude",
+      PARASELF_PROVIDER_CHILD: "1",
       DECISION_PROVIDER_CHILD: "1",
     });
     expect(result).toMatchObject({

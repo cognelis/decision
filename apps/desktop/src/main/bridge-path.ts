@@ -30,7 +30,7 @@ export const resolveBridgeExecutablePath = ({
   return paths.join(
     resourcesPath,
     "bridge",
-    platform === "win32" ? "decision-bridge.cmd" : "decision-bridge",
+    platform === "win32" ? "paraself-bridge.cmd" : "paraself-bridge",
   );
 };
 
@@ -61,11 +61,11 @@ export const squirrelBridgeLauncher = ({
   const version = win32.dirname(execPath);
   const root = win32.dirname(version);
   if (!/^app-\d+\.\d+\.\d+/u.test(win32.basename(version)) || !exists(win32.join(root, "Update.exe"))) return null;
-  const target = win32.relative(root, win32.join(resourcesPath, "bridge", "decision-bridge.cmd"));
+  const target = win32.relative(root, win32.join(resourcesPath, "bridge", "paraself-bridge.cmd"));
   // A quote or a percent sign in it would be cmd's own: there is none in the folders Squirrel names.
   if (target.startsWith("..") || win32.isAbsolute(target) || /["%]/u.test(target)) return null;
   return {
-    path: win32.join(root, "decision-bridge.cmd"),
+    path: win32.join(root, "paraself-bridge.cmd"),
     // The version's wrapper in its place: no `call`, so what is piped in and the exit code pass through as they
     // are. The wrapper itself finds this launcher beside Update.exe and gives out its path to `install`: taken
     // from the environment instead, a variable anyone could set chose what every hook ran.

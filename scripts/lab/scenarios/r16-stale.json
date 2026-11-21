@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "description": "R16 开发集（全部合成）：被测代理会不会答成被替代的旧值（issue #6）。agent 步骤按最后一行「答案：」计分；mechanism 为可选字段，标出机制 M1–M8。标签在首跑前写定。",
+  "scenarios": [
+    {
+      "id": "m1-frontmatter",
+      "mechanism": "M1",
+      "description": "新旧两条都被关键词命中，替代写在 frontmatter。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/会话缓存存储.md",
+            "content": "---\nid: R16M1A\ncreated: \"2026-08-01\"\nstatus: \"superseded\"\nselected_option: \"会话缓存放在 Redis 集群。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: R16M1B\n---\n# 会话缓存存储\n\n## 决策\n会话缓存放在 Redis 集群。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/会话缓存存储调整.md",
+            "content": "---\nid: R16M1B\ncreated: \"2026-09-15\"\nstatus: \"accepted\"\nselected_option: \"会话缓存放在 Valkey 集群。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [R16M1A]\nsuperseded_by: null\n---\n# 会话缓存存储调整\n\n## 决策\n会话缓存放在 Valkey 集群。\n\n合成数据，仅用于 R16 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m1-ask",
+          "tool": "agent",
+          "prompt": "我要给登录接口加会话缓存，会话缓存现在用的是哪个存储服务？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "Valkey"
+              ],
+              "mustExclude": [
+                "Redis"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "m2-control",
+      "mechanism": "M2",
+      "description": "对照：只有现行记录，另有共享词的无关记录。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/后台任务队列选型.md",
+            "content": "---\nid: R16M2A\ncreated: \"2026-09-10\"\nstatus: \"accepted\"\nselected_option: \"后台任务队列使用 NATS JetStream。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 后台任务队列选型\n\n## 决策\n后台任务队列使用 NATS JetStream。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/任务队列监控面板.md",
+            "content": "---\nid: R16M2N1\ncreated: \"2026-09-11\"\nstatus: \"accepted\"\nselected_option: \"任务队列的监控面板用 Grafana 展示积压量。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 任务队列监控面板\n\n## 决策\n任务队列的监控面板用 Grafana 展示积压量。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/后台任务重试策略.md",
+            "content": "---\nid: R16M2N2\ncreated: \"2026-09-12\"\nstatus: \"accepted\"\nselected_option: \"后台任务失败后指数退避重试，最多五次。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 后台任务重试策略\n\n## 决策\n后台任务失败后指数退避重试，最多五次。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/队列消费者扩容.md",
+            "content": "---\nid: R16M2N3\ncreated: \"2026-09-13\"\nstatus: \"accepted\"\nselected_option: \"队列消费者按积压量自动扩容，上限二十个实例。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 队列消费者扩容\n\n## 决策\n队列消费者按积压量自动扩容，上限二十个实例。\n\n合成数据，仅用于 R16 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m2-ask",
+          "tool": "agent",
+          "prompt": "我在写一个新的后台任务，任务队列用的是哪个消息中间件？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "NATS"
+              ],
+              "mustExclude": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "m3-reworded",
+      "mechanism": "M3",
+      "description": "问题用词只命中旧记录；新记录换了说法。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/应用日志保留期限.md",
+            "content": "---\nid: R16M3A\ncreated: \"2026-08-02\"\nstatus: \"superseded\"\nselected_option: \"应用日志保留 30 天后删除。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: R16M3B\n---\n# 应用日志保留期限\n\n## 决策\n应用日志保留 30 天后删除。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/可观测数据清理策略.md",
+            "content": "---\nid: R16M3B\ncreated: \"2026-09-20\"\nstatus: \"accepted\"\nselected_option: \"运行记录统一在 90 天后自动清除。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [R16M3A]\nsuperseded_by: null\n---\n# 可观测数据清理策略\n\n## 决策\n运行记录统一在 90 天后自动清除。\n\n合成数据，仅用于 R16 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m3-ask",
+          "tool": "agent",
+          "prompt": "我在配置日志清理任务，应用日志保留多少天？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "90"
+              ],
+              "mustExclude": [
+                "30"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "m4-chain",
+      "mechanism": "M4",
+      "description": "替代链 A→B→C，问题命中 A、B 的说法，C 换了措辞。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/前端状态管理库.md",
+            "content": "---\nid: R16M4A\ncreated: \"2026-07-01\"\nstatus: \"superseded\"\nselected_option: \"前端状态管理用 Redux。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: R16M4B\n---\n# 前端状态管理库\n\n## 决策\n前端状态管理用 Redux。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/前端状态管理库调整.md",
+            "content": "---\nid: R16M4B\ncreated: \"2026-08-01\"\nstatus: \"superseded\"\nselected_option: \"前端状态管理改用 MobX。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [R16M4A]\nsuperseded_by: R16M4C\n---\n# 前端状态管理库调整\n\n## 决策\n前端状态管理改用 MobX。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/界面数据流方案.md",
+            "content": "---\nid: R16M4C\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"界面数据流统一交给 Zustand。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [R16M4B]\nsuperseded_by: null\n---\n# 界面数据流方案\n\n## 决策\n界面数据流统一交给 Zustand。\n\n合成数据，仅用于 R16 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m4-ask",
+          "tool": "agent",
+          "prompt": "我要新写一个页面，前端状态管理现在用哪个库？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "Zustand"
+              ],
+              "mustExclude": [
+                "Redux",
+                "MobX"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "m5-manual-relation",
+      "mechanism": "M5",
+      "description": "只靠人工关系替代，旧笔记 frontmatter 仍是 accepted。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/接口限流算法.md",
+            "content": "---\nid: R16M5A\ncreated: \"2026-08-03\"\nstatus: \"accepted\"\nselected_option: \"接口限流用令牌桶算法。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 接口限流算法\n\n## 决策\n接口限流用令牌桶算法。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/接口限流算法调整.md",
+            "content": "---\nid: R16M5B\ncreated: \"2026-09-18\"\nstatus: \"accepted\"\nselected_option: \"接口限流改用滑动窗口算法。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 接口限流算法调整\n\n## 决策\n接口限流改用滑动窗口算法。\n\n合成数据，仅用于 R16 实跑。\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "m5-old",
+            "tool": "search_decision_context",
+            "args": {
+              "recordId": "R16M5A",
+              "source": "summarize",
+              "includeOutOfScope": true
+            },
+            "expect": {
+              "mustInclude": [
+                "R16M5A"
+              ]
+            }
+          },
+          {
+            "id": "m5-new",
+            "tool": "search_decision_context",
+            "args": {
+              "recordId": "R16M5B",
+              "source": "summarize",
+              "includeOutOfScope": true
+            },
+            "expect": {
+              "mustInclude": [
+                "R16M5B"
+              ]
+            }
+          },
+          {
+            "id": "m5-relation",
+            "tool": "record_decision_relation",
+            "args": {
+              "first": {
+                "source": "summarize",
+                "recordId": "R16M5A",
+                "contentHash": {
+                  "$ref": "m5-old.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "second": {
+                "source": "summarize",
+                "recordId": "R16M5B",
+                "contentHash": {
+                  "$ref": "m5-new.context.results.0.sourceRef.contentHash"
+                }
+              },
+              "disposition": "supersedes",
+              "successor": "second",
+              "expectedRevision": 0,
+              "reason": "合成用户确认滑动窗口方案替代令牌桶方案。"
+            },
+            "expect": {
+              "equals": {
+                "relationUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m5-ask",
+          "tool": "agent",
+          "prompt": "我在给新接口加限流，接口限流用的是什么算法？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "滑动窗口"
+              ],
+              "mustExclude": [
+                "令牌桶"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "m6-reviewed-old",
+      "mechanism": "M6",
+      "description": "旧记录有实际结果和「符合预期」的复盘，新记录还没复盘。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/06/R16M6A.md",
+            "content": "---\nid: \"R16M6A\"\ncreated: \"2026-06-01T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-06-01T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"用户上传的图片存进 MinIO。\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n上传图片的对象存储\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n用户上传的图片存进 MinIO。\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIueUqOaIt-S4iuS8oOeahOWbvueJh-WtmOi_myBNaW5JT-OAgiJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：仅用于 R16 实跑。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：方案可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/09/R16M6B.md",
+            "content": "---\nid: \"R16M6B\"\ncreated: \"2026-09-22T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-09-22T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"用户上传的图片改存进 SeaweedFS。\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: \"R16M6A\"\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n上传图片的对象存储调整\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n用户上传的图片改存进 SeaweedFS。\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIueUqOaIt-S4iuS8oOeahOWbvueJh-aUueWtmOi_myBTZWF3ZWVkRlPjgIIiXX0 -->\n\n## 我的理由（原文）\n\n合成理由：仅用于 R16 实跑。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：方案可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ],
+        "calls": [
+          {
+            "id": "m6-old",
+            "tool": "search_decision_context",
+            "args": {
+              "recordId": "R16M6A",
+              "source": "decisions",
+              "includeOutOfScope": true
+            },
+            "expect": {
+              "mustInclude": [
+                "R16M6A"
+              ]
+            }
+          },
+          {
+            "id": "m6-outcome",
+            "tool": "record_decision_outcome",
+            "args": {
+              "source": "decisions",
+              "recordId": "R16M6A",
+              "expectedContentHash": {
+                "$ref": "m6-old.context.results.0.sourceRef.contentHash"
+              },
+              "outcome": "合成观察：上线三个月运行稳定，没有出现丢图。",
+              "review": {
+                "verdict": "as_expected",
+                "lesson": null
+              }
+            },
+            "expect": {
+              "equals": {
+                "outcomeUpdate.status": "saved"
+              }
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m6-ask",
+          "tool": "agent",
+          "prompt": "我在写图片上传接口，用户上传的图片存在哪个对象存储里？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "SeaweedFS"
+              ],
+              "mustExclude": [
+                "MinIO"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "m7-app-decision",
+      "mechanism": "M7",
+      "description": "来源是 App 自己的决策（source=decisions，## 我的选择）。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/decisions/2026/07/R16M7A.md",
+            "content": "---\nid: \"R16M7A\"\ncreated: \"2026-07-10T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-07-10T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"数据库迁移用 Flyway。\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: null\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n数据库迁移工具\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n数据库迁移用 Flyway。\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuaVsOaNruW6k-i_geenu-eUqCBGbHl3YXnjgIIiXX0 -->\n\n## 我的理由（原文）\n\n合成理由：仅用于 R16 实跑。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：方案可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          },
+          {
+            "path": "Decision Journal/decisions/2026/09/R16M7B.md",
+            "content": "---\nid: \"R16M7B\"\ncreated: \"2026-09-25T00:00:00.000Z\"\nstatus: \"completed\"\nsource_client: \"manual\"\nsource_kind: \"app_manual\"\nsource_form: \"user_original\"\noccurred_at: \"2026-09-25T00:00:00.000Z\"\nsensitivity: \"private\"\nproject: \"lab\"\nworkflow: null\ndecision_type: \"other\"\nselected_option: \"数据库迁移改用 Atlas。\"\ncapture_mode: null\ncapture_semantic_key: null\nsource_event_id: null\nbatch_id: null\nquestion_index: null\ncapture_confidence: null\ncapture_score: null\ncapture_detector: null\ncontext_truncated: null\nllm_recommendation: null\nrationale_status: \"captured\"\nrationale_original_present: true\nreason_factors: []\ntags: [\"synthetic\"]\nrelated: []\napplied_principles: []\nsupersedes: \"R16M7A\"\nreview_due_date: null\noutcome_verdict: null\noutcome_reviewed_at: null\noutcome_lesson_present: true\n---\n# 决策点\n\n数据库迁移工具调整\n\n## 可选方案\n\n（原生问答未提供预设方案）\n\n```decision-options\n[]\n```\n\n## 我的选择\n\n数据库迁移改用 Atlas。\n<!-- decision:selection-base64 eyJraW5kIjoiY3VzdG9tIiwidmFsdWVzIjpbIuaVsOaNruW6k-i_geenu-aUueeUqCBBdGxhc-OAgiJdfQ -->\n\n## 我的理由（原文）\n\n合成理由：仅用于 R16 实跑。\n\n<!-- decision:rationale-end -->\n\n## 当时上下文\n\n合成环境中的实现选择。\n\n<!-- decision:context-end -->\n\n## 预期结果\n\n合成预期：方案可稳定运行。\n\n<!-- decision:expected-outcome-end -->\n\n## 后续结果\n\n（尚未记录）\n\n<!-- decision:outcome-end -->\n\n## 复盘结论\n\n<!-- decision:outcome-review-end -->\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m7-ask",
+          "tool": "agent",
+          "prompt": "我要加一张新表，数据库迁移用什么工具来写？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "Atlas"
+              ],
+              "mustExclude": [
+                "Flyway"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "m8-one-attribute",
+      "mechanism": "M8",
+      "description": "只改一个属性：存储不变，过期时间从 1 小时改成 15 分钟。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/验证码缓存.md",
+            "content": "---\nid: R16M8A\ncreated: \"2026-08-05\"\nstatus: \"superseded\"\nselected_option: \"验证码缓存在 Redis，过期时间 1 小时。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: R16M8B\n---\n# 验证码缓存\n\n## 决策\n验证码缓存在 Redis，过期时间 1 小时。\n\n合成数据，仅用于 R16 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/验证码缓存过期时间.md",
+            "content": "---\nid: R16M8B\ncreated: \"2026-09-28\"\nstatus: \"accepted\"\nselected_option: \"验证码缓存在 Redis，过期时间 15 分钟。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [R16M8A]\nsuperseded_by: null\n---\n# 验证码缓存过期时间\n\n## 决策\n验证码缓存在 Redis，过期时间 15 分钟。\n\n合成数据，仅用于 R16 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "m8-ask",
+          "tool": "agent",
+          "prompt": "我在写发短信验证码的接口，验证码缓存的过期时间设多久？",
+          "expect": {
+            "answer": {
+              "mustInclude": [
+                "15"
+              ],
+              "mustExclude": [
+                "小时"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

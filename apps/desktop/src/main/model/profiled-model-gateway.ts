@@ -1,4 +1,4 @@
-import { withProviderDeadline } from "./provider-deadline.js";
+import { abortFailure, withProviderDeadline } from "./provider-deadline.js";
 import {
   modelInvocationErrorCodeSchema,
   modelInvocationInputSchema,
@@ -75,6 +75,8 @@ export interface ModelProviderTestResult {
   providerRequestId?: string;
   processExitCode?: number;
   diagnosticExcerpt?: string;
+  /** What the test call cost, when the provider said (a decisions backend reports it on every answer). */
+  costUsd?: number;
 }
 
 export interface ProfiledStructuredGenerationResult<T> {
@@ -102,6 +104,15 @@ export interface ProfiledModelGatewayOptions {
   idFactory?: () => string;
   /** How long a generation no caller can stop (a draft from the knowledge page) may run in all. */
   unattendedGenerationMs?: number;
+  /**
+   * Capture classification on this machine's Qwen 4B alone (IMP-153): no other backend on the chain is asked, so a
+   * turn the reader never asked about stays on the machine whatever the local model does.
+   */
+  onDeviceClassificationOnly?: () => boolean;
+  /** Whether the on-device classifier's model file was never downloaded: a cheap look, no process probed. */
+  onDeviceModelMissing?: (profile: ModelProviderProfile) => Promise<boolean>;
+  /** Each classification or generation as it starts, by its purpose: a background organization run gives way (IMP-191). */
+  onCall?: (purpose: string) => void;
 }
 
 interface NormalizedFailure {
@@ -177,19 +188,37 @@ export const outputValidationDiagnostic = (error: unknown, schema: Record<string
   return `模型已返回结果，但未通过应用输出校验。${details.length ? `\n${details.join("\n")}` : "校验器未提供结构化错误详情。"}`;
 };
 
+/**
+ * The backends every generation route chooses from: capture classification and its fallback chain, each generation
+ * purpose, and listGenerationProfiles (PR review, answers, context summaries). A decisions backend (jev) is never
+ * among them: it writes no text, and is asked only by name, through OpenRouterDecisionClient (IMP-166).
+ */
 const enabledProfiles = (
   profiles: ModelProviderProfile[],
 ): ModelProviderProfile[] =>
   profiles
-    .filter((profile) => profile.enabled)
+    .filter((profile) => profile.enabled && profile.kind !== "openrouter-decisions")
     .sort(
       (left, right) =>
         left.priority - right.priority ||
         left.profileId.localeCompare(right.profileId),
     );
 
+/** The one model capture classification may use on this machine: 2B scored below the rules alone on every measure. */
+const ON_DEVICE_CLASSIFIER_MODEL = "qwen3.5-4b-q4-k-m";
+
+/** The first enabled Qwen set to 4B: the only backend capture classification asks on this machine. */
+const onDeviceClassifierProfile = (profiles: ModelProviderProfile[]): ModelProviderProfile | undefined =>
+  enabledProfiles(profiles).find((profile) => profile.kind === "qwen" && profile.model === ON_DEVICE_CLASSIFIER_MODEL);
+
 const isLongLived = (profile: ModelProviderProfile): boolean =>
   profile.kind === "apple" || profile.kind === "qwen";
+
+/**
+ * Backends that answer on this machine. A context summary reads what the reader is recording before they have
+ * decided to keep any of it; filtered by the caller alone, one caller forgetting would send it to an API or a CLI.
+ */
+const onDevice = (profile: ModelProviderProfile): boolean => profile.kind === "apple" || profile.kind === "qwen";
 
 /** The gateway's deadline for a call: none for a backend that times its own (SemanticClassifier.queuesCalls). */
 const attemptDeadline = (provider: SemanticClassifier, timeoutMs: number): number | undefined =>
@@ -199,6 +228,7 @@ const attemptDeadline = (provider: SemanticClassifier, timeoutMs: number): numbe
 export const modelFailureMessage = (code: string): string =>
   code === "invalid_configuration" ? "模型配置或输出格式不受支持，请检查模型设置或选择其他模型。" :
   code === "authentication_failed" || code === "authorization_failed" || code === "credential_unavailable" || code === "credential_decryption_failed" ? "模型凭据或访问权限不可用，请在模型设置中检查。" :
+  code === "content_refused" ? "服务商的内容审核拒绝了这次请求，不是凭据问题；可以换一个模型，或调整内容后重试。" :
   code === "timeout" ? "模型调用超时，请重试或调整模型超时设置。" :
   code === "rate_limited" ? "模型服务限流：请求太密，稍后再试或减少同时进行的评审。" :
   code === "quota_exhausted" ? "模型服务的额度或余额不足，请到服务商处充值或检查套餐后再试。" :
@@ -234,6 +264,9 @@ export class ProfiledModelGateway
   readonly #now: () => Date;
   readonly #idFactory: () => string;
   readonly #unattendedGenerationMs: number;
+  readonly #onCall: ((purpose: string) => void) | undefined;
+  readonly #onDeviceClassificationOnly: () => boolean;
+  readonly #onDeviceModelMissing: (profile: ModelProviderProfile) => Promise<boolean>;
   readonly #longLivedProviders = new Map<
     string,
     SemanticClassifier
@@ -254,6 +287,31 @@ export class ProfiledModelGateway
     this.#now = options.now ?? (() => new Date());
     this.#idFactory = options.idFactory ?? randomUUID;
     this.#unattendedGenerationMs = options.unattendedGenerationMs ?? 5 * 60_000;
+    this.#onCall = options.onCall;
+    this.#onDeviceClassificationOnly = options.onDeviceClassificationOnly ?? (() => false);
+    this.#onDeviceModelMissing = options.onDeviceModelMissing ?? (async () => false);
+  }
+
+  /**
+   * Whether the on-device classifier is there to ask (IMP-153): Qwen on, set to 4B, its model downloaded. Not there
+   * is no failure, and asked before every captured turn, so answered from the profiles and one look at the file:
+   * a model that is there but will not answer is left to the call, which files it.
+   */
+  async onDeviceClassifierInstalled(): Promise<boolean> {
+    this.#requireOpen();
+    const profile = onDeviceClassifierProfile(await this.#profiles.load());
+    return profile !== undefined && !(await this.#onDeviceModelMissing(profile));
+  }
+
+  /**
+   * The backends capture classification goes down: the whole chain, or on this machine only the first enabled Qwen
+   * set to 4B. None (Qwen off, or set to 2B) leaves the rules to answer, as a chain that failed does.
+   */
+  #classificationProfiles(profiles: ModelProviderProfile[]): ModelProviderProfile[] {
+    const enabled = enabledProfiles(profiles);
+    if (!this.#onDeviceClassificationOnly()) return enabled;
+    const profile = onDeviceClassifierProfile(enabled);
+    return profile === undefined ? [] : [profile];
   }
 
   async classify(
@@ -262,18 +320,24 @@ export class ProfiledModelGateway
     auditContext?: SemanticClassificationAuditContext,
   ): Promise<SemanticClassification> {
     this.#requireOpen();
+    this.#onCall?.("semantic-classification");
     signal = this.#cancellable(signal);
     if (signal?.aborted) throw new ModelProviderError("cancelled", "Model call was cancelled");
     const requestId = this.#idFactory();
-    const profiles = enabledProfiles(
+    const profiles = this.#classificationProfiles(
       await this.#profiles.load(),
     );
     let attemptIndex = 0;
+    // Any backend on the chain that was asked and ran out of time, even with another one failing after it: the
+    // chain ends with no reading, not with no model.
+    let timedOut = false;
     for (const profile of profiles) {
       this.#requireOpen();
       if (signal?.aborted) throw new ModelProviderError("cancelled", "Model call was cancelled");
       let invocationStarted = false;
       let provider: SemanticClassifier | undefined;
+      // A failure before the call is filed with the time its check took: a deadline that ended it read 超时 · 0 ms.
+      const checkedAt = performance.now();
       try {
         provider = this.#provider(profile);
         // Timed as its calls are: Qwen checks its whole model file the first time, seconds on a slow or busy Mac,
@@ -308,9 +372,11 @@ export class ProfiledModelGateway
         });
         return attempt.classification;
       } catch (error) {
-        if (signal?.aborted === true || this.#normalizeFailure(error).errorCode === "cancelled") {
+        const failureCode = this.#normalizeFailure(error, signal).errorCode;
+        if (failureCode === "cancelled") {
           throw error;
         }
+        if (failureCode === "timeout") timedOut = true;
         if (!invocationStarted) {
           await this.#recordCreationFailure(
             requestId,
@@ -320,9 +386,11 @@ export class ProfiledModelGateway
             error,
             "semantic-classification",
             auditContext,
+            clampTiming(performance.now() - checkedAt),
           );
         }
-        if (profile.fallbackOnFailure === false) throw error;
+        // The caller's deadline passed: filed as the timeout it is, with nothing left of it for the next backend.
+        if (signal?.aborted === true || profile.fallbackOnFailure === false) throw error;
       } finally {
         if (
           provider !== undefined &&
@@ -335,6 +403,7 @@ export class ProfiledModelGateway
     }
     throw new ProfiledModelGatewayError(
       "The model fallback chain failed or was stopped",
+      timedOut ? "timeout" : "provider_unavailable",
     );
   }
 
@@ -350,6 +419,7 @@ export class ProfiledModelGateway
     signal?: AbortSignal,
     profileId?: string,
   ): Promise<ProfiledStructuredGenerationResult<T>> {
+    this.#onCall?.(requestInput.purpose);
     if (signal !== undefined) return this.#generate(requestInput, parseOutput, signal, profileId);
     // No caller to stop it (a principle or skill draft): bounded as a whole, where a Qwen stuck checking or loading
     // its model kept the button turning until the app quit. Unhurried enough to wait its turn behind an answer.
@@ -377,7 +447,8 @@ export class ProfiledModelGateway
     );
     if (
       request.purpose === "semantic-classification" ||
-      request.purpose === "provider-health-check"
+      request.purpose === "provider-health-check" ||
+      request.purpose === "structured-judgment"
     ) {
       throw new ModelProviderError(
         "invalid_configuration",
@@ -386,7 +457,7 @@ export class ProfiledModelGateway
     }
     const available = enabledProfiles(
       await this.#profiles.load(),
-    );
+    ).filter((profile) => request.purpose !== "context-summary" || onDevice(profile));
     const profiles =
       profileId === undefined
         ? available
@@ -402,19 +473,23 @@ export class ProfiledModelGateway
     let failureCode: ModelInvocationErrorCode = "provider_unavailable";
     let failureUsage: NormalizedTokenUsage | undefined;
     let failureOutput: string | undefined;
+    // A backend that can generate was tried, or found not ready: what went wrong there is the chain's failure.
+    let tried = false;
     for (const profile of profiles) {
       this.#requireOpen();
       if (signal?.aborted) throw new ModelProviderError("cancelled", "Model call was cancelled");
       let invocationStarted = false;
       let provider: SemanticClassifier | undefined;
+      // What a failure before the call took, as in classify.
+      const checkedAt = performance.now();
       try {
         provider = this.#provider(profile);
         // A backend that cannot generate at all (Apple's) is passed over, as the docs say: that is not
         // a failure for "fall back on failure" to stop at, and whether it is up does not matter here.
         if (!supportsStructuredGeneration(provider)) {
-          failureCode = "unsupported_client";
-          // An earlier profile's refused answer is not this failure's: the chain's error carried it as if it were.
-          failureOutput = undefined;
+          // Passed over, not tried. Taken as the chain's failure after one that was, a missing Qwen model before an
+          // enabled Apple read as "generation failed" rather than what to fix, a timeout as no timeout at all.
+          if (!tried) failureCode = "unsupported_client";
           await this.#recordStructuredFailure({
             request,
             attemptIndex,
@@ -429,6 +504,7 @@ export class ProfiledModelGateway
         if (status.availability !== "available") {
           failureCode = "provider_unavailable";
           failureOutput = undefined;
+          tried = true;
           await this.#recordStructuredFailure({
             request,
             attemptIndex,
@@ -451,11 +527,12 @@ export class ProfiledModelGateway
           ...(signal === undefined ? {} : { signal }),
         });
       } catch (error) {
-        const failure = this.#normalizeFailure(error);
+        const failure = this.#normalizeFailure(error, signal);
         failureCode = failure.errorCode;
         failureUsage = failure.usage;
         failureOutput = error instanceof ModelProviderError ? error.visibleOutput : undefined;
-        if (signal?.aborted === true || failure.errorCode === "cancelled") {
+        tried = true;
+        if (failure.errorCode === "cancelled") {
           throw error;
         }
         if (!invocationStarted) {
@@ -465,11 +542,14 @@ export class ProfiledModelGateway
             profile,
             statusKind: failure.status,
             errorCode: failure.errorCode,
+            providerMs: clampTiming(performance.now() - checkedAt),
             ...(failure.diagnosticExcerpt === undefined
               ? {}
               : { diagnosticExcerpt: failure.diagnosticExcerpt }),
           });
         }
+        // The caller's deadline passed (see classify).
+        if (signal?.aborted === true) throw error;
         // Stopped here by the reader's choice, the chain still ends as a chain does: with the gateway's
         // error, which a turn retries and reports, not the provider's own.
         if (profile.fallbackOnFailure === false) break;
@@ -525,7 +605,7 @@ export class ProfiledModelGateway
       this.#audit.summary(),
     ]);
     const unavailableModels: NonNullable<SemanticRecognitionStatus["unavailableModels"]> = [];
-    for (const profile of enabledProfiles(profiles)) {
+    for (const profile of this.#classificationProfiles(profiles)) {
       let provider: SemanticClassifier | undefined;
       let availability: SemanticRecognitionStatus["availability"] = "unavailable";
       try {
@@ -726,6 +806,9 @@ export class ProfiledModelGateway
   }
 
   #provider(profile: ModelProviderProfile): SemanticClassifier {
+    if (profile.kind === "openrouter-decisions") {
+      throw new ModelProviderError("invalid_configuration", "A decisions backend generates no text");
+    }
     if (isLongLived(profile)) {
       const existing = this.#longLivedProviders.get(
         profile.profileId,
@@ -1131,6 +1214,7 @@ export class ProfiledModelGateway
       | "semantic-classification"
       | "provider-health-check",
     auditContext?: SemanticClassificationAuditContext,
+    elapsedMs = 0,
   ): Promise<void> {
     const failure = this.#normalizeFailure(error);
     await this.#recordTrace(
@@ -1145,8 +1229,8 @@ export class ProfiledModelGateway
           failure.usage ?? { source: "unavailable" },
         timing: {
           queuedMs: 0,
-          providerMs: 0,
-          totalMs: 0,
+          providerMs: elapsedMs,
+          totalMs: elapsedMs,
         },
         status: failure.status,
         errorCode: failure.errorCode,
@@ -1215,10 +1299,14 @@ export class ProfiledModelGateway
     error: unknown,
     signal?: AbortSignal,
   ): NormalizedFailure {
-    if (
-      signal?.aborted === true ||
-      (error instanceof Error && error.name === "AbortError")
-    ) {
+    if (signal?.aborted === true) {
+      // Ended by the caller's signal: a timeout when its own deadline passed, else a stop.
+      const ended = abortFailure(signal);
+      return ended.code === "timeout"
+        ? { status: "timed_out", errorCode: "timeout", diagnosticExcerpt: ended.diagnosticExcerpt }
+        : { status: "cancelled", errorCode: "cancelled" };
+    }
+    if (error instanceof Error && error.name === "AbortError") {
       return {
         status: "cancelled",
         errorCode: "cancelled",

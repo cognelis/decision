@@ -23,6 +23,7 @@ const interaction =
       ? "methodology-analysis"
       : fourthArgument === "pr-diff" || fourthArgument === "assistant-chat" || fourthArgument === "review-chat" || fourthArgument === "add-backend" || fourthArgument === "add-connection" ||
           fourthArgument === "trace-detail" ||
+          fourthArgument === "model-candidates" ||
           fourthArgument === "decision-outcome" ||
           fourthArgument === "decision-review" ||
           fourthArgument === "decision-schedule" ||
@@ -150,7 +151,7 @@ const measureDesktopLayout = async () => {
       const file = document.querySelector('.pr-diff-files button');
       const code = document.querySelector('.pr-diff-code');
       const unified = code.textContent.includes('return fetch(url);') && code.textContent.includes('AbortController');
-      [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Side-by-Side').click();
+      [...dialog.querySelectorAll('button')].find(button => button.textContent === '并排').click();
       await waitFor(() => dialog.querySelector('.diff-split'));
       const split = !!dialog.querySelector('.diff-split');
       [...dialog.querySelectorAll('button')].find(button => button.textContent === '文件内容').click();
@@ -458,6 +459,65 @@ const measureDesktopLayout = async () => {
         openEditor();
       })
     `);
+  } else if (interaction === "model-candidates") {
+    // A datalist offered only the candidates containing the model typed: the menu beside the field lists them all, level with it.
+    interactionMetrics = await window.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => {
+        const deadline = Date.now() + 12000;
+        const openDialog = () => {
+          const button = document.querySelector('[aria-label="配置 Codex CLI"]');
+          if (button === null) {
+            if (Date.now() >= deadline) {
+              reject(new Error("Codex CLI configure action did not render"));
+              return;
+            }
+            setTimeout(openDialog, 16);
+            return;
+          }
+          button.click();
+          const measureField = () => {
+            const menu = document.querySelector('#model-provider-cli-editor [aria-label="选择候选模型"]');
+            const field = menu?.parentElement.querySelector("input");
+            if (menu === null || field == null) {
+              if (Date.now() >= deadline) {
+                reject(new Error("Model candidates did not render"));
+                return;
+              }
+              setTimeout(measureField, 16);
+              return;
+            }
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+              const menuRect = menu.getBoundingClientRect();
+              const fieldRect = field.getBoundingClientRect();
+              resolve({
+                candidateMenuLevelWithField:
+                  Math.abs(menuRect.top - fieldRect.top) < 1 && Math.abs(menuRect.height - fieldRect.height) < 1,
+                candidateOptions: [...menu.options].filter((option) => !option.disabled).length,
+                candidateInUse: menu.value,
+                ...(() => {
+                  // Saving disables the whole form: the disabled colour once drew the name the button hides, spilling out of it.
+                  const nameHidden = () => { const style = getComputedStyle(menu); return parseFloat(style.fontSize) === 0 || style.color === "rgba(0, 0, 0, 0)"; };
+                  Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(menu, "gpt-6.1-terra");
+                  menu.dispatchEvent(new Event("change", { bubbles: true }));
+                  const pickedHidden = nameHidden();
+                  const fieldset = menu.closest("fieldset");
+                  fieldset.disabled = true;
+                  const savingRect = menu.getBoundingClientRect();
+                  const saving = {
+                    candidateNameHidden: pickedHidden && nameHidden(),
+                    candidateMenuLevelWhileSaving: Math.abs(savingRect.top - fieldRect.top) < 1 && Math.abs(savingRect.height - fieldRect.height) < 1,
+                  };
+                  fieldset.disabled = false;
+                  return saving;
+                })(),
+              });
+            }));
+          };
+          measureField();
+        };
+        openDialog();
+      })
+    `);
   } else if (interaction === "trace-detail") {
     interactionMetrics = await window.webContents.executeJavaScript(`
       new Promise((resolve, reject) => {
@@ -723,7 +783,7 @@ const measureDesktopLayout = async () => {
             ".decision-review-presets button"
           )];
           const noWakeCopy = [...document.querySelectorAll(
-            ".decision-review-schedule-actions span"
+            ".decision-review-schedule-editor p"
           )].find((element) =>
             element.textContent?.includes("不会自动弹出窗口")
           );
@@ -843,11 +903,19 @@ const measureDesktopLayout = async () => {
                     Math.abs(dialogRect.top + dialogRect.height / 2 - innerHeight / 2) < 2,
                   decisionPrincipleEditorInsideDialog: dialog.contains(editor),
                   decisionPrincipleChoiceCount: choices.length,
-                  decisionPrincipleChoicesTwoColumns:
+                  // In the detail's side column, one choice a row, each as wide as the column.
+                  decisionPrincipleChoicesOneColumn:
                     choices.length < 2 ||
                     new Set(choices.slice(0, 2).map((choice) =>
-                      Math.round(choice.getBoundingClientRect().top)
+                      Math.round(choice.getBoundingClientRect().left)
                     )).size === 1,
+                  decisionPrincipleChoicesFit: choices.every((choice) =>
+                    choice.scrollWidth <= choice.clientWidth + 1 &&
+                    choice.getBoundingClientRect().right <= editor.getBoundingClientRect().right + 1
+                  ),
+                  decisionPrincipleEditorVisible:
+                    editor.getBoundingClientRect().top >= dialogRect.top &&
+                    editor.getBoundingClientRect().bottom <= dialogRect.bottom,
                   decisionPrincipleSafetyCopyVisible:
                     safetyCopy.getBoundingClientRect().height > 0,
                   decisionPrincipleListHeightStable:
@@ -888,14 +956,14 @@ const measureDesktopLayout = async () => {
             }
             requestAnimationFrame(() => requestAnimationFrame(() => {
               const dialogRect = dialog.getBoundingClientRect();
-              const cardTops = cards.map((card) => card.getBoundingClientRect().top);
               resolve({
                 methodologyWorkbenchCentered:
                   Math.abs(dialogRect.top + dialogRect.height / 2 - innerHeight / 2) < 2,
                 methodologyWorkbenchInsideDialog: dialog.contains(workbench),
                 methodologyWorkbenchCardCount: cards.length,
-                methodologyWorkbenchCardsSingleRow:
-                  cardTops.every((top) => Math.abs(top - cardTops[0]) < 1),
+                methodologyWorkbenchCardsStacked: cards.every((card, index) =>
+                  index === 0 ||
+                  card.getBoundingClientRect().top >= cards[index - 1].getBoundingClientRect().bottom - 1),
                 methodologyWorkbenchBoundaryVisible:
                   workbench.textContent.includes("不会自动生成、采纳或修改原则") &&
                   workbench.textContent.includes("不会确认或忽略任何事项"),
@@ -1126,7 +1194,7 @@ const measureDesktopLayout = async () => {
             const measure = () => {
               const dialog = document.querySelector('[role="dialog"]');
               const editor = document.querySelector(".methodology-manual-entry");
-              const fields = [...document.querySelectorAll(".methodology-manual-entry-form > label")];
+              const fields = [...document.querySelectorAll(".methodology-manual-entry-form .form-field")];
               const safety = document.querySelector(".methodology-manual-entry-safety");
               const save = [...document.querySelectorAll("button")].find(
                 (button) => button.textContent?.trim() === "保存为待确认候选"
@@ -1209,7 +1277,7 @@ const measureDesktopLayout = async () => {
                 const dialog = dialogs[0];
                 const editor = document.querySelector(".methodology-manual-evidence-entry");
                 const sources = [...document.querySelectorAll(".methodology-manual-evidence-sources > li")];
-                const fields = [...document.querySelectorAll(".methodology-manual-evidence-form > label")];
+                const fields = [...document.querySelectorAll(".methodology-manual-evidence-form .form-field")];
                 const boundary = document.querySelector(".methodology-manual-evidence-boundary");
                 const save = [...document.querySelectorAll("button")].find(
                   (button) => button.textContent?.trim() === "保存人工候选"
@@ -1846,7 +1914,7 @@ const measureDesktopLayout = async () => {
                   ".methodology-evolution-editor > header > *"
                 )];
                 const fields = [...document.querySelectorAll(
-                  ".methodology-evolution-form > label"
+                  ".methodology-evolution-form .form-field"
                 )];
                 const evidence = [...document.querySelectorAll(
                   ".methodology-evolution-evidence button"
@@ -1855,7 +1923,7 @@ const measureDesktopLayout = async () => {
                   ".methodology-evolution-boundary > span"
                 )];
                 const save = [...document.querySelectorAll(
-                  ".methodology-evolution-editor > footer button"
+                  ".modal-dialog-footer button"
                 )].find((button) => button.textContent?.includes("保存为修订候选"));
                 if (dialog === null || editor === null || fields.length !== 5 ||
                     evidence.length < 2 || boundary.length !== 3 || save === undefined) {
@@ -1882,13 +1950,10 @@ const measureDesktopLayout = async () => {
                   )].some((item) =>
                     item.textContent?.includes("当前版本和草稿都已修改") === true
                   );
-                  const rebaseAction = [...document.querySelectorAll(
-                    ".methodology-revision-rebase-actions button"
-                  )].find((button) =>
+                  const rebaseFooter =
+                    rebaseDialog?.querySelector(".modal-dialog-footer") ?? null;
+                  const rebaseAction = [...(rebaseFooter?.querySelectorAll("button") ?? [])].find((button) =>
                     button.textContent?.trim() === "迁移并继续编辑"
-                  );
-                  const rebaseFooter = document.querySelector(
-                    ".methodology-revision-rebase-actions"
                   );
                   if (rebase === null || rebaseDialog === null ||
                       rebaseFields.length < 2 || firstColumns.length !== 3 ||
@@ -1932,7 +1997,7 @@ const measureDesktopLayout = async () => {
                       ".methodology-evolution-form input"
                     );
                     const back = [...document.querySelectorAll(
-                      ".methodology-evolution-editor > footer button"
+                      ".modal-dialog-footer button"
                     )].find((button) => button.textContent?.trim() === "返回详情");
                     if (title === null || back === undefined) {
                       if (Date.now() >= deadline) return reject(new Error("Revision recovery controls did not render"));
@@ -1982,7 +2047,7 @@ const measureDesktopLayout = async () => {
                     return;
                   }
                   const status = document.querySelector(
-                    ".methodology-evolution-editor > header aside small"
+                    ".modal-dialog-footer .methodology-footer-status"
                   );
                   const recoveryNotice = document.querySelector(
                     ".methodology-evolution-boundary.recovered"
@@ -1991,7 +2056,7 @@ const measureDesktopLayout = async () => {
                     ".methodology-evolution-form input"
                   );
                   const actions = [...document.querySelectorAll(
-                    ".methodology-evolution-editor > footer button"
+                    ".modal-dialog-footer button"
                   )];
                   if (status === null || recoveryNotice === null || recoveredTitle === null ||
                       actions.length !== 3) {
@@ -2445,7 +2510,7 @@ const measureDesktopLayout = async () => {
         };
         const runPreview = () => {
           const question = document.querySelector('.consultation-preview textarea[required]');
-          const submit = [...document.querySelectorAll(".consultation-preview-actions button")].find(
+          const submit = [...document.querySelectorAll('[role="dialog"] .modal-dialog-footer button')].find(
             (button) => button.textContent?.trim() === "查看实际结果"
           );
           if (question === null || submit === undefined) {
@@ -2470,9 +2535,9 @@ const measureDesktopLayout = async () => {
         const measure = () => {
           const dialog = document.querySelector('[role="dialog"]');
           const preview = document.querySelector(".consultation-preview");
-          const fields = [...document.querySelectorAll(".consultation-preview-fields > label, .consultation-preview-fields > fieldset")];
+          const fields = [...document.querySelectorAll(".consultation-preview-fields > .form-field")];
           const options = [...document.querySelectorAll(".consultation-preview-options > div")];
-          const actions = [...document.querySelectorAll(".consultation-preview-actions button")];
+          const actions = [...document.querySelectorAll('[role="dialog"] .modal-dialog-footer button')];
           const feedback = document.querySelector(".consultation-preview-feedback");
           const feedbackButtons = [...document.querySelectorAll('.consultation-preview-feedback [role="group"] button')];
           const body = dialog?.querySelector(".modal-dialog-body");
@@ -2856,7 +2921,7 @@ const measureDesktopLayout = async () => {
                       '.methodology-merge-fields input[aria-label="新标题"]'
                     );
                     const later = [...document.querySelectorAll(
-                      ".methodology-merge-actions button"
+                      ".modal-dialog-footer button"
                     )].find((button) => button.textContent?.trim() === "稍后继续");
                     if (title === null || later === undefined) {
                       if (Date.now() >= deadline) return reject(new Error("Merge recovery controls did not render"));
@@ -2889,7 +2954,7 @@ const measureDesktopLayout = async () => {
                     return;
                   }
                   const status = document.querySelector(
-                    ".methodology-merge-source-heading small"
+                    ".modal-dialog-footer .methodology-footer-status"
                   );
                   const recoveryNotice = document.querySelector(
                     ".methodology-merge-guidance.recovered"
@@ -2898,7 +2963,7 @@ const measureDesktopLayout = async () => {
                     '.methodology-merge-fields input[aria-label="新标题"]'
                   );
                   const actions = [...document.querySelectorAll(
-                    ".methodology-merge-actions button"
+                    ".modal-dialog-footer button"
                   )];
                   if (status === null || recoveryNotice === null || recoveredTitle === null ||
                       actions.length !== 3) {
@@ -3230,7 +3295,7 @@ const measureDesktopLayout = async () => {
                 const dialog = document.querySelector('[role="dialog"]');
                 const draft = document.querySelector(".practice-manual-draft");
                 const editor = draft?.querySelector(".practice-asset-editor") ?? null;
-                const fields = editor === null ? [] : [...editor.querySelectorAll(":scope > label")];
+                const fields = editor === null ? [] : [...editor.querySelectorAll(".form-field")];
                 const safety = draft?.querySelector(".practice-manual-safety") ?? null;
                 const sourceSummary = draft?.querySelector(".practice-manual-source-summary") ?? null;
                 const save = [...document.querySelectorAll("button")].find(
@@ -3457,8 +3522,8 @@ const measureDesktopLayout = async () => {
                 const rollback = [...document.querySelectorAll("button")].find(
                   (button) => button.textContent?.trim() === "回滚"
                 );
-                const publish = [...document.querySelectorAll("button")].find(
-                  (button) => button.textContent?.trim() === "已发布"
+                const publish = [...document.querySelectorAll(".practice-publication-state")].find(
+                  (state) => state.textContent?.trim() === "已发布"
                 );
                 if (dialog === null || notice === null || sourceDiff === null || warning === null ||
                     regenerate === undefined || rollback === undefined || publish === undefined) {
@@ -3475,7 +3540,10 @@ const measureDesktopLayout = async () => {
                       notice.getBoundingClientRect().bottom <= dialogRect.bottom,
                     practiceRegenerateVisible:
                       regenerate.getBoundingClientRect().bottom <= dialogRect.bottom,
-                    practicePublishPaused: publish.disabled === true,
+                    // Nothing to publish is said in words, with no button offered.
+                    practicePublishPaused: ![...document.querySelectorAll("button")].some(
+                      (button) => button.textContent?.trim() === "已发布"
+                    ),
                     practiceRollbackVisible: rollback.disabled === false,
                     practiceSourceDiffVisible:
                       sourceDiff.hasAttribute("open") &&
@@ -3668,9 +3736,9 @@ const measureDesktopLayout = async () => {
         const methodologyBuildGuide = document.querySelector(
           ".methodology-build-guide"
         );
-        const methodologyBuildMetrics = [
-          ...document.querySelectorAll(".methodology-build-metrics > div"),
-        ];
+        const methodologyRecordsCard = document.querySelector(
+          ".methodology-records-card"
+        );
         const methodologyBuildActions = [
           ...document.querySelectorAll(".methodology-build-actions button"),
         ];
@@ -3752,9 +3820,16 @@ const measureDesktopLayout = async () => {
           );
           const firstTraceColumns = visibleTraceColumns[0] ?? [];
           const cards = [...page.querySelectorAll(
-            ".settings-card, .client-card, .client-actions-card, .recognition-overview, .decision-library-card, .methodology-card"
+            ".settings-card, .client-actions-card, .recognition-overview, .decision-library-card, .methodology-card"
           )];
           const buttons = [...page.querySelectorAll("button")];
+          const proxyCard = page.querySelector(".global-model-proxy-card");
+          const backendCard = page.querySelector(".model-provider-card");
+          const proxyInput = proxyCard?.querySelector("input");
+          const proxySave = proxyCard?.querySelector('button[type="submit"]');
+          const judgeTitle = page.querySelector("#judge-provider-title");
+          const judgeHelp = page.querySelector('button[aria-label="判定模型使用说明"]');
+          const judgeHeader = judgeTitle?.closest("header");
           const providerRows = [...page.querySelectorAll(".provider-row")];
           const providerSwitches = [
             ...page.querySelectorAll('.provider-switch input[role="switch"]'),
@@ -3772,7 +3847,7 @@ const measureDesktopLayout = async () => {
             row.querySelector(".provider-actions")?.getBoundingClientRect().left ?? null,
           );
           const providerTestActionLefts = providerRows.map((row) =>
-            row.querySelector(".provider-actions .text-button")?.getBoundingClientRect().left ?? null,
+            row.querySelector(".provider-actions > :first-child")?.getBoundingClientRect().left ?? null,
           );
           const firstContent = page.firstElementChild;
           const firstContentRect = firstContent?.getBoundingClientRect();
@@ -3867,7 +3942,8 @@ const measureDesktopLayout = async () => {
                 return apart;
               }),
             ),
-            clientCardCount: document.querySelectorAll(".client-card").length,
+            clientRowCount: [...document.querySelectorAll(".client-row")].filter((row) => row.closest("details") === null).length,
+            clientFoldedCount: document.querySelectorAll("details.client-others:not([open]) .client-row").length,
             clientHeight: page.clientHeight,
             clientWidth: page.clientWidth,
             controlsFitWidth: buttons.every((button) => {
@@ -3897,6 +3973,17 @@ const measureDesktopLayout = async () => {
             headingVisible:
               headingBounds.width > 1 && headingBounds.height > 1,
             modelProfileVisible: page.textContent?.includes("Codex CLI") === true,
+            judgeHeaderHeight: judgeHeader?.getBoundingClientRect().height ?? 0,
+            judgeHelpCentered: !!judgeTitle && !!judgeHelp && Math.abs(judgeTitle.getBoundingClientRect().top + judgeTitle.getBoundingClientRect().height / 2 - judgeHelp.getBoundingClientRect().top - judgeHelp.getBoundingClientRect().height / 2) < 1,
+            judgeHeadingFitsHeader: !!judgeHeader && !!judgeHelp && judgeHelp.getBoundingClientRect().top >= judgeHeader.getBoundingClientRect().top && judgeHelp.getBoundingClientRect().bottom <= judgeHeader.getBoundingClientRect().bottom,
+            globalProxyIndependent: !!proxyCard && !!backendCard && proxyCard.parentElement === backendCard.parentElement && !backendCard.contains(proxyCard),
+            globalProxyBeforeBackends: !!proxyCard && !!backendCard && proxyCard.getBoundingClientRect().bottom <= backendCard.getBoundingClientRect().top,
+            globalProxyScopeVisible: proxyCard?.textContent?.includes("模型后端和判定模型") === true,
+            globalProxyInputWidth: proxyInput?.getBoundingClientRect().width ?? 0,
+            globalProxyControlsAligned: !!proxyInput && !!proxySave && Math.abs(proxyInput.getBoundingClientRect().top - proxySave.getBoundingClientRect().top) < 1,
+            globalProxyControlsInside: !!proxyCard && !!proxySave && proxySave.getBoundingClientRect().right <= proxyCard.getBoundingClientRect().right - 12,
+            globalProxyButtonTextFits: !!proxySave && proxySave.scrollWidth <= proxySave.clientWidth,
+            globalProxyFormPadding: proxyCard ? parseFloat(getComputedStyle(proxyCard.querySelector("form")).paddingLeft) : 0,
             methodologyColumnCount: firstMethodologyColumns.length,
             methodologyColumnsAligned: visibleMethodologyColumns.every(
               (columns) =>
@@ -3922,24 +4009,32 @@ const measureDesktopLayout = async () => {
             methodologyBuildGuideVisible:
               methodologyBuildGuide !== null &&
               methodologyBuildGuide.getBoundingClientRect().height > 0,
-            methodologyBuildMetricCount: methodologyBuildMetrics.length,
-            methodologyBuildMetricsSingleRow:
-              methodologyBuildMetrics.length > 0 &&
-              methodologyBuildMetrics.every((metric) =>
-                Math.abs(
-                  metric.getBoundingClientRect().top -
-                    methodologyBuildMetrics[0].getBoundingClientRect().top
-                ) < 1
-              ),
+            // 建设进度在列表右边，顶对齐；窄了落到列表下面。
+            methodologyBuildGuideBesideList:
+              methodologyBuildGuide !== null && methodologyRecordsCard !== null &&
+              methodologyBuildGuide.getBoundingClientRect().left >=
+                methodologyRecordsCard.getBoundingClientRect().right - 1 &&
+              Math.abs(
+                methodologyBuildGuide.getBoundingClientRect().top -
+                  methodologyRecordsCard.getBoundingClientRect().top
+              ) < 1,
+            methodologyBuildGuideBelowList:
+              methodologyBuildGuide !== null && methodologyRecordsCard !== null &&
+              methodologyBuildGuide.getBoundingClientRect().top >=
+                methodologyRecordsCard.getBoundingClientRect().bottom - 1,
             methodologyBuildPathCount: methodologyBuildPathItems.length,
-            methodologyBuildPathSingleRow:
+            // 三步一行一步，左边对齐，后一步从前一步的下沿开始，互不压叠。
+            methodologyBuildPathStacked:
               methodologyBuildPathItems.length > 0 &&
-              methodologyBuildPathItems.every((item) =>
-                Math.abs(
-                  item.getBoundingClientRect().top -
-                    methodologyBuildPathItems[0].getBoundingClientRect().top
-                ) < 1
-              ),
+              methodologyBuildPathItems.every((item, index) => {
+                const box = item.getBoundingClientRect();
+                const first = methodologyBuildPathItems[0].getBoundingClientRect();
+                const previous = index === 0
+                  ? null
+                  : methodologyBuildPathItems[index - 1].getBoundingClientRect();
+                return Math.abs(box.left - first.left) < 1 &&
+                  (previous === null || box.top >= previous.bottom - 1);
+              }),
             methodologyRecordsToolbarHeight:
               methodologyRecordsToolbar?.getBoundingClientRect().height ?? null,
             methodologyStatusFilterBackground:
@@ -4029,6 +4124,14 @@ const measureDesktopLayout = async () => {
             },
             traceRowVisible: traceRow !== null,
             traceColumnCount: firstTraceColumns.length,
+            // Each time shown in full: at 100px, 10月27日 14:38:27 lost its seconds while the model column took the rest.
+            // The fixtures' dates are narrower, so the first row is given the widest the format gets (tabular digits,
+            // a two-digit month and day) before it is measured.
+            traceTimesFit: (() => {
+              const times = [...document.querySelectorAll(".model-trace-row time")];
+              if (times[0] !== undefined) times[0].textContent = "12月28日 23:59:59";
+              return times.every((time) => time.scrollWidth <= time.clientWidth + 1);
+            })(),
             traceColumnsAligned: visibleTraceColumns.every(
               (columns) =>
                 columns.length === firstTraceColumns.length &&
@@ -4061,8 +4164,11 @@ const measureDesktopLayout = async () => {
   `);
   if (screenshotPath !== undefined && !interactionScreenshotCaptured) {
     await window.webContents.executeJavaScript(`
-      document.querySelector(".desktop-page-scroll").scrollTop = 0
-      document.querySelector(".model-trace-list")?.scrollTo({ top: 0 })
+      new Promise(resolve => {
+        document.querySelector(".desktop-page-scroll").scrollTop = 0;
+        document.querySelector(".model-trace-list")?.scrollTo({ top: 0 });
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      })
     `);
     const image = await window.webContents.capturePage();
     await writeFile(screenshotPath, image.toPNG());

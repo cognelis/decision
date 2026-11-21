@@ -1,111 +1,122 @@
 import { z } from "zod";
-import { clipText, prReviewProgressSchema, prReviewReportSchema, prReviewSnapshotSchema, prReviewUsageSchema, prReviewVerdictSchema, type PrReviewDismissed, type PrReviewProgress, type PrReviewPublished } from "@cognelis/decision-protocol";
+import {
+  PR_REVIEW_HISTORY_LIMITS,
+  prReviewHistoryEntrySchema,
+  prReviewHistorySaveSchema,
+  type PrReviewHistoryEntry,
+  type PrReviewHistoryList,
+  type PrReviewHistorySave,
+  type PrReviewHistorySaveResult,
+  type PrReviewProgress,
+} from "@cognelis/decision-protocol";
+import type { DecisionApi } from "../../../../shared/renderer-api.js";
 
+/**
+ * Where the review page kept its history before the App kept it (pr-review-history-store.ts). Read once more to move it
+ * there (moveReviewHistory), and still the preview's own store, which has no App behind it.
+ */
 const KEY = "decision.pr-review.history.v1";
-/**
- * A failure's message, read back as much of it as a record holds: one past that, written by any version, left the
- * whole history unreadable, the reviewer's own 不采纳 with it, and saving stopped so it stayed so.
- */
-const failureText = z.string().transform((value) => clipText(value, 2_000));
-const entrySchema = z.object({
-  id: z.string().uuid(),
-  // "chat": a PR asked about without a review (an overview or suggestions straight away); it has no report.
-  kind: z.enum(["review", "chat"]).default("review"),
-  at: z.string().datetime(), model: z.string().max(500), focus: z.string().max(2000),
-  snapshot: prReviewSnapshotSchema, events: z.array(prReviewProgressSchema).max(2000),
-  connectionId: z.string().uuid().optional(),
-  profileId: z.string().max(200).optional(),
-  draft: z.string().max(2000).default(""),
-  turns: z.array(z.object({ id: z.string().uuid(), at: z.string().datetime(), model: z.string().max(500),
-    question: z.string().min(1).max(2000), answer: z.string().max(8000).default(""),
-    state: z.enum(["pending", "done", "failed", "cancelled", "interrupted"]),
-    // Why an answer failed, as a review's failure says it: "请重试" alone sent the reader back to a quota that was spent.
-    error: failureText.optional(),
-    // When the answer was posted to the PR as a comment, so it is not posted twice.
-    publishedAt: z.string().datetime().optional(),
-    usage: prReviewUsageSchema.optional(),
-  })).default([]),
-  report: prReviewReportSchema.nullable(), state: z.enum(["running", "finished", "interrupted", "failed"]),
-  error: failureText.default(""),
-  // Findings (by index in the report) already posted to the PR, so a finding is not posted twice.
-  published: z.array(z.object({ finding: z.number().int().nonnegative(), at: z.string().datetime() })).max(200).default([]),
-  // Latest re-evaluation per finding (code-meeseeks' keep / replace / drop). One "by" the reviewer is their own drop, a
-  // finding not taken: later reviews of the repository are told of it and its reason.
-  verdicts: z.array(prReviewVerdictSchema.extend({ finding: z.number().int().nonnegative(), at: z.string().datetime(), model: z.string().max(500), by: z.literal("reviewer").optional() })).max(200).default([]),
-  // Findings of the PR's previous review (run id, index there), judged again on this review's commits.
-  rechecks: z.array(prReviewVerdictSchema.extend({ run: z.string().uuid(), finding: z.number().int().nonnegative(), at: z.string().datetime(), model: z.string().max(500) })).max(200).default([]),
-});
-export type ReviewHistoryEntry = z.infer<typeof entrySchema>;
+const entrySchema = prReviewHistoryEntrySchema;
+export type ReviewHistoryEntry = PrReviewHistoryEntry;
 
-/** The reviews of a repository ("owner/name", a reference without its "#number") on one connection. */
-const inRepository = (history: ReviewHistoryEntry[], connectionId: string | undefined, reference: string) => {
-  const repository = (item: string) => item.replace(/#\d+$/u, "");
-  return history.filter(item => item.connectionId === connectionId && repository(item.snapshot.reference) === repository(reference));
-};
-
-/** A finding the reviewer turned down, as the reviews of its repository are told of it, and each review it was turned down in. */
-export interface Dismissal extends PrReviewDismissed { at: string; reference: string; sources: Array<{ run: string; finding: number }> }
-
-/**
- * What the reviewer did not take in a repository's reviews on this connection, newest first and once per file and title
- * (the newest reason stands), with every review it was turned down in; with `before`, only what was turned down by then.
- */
-export function dismissalsIn(history: ReviewHistoryEntry[], connectionId: string | undefined, reference: string, before?: string): Dismissal[] {
-  const byKey = new Map<string, Dismissal>();
-  const all = inRepository(history, connectionId, reference)
-    .flatMap(item => item.verdicts.flatMap(verdict => {
-      const finding = verdict.by === "reviewer" && (before === undefined || verdict.at < before) ? item.report?.findings[verdict.finding] : undefined;
-      return finding ? [{ at: verdict.at, reference: item.snapshot.reference, run: item.id, index: verdict.finding,
-        title: finding.title, body: finding.body, path: finding.path, reason: verdict.reason.slice(0, 500) }] : [];
-    }))
-    .sort((a, b) => b.at.localeCompare(a.at));
-  for (const { run, index, ...dismissal } of all) {
-    const key = `${dismissal.path}\n${dismissal.title}`;
-    const known = byKey.get(key);
-    if (known) known.sources.push({ run, finding: index });
-    else byKey.set(key, { ...dismissal, sources: [{ run, finding: index }] });
-  }
-  return [...byKey.values()];
-}
-
-/** What a new review of the repository is told: the newest twenty, with the reasons. */
-export const dismissedIn = (history: ReviewHistoryEntry[], connectionId: string | undefined, reference: string): PrReviewDismissed[] =>
-  dismissalsIn(history, connectionId, reference).slice(0, 20).map(({ title, body, path, reason }) => ({ title, body, path, reason }));
-
-/**
- * What the reviewer put on a repository's PRs as comments, newest first and once per file and title (as posted, after a
- * re-evaluation that replaced it), the newest twenty: a new review of the repository is told the team cares about their
- * like. What they turned down in any of its reviews does not count, so a review is never told both; taking the no back
- * counts it again.
- */
-export const publishedIn = (history: ReviewHistoryEntry[], connectionId: string | undefined, reference: string): PrReviewPublished[] => {
-  const declined = new Set(dismissalsIn(history, connectionId, reference).map(item => `${item.path}\n${item.title}`));
-  const all = inRepository(history, connectionId, reference)
-    .flatMap(item => item.published.flatMap(({ finding, at }) => {
-      const found = item.report?.findings[finding];
-      const posted = found && { ...found, ...(item.verdicts.find(verdict => verdict.finding === finding)?.replacement ?? {}) };
-      return posted && !declined.has(`${posted.path}\n${posted.title}`) ? [{ at, title: posted.title, path: posted.path }] : [];
-    }))
-    .sort((a, b) => b.at.localeCompare(a.at));
-  return [...new Map(all.map(({ title, path }) => [`${path}\n${title}`, { title, path }])).values()].slice(0, 20);
-};
+// What a repository's reviews were told not to raise and what they posted: shared with the App's own runs (run_pr_review).
+export { prReviewDismissalsIn as dismissalsIn, prReviewDismissedIn as dismissedIn, prReviewPublishedIn as publishedIn } from "@cognelis/decision-protocol";
+export type { PrReviewDismissal as Dismissal } from "@cognelis/decision-protocol";
 
 // Same action ID updates its message in place; identical text in different actions is meaningful.
 export const mergeReviewEvents = (previous: PrReviewProgress[], incoming: PrReviewProgress[]): PrReviewProgress[] =>
   [...new Map([...previous, ...incoming].map(event => [`${event.runId}:${event.id}`, event])).values()].slice(-2000);
 
+/**
+ * One left running or waiting when the window went away is over: said as interrupted, not as still under way. A review
+ * the App runs on its own (an agent's, `running`) is under way.
+ */
+const settled = (entry: ReviewHistoryEntry, running: readonly string[] = []): ReviewHistoryEntry => running.includes(entry.id) ? entry :
+  ({ ...entry, state: entry.state === "running" ? "interrupted" : entry.state, turns: entry.turns.map(turn => turn.state === "pending" ? { ...turn, state: "interrupted" } : turn) });
+
+/** The history in this window's storage: the preview's, or one from before the App kept it. */
 export function loadReviewHistory(): { entries: ReviewHistoryEntry[]; error: string } {
   try {
     const entries = z.array(entrySchema).parse(JSON.parse(localStorage.getItem(KEY) ?? "[]"));
-    return { entries: entries.map(entry => ({ ...entry, state: entry.state === "running" ? "interrupted" : entry.state, turns: entry.turns.map(turn => turn.state === "pending" ? { ...turn, state: "interrupted" } : turn) })), error: "" };
+    return { entries: entries.map(entry => settled(entry)), error: "" };
   } catch {
     return { entries: [], error: "评审历史无法读取，原数据已保留；本次记录暂不自动保存。" };
   }
 }
 
+let moving: Promise<string> | undefined;
 /**
- * Saves newest first. When storage is full the oldest records give way, a fifth at a
- * time, rather than the whole history failing to save; `dropped` says how many were left out.
+ * The history this window's storage held before the App kept it, moved into the App once and then cleared, so it no longer
+ * crowds out the drafts kept there. One that cannot be read stays where it is; one that could not be saved is tried again
+ * the next time. Resolves to what to tell the reader, "" when there is nothing to.
+ */
+export const moveReviewHistory = (api: Pick<DecisionApi, "savePrReviewHistory">): Promise<string> => moving ??= (async (): Promise<string> => {
+  try {
+    if (localStorage.getItem(KEY) === null) return "";
+  } catch {
+    return "";
+  }
+  const { entries, error } = loadReviewHistory();
+  if (error) return "旧版评审历史无法读取，原数据仍保留在本机。";
+  try {
+    for (let start = 0; start < entries.length; start += PR_REVIEW_HISTORY_LIMITS.entries) {
+      await api.savePrReviewHistory({ entries: entries.slice(start, start + PR_REVIEW_HISTORY_LIMITS.entries), removed: [] });
+    }
+    localStorage.removeItem(KEY);
+    return "";
+  } catch {
+    return "旧版评审历史没能移到 App 里，原数据仍保留在本机，下次打开评审页会再试。";
+  }
+})().finally(() => {
+  // Shared while under way (the App's start and the review page may both ask); after, the next asks the storage again.
+  moving = undefined;
+});
+
+/**
+ * The history as the review page and the quick jump read it: from the App, newest first, once what this window's storage
+ * held was moved there (`moveLegacy`: the App's own api, not the preview's, whose store that storage is).
+ */
+export const readReviewHistory = async (api: Pick<DecisionApi, "listPrReviewHistory" | "savePrReviewHistory">, moveLegacy: boolean): Promise<{ entries: ReviewHistoryEntry[]; error: string }> => {
+  // Not moving it here, still wait for a move under way (the App's start): read before it ends, the history looked empty.
+  const moved = moveLegacy ? await moveReviewHistory(api) : await (moving ?? Promise.resolve(""));
+  try {
+    const { entries, unreadable, running } = await api.listPrReviewHistory();
+    return { entries: entries.map(entry => settled(entry, running)), error: `${moved}${unreadable ? `有 ${unreadable} 条评审记录无法读取，原数据已保留。` : ""}` };
+  } catch {
+    return { entries: [], error: `${moved}评审历史读取失败；新的评审仍会保存。` };
+  }
+};
+
+/** The preview's history store: this window's storage, as the review page kept it before the App did. */
+export const previewReviewHistory: Pick<DecisionApi, "listPrReviewHistory" | "savePrReviewHistory"> = {
+  listPrReviewHistory: async (): Promise<PrReviewHistoryList> => {
+    const { entries, error } = loadReviewHistory();
+    return { entries, unreadable: error ? 1 : 0 };
+  },
+  savePrReviewHistory: async (input: PrReviewHistorySave): Promise<PrReviewHistorySaveResult> => {
+    const { entries, removed } = prReviewHistorySaveSchema.parse(input);
+    const stored = loadReviewHistory();
+    if (stored.error) throw new Error(stored.error);
+    const changed = new Map(entries.map(entry => [entry.id, entry]));
+    const kept = stored.entries.filter(entry => !removed.includes(entry.id)).map(entry => changed.get(entry.id) ?? entry);
+    const added = entries.filter(entry => !stored.entries.some(item => item.id === entry.id));
+    const list = [...added, ...kept];
+    const result = saveReviewHistory(list);
+    if (!result.saved) throw new Error("评审历史保存失败（本机存储可能已满）");
+    return { dropped: result.dropped, logDropped: result.logDropped && list[0] ? [list[0].id] : [], refused: [] };
+  },
+};
+
+/**
+ * The history's share of the store, in characters as saved: some five million is all an origin gets. Written to all the
+ * room there was, its oldest let go only once a write failed, a long history left none for the drafts kept there too,
+ * and a rationale put off with 稍后处理, or a record being written, could not be kept.
+ */
+const HISTORY_SHARE = 2 * 1024 * 1024;
+
+/**
+ * Saves newest first. When storage is full, or the history outgrows its share of it, the oldest records give way, a
+ * fifth at a time, rather than the whole history failing to save; `dropped` says how many were left out.
  */
 export function saveReviewHistory(entries: ReviewHistoryEntry[]): { saved: boolean; dropped: number; logDropped?: boolean } {
   // The oldest go first when the store is full, never all of them: a newest record too large on its
@@ -113,7 +124,9 @@ export function saveReviewHistory(entries: ReviewHistoryEntry[]): { saved: boole
   const attempt = (list: ReviewHistoryEntry[]): { saved: boolean; dropped: number } => {
     for (let keep = list.length; keep > 0 || list.length === 0; keep = Math.floor(keep * 0.8)) {
       try {
-        localStorage.setItem(KEY, JSON.stringify(list.slice(0, keep)));
+        const value = JSON.stringify(list.slice(0, keep));
+        if (value.length > HISTORY_SHARE) continue;
+        localStorage.setItem(KEY, value);
         return { saved: true, dropped: list.length - keep };
       } catch {
         if (keep === 0) break;

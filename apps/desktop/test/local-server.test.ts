@@ -7,6 +7,7 @@ import {
 } from "@cognelis/decision-protocol";
 import { runtimeIdentityProof } from "@cognelis/decision-storage";
 import { connect, type Socket } from "node:net";
+import { Worker } from "node:worker_threads";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -201,6 +202,70 @@ describe("LocalCaptureServer", () => {
     }
   });
 
+  it("answers an identity that arrived while the App was held past the deadline, on a connection made before", async () => {
+    const { server } = await startServer();
+    const { port } = server.address();
+    // The bridge, in a thread of its own: connected, then asking once the App is held by a synchronous stretch.
+    const bridge = new Worker(`
+      const { parentPort, workerData } = require("node:worker_threads");
+      const socket = require("node:net").connect(workerData.port, "127.0.0.1", () => {
+        parentPort.postMessage("connected");
+        setTimeout(() => socket.write("GET /v1/identity HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nx-decision-challenge: " + "n".repeat(43) + "\\r\\n\\r\\n"), 500);
+      });
+      let answer = "";
+      socket.on("data", (chunk) => { answer += chunk; });
+      socket.on("error", () => undefined);
+      socket.on("close", () => parentPort.postMessage(answer.split("\\r\\n")[0] || "closed unanswered"));
+    `, { eval: true, workerData: { port } });
+    try {
+      await new Promise((resolve) => bridge.once("message", resolve));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const answered = new Promise((resolve) => bridge.once("message", resolve));
+      // Held 3 s (the first getLlama builds Metal kernels for seconds): the deadline fell due meanwhile, and ran
+      // before the identity was read. Cut unanswered, the bridge told the agent Paraself was not running.
+      await new Promise<void>((resolve) => setImmediate(() => {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3_000);
+        resolve();
+      }));
+      expect(await answered).toBe("HTTP/1.1 200 OK");
+    } finally {
+      await bridge.terminate();
+      await server.stop();
+    }
+  });
+
+  it("closes the connection after /health and /v1/identity, so a later request with the token is not sent on it", async () => {
+    const { baseUrl, server } = await startServer();
+    const health = await fetch(`${baseUrl}/health`);
+    const identity = await fetch(`${baseUrl}/v1/identity`, { headers: { "x-decision-challenge": "n".repeat(43) } });
+    expect(health.headers.get("connection")).toBe("close");
+    expect(identity.headers.get("connection")).toBe("close");
+    // Past the deadline for connections that have not shown the token: kept alive, the request below went on the
+    // one /health came on, and was cut with it.
+    await new Promise((resolve) => setTimeout(resolve, 2_200));
+    const response = await authorizedFetch(`${baseUrl}/v1/captures`, { method: "POST", body: JSON.stringify(serverCaptureFixture()) });
+    expect(response.status).toBe(202);
+    await server.stop();
+  });
+
+  it("still lets go of a connection that keeps asking without the token, a little later once it has sent something", async () => {
+    const { server } = await startServer();
+    const { port } = server.address();
+    const socket = connect(port, "127.0.0.1");
+    socket.on("error", () => undefined);
+    socket.resume();
+    const closed = new Promise<"closed">((resolve) => socket.on("close", () => resolve("closed")));
+    const asking = setInterval(() => socket.write("GET /v1/settings HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"), 500);
+    try {
+      const after = await Promise.race([closed, new Promise<"open">((resolve) => setTimeout(() => resolve("open"), 5_500))]);
+      expect(after).toBe("closed");
+    } finally {
+      clearInterval(asking);
+      socket.destroy();
+      await server.stop();
+    }
+  });
+
   it("returns 202 immediately after queueing a capture", async () => {
     const { baseUrl, queue, server } = await startServer();
 
@@ -258,7 +323,7 @@ describe("LocalCaptureServer", () => {
     const body = await response.json();
     expect(body).toEqual({ error: "internal_error", message: "没有访问 仓库目录/Decision Journal/preferences 的权限，请检查它的权限设置" });
     expect(JSON.stringify(body)).not.toContain("常规实现决策");
-    expect(errors).toHaveBeenCalledWith("[decision] POST /v1/journal-entries failed: EACCES");
+    expect(errors).toHaveBeenCalledWith("[paraself] POST /v1/journal-entries failed: EACCES");
     expect(JSON.stringify(errors.mock.calls)).not.toContain("常规实现决策");
 
     // A vault under the reader's home: its path, the account's name in it, went on to the agent and its provider.

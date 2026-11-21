@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { decisionContextQuerySchema, decisionContextResultSchema, decisionContextResponseSchema, decisionScopeSchema, decisionHandoffRequestSchema, type DecisionContextResponse, type DecisionContextResult } from "@cognelis/decision-protocol";
 import type { DecisionEvidenceApi } from "../src/shared/renderer-api.js";
@@ -20,6 +20,8 @@ const setup = async (overrides: Partial<DecisionContextResult> = {}) => {
     updateDecisionRelation: vi.fn<DecisionEvidenceApi["updateDecisionRelation"]>(async () => ({ status: "saved", revision: 1, originalNotesUnchanged: true })),
     openDecisionSource: vi.fn<DecisionEvidenceApi["openDecisionSource"]>(async () => ({ status: "opened", relativePath: record.sourceRef.relativePath, noNoteWritten: true })),
     prepareDecisionHandoff: vi.fn(preview.prepareDecisionHandoff),
+    listDecisionAmendments: vi.fn<DecisionEvidenceApi["listDecisionAmendments"]>(async () => ({ records: [], unavailable: false })),
+    updateDecisionAmendment: vi.fn<DecisionEvidenceApi["updateDecisionAmendment"]>(async () => ({ amendVersion: 1, status: "saved", revision: 1, relativePath: "x.md", originalUnchanged: true })),
   };
   return { api, record, response, setRecord: (value: DecisionContextResult) => { record = value; } };
 };
@@ -29,13 +31,43 @@ const show = async (api: DecisionEvidenceApi) => {
 };
 
 describe("desktop decision evidence", () => {
+  it.each([true, false])("opens the source successfully=%s without locking scope editing or releasing a concurrent save's lock", async (success) => {
+    const { api, record } = await setup();
+    let opened!: (value: Awaited<ReturnType<DecisionEvidenceApi["openDecisionSource"]>>) => void;
+    let failOpen!: (error: Error) => void;
+    let saved!: (value: Awaited<ReturnType<DecisionEvidenceApi["updateDecisionScope"]>>) => void;
+    api.openDecisionSource.mockReturnValueOnce(new Promise((resolve, reject) => { opened = resolve; failOpen = reject; }));
+    api.updateDecisionScope.mockReturnValueOnce(new Promise((resolve) => { saved = resolve; }));
+    await show(api);
+    const open = screen.getByRole("button", { name: "打开原文" });
+    fireEvent.click(open);
+    expect(open).toBeDisabled();
+    expect(screen.getByRole("button", { name: "整理交接" })).toBeEnabled();
+    fireEvent.click(screen.getByText("适用范围"));
+    fireEvent.click(screen.getByRole("button", { name: "编辑范围" }));
+    fireEvent.change(screen.getByLabelText("修改理由"), { target: { value: "核对业务范围" } });
+    const save = screen.getByRole("button", { name: "保存范围" });
+    fireEvent.click(save);
+    expect(save).toBeDisabled();
+    await act(async () => {
+      if (success) opened({ status: "opened", relativePath: record.sourceRef.relativePath, noNoteWritten: true });
+      else failOpen(new Error("Obsidian 暂时不可用"));
+    });
+    expect(open).toBeEnabled();
+    expect(save).toBeDisabled();
+    expect(screen.getByLabelText("修改理由")).toHaveValue("核对业务范围");
+    await act(async () => { saved({ status: "saved", revision: 4, originalNoteUnchanged: true }); });
+    expect(await screen.findByText("适用范围已保存。")).toBeVisible();
+    if (!success) expect(screen.getByRole("alert")).toHaveTextContent("Obsidian 暂时不可用");
+  });
+
   it("tells the detail around it while a draft is open", async () => {
     const { api } = await setup();
     const onEditingChange = vi.fn();
     render(<DecisionEvidencePanel api={api} decisionId="A" revision="1" onEditingChange={onEditingChange} />);
     await screen.findByRole("button", { name: "打开原文" });
     expect(onEditingChange).toHaveBeenLastCalledWith(false);
-    fireEvent.click(screen.getByText(/适用范围 ·/)); fireEvent.click(screen.getByRole("button", { name: "编辑范围" }));
+    fireEvent.click(screen.getByText("适用范围")); fireEvent.click(screen.getByRole("button", { name: "编辑范围" }));
     expect(onEditingChange).toHaveBeenLastCalledWith(true);
     fireEvent.click(screen.getByRole("button", { name: "取消范围编辑" }));
     expect(onEditingChange).toHaveBeenLastCalledWith(false);
@@ -54,7 +86,7 @@ describe("desktop decision evidence", () => {
   });
   it("saves explicit scope against its original version and preserves hidden repository restrictions", async () => {
     const { api } = await setup(); await show(api);
-    fireEvent.click(screen.getByText(/适用范围 ·/)); fireEvent.click(screen.getByRole("button", { name: "编辑范围" }));
+    fireEvent.click(screen.getByText("适用范围")); fireEvent.click(screen.getByRole("button", { name: "编辑范围" }));
     fireEvent.change(screen.getByLabelText("适用项目"), { target: { value: "demo\n\n" } });
     fireEvent.change(screen.getByLabelText("修改理由"), { target: { value: "仅针对业务列表" } });
     fireEvent.click(screen.getByRole("button", { name: "保存范围" }));
@@ -63,7 +95,7 @@ describe("desktop decision evidence", () => {
   });
   it("retains the scope draft on version conflicts and does not silently retry", async () => {
     const { api } = await setup(); api.updateDecisionScope.mockResolvedValue({ status: "source_changed", revision: 3, originalNoteUnchanged: true });
-    await show(api); fireEvent.click(screen.getByText(/适用范围 ·/)); fireEvent.click(screen.getByRole("button", { name: "编辑范围" }));
+    await show(api); fireEvent.click(screen.getByText("适用范围")); fireEvent.click(screen.getByRole("button", { name: "编辑范围" }));
     fireEvent.change(screen.getByLabelText("适用例外"), { target: { value: "旧版迁移仍保留原方案" } });
     fireEvent.change(screen.getByLabelText("修改理由"), { target: { value: "补充例外" } }); fireEvent.click(screen.getByRole("button", { name: "保存范围" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("原文已改变");
@@ -71,7 +103,7 @@ describe("desktop decision evidence", () => {
   });
   it("requires an explicit target, direction and reason before saving a replacement", async () => {
     const { api, record, response } = await setup(); const other = { ...record, source: "summarize" as const, id: "B", title: "新的业务编号方案" };
-    await show(api); fireEvent.click(screen.getByText(/关联决策 ·/)); fireEvent.click(screen.getByRole("button", { name: "关联另一条决策" }));
+    await show(api); fireEvent.click(screen.getByText("关联决策")); fireEvent.click(screen.getByRole("button", { name: "关联另一条决策" }));
     await screen.findByLabelText("查找另一条决策");
     api.searchDecisionContext.mockImplementation(async (query) => query.source === "summarize" ? response([other]) : response());
     fireEvent.change(screen.getByLabelText("查找另一条决策"), { target: { value: "编号" } }); fireEvent.click(screen.getByRole("button", { name: "查找决策" }));
@@ -86,7 +118,7 @@ describe("desktop decision evidence", () => {
     const first = { source: "decisions" as const, recordId: "A", contentHash: "c".repeat(64) }; const second = { source: "summarize" as const, recordId: "B", contentHash: "d".repeat(64) };
     const { api, response } = await setup({ relationCount: 1, relations: [{ relationId: "pair", disposition: "conflict", state: "missing_source", revision: 2, updatedAt: "2026-09-11T00:00:00Z", reason: "旧判断", successor: null, other: { source: "summarize", recordId: "B", title: "已删除来源" }, relativePath: "Decision Journal/decision-relations/pair.md", first, second, historyCount: 0, history: [] }] });
     await show(api); api.searchDecisionContext.mockImplementation(async () => response([]));
-    fireEvent.click(screen.getByText(/关联决策 ·/)); fireEvent.click(screen.getByRole("button", { name: "调整或撤销关系" }));
+    fireEvent.click(screen.getByText("关联决策")); fireEvent.click(screen.getByRole("button", { name: "调整或撤销关系" }));
     await screen.findByLabelText("关系判断"); fireEvent.change(screen.getByLabelText("关系判断"), { target: { value: "revoked" } });
     fireEvent.change(screen.getByLabelText("判断理由"), { target: { value: "撤回旧判断" } }); fireEvent.click(screen.getByRole("button", { name: "保存关系判断" }));
     await waitFor(() => expect(api.updateDecisionRelation).toHaveBeenCalledWith({ first, second, disposition: "revoked", successor: null, reason: "撤回旧判断", expectedRevision: 2 }));

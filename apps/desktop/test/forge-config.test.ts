@@ -17,7 +17,7 @@ describe("macOS packaging", () => {
     });
     expect(
       typeof signing === "object"
-        ? signing.optionsForFile?.("Decision")
+        ? signing.optionsForFile?.("Paraself")
         : undefined,
     ).toMatchObject({
       hardenedRuntime: false,
@@ -28,31 +28,31 @@ describe("macOS packaging", () => {
 
   it("fails closed when distribution signing inputs are missing or unsafe", () => {
     expect(() =>
-      createMacDistributionConfig({ DECISION_RELEASE: "1" }),
-    ).toThrow(/DECISION_SIGNING_IDENTITY/u);
+      createMacDistributionConfig({ PARASELF_RELEASE: "1" }),
+    ).toThrow(/PARASELF_SIGNING_IDENTITY/u);
     expect(() =>
       createMacDistributionConfig({
-        DECISION_RELEASE: "1",
-        DECISION_SIGNING_IDENTITY: "-",
-        DECISION_NOTARY_KEYCHAIN_PROFILE: "decision-release",
+        PARASELF_RELEASE: "1",
+        PARASELF_SIGNING_IDENTITY: "-",
+        PARASELF_NOTARY_KEYCHAIN_PROFILE: "decision-release",
       }),
     ).toThrow(/Developer ID/u);
     expect(() =>
       createMacDistributionConfig({
-        DECISION_RELEASE: "1",
-        DECISION_SIGNING_IDENTITY: "Developer ID Application: Decision",
-        DECISION_APPLE_API_KEY: "/private/key.p8",
-        DECISION_APPLE_API_KEY_ID: "KEY1234567",
+        PARASELF_RELEASE: "1",
+        PARASELF_SIGNING_IDENTITY: "Developer ID Application: Paraself",
+        PARASELF_APPLE_API_KEY: "/private/key.p8",
+        PARASELF_APPLE_API_KEY_ID: "KEY1234567",
       }),
-    ).toThrow(/DECISION_APPLE_API_ISSUER/u);
+    ).toThrow(/PARASELF_APPLE_API_ISSUER/u);
     expect(() =>
       createMacDistributionConfig({
-        DECISION_RELEASE: "1",
-        DECISION_SIGNING_IDENTITY: "Developer ID Application: Decision",
-        DECISION_NOTARY_KEYCHAIN: "/private/release.keychain-db",
-        DECISION_APPLE_API_KEY: "/private/key.p8",
-        DECISION_APPLE_API_KEY_ID: "KEY1234567",
-        DECISION_APPLE_API_ISSUER:
+        PARASELF_RELEASE: "1",
+        PARASELF_SIGNING_IDENTITY: "Developer ID Application: Paraself",
+        PARASELF_NOTARY_KEYCHAIN: "/private/release.keychain-db",
+        PARASELF_APPLE_API_KEY: "/private/key.p8",
+        PARASELF_APPLE_API_KEY_ID: "KEY1234567",
+        PARASELF_APPLE_API_ISSUER:
           "00000000-0000-0000-0000-000000000000",
       }),
     ).toThrow(/keychain profile/u);
@@ -60,21 +60,21 @@ describe("macOS packaging", () => {
 
   it("configures hardened signing and keychain notarization for distribution", () => {
     const distribution = createMacDistributionConfig({
-      DECISION_RELEASE: "1",
-      DECISION_SIGNING_IDENTITY:
-        "Developer ID Application: Decision Team (ABCDE12345)",
-      DECISION_NOTARY_KEYCHAIN_PROFILE: "decision-release",
-      DECISION_NOTARY_KEYCHAIN: "/private/release.keychain-db",
+      PARASELF_RELEASE: "1",
+      PARASELF_SIGNING_IDENTITY:
+        "Developer ID Application: Paraself Team (ABCDE12345)",
+      PARASELF_NOTARY_KEYCHAIN_PROFILE: "decision-release",
+      PARASELF_NOTARY_KEYCHAIN: "/private/release.keychain-db",
     });
     const signing = distribution.osxSign;
 
     expect(signing).toMatchObject({
-      identity: "Developer ID Application: Decision Team (ABCDE12345)",
+      identity: "Developer ID Application: Paraself Team (ABCDE12345)",
       identityValidation: true,
     });
     expect(
       typeof signing === "object"
-        ? signing.optionsForFile?.("Decision")
+        ? signing.optionsForFile?.("Paraself")
         : undefined,
     ).toMatchObject({ hardenedRuntime: true });
     expect(distribution.osxNotarize).toEqual({
@@ -85,12 +85,12 @@ describe("macOS packaging", () => {
 
   it("supports one complete App Store Connect API key for notarization", () => {
     const distribution = createMacDistributionConfig({
-      DECISION_RELEASE: "1",
-      DECISION_SIGNING_IDENTITY:
-        "Developer ID Application: Decision Team (ABCDE12345)",
-      DECISION_APPLE_API_KEY: "/private/AuthKey_KEY1234567.p8",
-      DECISION_APPLE_API_KEY_ID: "KEY1234567",
-      DECISION_APPLE_API_ISSUER:
+      PARASELF_RELEASE: "1",
+      PARASELF_SIGNING_IDENTITY:
+        "Developer ID Application: Paraself Team (ABCDE12345)",
+      PARASELF_APPLE_API_KEY: "/private/AuthKey_KEY1234567.p8",
+      PARASELF_APPLE_API_KEY_ID: "KEY1234567",
+      PARASELF_APPLE_API_ISSUER:
         "00000000-0000-0000-0000-000000000000",
     });
 
@@ -104,13 +104,13 @@ describe("macOS packaging", () => {
   it("rejects mixed notarization strategies", () => {
     expect(() =>
       createMacDistributionConfig({
-        DECISION_RELEASE: "1",
-        DECISION_SIGNING_IDENTITY:
-          "Developer ID Application: Decision Team (ABCDE12345)",
-        DECISION_NOTARY_KEYCHAIN_PROFILE: "decision-release",
-        DECISION_APPLE_API_KEY: "/private/key.p8",
-        DECISION_APPLE_API_KEY_ID: "KEY1234567",
-        DECISION_APPLE_API_ISSUER:
+        PARASELF_RELEASE: "1",
+        PARASELF_SIGNING_IDENTITY:
+          "Developer ID Application: Paraself Team (ABCDE12345)",
+        PARASELF_NOTARY_KEYCHAIN_PROFILE: "decision-release",
+        PARASELF_APPLE_API_KEY: "/private/key.p8",
+        PARASELF_APPLE_API_KEY_ID: "KEY1234567",
+        PARASELF_APPLE_API_ISSUER:
           "00000000-0000-0000-0000-000000000000",
       }),
     ).toThrow(/exactly one notarization strategy/u);
@@ -121,11 +121,12 @@ describe("macOS packaging", () => {
       author: "Cognelis contributors",
       description: expect.stringContaining("decision"),
     });
-    expect(packageJson.productName).toBe("Decision");
+    expect(packageJson.productName).toBe("Paraself");
+    expect(packageJson.name).toBe("@cognelis/paraself");
     expect(forgeConfig.packagerConfig).toMatchObject({
-      name: "Decision",
-      executableName: "Decision",
-      appBundleId: "com.cognelis.decision",
+      name: "Paraself",
+      executableName: "Paraself",
+      appBundleId: "com.cognelis.paraself",
       icon: "apps/desktop/assets/app-icon",
     });
   });
@@ -149,7 +150,7 @@ describe("macOS packaging", () => {
       "squirrel",
     ]);
     expect(JSON.stringify(forgeConfig.makers)).toContain(
-      `Decision-${packageJson.version}-win-x64-Setup.exe`,
+      `Paraself-${packageJson.version}-win-x64-Setup.exe`,
     );
     expect(JSON.stringify(forgeConfig.makers)).toContain(
       "apps/desktop/assets/app-icon.ico",
@@ -182,7 +183,6 @@ describe("macOS packaging", () => {
       forgeConfig.packagerConfig?.extraResource ?? [];
 
     expect(resources).toContain("dist/semantic");
-    expect(resources).toContain("dist/native");
     expect(resources).not.toEqual(
       expect.arrayContaining([
         expect.stringMatching(/\.gguf$/u),
@@ -242,7 +242,7 @@ describe("macOS packaging", () => {
       },
     });
     // What running as Node stays on for: both launchers start the app's own binary that way.
-    for (const launcher of ["decision-bridge", "decision-bridge.cmd"]) {
+    for (const launcher of ["paraself-bridge", "paraself-bridge.cmd"]) {
       expect(readFileSync(new URL(`../../bridge/resources/${launcher}`, import.meta.url), "utf8")).toContain("ELECTRON_RUN_AS_NODE=1");
     }
   });

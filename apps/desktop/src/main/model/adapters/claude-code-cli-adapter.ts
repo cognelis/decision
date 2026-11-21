@@ -165,7 +165,7 @@ export class ClaudeCodeCliAdapter {
     }
     this.#profile = parsed.data;
     this.#runner =
-      options.runner ?? new ManagedChildProcessRunner();
+      options.runner ?? new ManagedChildProcessRunner({ modelNetworkPolicy: "required" });
     this.#environment =
       options.environment ?? process.env;
   }
@@ -174,7 +174,7 @@ export class ClaudeCodeCliAdapter {
     return {
       id: this.id,
       availability: "available" as const,
-      modelVersion: this.#profile.model ?? "haiku",
+      modelVersion: this.#profile.model ?? "claude-default",
       promptVersion: SEMANTIC_PROMPT_VERSION,
     };
   }
@@ -193,15 +193,19 @@ export class ClaudeCodeCliAdapter {
     const workspace = await createCliWorkspace(
       semanticOutputJsonSchema,
     );
-    const model = this.#profile.model ?? "haiku";
+    const model = this.#profile.model ?? "claude-default";
     const userPrompt = buildSemanticUserPrompt(input);
     const stdin = `${semanticSystemPrompt}\n\n${userPrompt}`;
     try {
       const processResult = await this.#runner.run({
+        provider: this.#profile.kind,
+        model,
         executable: this.#profile.executablePath!,
         args: [
           "-p",
           "--safe-mode",
+          "--setting-sources",
+          "",
           "--tools",
           "",
           "--disallowedTools",
@@ -213,8 +217,7 @@ export class ClaudeCodeCliAdapter {
           "json",
           "--json-schema",
           JSON.stringify(semanticOutputJsonSchema),
-          "--model",
-          model,
+          ...(this.#profile.model === undefined ? [] : ["--model", model]),
         ],
         stdin,
         cwd: workspace.directory,
@@ -312,14 +315,20 @@ export class ClaudeCodeCliAdapter {
     const workspace = await createCliWorkspace(
       request.outputSchema,
     );
-    const model = this.#profile.model ?? "haiku";
+    const model = this.#profile.model ?? "claude-default";
     const stdin = `${request.systemPrompt}\n\n${request.userPrompt}`;
+    // The dialect zod names (draft 2020-12) is one Claude Code's --json-schema refuses outright, exit 1 before any call.
+    const { $schema: _dialect, ...outputSchema } = request.outputSchema;
     try {
       const processResult = await this.#runner.run({
+        provider: this.#profile.kind,
+        model,
         executable: this.#profile.executablePath!,
         args: [
           "-p",
           "--safe-mode",
+          "--setting-sources",
+          "",
           "--tools",
           "",
           "--disallowedTools",
@@ -330,9 +339,8 @@ export class ClaudeCodeCliAdapter {
           "--output-format",
           "json",
           "--json-schema",
-          JSON.stringify(request.outputSchema),
-          "--model",
-          model,
+          JSON.stringify(outputSchema),
+          ...(this.#profile.model === undefined ? [] : ["--model", model]),
         ],
         stdin,
         cwd: workspace.directory,
@@ -386,10 +394,11 @@ export class ClaudeCodeCliAdapter {
         }
         parsedOutput = parsed.data.structured_output;
       }
+      const usageModels = parsed.data.modelUsage && typeof parsed.data.modelUsage === "object" && !Array.isArray(parsed.data.modelUsage) ? Object.keys(parsed.data.modelUsage).filter(value => /^[\w./:-]{1,200}$/u.test(value)) : [];
       return {
         parsedOutput,
         visibleOutput: parsed.data.result,
-        modelVersion: model,
+        modelVersion: request.purpose === "local-review" && usageModels.length === 1 ? usageModels[0]! : model,
         traceInput: {
           systemPrompt: request.systemPrompt,
           userPrompt: request.userPrompt,

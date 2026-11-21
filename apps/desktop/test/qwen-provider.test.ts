@@ -462,13 +462,24 @@ describe("QwenModelProvider", () => {
       loadRuntime: async () => never.runtime,
       timeoutMs: 10,
     });
-    await expect(
-      timedProvider.classify(input),
-    ).rejects.toMatchObject({
-      code: "timeout",
-      diagnosticExcerpt:
-        "Qwen inference timed out after 10 ms",
-    });
+    // A capture is classified in the background, nobody waiting on it: a profile's 10 ms is held to the floor the
+    // 4B model needs at its p99 (R8-SEM), cut short at five seconds, nearly half of a run was read by the rules alone.
+    vi.useFakeTimers();
+    try {
+      const timedOut = expect(
+        timedProvider.classify(input),
+      ).rejects.toMatchObject({
+        code: "timeout",
+        diagnosticExcerpt:
+          "Qwen inference timed out after 15000 ms",
+      });
+      await vi.advanceTimersByTimeAsync(14_999);
+      expect(never.session.prompt).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(1);
+      await timedOut;
+    } finally {
+      vi.useRealTimers();
+    }
 
     const abortController = new AbortController();
     const cancelled = timedProvider.classify(

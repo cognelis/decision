@@ -217,7 +217,7 @@ describe("passive decision flow", () => {
     index.close();
   });
 
-  it("routes a high-confidence text pair and persists bounded context", async () => {
+  it("confirms a rule-only inferred choice before persisting its complete reply and context", async () => {
     const {
       root,
       repository,
@@ -277,6 +277,10 @@ describe("passive decision flow", () => {
     });
     await semanticInbox.enqueue(result);
     await semanticInbox.flush();
+    expect(runtime.queue.snapshot().current).toBeNull();
+    expect((await repository.scan()).notes).toEqual([]);
+    expect(runtime.candidates.snapshot().current?.event.questions[0]?.answer).toEqual({ kind: "custom", values: ["先 1 后 3"] });
+    await runtime.confirmCurrentCandidate();
     await runtime.queue.submit({
       status: "captured",
       rationale: "先用可解释规则积累语料。",

@@ -1,4 +1,5 @@
 import {
+  clipText,
   modelProviderProfileSchema,
   type ModelProviderProfile,
   type NormalizedTokenUsage,
@@ -32,6 +33,7 @@ import {
   parseStructuredJson,
   type StructuredProviderAttempt,
 } from "../structured-provider.js";
+import { anthropicOutputSchema } from "./anthropic-output-schema.js";
 
 const MAXIMUM_RESPONSE_BYTES = 1_048_576;
 
@@ -147,6 +149,27 @@ const normalizeUsage = (
   };
 };
 
+/**
+ * Anthropic's safety classifiers decline a request as a 200 with stop_reason "refusal", saying why in stop_details (a
+ * policy category and an explanation of the decline, not the request); a part written before it is to be discarded.
+ * Filed as output that would not parse, the same request was asked again and the reader sent to look at the model's answer.
+ */
+const refused = (
+  data: z.infer<typeof responseSchema>,
+  providerRequestId: string | undefined,
+): ModelProviderError => {
+  const details = data.stop_details !== null && typeof data.stop_details === "object" ? data.stop_details as Record<string, unknown> : {};
+  const said = [
+    typeof details.category === "string" ? `category=${clipText(details.category, 100)}` : "",
+    typeof details.explanation === "string" ? clipText(details.explanation, 300) : "",
+  ].filter((part) => part.length > 0);
+  return new ModelProviderError("content_refused", ["Anthropic declined the request · stop_reason=refusal", ...said].join(" · "), {
+    providerRequestId,
+    // Some categories are billed before any output: what the call cost goes with it.
+    usage: normalizeUsage(data.usage),
+  });
+};
+
 export class AnthropicMessagesAdapter {
   readonly id = "anthropic" as const;
   readonly #profile: ModelProviderProfile;
@@ -207,8 +230,11 @@ export class AnthropicMessagesAdapter {
       );
     }
     const userPrompt = buildSemanticUserPrompt(input);
+    const outputSchema = anthropicOutputSchema(semanticOutputJsonSchema);
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
+      provider: this.#profile.kind,
+      model: this.#profile.model,
       url: providerEndpoint(this.#profile.baseUrl!, "/messages"),
       headers: {
         "anthropic-version": "2023-06-01",
@@ -223,7 +249,7 @@ export class AnthropicMessagesAdapter {
         output_config: {
           format: {
             type: "json_schema",
-            schema: semanticOutputJsonSchema,
+            schema: outputSchema,
           },
         },
       },
@@ -249,10 +275,7 @@ export class AnthropicMessagesAdapter {
       );
     }
     if (parsed.data.stop_reason === "refusal") {
-      throw invalidOutput(
-        "Anthropic refused the structured request",
-        responseRequestId,
-      );
+      throw refused(parsed.data, responseRequestId);
     }
     const visibleOutput = parsed.data.content
       .filter(
@@ -281,7 +304,7 @@ export class AnthropicMessagesAdapter {
       traceInput: {
         systemPrompt: semanticSystemPrompt,
         userPrompt,
-        outputSchema: semanticOutputJsonSchema,
+        outputSchema,
         clientSystemPromptVisibility: "visible",
       },
       usage: normalizeUsage(parsed.data.usage),
@@ -296,6 +319,7 @@ export class AnthropicMessagesAdapter {
     request: StructuredGenerationRequest,
     signal?: AbortSignal,
   ): Promise<StructuredProviderAttempt> {
+    const outputSchema = anthropicOutputSchema(request.outputSchema);
     const apiKey = await this.#credentials.get(
       this.#profile.credentialRef!,
     );
@@ -307,6 +331,8 @@ export class AnthropicMessagesAdapter {
     }
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
+      provider: this.#profile.kind,
+      model: this.#profile.model,
       url: providerEndpoint(this.#profile.baseUrl!, "/messages"),
       headers: {
         "anthropic-version": "2023-06-01",
@@ -321,7 +347,7 @@ export class AnthropicMessagesAdapter {
         output_config: {
           format: {
             type: "json_schema",
-            schema: request.outputSchema,
+            schema: outputSchema,
           },
         },
       },
@@ -347,10 +373,7 @@ export class AnthropicMessagesAdapter {
       );
     }
     if (parsed.data.stop_reason === "refusal") {
-      throw invalidOutput(
-        "Anthropic refused the structured request",
-        responseRequestId,
-      );
+      throw refused(parsed.data, responseRequestId);
     }
     const visibleOutput = parsed.data.content
       .filter(
@@ -383,7 +406,7 @@ export class AnthropicMessagesAdapter {
       traceInput: {
         systemPrompt: request.systemPrompt,
         userPrompt: request.userPrompt,
-        outputSchema: request.outputSchema,
+        outputSchema,
         clientSystemPromptVisibility: "visible",
       },
       usage: normalizeUsage(parsed.data.usage),

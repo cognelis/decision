@@ -21,6 +21,9 @@ export const questionKey = (question: string): string =>
     .replace(/\s+/gu, "")
     .replace(/[?!.。]+$/u, "");
 
+export const answerKey = (decision: Pick<DecisionLibraryItem, "selectedAnswer" | "answer">): string =>
+  questionKey(decision.answer?.values.join("、") ?? decision.selectedAnswer);
+
 /**
  * The words to search with: the question without its closing punctuation, and no longer than the 200
  * characters a search takes. Longer, the search was refused, and a long question showed no history.
@@ -37,6 +40,17 @@ export const questionSearchText = (question: string): string =>
   ).trimEnd();
 
 /**
+ * The search for a question's other writings: each Chinese character a word of its own. Words are found as written,
+ * and "部署前要不要先跑全量回归" never found "部署前 要不要先跑全量回归", one question all the same (questionKey);
+ * sameQuestionAnswers keeps only that question of what this finds.
+ */
+export const sameQuestionSearchText = (question: string): string =>
+  clipText(
+    questionSearchText(question).replace(/(?<=\p{Script=Han})(?=\S)|(?<=\S)(?=\p{Script=Han})/gu, " "),
+    200,
+  ).trimEnd();
+
+/**
  * The other decisions of the same question among search results, newest first: the search ranks
  * by relevance, which among answers to one question says nothing, and "latest" is what is shown.
  */
@@ -49,6 +63,21 @@ export const sameQuestionAnswers = (
   return items
     .filter((item) => item.id !== excludeId && questionKey(item.question) === key)
     .sort((left, right) => right.created.localeCompare(left.created));
+};
+
+/**
+ * The other decisions of the same question, newest first, as the rationale and the decision's details list them. Looked
+ * for as written too: by character alone, newer questions holding the same characters rank as high as the very question,
+ * and fifty of them left its earlier writing out of the fifty listed.
+ */
+export const listSameQuestionAnswers = async (
+  listDecisions: DecisionApi["listDecisions"],
+  question: string,
+  excludeId: string,
+): Promise<DecisionLibraryItem[]> => {
+  const queries = [...new Set([questionSearchText(question), sameQuestionSearchText(question)])].filter((query) => query.length > 0);
+  const found = (await Promise.all(queries.map((query) => listDecisions({ query, limit: 50 })))).flat();
+  return sameQuestionAnswers([...new Map(found.map((item) => [item.id, item])).values()], question, excludeId);
 };
 
 const dayFormatter = zonedFormatter({
@@ -88,17 +117,13 @@ export const SameQuestionDecisions = ({
 
   useEffect(() => {
     let active = true;
-    const query = questionSearchText(decision.question);
     setAll(false);
     // Stepped to another decision, the last one's are not its own: kept until the new read landed, they were listed
     // under this one, compared with its answer, and a click opened the last decision's sibling.
     setOthers([]);
-    if (query.length === 0) return;
-    void api
-      .listDecisions({ query, limit: 50 })
+    void listSameQuestionAnswers(api.listDecisions, decision.question, decision.id)
       .then((items) => {
-        if (!active) return;
-        setOthers(sameQuestionAnswers(items, decision.question, decision.id));
+        if (active) setOthers(items);
       })
       .catch(() => {
         if (active) setOthers([]);
@@ -119,20 +144,21 @@ export const SameQuestionDecisions = ({
         {(all ? others : others.slice(0, 3)).map((item) => (
           <li key={item.id}>
             <button type="button" onClick={() => onOpen(item)}>
-              <strong>{item.selectedAnswer}</strong>
+              <span className="decision-same-question-answer">
+                <strong>{item.selectedAnswer}</strong>
+                {/* How the earlier answer turned out is what makes it worth a look. */}
+                {item.outcomeReview === null ? null : (
+                  <em className={`decision-review-verdict ${item.outcomeReview.verdict}`}>
+                    {verdictLabels[item.outcomeReview.verdict]}
+                  </em>
+                )}
+              </span>
               <small>
                 {item.project} · {shortDate(item.created)}
-                {item.selectedAnswer.trim() === decision.selectedAnswer.trim()
+                {/* Compared as the retrospective compares answers: "loopback http" is the answer "Loopback HTTP". */}
+                {answerKey(item) === answerKey(decision)
                   ? " · 答案相同"
                   : " · 答案不同"}
-                {item.outcomeReview === null ? null : (
-                  <>
-                    {" · "}
-                    <em className={item.outcomeReview.verdict}>
-                      {verdictLabels[item.outcomeReview.verdict]}
-                    </em>
-                  </>
-                )}
               </small>
             </button>
           </li>

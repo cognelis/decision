@@ -322,6 +322,26 @@ describe("DecisionAnalyticsService", () => {
     expect(week?.repeats).toHaveLength(6);
   });
 
+  it("counts the window's marked recommendations and the ones picked", async () => {
+    const now = new Date("2026-08-03T00:00:00.000Z");
+    const follows = new Map<string, "followed" | "not_followed">([
+      ["a", "followed"],
+      ["b", "not_followed"],
+      ["old", "followed"],
+    ]);
+    const snapshot = await new DecisionAnalyticsService(() => now).analyze(
+      [
+        decision("a", { created: "2026-08-01T08:00:00.000Z" }),
+        decision("b", { created: "2026-08-02T08:00:00.000Z" }),
+        decision("c", { created: "2026-08-02T09:00:00.000Z" }),
+        decision("old", { created: "2026-06-01T08:00:00.000Z" }),
+      ],
+      new Map(),
+      follows,
+    );
+    expect(snapshot.retrospective.periods[0]?.recommendation).toEqual({ offered: 2, followed: 1 });
+  });
+
   it("starts the windows at midnight where summer time starts at midnight", async () => {
     const zone = process.env.TZ;
     // Cairo skips from 00:00 to 01:00 on the last Friday of April.

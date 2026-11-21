@@ -31,7 +31,28 @@ const paths = {
   flow: "M2.5 3.5h5.5v4H2.5zM12 12.5h5.5v4H12zM5.2 7.5v4a2 2 0 0 0 2 2H12",
   record: "M4.5 3.5h11v13h-11zM7.5 9.6l1.8 1.8 3.2-3.6",
   idea: "M10 3.2a4.6 4.6 0 0 0-2.8 8.3v1.5h5.6v-1.5A4.6 4.6 0 0 0 10 3.2ZM8.2 15.5h3.6M8.8 17.6h2.4",
+  // 历史决定页：分栏、链接与笔记、撤回、转为正式决策、列表底部的说明。
+  history: "M3.5 10A6.5 6.5 0 1 0 10 3.5a7 7 0 0 0-4.9 2L3.5 7.2M3.5 3.6v3.6h3.6M10 6.5V10l2.7 1.5",
+  link: "M8.5 11.5a3 3 0 0 0 4.2 0l2.8-2.8a3 3 0 0 0-4.2-4.2l-1 1M11.5 8.5a3 3 0 0 0-4.2 0l-2.8 2.8a3 3 0 0 0 4.2 4.2l1-1",
+  note: "M5 3h7l3 3v11H5zM12 3v3h3",
+  undo: "M4 8h8a4 4 0 0 1 0 8H8M7 5 4 8l3 3",
+  promote: "M10 16V5M5.5 9.5 10 5l4.5 4.5",
+  info: "M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM10 9v4.5M10 6.5h.01",
+  // 方法论页头的两个操作：新建与工作箱。
+  plus: "M10 4v12M4 10h12",
+  inbox: "M3 11h3.8l1.2 2h4l1.2-2H17M5 4.5h10l2 6.5v3.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5V11Z",
 } as const;
+
+/*
+ * Whether the last thing the reader did was press a key rather than point. A button reached by Tab says what it does; one
+ * given focus by code after a click (a dialog opening on its close button, focus handed back to what opened it) does not:
+ * its tooltip stood over the dialog until the next click.
+ */
+let lastInputWasKey = true;
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", () => { lastInputWasKey = true; }, true);
+  window.addEventListener("pointerdown", () => { lastInputWasKey = false; }, true);
+}
 
 export const ActionIcon = ({ name }: { name: keyof typeof paths }) =>
   <svg viewBox="0 0 20 20" aria-hidden="true"><path d={paths[name]} /></svg>;
@@ -57,7 +78,7 @@ export const IconButton = ({ children, className = "", title: _title, tooltipSid
       aria-describedby={anchor === null ? props["aria-describedby"] : [props["aria-describedby"], id].filter(Boolean).join(" ")}
       onMouseEnter={(event) => { props.onMouseEnter?.(event); show(event.currentTarget); }}
       onMouseLeave={(event) => { props.onMouseLeave?.(event); if (document.activeElement !== event.currentTarget) setAnchor(null); }}
-      onFocus={(event) => { props.onFocus?.(event); show(event.currentTarget); }}
+      onFocus={(event) => { props.onFocus?.(event); if (lastInputWasKey) show(event.currentTarget); }}
       onBlur={(event) => { props.onBlur?.(event); setAnchor(null); }}
       onClick={(event) => { setAnchor(null); props.onClick?.(event); }}
       onKeyDown={(event) => {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paraself Memory"
+  short_description: "Look up and record your Paraself decisions"
+  default_prompt: "Use $paraself-memory to find what I decided before about this."

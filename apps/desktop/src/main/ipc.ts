@@ -1,9 +1,16 @@
-import { managedQwenModelIdSchema, managedQwenModelStatusSchema } from "@cognelis/decision-protocol";
-import { prDiscussionSchema, prActionContextSchema, prActionRequestSchema, prActionResultSchema, prReviewCommentRequestSchema, prGeneralCommentRequestSchema, prReviewCommentResultSchema, prReviewReevaluateSchema, prReviewVerdictSchema, prReviewFileRequestSchema, prReviewFileResponseSchema, prReviewDiffRequestSchema, prReviewDiffResponseSchema, prReviewFollowUpSchema, prReviewFollowUpResultSchema, prConnectionSchema, prConnectionInputSchema, prListQuerySchema, prListResponseSchema, prReviewLoadSchema, prReviewPrefetchSchema, prReviewSnapshotSchema, prReviewRunSchema, prReviewReportSchema } from "@cognelis/decision-protocol";
-import { proactiveRecordInputSchema } from "../shared/proactive-record.js";
+import { modelProxyUrlSchema } from "./settings.js";
+import { organizationForgetPreviewSchema, organizationForgetResultSchema, organizationForgetSchema, organizationForgetTargetSchema, organizationQuerySchema, organizationRunControlSchema, organizationRunRequestSchema, organizationRunResultSchema, organizationRunViewSchema, organizationSettingsSchema, organizationSnapshotSchema, suggestionDecisionResultSchema, suggestionDecisionSchema, suggestionDraftSaveSchema, suggestionRegenerateSchema, suggestionUndoResultSchema, suggestionUndoSchema, suggestionsAdoptResultSchema, suggestionsAdoptSchema, todoAnnotationsQuerySchema, todoAnnotationsSchema } from "@cognelis/decision-protocol";
+import { getHistoricalDecisionResultSchema, HISTORICAL_DECISION_VERSION, listHistoricalDecisionsRequestSchema, listHistoricalDecisionsResultSchema, openHistoricalDecisionRequestSchema, openHistoricalDecisionResultSchema, rebuildHistoricalDecisionIndexResultSchema, recordHistoricalDecisionRequestSchema, recordHistoricalDecisionResultSchema, updateHistoricalDecisionRequestSchema, updateHistoricalDecisionResultSchema } from "@cognelis/decision-protocol";
+import { todoItemChangeSchema, todoItemMoveSchema, todoItemsChangeSchema, todoItemsDeleteSchema, todoItemsMoveResultSchema, todoItemsMoveSchema, todoItemsResultSchema, todoListDeleteResultSchema, todoListDeleteSchema, todoItemUpdateResultSchema, todoListQuerySchema, todoListResponseSchema, todoListSettingsResultSchema, todoListSettingsSchema, todoManualRecordSchema, todoRecordResultSchema } from "@cognelis/decision-protocol";
+import { localReviewSendMessageSchema, localReviewExecuteSchema, localReviewMarkReadSchema, localReviewConversationActionSchema, localReviewStateSchema, localReviewChooseSchema, localReviewSessionRequestSchema, localReviewSaveSettingsSchema, localReviewContextSchema, localReviewFilesSchema, localReviewReadSchema, localReviewAnnotateSchema, localReviewRemoveAnnotationSchema, localReviewSubmitSchema, localReviewFromPrSchema, localReviewActionSchema } from "@cognelis/decision-protocol";
+import { decisionDeletionTargetSchema, decisionDeletionRequestSchema, decisionDeletionPreviewSchema, decisionDeletionResultSchema, misrecognitionSummarySchema, type MisrecognitionSummary, type DecisionDeletionTarget, type DecisionDeletionRequest, type DecisionDeletionPreview, type DecisionDeletionResult } from "../shared/decision-deletion.js";
+import { customClientSchema, managedQwenModelIdSchema, managedQwenModelStatusSchema, onboardingRequestSchema, onboardingViewSchema, sourceClientSchema, type CustomClient, type OnboardingRequest, type OnboardingView } from "@cognelis/decision-protocol";
+import { prDiscussionSchema, prDiscussionRecognizeSchema, prCommentCandidatesSchema, prActionContextSchema, prActionRequestSchema, prActionResultSchema, prReviewCommentRequestSchema, prGeneralCommentRequestSchema, prReviewCommentResultSchema, prReviewReevaluateSchema, prReviewVerdictSchema, prReviewFileRequestSchema, prReviewFileResponseSchema, prReviewDiffRequestSchema, prReviewDiffResponseSchema, prReviewFollowUpSchema, prReviewFollowUpResultSchema, prConnectionSchema, prConnectionInputSchema, prListQuerySchema, prListResponseSchema, prReviewLoadSchema, prReviewPrefetchSchema, prReviewSnapshotSchema, prReviewRunSchema, prReviewReportSchema, prReviewHistoryListSchema, prReviewHistorySaveSchema, prReviewHistorySaveResultSchema, prReviewStatusListSchema, prReviewStatusRequestSchema, prDescriptionReadSchema, prDescriptionSchema, prDescriptionUpdateSchema, prDescriptionUpdateResultSchema, prReceivedCommentsRequestSchema, prReceivedCommentsSchema, prCommentRespondSchema, prCommentRespondResultSchema, prReviewSettingsResultSchema, reviewQualityResultSchema, reviewRuleUpdateResultSchema, reviewEscapeUpdateSchema, reviewEscapeUpdateResultSchema, PR_REVIEW_TOOLS_VERSION, type ReviewEscapeUpdate, type ReviewEscapeUpdateResult, reviewBenchmarkPageRequestSchema, reviewBenchmarkPageResultSchema, reviewPromotionActionSchema, reviewPromotionActionResultSchema } from "@cognelis/decision-protocol";
+import { proactiveRecordInputSchema, recordContextSummaryRequestSchema, recordContextSummarySchema } from "../shared/proactive-record.js";
 import { decisionFeedbackUpdateSchema, decisionFeedbackUpdateResultSchema, decisionFeedbackQuerySchema, decisionFeedbackResponseSchema } from "@cognelis/decision-protocol";
 import { DESKTOP_PRIMARY_SURFACES } from "../shared/renderer-api.js";
-import type { DecisionApi, DecisionEvidenceApi } from "../shared/renderer-api.js";
+import type { AmendmentOverview, DecisionApi, DecisionEvidenceApi } from "../shared/renderer-api.js";
+import { decisionAmendmentRequestSchema, decisionAmendmentResultSchema, type DecisionAmendmentRequest, type DecisionAmendmentResult } from "@cognelis/decision-protocol";
 import {
   assistantSourceCheckSchema,
   assistantTurnRequestSchema,
@@ -53,6 +60,7 @@ import type {
 } from "@cognelis/decision-protocol";
 import {
   decisionConsultationFeedbackRatingSchema,
+  modelInvocationErrorCodeSchema,
   redactedModelProviderProfileSchema,
   localModelClientStatusSchema,
   semanticRecognitionStatusSchema,
@@ -63,8 +71,10 @@ import { z } from "zod";
 
 import {
   THEME_PREFERENCES,
+  type AccentPreference,
   type ThemePreference,
 } from "../shared/appearance.js";
+import { accentPreferenceSchema } from "./settings.js";
 import {
   CAPTURE_CLASSIFIERS,
   type CaptureClassifier,
@@ -87,6 +97,9 @@ import type {
   ManualFormDraft,
   ManualFormDraftInput,
   ManualFormDraftKey,
+  PromptInput,
+  PromptItem,
+  PromptUpdate,
   MethodologyEvolutionInput,
   MethodologyEvidenceManualInput,
   MethodologyMergeLifecyclePlan,
@@ -114,6 +127,7 @@ import type {
   ObsidianSearchStatus,
 } from "../shared/obsidian-search.js";
 import { manualFormDraftInputSchema } from "./manual-form-draft-store.js";
+import { promptIdSchema, promptInputSchema, promptItemSchema, promptUpdateSchema } from "./prompt-library-store.js";
 
 export { IPC_CHANNELS };
 
@@ -132,7 +146,8 @@ const decisionLibraryQuerySchema = z
     decisionId: candidateIdSchema.optional(),
     createdSince: z.string().datetime({ offset: true }).optional(),
     rationaleStatus: z.enum(["captured", "deferred", "skipped"]).optional(),
-    sourceClient: z.enum(["claude-code", "codex", "manual", "pr-comment", "test"]).optional(),
+    // A client's id, or what is none (manual, pr-comment): the same form.
+    sourceClient: sourceClientSchema.optional(),
     project: z.string().trim().min(1).max(500).optional(),
     outcomeVerdict: z
       .enum(["better", "as_expected", "mixed", "worse", "unclear"])
@@ -682,11 +697,14 @@ const modelProviderOrderSchema = z
     (profileIds) => new Set(profileIds).size === profileIds.length,
     "Provider order cannot contain duplicates",
   );
+// Bounded as the trace that records the same test is: cut off at the longest timeout (120 s) it ran a little past
+// that in all, and a CLI that crashed on Windows exits with a code no byte holds (0xC0000005). Refused here, the
+// settings page said the input was over a limit instead of what happened.
 const modelProviderTestResultSchema = z
   .object({
     ok: z.boolean(),
     profileId: modelProviderIdSchema,
-    latencyMs: z.number().int().nonnegative().max(120_000),
+    latencyMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
     requestId: modelProviderIdSchema,
     modelVersion: z.string().min(1).max(200).optional(),
     tokenSource: z
@@ -697,34 +715,14 @@ const modelProviderTestResultSchema = z
         "unavailable",
       ])
       .optional(),
-    errorCode: z
-      .enum([
-        "timeout",
-        "cancelled",
-        "authentication_failed",
-        "authorization_failed",
-        "rate_limited",
-        "quota_exhausted",
-        "provider_unavailable",
-        "invalid_output",
-        "output_limit",
-        "invalid_configuration",
-        "credential_unavailable",
-        "credential_decryption_failed",
-        "network_error",
-        "response_too_large",
-        "redirect_rejected",
-        "process_failed",
-        "executable_missing",
-        "unsupported_client",
-        "trace_write_failed",
-        "unknown",
-      ])
-      .optional(),
+    // The trace's own list: a copy here fell behind it, and a code it lacked failed the test as if the input were wrong.
+    errorCode: modelInvocationErrorCodeSchema.optional(),
     availability: semanticRecognitionStatusSchema.shape.availability.optional(),
-    providerRequestId: z.string().trim().min(1).max(200).optional(),
-    processExitCode: z.number().int().min(-1).max(255).optional(),
+    providerRequestId: z.string().trim().min(1).max(500).optional(),
+    processExitCode: z.number().int().optional(),
     diagnosticExcerpt: z.string().trim().min(1).max(2_000).optional(),
+    // What the provider reported the test cost (jev): missing here, a passing test was refused as malformed input.
+    costUsd: z.number().nonnegative().max(1_000_000).optional(),
   })
   .strict();
 // Said as the knowledge page says it: refused here with no reason, the rationale step could not be fixed.
@@ -801,19 +799,28 @@ interface IpcMainLike {
   removeHandler(channel: string): void;
 }
 
+/** What the page sent, as fields to check: anything that is not an object has none. */
+const pageFields = (input: unknown): Record<string, unknown> =>
+  input !== null && typeof input === "object" && !Array.isArray(input) ? (input as Record<string, unknown>) : {};
+
 export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   getSnapshot?(): AppSnapshot;
   openCandidateReview(): Promise<void> | void;
   closeCandidateReview(): Promise<void> | void;
   confirmCandidate(candidateId: string): Promise<void> | void;
   ignoreCandidate(candidateId: string): Promise<void> | void;
+  skipCandidate(candidateId: string): Promise<void> | void;
   retryCandidate(candidateId: string): Promise<void> | void;
   openSurface(surface: DesktopPrimarySurface): Promise<void> | void;
   closePrimarySurface(): Promise<void> | void;
   listDecisions(query: DecisionLibraryQuery): Promise<DecisionLibraryItem[]>;
   listDecisionProjects: DecisionApi["listDecisionProjects"];
   createProactiveRecord(input: ProactiveRecordInput): Promise<ProactiveRecordResult>;
+  summarizeRecordContext: DecisionApi["summarizeRecordContext"];
+  cancelRecordContextSummary: DecisionApi["cancelRecordContextSummary"];
   listJournalEntries(query: JournalEntryListQuery): Promise<JournalEntry[]>;
+  listDecisionAmendments(): Promise<AmendmentOverview>;
+  updateDecisionAmendment(request: DecisionAmendmentRequest): Promise<DecisionAmendmentResult>;
   reviseJournalEntry(id: string, input: JournalEntryRevisionInput): Promise<JournalEntry>;
   getObsidianSearchStatus?(): Promise<ObsidianSearchStatus>;
   searchObsidian?(input: {
@@ -857,6 +864,10 @@ export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   listManualFormDrafts(): Promise<ManualFormDraft[]>;
   saveManualFormDraft(input: ManualFormDraftInput): Promise<ManualFormDraft>;
   deleteManualFormDraft(key: ManualFormDraftKey): Promise<void>;
+  listPrompts(): Promise<PromptItem[]>;
+  createPrompt(input: PromptInput): Promise<PromptItem>;
+  updatePrompt(input: PromptUpdate): Promise<PromptItem>;
+  deletePrompt(id: string): Promise<void>;
   generateMethodology(sourceDecisionIds: string[]): Promise<MethodologyItem>;
   createMethodologyMergeDraft(
     sourcePrincipleIds: string[],
@@ -973,22 +984,70 @@ export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   ): Promise<PracticePublicationReceipt>;
   chooseVault(): Promise<string | null>;
   revealVault(): Promise<boolean>;
-  installIntegrations(mode: InstallMode): Promise<InstallReport | unknown>;
-  removeIntegrations(): Promise<InstallReport | unknown>;
+  installIntegrations(mode: InstallMode, clients?: string[]): Promise<InstallReport | unknown>;
+  removeIntegrations(clients?: string[]): Promise<InstallReport | unknown>;
+  listCustomClients(): Promise<CustomClient[]>;
+  saveCustomClient(input: { client: CustomClient; previousId?: string | undefined }): Promise<CustomClient[]>;
+  deleteCustomClient(id: string): Promise<InstallReport | unknown>;
   rebuildIndex(): Promise<RebuildReport>;
   setTheme(theme: ThemePreference): Promise<void>;
+  setAccent(accent: AccentPreference): Promise<void>;
   listModelTraces(): Promise<ModelInvocationTrace[]>;
   deleteModelTrace(traceId: string): Promise<boolean>;
   deleteModelTraceRequest(requestId: string): Promise<number>;
   forgetAssistantTurns(turnIds: string[]): Promise<void>;
   clearModelTraces(): Promise<number>;
   setModelTraceContentEnabled(enabled: boolean): Promise<void>;
+  setModelProxyUrl(url: string | null): Promise<void>;
   setReviewRemindersEnabled(enabled: boolean): Promise<void>;
   setLocalCredentialsEnabled(enabled: boolean): Promise<void>;
   setCaptureClassifier(classifier: CaptureClassifier): Promise<void>;
   checkAssistantSource: DecisionApi["checkAssistantSource"];
   searchAssistantSources: DecisionApi["searchAssistantSources"];
   listPrConnections: DecisionApi["listPrConnections"];
+  listHistoricalDecisions: DecisionApi["listHistoricalDecisions"];
+  getHistoricalDecision: DecisionApi["getHistoricalDecision"];
+  recordHistoricalDecision: DecisionApi["recordHistoricalDecision"];
+  updateHistoricalDecision: DecisionApi["updateHistoricalDecision"];
+  rebuildHistoricalDecisionIndex: DecisionApi["rebuildHistoricalDecisionIndex"];
+  openHistoricalDecision: DecisionApi["openHistoricalDecision"];
+  listTodoLists: DecisionApi["listTodoLists"];
+  recordTodoList: DecisionApi["recordTodoList"];
+  changeTodoItem: DecisionApi["changeTodoItem"];
+  updateTodoList: DecisionApi["updateTodoList"];
+  moveTodoItem: DecisionApi["moveTodoItem"];
+  changeTodoItems: DecisionApi["changeTodoItems"];
+  deleteTodoItems: DecisionApi["deleteTodoItems"];
+  moveTodoItemsToList: DecisionApi["moveTodoItemsToList"];
+  deleteTodoList: DecisionApi["deleteTodoList"];
+  getOrganization: DecisionApi["getOrganization"];
+  runOrganization: DecisionApi["runOrganization"];
+  controlOrganizationRun: DecisionApi["controlOrganizationRun"];
+  decideSuggestion: DecisionApi["decideSuggestion"];
+  adoptSuggestions: DecisionApi["adoptSuggestions"];
+  saveSuggestionDraft: DecisionApi["saveSuggestionDraft"];
+  undoSuggestion: DecisionApi["undoSuggestion"];
+  regenerateSuggestion: DecisionApi["regenerateSuggestion"];
+  setOrganizationSettings: DecisionApi["setOrganizationSettings"];
+  previewOrganizationForget: DecisionApi["previewOrganizationForget"];
+  forgetOrganizationSource: DecisionApi["forgetOrganizationSource"];
+  getTodoAnnotations: DecisionApi["getTodoAnnotations"];
+  getLocalReviewState: DecisionApi["getLocalReviewState"];
+  chooseLocalReviewRepository: DecisionApi["chooseLocalReviewRepository"];
+  startLocalReviewSession: DecisionApi["startLocalReviewSession"];
+  saveLocalReviewSettings: DecisionApi["saveLocalReviewSettings"];
+  clearLocalReviewDependencies: DecisionApi["clearLocalReviewDependencies"];
+  loadLocalReviewFiles: DecisionApi["loadLocalReviewFiles"];
+  readLocalReviewFile: DecisionApi["readLocalReviewFile"];
+  saveLocalReviewAnnotation: DecisionApi["saveLocalReviewAnnotation"];
+  removeLocalReviewAnnotation: DecisionApi["removeLocalReviewAnnotation"];
+  submitLocalReview: DecisionApi["submitLocalReview"];
+  submitLocalReviewFromPr: DecisionApi["submitLocalReviewFromPr"];
+  actOnLocalReview: DecisionApi["actOnLocalReview"];
+  sendLocalReviewMessage: DecisionApi["sendLocalReviewMessage"];
+  executeLocalReviewPlan: DecisionApi["executeLocalReviewPlan"];
+  markLocalReviewRead: DecisionApi["markLocalReviewRead"];
+  actOnLocalReviewConversation: DecisionApi["actOnLocalReviewConversation"];
   savePrConnection: DecisionApi["savePrConnection"];
   removePrConnection: DecisionApi["removePrConnection"];
   checkPrConnection: DecisionApi["checkPrConnection"];
@@ -996,6 +1055,20 @@ export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   loadPrReview: DecisionApi["loadPrReview"];
   peekPrReview: DecisionApi["peekPrReview"];
   prefetchPrReviews: DecisionApi["prefetchPrReviews"];
+  listPrReviewHistory: DecisionApi["listPrReviewHistory"];
+  savePrReviewHistory: DecisionApi["savePrReviewHistory"];
+  listPrReviewStatuses: DecisionApi["listPrReviewStatuses"];
+  getPrDescription: DecisionApi["getPrDescription"];
+  updatePrDescription: DecisionApi["updatePrDescription"];
+  listPrReceivedComments: DecisionApi["listPrReceivedComments"];
+  respondToPrComment: DecisionApi["respondToPrComment"];
+  readPrReviewOutcomes: DecisionApi["readPrReviewOutcomes"];
+  getReviewQuality: DecisionApi["getReviewQuality"];
+  updateReviewRule: DecisionApi["updateReviewRule"];
+  updateReviewEscape(input: ReviewEscapeUpdate): Promise<ReviewEscapeUpdateResult>;
+  reviewBenchmarkPage: DecisionApi["reviewBenchmarkPage"];
+  actOnReviewPromotion: DecisionApi["actOnReviewPromotion"];
+  getPrReviewSettings: DecisionApi["getPrReviewSettings"];
   loadPrReviewDiff: DecisionApi["loadPrReviewDiff"];
   getPrActionContext: DecisionApi["getPrActionContext"];
   performPrAction: DecisionApi["performPrAction"];
@@ -1004,6 +1077,9 @@ export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   reevaluatePrReviewFinding: DecisionApi["reevaluatePrReviewFinding"];
   openReviewRulesDirectory: DecisionApi["openReviewRulesDirectory"];
   listPrDiscussion: DecisionApi["listPrDiscussion"];
+  recognizePrDiscussion: DecisionApi["recognizePrDiscussion"];
+  dismissPrCommentCandidate: DecisionApi["dismissPrCommentCandidate"];
+  listPrCommentCandidates: DecisionApi["listPrCommentCandidates"];
   openPrLink: DecisionApi["openPrLink"];
   openPr: DecisionApi["openPr"];
   loadPrReviewFile: DecisionApi["loadPrReviewFile"];
@@ -1013,6 +1089,7 @@ export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   runAssistantTurn(
     input: AssistantTurnRequest,
   ): Promise<AssistantTurnResponse>;
+  sendOnboarding(input: OnboardingRequest): Promise<OnboardingView>;
   listAssistantModels(): Promise<RetrievalAnswerProvider[]>;
   cancelAssistantTurn(turnId: string): Promise<void>;
   saveAssistantFeedback(
@@ -1042,6 +1119,9 @@ export interface DecisionIpcOperations extends Partial<DecisionEvidenceApi> {
   keepLocalRationale?(id: string, input: { rationale?: string; reasonFactors?: string[] }): Promise<void>;
   listLocalDecisions?(query: string, offset: number): Promise<import("../shared/renderer-api.js").LocalDecisionPage>;
   resolveLocalDecision?(id: string, action: "publish" | "discard"): Promise<void>;
+  previewDecisionDeletion?(input: DecisionDeletionTarget): Promise<DecisionDeletionPreview>;
+  deleteDecision?(input: DecisionDeletionRequest): Promise<DecisionDeletionResult>;
+  getMisrecognitionSummary?(): Promise<MisrecognitionSummary>;
 }
 
 interface RegisterDecisionIpcOptions {
@@ -1049,6 +1129,8 @@ interface RegisterDecisionIpcOptions {
   queue: RationaleQueue;
   candidates?: DecisionCandidateQueue;
   operations: DecisionIpcOperations;
+  /** True once the app has begun to quit: see the handlers' catch. */
+  quitting?: () => boolean;
 }
 
 export const registerDecisionIpc = (
@@ -1155,6 +1237,11 @@ export const registerDecisionIpc = (
         options.operations.ignoreCandidate(currentCandidateId(input)),
     ],
     [
+      IPC_CHANNELS.skipCandidate,
+      (_event, input) =>
+        options.operations.skipCandidate(currentCandidateId(input)),
+    ],
+    [
       IPC_CHANNELS.retryCandidate,
       (_event, input) =>
         options.operations.retryCandidate(currentCandidateId(input)),
@@ -1205,11 +1292,29 @@ export const registerDecisionIpc = (
         ),
     ],
     [
+      IPC_CHANNELS.summarizeRecordContext,
+      async (_event, input) =>
+        recordContextSummarySchema.parse(await options.operations.summarizeRecordContext(recordContextSummaryRequestSchema.parse(input))),
+    ],
+    [
+      IPC_CHANNELS.cancelRecordContextSummary,
+      async (_event, input) => {
+        await options.operations.cancelRecordContextSummary(z.string().uuid().parse(input));
+      },
+    ],
+    [
       IPC_CHANNELS.listJournalEntries,
       (_event, input) =>
         options.operations.listJournalEntries(
           journalEntryListQuerySchema.parse(input) as JournalEntryListQuery,
         ),
+    ],
+    [IPC_CHANNELS.listDecisionAmendments, () => options.operations.listDecisionAmendments()],
+    [
+      IPC_CHANNELS.updateDecisionAmendment,
+      async (_event, input) => decisionAmendmentResultSchema.parse(
+        await options.operations.updateDecisionAmendment(decisionAmendmentRequestSchema.parse(input)),
+      ),
     ],
     [
       IPC_CHANNELS.reviseJournalEntry,
@@ -1506,6 +1611,29 @@ export const registerDecisionIpc = (
         options.operations.deleteManualFormDraft(
           manualFormDraftKeySchema.parse(input),
         ),
+    ],
+    [
+      IPC_CHANNELS.listPrompts,
+      async (_event, input) => {
+        z.undefined().parse(input);
+        return z.array(promptItemSchema).parse(await options.operations.listPrompts());
+      },
+    ],
+    [
+      IPC_CHANNELS.createPrompt,
+      async (_event, input) =>
+        promptItemSchema.parse(await options.operations.createPrompt(promptInputSchema.parse(input))),
+    ],
+    [
+      IPC_CHANNELS.updatePrompt,
+      async (_event, input) =>
+        promptItemSchema.parse(await options.operations.updatePrompt(promptUpdateSchema.parse(input))),
+    ],
+    [
+      IPC_CHANNELS.deletePrompt,
+      async (_event, input) => {
+        await options.operations.deletePrompt(promptIdSchema.parse(input));
+      },
     ],
     [
       IPC_CHANNELS.generateMethodology,
@@ -1869,11 +1997,42 @@ export const registerDecisionIpc = (
     [
       IPC_CHANNELS.installIntegrations,
       (_event, input) =>
-        options.operations.installIntegrations(
-          z.enum(["dry-run", "apply"]).parse(input),
+      {
+        // A mode alone acts on every client; with `clients`, on those (a row's 接入, the page's 全部修复).
+        const mode = z.enum(["dry-run", "apply"]);
+        const parsed = z.union([mode, z.object({ mode, clients: z.array(sourceClientSchema).max(64) }).strict()]).parse(input);
+        return typeof parsed === "string"
+          ? options.operations.installIntegrations(parsed)
+          : options.operations.installIntegrations(parsed.mode, parsed.clients);
+      },
+    ],
+    [
+      IPC_CHANNELS.removeIntegrations,
+      (_event, input) => options.operations.removeIntegrations(z.array(sourceClientSchema).max(64).optional().parse(input)),
+    ],
+    [IPC_CHANNELS.listCustomClients, () => options.operations.listCustomClients()],
+    [
+      IPC_CHANNELS.saveCustomClient,
+      (_event, input) =>
+        options.operations.saveCustomClient(
+          z.object({ client: customClientSchema, previousId: sourceClientSchema.optional() }).strict().parse(input),
         ),
     ],
-    [IPC_CHANNELS.removeIntegrations, () => options.operations.removeIntegrations()],
+    [IPC_CHANNELS.deleteCustomClient, (_event, input) => options.operations.deleteCustomClient(sourceClientSchema.parse(input))],
+    [IPC_CHANNELS.previewDecisionDeletion, async (_event, input) => {
+      const request = decisionDeletionTargetSchema.parse(input);
+      if (!options.operations.previewDecisionDeletion) throw new Error("删除功能暂时不可用。");
+      return decisionDeletionPreviewSchema.parse(await options.operations.previewDecisionDeletion(request));
+    }],
+    [IPC_CHANNELS.deleteDecision, async (_event, input) => {
+      const request = decisionDeletionRequestSchema.parse(input);
+      if (!options.operations.deleteDecision) throw new Error("删除功能暂时不可用。");
+      return decisionDeletionResultSchema.parse(await options.operations.deleteDecision(request));
+    }],
+    [IPC_CHANNELS.getMisrecognitionSummary, async () => {
+      if (!options.operations.getMisrecognitionSummary) throw new Error("识别错误统计暂时不可用。");
+      return misrecognitionSummarySchema.parse(await options.operations.getMisrecognitionSummary());
+    }],
     [IPC_CHANNELS.listLocalDecisions, (_event, input) => {
       const value = z.object({ query: z.string().max(200), offset: z.number().int().min(0).max(1_000_000) }).strict().parse(input);
       if (!options.operations.listLocalDecisions) throw new Error("本机记录不可用。");
@@ -1889,6 +2048,10 @@ export const registerDecisionIpc = (
       IPC_CHANNELS.setTheme,
       (_event, input) =>
         options.operations.setTheme(z.enum(THEME_PREFERENCES).parse(input)),
+    ],
+    [
+      IPC_CHANNELS.setAccent,
+      (_event, input) => options.operations.setAccent(accentPreferenceSchema.parse(input)),
     ],
     [IPC_CHANNELS.listModelTraces, () => options.operations.listModelTraces()],
     [
@@ -1914,6 +2077,7 @@ export const registerDecisionIpc = (
       IPC_CHANNELS.clearModelTraces,
       () => options.operations.clearModelTraces(),
     ],
+    [IPC_CHANNELS.setModelProxyUrl, (_event, input) => options.operations.setModelProxyUrl(modelProxyUrlSchema.parse(input))],
     [
       IPC_CHANNELS.setModelTraceContentEnabled,
       (_event, input) =>
@@ -1950,6 +2114,62 @@ export const registerDecisionIpc = (
       },
     ],
     [IPC_CHANNELS.listPrConnections, async () => z.array(prConnectionSchema).max(20).parse(await options.operations.listPrConnections())],
+    // 历史决定: the page's fields checked by the same schemas an agent's are, the version and the App as their source added here.
+    [IPC_CHANNELS.listHistoricalDecisions, async (_event, input) => {
+      const { version: _version, ...query } = listHistoricalDecisionsRequestSchema.parse({ ...pageFields(input), version: HISTORICAL_DECISION_VERSION });
+      return listHistoricalDecisionsResultSchema.parse(await options.operations.listHistoricalDecisions(query));
+    }],
+    [IPC_CHANNELS.getHistoricalDecision, async (_event, input) => getHistoricalDecisionResultSchema.parse(await options.operations.getHistoricalDecision(z.string().trim().min(1).max(200).parse(input)))],
+    [IPC_CHANNELS.recordHistoricalDecision, async (_event, input) => {
+      const { version: _version, sourceClient: _client, ...record } = recordHistoricalDecisionRequestSchema.parse({ ...pageFields(input), version: HISTORICAL_DECISION_VERSION, sourceClient: null });
+      return recordHistoricalDecisionResultSchema.parse(await options.operations.recordHistoricalDecision(record));
+    }],
+    [IPC_CHANNELS.updateHistoricalDecision, async (_event, input) => {
+      const { version: _version, sourceClient: _client, ...change } = updateHistoricalDecisionRequestSchema.parse({ ...pageFields(input), version: HISTORICAL_DECISION_VERSION, sourceClient: null });
+      return updateHistoricalDecisionResultSchema.parse(await options.operations.updateHistoricalDecision(change));
+    }],
+    [IPC_CHANNELS.rebuildHistoricalDecisionIndex, async () => rebuildHistoricalDecisionIndexResultSchema.parse(await options.operations.rebuildHistoricalDecisionIndex())],
+    [IPC_CHANNELS.openHistoricalDecision, async (_event, input) => {
+      const { version: _version, ...target } = openHistoricalDecisionRequestSchema.parse({ ...pageFields(input), version: HISTORICAL_DECISION_VERSION });
+      return openHistoricalDecisionResultSchema.parse(await options.operations.openHistoricalDecision(target));
+    }],
+    [IPC_CHANNELS.listTodoLists, async (_event, input) => todoListResponseSchema.parse(await options.operations.listTodoLists(todoListQuerySchema.parse(input ?? {})))],
+    [IPC_CHANNELS.recordTodoList, async (_event, input) => todoRecordResultSchema.parse(await options.operations.recordTodoList(todoManualRecordSchema.parse(input)))],
+    [IPC_CHANNELS.changeTodoItem, async (_event, input) => todoItemUpdateResultSchema.parse(await options.operations.changeTodoItem(todoItemChangeSchema.parse(input)))],
+    [IPC_CHANNELS.updateTodoList, async (_event, input) => todoListSettingsResultSchema.parse(await options.operations.updateTodoList(todoListSettingsSchema.parse(input)))],
+    [IPC_CHANNELS.changeTodoItems, async (_event, input) => todoItemsResultSchema.parse(await options.operations.changeTodoItems(todoItemsChangeSchema.parse(input)))],
+    [IPC_CHANNELS.moveTodoItemsToList, async (_event, input) => todoItemsMoveResultSchema.parse(await options.operations.moveTodoItemsToList(todoItemsMoveSchema.parse(input)))],
+    [IPC_CHANNELS.deleteTodoItems, async (_event, input) => todoItemsResultSchema.parse(await options.operations.deleteTodoItems(todoItemsDeleteSchema.parse(input)))],
+    [IPC_CHANNELS.getOrganization, async (_event, input) => organizationSnapshotSchema.parse(await options.operations.getOrganization(organizationQuerySchema.parse(input)))],
+    [IPC_CHANNELS.runOrganization, async (_event, input) => organizationRunResultSchema.parse(await options.operations.runOrganization(organizationRunRequestSchema.parse(input)))],
+    [IPC_CHANNELS.controlOrganizationRun, async (_event, input) => organizationRunViewSchema.parse(await options.operations.controlOrganizationRun(organizationRunControlSchema.parse(input)))],
+    [IPC_CHANNELS.decideSuggestion, async (_event, input) => suggestionDecisionResultSchema.parse(await options.operations.decideSuggestion(suggestionDecisionSchema.parse(input)))],
+    [IPC_CHANNELS.adoptSuggestions, async (_event, input) => suggestionsAdoptResultSchema.parse(await options.operations.adoptSuggestions(suggestionsAdoptSchema.parse(input)))],
+    [IPC_CHANNELS.saveSuggestionDraft, async (_event, input) => suggestionDecisionResultSchema.parse(await options.operations.saveSuggestionDraft(suggestionDraftSaveSchema.parse(input)))],
+    [IPC_CHANNELS.undoSuggestion, async (_event, input) => suggestionUndoResultSchema.parse(await options.operations.undoSuggestion(suggestionUndoSchema.parse(input)))],
+    [IPC_CHANNELS.regenerateSuggestion, async (_event, input) => organizationRunResultSchema.parse(await options.operations.regenerateSuggestion(suggestionRegenerateSchema.parse(input)))],
+    [IPC_CHANNELS.setOrganizationSettings, async (_event, input) => organizationSettingsSchema.parse(await options.operations.setOrganizationSettings(organizationSettingsSchema.parse(input)))],
+    [IPC_CHANNELS.previewOrganizationForget, async (_event, input) => organizationForgetPreviewSchema.parse(await options.operations.previewOrganizationForget(organizationForgetTargetSchema.parse(input)))],
+    [IPC_CHANNELS.forgetOrganizationSource, async (_event, input) => organizationForgetResultSchema.parse(await options.operations.forgetOrganizationSource(organizationForgetSchema.parse(input)))],
+    [IPC_CHANNELS.getTodoAnnotations, async (_event, input) => todoAnnotationsSchema.parse(await options.operations.getTodoAnnotations(todoAnnotationsQuerySchema.parse(input)))],
+    [IPC_CHANNELS.deleteTodoList, async (_event, input) => todoListDeleteResultSchema.parse(await options.operations.deleteTodoList(todoListDeleteSchema.parse(input)))],
+    [IPC_CHANNELS.moveTodoItem, async (_event, input) => todoListSettingsResultSchema.parse(await options.operations.moveTodoItem(todoItemMoveSchema.parse(input)))],
+    [IPC_CHANNELS.getLocalReviewState, async () => localReviewStateSchema.parse(await options.operations.getLocalReviewState())],
+    [IPC_CHANNELS.chooseLocalReviewRepository, async (_event, input) => z.string().uuid().nullable().parse(await options.operations.chooseLocalReviewRepository(localReviewChooseSchema.parse(input)))],
+    [IPC_CHANNELS.startLocalReviewSession, async (_event, input) => z.string().uuid().parse(await options.operations.startLocalReviewSession(localReviewSessionRequestSchema.parse(input)))],
+    [IPC_CHANNELS.clearLocalReviewDependencies, async (_event, input) => { await options.operations.clearLocalReviewDependencies(z.object({ repositoryId: z.string().uuid() }).strict().parse(input)); }],
+    [IPC_CHANNELS.saveLocalReviewSettings, async (_event, input) => { await options.operations.saveLocalReviewSettings(localReviewSaveSettingsSchema.parse(input)); }],
+    [IPC_CHANNELS.loadLocalReviewFiles, async (_event, input) => localReviewFilesSchema.parse(await options.operations.loadLocalReviewFiles(localReviewContextSchema.parse(input)))],
+    [IPC_CHANNELS.readLocalReviewFile, async (_event, input) => z.string().max(2 * 1024 * 1024).parse(await options.operations.readLocalReviewFile(localReviewReadSchema.parse(input)))],
+    [IPC_CHANNELS.saveLocalReviewAnnotation, async (_event, input) => z.string().uuid().parse(await options.operations.saveLocalReviewAnnotation(localReviewAnnotateSchema.parse(input)))],
+    [IPC_CHANNELS.removeLocalReviewAnnotation, async (_event, input) => { await options.operations.removeLocalReviewAnnotation(localReviewRemoveAnnotationSchema.parse(input)); }],
+    [IPC_CHANNELS.submitLocalReview, async (_event, input) => z.string().uuid().parse(await options.operations.submitLocalReview(localReviewSubmitSchema.parse(input)))],
+    [IPC_CHANNELS.submitLocalReviewFromPr, async (_event, input) => z.string().uuid().parse(await options.operations.submitLocalReviewFromPr(localReviewFromPrSchema.parse(input)))],
+    [IPC_CHANNELS.actOnLocalReview, async (_event, input) => { await options.operations.actOnLocalReview(localReviewActionSchema.parse(input)); }],
+    [IPC_CHANNELS.sendLocalReviewMessage, async (_event, input) => options.operations.sendLocalReviewMessage(localReviewSendMessageSchema.parse(input))],
+    [IPC_CHANNELS.executeLocalReviewPlan, async (_event, input) => options.operations.executeLocalReviewPlan(localReviewExecuteSchema.parse(input))],
+    [IPC_CHANNELS.markLocalReviewRead, async (_event, input) => { await options.operations.markLocalReviewRead(localReviewMarkReadSchema.parse(input)); }],
+    [IPC_CHANNELS.actOnLocalReviewConversation, async (_event, input) => { await options.operations.actOnLocalReviewConversation(localReviewConversationActionSchema.parse(input)); }],
     [IPC_CHANNELS.savePrConnection, async (_event, input) => z.array(prConnectionSchema).max(20).parse(await options.operations.savePrConnection(prConnectionInputSchema.parse(input)))],
     [IPC_CHANNELS.removePrConnection, async (_event, input) => z.array(prConnectionSchema).max(20).parse(await options.operations.removePrConnection(z.string().uuid().parse(input)))],
     [IPC_CHANNELS.checkPrConnection, async (_event, input) => z.object({ account: z.string().min(1).max(300) }).strict().parse(await options.operations.checkPrConnection(z.string().uuid().parse(input)))],
@@ -1962,15 +2182,34 @@ export const registerDecisionIpc = (
     [IPC_CHANNELS.reevaluatePrReviewFinding, async (_event, input) => prReviewVerdictSchema.parse(await options.operations.reevaluatePrReviewFinding(prReviewReevaluateSchema.parse(input)))],
     [IPC_CHANNELS.openReviewRulesDirectory, async () => { await options.operations.openReviewRulesDirectory(); }],
     [IPC_CHANNELS.listPrDiscussion, async (_event, input) => prDiscussionSchema.parse(await options.operations.listPrDiscussion(prReviewLoadSchema.parse(input)))],
+    [IPC_CHANNELS.recognizePrDiscussion, async (_event, input) => prDiscussionSchema.parse(await options.operations.recognizePrDiscussion(prDiscussionRecognizeSchema.parse(input)))],
+    [IPC_CHANNELS.dismissPrCommentCandidate, async (_event, url) => { await options.operations.dismissPrCommentCandidate(z.string().url().max(2_000).parse(url)); }],
+    [IPC_CHANNELS.listPrCommentCandidates, async () => prCommentCandidatesSchema.parse(await options.operations.listPrCommentCandidates())],
     [IPC_CHANNELS.openPrLink, async (_event, url) => { await options.operations.openPrLink(z.string().url().max(2_000).parse(url)); }],
     [IPC_CHANNELS.openPr, async (_event, input) => { await options.operations.openPr(prReviewLoadSchema.parse(input)); }],
     [IPC_CHANNELS.loadPrReviewDiff, async (_event, input) => prReviewDiffResponseSchema.parse(await options.operations.loadPrReviewDiff(prReviewDiffRequestSchema.parse(input)))],
     [IPC_CHANNELS.loadPrReview, async (_event, input) => prReviewSnapshotSchema.parse(await options.operations.loadPrReview(prReviewLoadSchema.parse(input)))],
     [IPC_CHANNELS.peekPrReview, async (_event, input) => prReviewSnapshotSchema.nullable().parse(await options.operations.peekPrReview(prReviewLoadSchema.parse(input)))],
     [IPC_CHANNELS.prefetchPrReviews, async (_event, input) => { await options.operations.prefetchPrReviews(prReviewPrefetchSchema.parse(input)); }],
+    [IPC_CHANNELS.listPrReviewHistory, async (_event, input) => { z.undefined().parse(input); return prReviewHistoryListSchema.parse(await options.operations.listPrReviewHistory()); }],
+    [IPC_CHANNELS.savePrReviewHistory, async (_event, input) => prReviewHistorySaveResultSchema.parse(await options.operations.savePrReviewHistory(prReviewHistorySaveSchema.parse(input)))],
+    [IPC_CHANNELS.listPrReviewStatuses, async (_event, input) => prReviewStatusListSchema.parse(await options.operations.listPrReviewStatuses(prReviewStatusRequestSchema.parse(input)))],
+    [IPC_CHANNELS.getPrDescription, async (_event, input) => prDescriptionSchema.parse(await options.operations.getPrDescription(prDescriptionReadSchema.parse(input)))],
+    [IPC_CHANNELS.updatePrDescription, async (_event, input) => prDescriptionUpdateResultSchema.parse(await options.operations.updatePrDescription(prDescriptionUpdateSchema.parse(input)))],
+    [IPC_CHANNELS.listPrReceivedComments, async (_event, input) => prReceivedCommentsSchema.parse(await options.operations.listPrReceivedComments(prReceivedCommentsRequestSchema.parse(input)))],
+    [IPC_CHANNELS.respondToPrComment, async (_event, input) => prCommentRespondResultSchema.parse(await options.operations.respondToPrComment(prCommentRespondSchema.parse(input)))],
+    [IPC_CHANNELS.getPrReviewSettings, async () => prReviewSettingsResultSchema.parse(await options.operations.getPrReviewSettings())],
+    [IPC_CHANNELS.getReviewQuality, async (_event, input) => reviewQualityResultSchema.parse(await options.operations.getReviewQuality(z.object({ connectionId: z.string().uuid() }).strict().parse(input)))],
+    [IPC_CHANNELS.updateReviewRule, async (_event, input) => reviewRuleUpdateResultSchema.parse(await options.operations.updateReviewRule(z.object({ rule: z.string().trim().min(1).max(500), enabled: z.boolean() }).strict().parse(input)))],
+    [IPC_CHANNELS.actOnReviewPromotion, async (_event, input) => reviewPromotionActionResultSchema.parse(await options.operations.actOnReviewPromotion(reviewPromotionActionSchema.parse(input)))],
+    [IPC_CHANNELS.reviewBenchmarkPage, async (_event, input) => reviewBenchmarkPageResultSchema.parse(await options.operations.reviewBenchmarkPage(reviewBenchmarkPageRequestSchema.parse(input)))],
+    [IPC_CHANNELS.updateReviewEscape, async (_event, input) => reviewEscapeUpdateResultSchema.parse(await options.operations.updateReviewEscape(
+      reviewEscapeUpdateSchema.parse({ ...z.object({}).passthrough().parse(input), prReviewToolsVersion: PR_REVIEW_TOOLS_VERSION })))],
+    [IPC_CHANNELS.readPrReviewOutcomes, async (_event, input) => z.object({ changed: z.boolean() }).strict().parse(await options.operations.readPrReviewOutcomes(z.object({ id: z.string().uuid() }).strict().parse(input)))],
     [IPC_CHANNELS.runPrReview, async (_event, input) => prReviewReportSchema.parse(await options.operations.runPrReview(prReviewRunSchema.parse(input)))],
     [IPC_CHANNELS.followUpPrReview, async (_event, input) => prReviewFollowUpResultSchema.parse(await options.operations.followUpPrReview(prReviewFollowUpSchema.parse(input)))],
     [IPC_CHANNELS.cancelPrReview, async (_event, input) => options.operations.cancelPrReview(z.string().uuid().parse(input))],
+    [IPC_CHANNELS.sendOnboarding, async (_event, input) => onboardingViewSchema.parse(await options.operations.sendOnboarding(onboardingRequestSchema.parse(input)))],
     [
       IPC_CHANNELS.runAssistantTurn,
       async (_event, input) =>
@@ -2054,6 +2293,9 @@ export const registerDecisionIpc = (
       try {
         return await handler(event, input);
       } catch (error) {
+        // Failed after the quit began (the hidden page reading a list after the index closed, "database is not open"):
+        // left unanswered, not thrown, which Electron writes to stderr; the process is about to end with the page.
+        if (options.quitting?.() === true) return new Promise<never>(() => undefined);
         if (error instanceof z.ZodError) throw new Error(refusedInput(error));
         // A disk full or a folder refused, in words: from every write but a capture's, the page showed Node's own
         // English line, with a temporary file's name in it.

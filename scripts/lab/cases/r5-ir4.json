@@ -1,0 +1,228 @@
+[
+  {
+    "id": "R5IR4-001",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 更慢",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-002",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 更慢",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-003",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 更快",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-004",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 更快",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-005",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 更稳",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-006",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 更稳",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-007",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 风险大",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-008",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 风险大",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-009",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 有坑",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-010",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 有坑",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-011",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 成本高",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-012",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 成本高",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-013",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 太重",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-014",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 太重",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-015",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 不行",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-016",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 不行",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-017",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来 2 不合适",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-018",
+    "group": "read-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来选 2 不合适",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-019",
+    "group": "b2b-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "比较下来还是 1 更稳",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-020",
+    "group": "b2b-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "比较之后 2 更合适",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-021",
+    "group": "b2b-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "分析后发现 1 有坑",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-022",
+    "group": "b2b-evaluation",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "对比完 2 成本高",
+    "decision": false,
+    "expectedSelected": []
+  },
+  {
+    "id": "R5IR4-023",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "比较下来还是选 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR4-024",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "对比完还是 1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR4-025",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来用 2 吧",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5IR4-026",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "分析完了选 1",
+    "decision": true,
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5IR4-027",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "比较之后采用 2",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ]
+  }
+]

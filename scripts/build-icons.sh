@@ -2,7 +2,8 @@
 set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
-source_svg="$project_root/apps/desktop/assets/decision-mark.svg"
+source_svg="$project_root/apps/desktop/assets/paraself-mark.svg"
+tray_svg="$project_root/apps/desktop/assets/paraself-tray.svg"
 assets_dir="$project_root/apps/desktop/assets"
 
 for required_command in qlmanage sips iconutil; do
@@ -12,12 +13,14 @@ for required_command in qlmanage sips iconutil; do
   fi
 done
 
-if [ ! -f "$source_svg" ]; then
-  echo "Missing icon source: $source_svg" >&2
-  exit 1
-fi
+for required_source in "$source_svg" "$tray_svg"; do
+  if [ ! -f "$required_source" ]; then
+    echo "Missing icon source: $required_source" >&2
+    exit 1
+  fi
+done
 
-icon_work_dir=$(mktemp -d "${TMPDIR:-/tmp}/decision-icons.XXXXXX")
+icon_work_dir=$(mktemp -d "${TMPDIR:-/tmp}/paraself-icons.XXXXXX")
 cleanup() {
   rm -rf -- "$icon_work_dir"
 }
@@ -37,7 +40,7 @@ fi
 
 "$electron_bin" \
   "$project_root/scripts/render-icon-svg.cjs" \
-  "$source_svg" \
+  "$tray_svg" \
   "$mono_png"
 
 render_dir="$icon_work_dir/render-app"
@@ -57,8 +60,8 @@ make_png() {
   sips -z "$size" "$size" "$input" --out "$output" >/dev/null
 }
 
-make_png "$mono_png" 16 "$assets_dir/trayTemplate.png"
-make_png "$mono_png" 32 "$assets_dir/trayTemplate@2x.png"
+make_png "$mono_png" 22 "$assets_dir/trayTemplate.png"
+make_png "$mono_png" 44 "$assets_dir/trayTemplate@2x.png"
 sips \
   --setProperty dpiWidth 144 \
   --setProperty dpiHeight 144 \

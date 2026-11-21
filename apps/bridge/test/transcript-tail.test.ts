@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   readCodexDecisions,
+  readEarlierDecisionTurns,
   readLastDecisionTurn,
   readLastAssistantText,
 } from "../src/transcript-tail.js";
@@ -15,6 +16,28 @@ const makePath = async () => {
   );
   return join(root, "session.jsonl");
 };
+
+describe("readEarlierDecisionTurns", () => {
+  it("gives the turns before the last, nearest first, each with what began it", async () => {
+    const path = await makePath();
+    const line = (role: "user" | "assistant", text: string) =>
+      JSON.stringify({ type: role, message: { role, content: [{ type: "text", text }] } });
+    await writeFile(path, [
+      line("user", "看看发版"),
+      line("assistant", "1. 直推还是走 PR？"),
+      line("user", "还在跑吗"),
+      line("assistant", "在跑。"),
+      line("user", "继续"),
+      line("assistant", "还要几分钟。"),
+    ].join("\n"));
+
+    expect(await readEarlierDecisionTurns(path)).toEqual([
+      { userText: "还在跑吗", assistantText: "在跑。" },
+      { userText: "看看发版", assistantText: "1. 直推还是走 PR？" },
+    ]);
+    expect(await readEarlierDecisionTurns(`${path}.missing`)).toEqual([]);
+  });
+});
 
 describe("readLastAssistantText", () => {
   it("extracts the last Claude assistant text from a JSONL tail", async () => {
@@ -604,5 +627,29 @@ describe("readCodexDecisions", () => {
       expect.anything(),
       expect.objectContaining({ length: 512 }),
     );
+  });
+
+  it("keeps the first line of a tail that starts where that line does", async () => {
+    // Only a line cut in half is dropped: a tail starting right after a "\n" lost a whole one, here the call
+    // whose answer then had nothing to pair with.
+    const path = await makePath();
+    const turnId = "boundary-turn";
+    const record = (payload: Record<string, unknown>) =>
+      `${JSON.stringify({ type: "response_item", payload: { ...payload, internal_chat_message_metadata_passthrough: { turn_id: turnId } } })}\n`;
+    const earlier = `${JSON.stringify({ type: "response_item", payload: { type: "message", role: "user", content: [{ type: "input_text", text: "前一轮".repeat(50) }] } })}\n`;
+    const call = record({
+      type: "function_call",
+      name: "request_user_input",
+      call_id: "call-boundary",
+      arguments: JSON.stringify({ questions: [{ id: "verify", question: "完成后如何验证？", options: [{ label: "自动测试" }, { label: "人工检查" }] }] }),
+    });
+    const output = record({ type: "function_call_output", call_id: "call-boundary", output: JSON.stringify({ answers: { verify: { answers: ["自动测试"] } } }) });
+    await writeFile(path, earlier + call + output);
+    const window = Buffer.byteLength(call) + Buffer.byteLength(output);
+
+    const decisions = await readCodexDecisions(path, { turnId, maximumBytes: window });
+    expect(decisions.map((decision) => decision.toolUseId)).toEqual(["call-boundary"]);
+    // One byte further in, the call is cut and still dropped.
+    await expect(readCodexDecisions(path, { turnId, maximumBytes: window - 1 })).resolves.toEqual([]);
   });
 });

@@ -19,13 +19,24 @@ import { z } from "zod";
 
 import bridgePackage from "../package.json";
 import { decisionProjectFor } from "@cognelis/decision-integrations";
-import { repositoryLanguages } from "./repository-languages.js";
+import { MANIFEST_LANGUAGES, repositoryLanguages } from "./repository-languages.js";
 import { RuntimeClient, runtimeFailureText, type RuntimeFailure, type RuntimeFailureReport } from "./runtime-client.js";
 import { inputReasons, registerDecisionContextTool, type DecisionContextRuntime } from "./mcp-context.js";
+import { registerTodoTools, type TodoRuntime } from "./mcp-todo.js";
+import { registerHistoricalDecisionTools, type HistoricalDecisionRuntime } from "./mcp-historical-decision.js";
+import { registerObsidianNoteTools, type ObsidianNoteRuntime } from "./mcp-notes.js";
+import { registerReviewBenchmarkTools, type ReviewBenchmarkRuntime } from "./mcp-review-benchmark.js";
+import { registerPrReviewTools, type PrReviewRuntime } from "./mcp-pr-review.js";
+import { registerLocalReviewTools, type LocalReviewRuntime } from "./mcp-local-review.js";
+import { registerReviewQualityTools, type ReviewQualityRuntime } from "./mcp-review-quality.js";
+import { registerReviewEscapeTools, type ReviewEscapeRuntime } from "./mcp-review-escapes.js";
+import { registerReviewPromotionTools, type ReviewPromotionRuntime } from "./mcp-review-promotions.js";
+import { registerReviewBenchmarkRunTools, type ReviewBenchmarkRunRuntime } from "./mcp-review-benchmark-runs.js";
 
-export type DecisionMcpClient = "claude-code" | "codex";
+/** A client's id, as the registry names it. */
+export type DecisionMcpClient = string;
 
-interface ConsultationRuntime extends DecisionContextRuntime {
+interface ConsultationRuntime extends DecisionContextRuntime, TodoRuntime, HistoricalDecisionRuntime, ObsidianNoteRuntime, ReviewBenchmarkRuntime, PrReviewRuntime, LocalReviewRuntime, ReviewQualityRuntime, ReviewEscapeRuntime, ReviewBenchmarkRunRuntime, ReviewPromotionRuntime {
   consult(
     request: DecisionConsultationRequest,
     report?: RuntimeFailureReport,
@@ -95,7 +106,7 @@ const inputSchema = z.object({
     .array(z.string().trim().min(1).max(40))
     .max(8)
     .optional()
-    .describe("The programming languages of the code this choice is about (e.g. [\"go\"], [\"typescript\"]). Preferences the user kept for other languages are then left out; omitted, they are worked out from the repository the MCP server was started in when this is about that repository."),
+    .describe("The programming languages of the code this choice is about (e.g. [\"go\"], [\"typescript\"]). Preferences the user kept for other languages are then left out; omitted, only those kept for languages the repository the MCP server was started in has no manifest of (go.mod, package.json, …) are, when this is about that repository."),
 });
 
 const feedbackInputSchema = z.object({
@@ -213,6 +224,9 @@ const SIGNALS_LEAD = "另外，用户自己记下的偏好或想法中有以下�
 const SIGNALS_CLOSE = "呈现它们时必须说明是偏好还是想法，并保留其例外与未决问题；不要写成用户已经采用或已经决定。";
 // Read as none, a hard constraint the reader had written down went unsaid, and the agent went on as if there was none.
 const SIGNALS_UNREAD = "另外，用户自己记下的偏好和想法这次没能读取，所以这里没有列出任何一条；不能据此认为用户在这个问题上没有偏好或约束，涉及用户的习惯或约束时请先向用户确认。";
+const SIGNALS_PARTLY_UNREAD = "另外，用户自己记下的部分偏好或想法这次没能读取，可能有相关的没有列出；不能据此认为用户在这个问题上没有其它偏好或约束，涉及用户的习惯或约束时请先向用户确认。";
+// Unsaid, the one adopted principle beside its sync conflict's copy was told the agent as none adopted.
+const PRINCIPLES_UNREAD = "部分原则笔记这次没能读取（读不出，或是同步冲突留下的同编号副本），结果可能不完整；不能据此认为用户没有相关的已采纳原则，涉及用户既定的原则时请先向用户确认。";
 
 /**
  * The reader's own preferences and ideas, said as what they are.
@@ -223,7 +237,8 @@ const SIGNALS_UNREAD = "另外，用户自己记下的偏好和想法这次没�
  */
 const signalText = (response: DecisionConsultationResponse): string | null => {
   if (response.signalsUnavailable === true) return SIGNALS_UNREAD;
-  if (response.signals.length === 0) return null;
+  const unread = response.signalsIncomplete === true ? [SIGNALS_PARTLY_UNREAD] : [];
+  if (response.signals.length === 0) return unread[0] ?? null;
   const sections = response.signals.map(
     (signal, index) =>
       `${index + 1}. ${signal.title}\n` +
@@ -232,7 +247,7 @@ const signalText = (response: DecisionConsultationResponse): string | null => {
       (signal.qualifier === null ? "" : `限定：${signal.qualifier}\n`) +
       `关联依据：${signal.reason}`,
   );
-  return [`${SIGNALS_LEAD}：`, ...sections, SIGNALS_CLOSE].join("\n\n");
+  return [`${SIGNALS_LEAD}：`, ...sections, SIGNALS_CLOSE, ...unread].join("\n\n");
 };
 
 const withSignals = (
@@ -252,11 +267,11 @@ const matchedText = (response: DecisionConsultationResponse): string => {
       `边界：${match.caution}\n` +
       `关联依据：${match.reason}`,
   );
-  return [`${MATCHED_LEAD}：`, ...sections, MATCHED_CLOSE].join("\n\n");
+  return [`${MATCHED_LEAD}：`, ...sections, MATCHED_CLOSE, ...(response.principlesIncomplete === true ? [PRINCIPLES_UNREAD] : [])].join("\n\n");
 };
 
-const noMatchText = (reason: DecisionConsultationResponse["noMatchReason"]): string =>
-  `${reason === "no_accepted_principles" ? "当前尚无可读取的已采纳原则。" : "没有找到足够明确的已采纳原则。"}这不代表没有相关历史决策；可调用 search_decision_context 检索 summarize 与决策记录。不要为了给出建议而强行套用历史原则；请继续独立分析当前选项。此次查询没有写入决策，也没有建立原则采用关系。`;
+const noMatchText = (response: DecisionConsultationResponse): string =>
+  `${response.principlesIncomplete === true ? `没有在读到的原则中找到足够明确的已采纳原则；${PRINCIPLES_UNREAD}` : response.noMatchReason === "no_accepted_principles" ? "当前尚无可读取的已采纳原则。" : "没有找到足够明确的已采纳原则。"}这不代表没有相关的过往决策；可调用 search_decision_context 检索历史沉淀与决策记录。不要为了给出建议而强行套用历史原则；请继续独立分析当前选项。此次查询没有写入决策，也没有建立原则采用关系。`;
 
 /**
  * What the text says around the principles and signals, without them. Claude Code shows a model only
@@ -265,11 +280,14 @@ const noMatchText = (reason: DecisionConsultationResponse["noMatchReason"]): str
  */
 const consultationNotice = (response: DecisionConsultationResponse): string => [
   ...(response.status === "matched"
-    ? [`${MATCHED_LEAD}（见 consultation.matches）。`, MATCHED_CLOSE]
-    : [noMatchText(response.noMatchReason)]),
+    ? [`${MATCHED_LEAD}（见 consultation.matches）。`, MATCHED_CLOSE, ...(response.principlesIncomplete === true ? [PRINCIPLES_UNREAD] : [])]
+    : [noMatchText(response)]),
   ...(response.signalsUnavailable === true
     ? [SIGNALS_UNREAD]
-    : response.signals.length === 0 ? [] : [`${SIGNALS_LEAD}（见 consultation.signals）。`, SIGNALS_CLOSE]),
+    : [
+        ...(response.signals.length === 0 ? [] : [`${SIGNALS_LEAD}（见 consultation.signals）。`, SIGNALS_CLOSE]),
+        ...(response.signalsIncomplete === true ? [SIGNALS_PARTLY_UNREAD] : []),
+      ]),
 ].join("\n");
 
 const unavailableText = (failure: RuntimeFailure): string =>
@@ -301,8 +319,13 @@ export const consultDecisionPrinciples = async (
   const cwd = options.cwd ?? process.cwd();
   const here = await decisionProjectFor(cwd);
   // Not said by the agent: those of the repository the server runs in, when the choice is about that one; another
-  // project's are not known here, and none said recalls every preference, as before.
-  const languages = parsed.languages ?? (parsed.project === undefined || parsed.project === here ? await repositoryLanguages(cwd) : []);
+  // project's are not known here, and none said recalls every preference, as before. Worked out, they go as the ones
+  // the repository has no manifest of: sent as its languages, they left out a preference kept for Shell, which no
+  // manifest names, in every repository with one.
+  const found = parsed.languages === undefined && (parsed.project === undefined || parsed.project === here) ? await repositoryLanguages(cwd) : [];
+  const languages = parsed.languages !== undefined
+    ? (parsed.languages.length > 0 ? { languages: parsed.languages } : {})
+    : found.length > 0 ? { absentLanguages: MANIFEST_LANGUAGES.filter((language) => !found.includes(language)) } : {};
   // Widened, not narrowed to this first value: the report below may change it.
   let failure = { reason: "not_running" } as RuntimeFailure;
   const request = {
@@ -316,13 +339,13 @@ export const consultDecisionPrinciples = async (
     requestedAt: (options.now ?? (() => new Date()))().toISOString(),
   };
   const ask = (withLanguages: boolean) =>
-    runtime.consult({ ...request, ...(withLanguages && languages.length > 0 ? { languages } : {}) }, (reported) => {
+    runtime.consult({ ...request, ...(withLanguages ? languages : {}) }, (reported) => {
       failure = reported;
     });
   let response = await ask(true);
   // An App older than this bridge (the .app replaced while it ran) refuses a field it does not know: asked again
   // without the languages worked out here, the consultation is not lost over them.
-  if (response === null && failure.reason === "refused" && parsed.languages === undefined && languages.length > 0) {
+  if (response === null && failure.reason === "refused" && "absentLanguages" in languages) {
     response = await ask(false);
   }
 
@@ -345,7 +368,7 @@ export const consultDecisionPrinciples = async (
         text: withSignals(
           response.status === "matched"
             ? matchedText(response)
-            : noMatchText(response.noMatchReason),
+            : noMatchText(response),
           response,
         ),
       },
@@ -448,9 +471,11 @@ export const recordDecisionJournalEntry = async (
       : result.status === "duplicate"
         ? `该${recordKinds[result.recordKind]}已存在，没有重复记录；这次的其它字段也没有写入，内容若有改动，请用户到 App 中修改原记录。`
         : `已记录${recordKinds[result.recordKind]}，${filed}，状态为${knowledgeStatuses[result.knowledgeStatus]}；未保存原始对话。`;
+  const similar = result?.possibleDuplicates ?? [];
+  const duplicateNote = similar.length === 0 ? "" : `\n可能重复：${similar.map((item) => `${item.source}/${item.id} 《${item.title}》 相似度 ${Math.round(item.similarity * 100)}%`).join("；")}。这条已按请求写入，没有自动合并；请向用户说明，若用户确认是同一件事，用 update_decision_journal_entry 把新信息并入已有记录。`;
   return {
     ...(result === null ? { isError: true } : {}),
-    content: [{ type: "text" as const, text }],
+    content: [{ type: "text" as const, text: `${text}${duplicateNote}` }],
     // Only for what was written under it: a duplicate or a revision stays under the existing record's project, which
     // the App does not say, and naming this one there told the model it was filed where it is not.
     structuredContent: { message: text, record: result, ...(result?.status === "created" ? { project } : {}) },
@@ -461,11 +486,11 @@ export const createDecisionMcpServer = (
   options: DecisionMcpOptions,
 ): McpServer => {
   const server = new McpServer(
-    { name: "decision", version: bridgePackage.version },
+    { name: "paraself", version: bridgePackage.version },
     {
       capabilities: { tools: {} },
       instructions:
-        "Use search_decision_context when coding or reviewing against past decisions, or preparing a decision handoff; verify project scope, source excerpts and supersession before applying historical evidence. Use consult_decision_principles before presenting meaningful choices or a recommendation. It reads adopted principles, and returns the user's own preferences and ideas that bear on the question separately labelled, never as principles; no match does not mean no relevant historical decision exists. These tools never replace current analysis or user confirmation. Use record_decision_journal_entry only for an explicit user directive, user-reported decision, or user-authored idea. An explicit standing directive may be recorded without asking a second time; never infer a stable preference from behavior. Use record_decision_consultation_feedback only after the user explicitly evaluates that consultation; never infer a rating.",
+        "Use search_decision_context when coding or reviewing against past decisions, or preparing a decision handoff; verify project scope, source excerpts and supersession before applying historical evidence. With source=preferences or ideas (or a list of sources) it also reads the user's own recorded preferences and ideas in full, filtered and paged; they are signals only: never infer a new preference from them or decide for the user. mode=semantic ranks by meaning alone. Use consult_decision_principles before presenting meaningful choices or a recommendation. It reads adopted principles, and returns the user's own preferences and ideas that bear on the question separately labelled, never as principles; no match does not mean no relevant past decision exists. These tools never replace current analysis or user confirmation. Use record_decision_journal_entry only for an explicit user directive, user-reported decision, or user-authored idea; before recording, look for similar existing records with search_decision_context (mode hybrid or semantic, the matching source), and when the same or a similar one exists, fold the new information into it with update_decision_journal_entry (append for what the user said or agreed to; revise only after showing the user the old and new text and getting their yes; withdraw only when the user asks) and record a new one only when it is genuinely new. An explicit standing directive may be recorded without asking a second time; never infer a stable preference from behavior. Use record_decision_consultation_feedback only after the user explicitly evaluates that consultation; never infer a rating. Use search_obsidian_notes and get_obsidian_note to look through the user's ordinary Obsidian notes; they carry no project scope and are context, never principles or decisions. Use record_historical_decision, list_historical_decisions, get_historical_decision, update_historical_decision and open_historical_decision only when the user asks to keep or trace a historical decision (历史决定): a ledger of what was decided and when, with no rationale asked and no review scheduled. search_decision_context never returns them: do not read them as context before coding or reviewing, and do not put there what belongs in record_decision_journal_entry. Use record_todo_list only when the user asks to save an investigation's findings as a Paraself todo list or to make a list to collect todos in (such as 日常 or 学习), or a standing instruction of theirs says to (one item per concrete finding, each with a priority: the user's own, else judged by impact from p0 to p3, none only for an item the user listed with no weight to it), then work through the items one at a time with update_todo_item: done or dropped only with a note of what was done and how it was verified, or why it was dropped, never to tidy the list. Use record_review_benchmark_cases only when the user asks to curate their review benchmark from historical PRs (a defect set and a clean set); look for cases already recorded with list_review_benchmark_cases first, and confirm a case with update_review_benchmark_case only after the user says they checked it, quoting their words. Use run_review_benchmark only when the user asks: it reviews every case again and spends model calls; compare runs with get_review_benchmark_run, and leave judging and adopting to the user in the App. list_prs, list_pr_reviews and get_pr_review read PRs, their build, approvals and blockers, and the user's PR review records; a finding with a personal basis is a suggestion, never a demand on the author. Use run_pr_review only when the user asks for a review: it spends model calls; get_pr_review shows its progress and findings. Use update_pr_review_finding to record the user's 不采纳 of a finding with their reason, or to take it back, only when they say so. record_pr_comments posts findings to the PR on the team's code platform: only the ones the user said to post, in their words if they gave any. get_pr_description_draft drafts a PR description's 验证、风险、撤回; update_pr writes it back only after the user confirmed the exact text. Use update_pr_review_settings to turn automatic pre-review on or off only when the user asks: it spends model calls daily. list_pr_comments reads the comments on the user's own PR; update_pr_comment answers one only after the user said how and why. record_local_review_job hands comments to the local review only when the user asks for them to be fixed: it spends model calls and its fixes reach the code platform; a PR's fix is pushed only once the user confirms it in the App. get_review_quality reads what became of the findings posted and the team's review figures; update_review_rule turns one of the user's own review rules off or on only when they ask. list_review_escapes reads the problems review let through; record_review_escape and update_review_escape record one, write its four lines or make it a benchmark candidate only when the user says so. list_rule_promotion_candidates reads the user's own rules review keeps needing, to propose for REVIEW.md once they agree. Approving and merging are the user's alone.",
     },
   );
   server.registerTool(
@@ -473,7 +498,7 @@ export const createDecisionMcpServer = (
     {
       title: "Consult adopted decision principles",
       description:
-        "Before the user chooses, read up to three locally adopted principles related to the current decision, matched by their text and by a local embedding model (no generative model; nothing leaves this machine). The user's own preferences and ideas that bear on it come back separately labelled as signals, never as principles. It does not choose an answer, write a decision, apply a principle, or open the Decision app; each call is counted anonymously and returns a new token for record_decision_consultation_feedback.",
+        "Before the user chooses, read up to three locally adopted principles related to the current decision, matched by their text and by a local embedding model (no generative model; nothing leaves this machine). The user's own preferences and ideas that bear on it come back separately labelled as signals, never as principles. It does not choose an answer, write a decision, apply a principle, or open the Paraself app; each call is counted anonymously and returns a new token for record_decision_consultation_feedback.",
       inputSchema,
       annotations: {
         readOnlyHint: true,
@@ -506,7 +531,7 @@ export const createDecisionMcpServer = (
     {
       title: "Record an explicit decision journal entry",
       description:
-        "Record only an explicit user directive, user-reported decision, or user-authored idea. An explicit standing directive needs no second confirmation. Never infer a stable preference from behavior, and never include secrets, a full transcript, or unnecessary third-party identity.",
+        "Record only an explicit user directive, user-reported decision, or user-authored idea. First search_decision_context (hybrid or semantic, the matching source) for a record with the same or a similar meaning: if one exists, use update_decision_journal_entry (append or revise) to fold the new information into it, and record a new entry only when it is genuinely new. The result may list possibleDuplicates (existing records close in meaning to the one just written): the entry is still written, never merged automatically; tell the user and, if they confirm it is the same matter, use update_decision_journal_entry. An explicit standing directive needs no second confirmation. Never infer a stable preference from behavior, and never include secrets, a full transcript, or unnecessary third-party identity.",
       inputSchema: journalToolShape,
       annotations: {
         readOnlyHint: false,
@@ -517,7 +542,18 @@ export const createDecisionMcpServer = (
     },
     (input) => recordDecisionJournalEntry(input as DecisionJournalToolInput, options),
   );
-  registerDecisionContextTool(server, options.runtime ?? new RuntimeClient());
+  const runtime = options.runtime ?? new RuntimeClient();
+  registerDecisionContextTool(server, runtime, options.sourceClient);
+  registerTodoTools(server, runtime, options);
+  registerHistoricalDecisionTools(server, runtime, options);
+  registerObsidianNoteTools(server, runtime);
+  registerReviewBenchmarkTools(server, runtime, options);
+  registerReviewBenchmarkRunTools(server, runtime, options);
+  registerPrReviewTools(server, runtime);
+  registerLocalReviewTools(server, runtime);
+  registerReviewQualityTools(server, runtime);
+  registerReviewEscapeTools(server, runtime);
+  registerReviewPromotionTools(server, runtime);
   return server;
 };
 

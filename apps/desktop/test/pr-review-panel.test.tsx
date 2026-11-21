@@ -6,7 +6,7 @@ import { prReviewRunSchema, type PrReviewVerdict } from "@cognelis/decision-prot
 import { createPreviewApi } from "../src/renderer/preview-api.js";
 import { dismissedIn, publishedIn, loadReviewHistory, mergeReviewEvents, saveReviewHistory, type ReviewHistoryEntry } from "../src/renderer/components/pages/pr-review/review-history.js";
 import { PrReviewPanel, reviewMarkdown } from "../src/renderer/components/pages/pr-review/PrReviewPanel.js";
-import { commentDraft } from "../src/renderer/components/pages/pr-review/PrDiscussionDialog.js";
+import { PrDiscussionDialog, commentDraft } from "../src/renderer/components/pages/pr-review/PrDiscussionDialog.js";
 import { PrReviewCommentDialog } from "../src/renderer/components/pages/pr-review/PrReviewCommentDialog.js";
 
 afterEach(() => { cleanup(); localStorage.clear(); });
@@ -53,6 +53,21 @@ it("records a finding that names a team practice as a decision", async () => {
   expect(await screen.findByText("已记为决策。")).toBeInTheDocument();
 });
 
+it("lays out a finding's Markdown, as its copy and its comment draft take it", async () => {
+  const api = createPreviewApi();
+  const original = api.runPrReview.bind(api);
+  vi.spyOn(api, "runPrReview").mockImplementation(async (request) => {
+    const result = await original(request);
+    return { ...result, findings: [{ ...result.findings[0]!, body: "**影响**：重复提交。\n\n```ts\nclearTimeout(timer);\n```" }] };
+  });
+  await runSampleReview(api);
+  const finding = screen.getByRole("heading", { name: "P2 超时后请求仍在运行" }).closest("article")!;
+  // Shown as written, the marks read as text and a fence took six lines of the card.
+  expect(within(finding).getByText("影响").tagName).toBe("STRONG");
+  expect(within(finding).getByText("clearTimeout(timer);").closest("pre")).not.toBeNull();
+  expect(finding.textContent).not.toContain("**");
+});
+
 it("says what a finding was recorded as when the dialog made it something else", async () => {
   const api = createPreviewApi();
   const original = api.createProactiveRecord.bind(api);
@@ -72,6 +87,9 @@ it("records a decision made in a PR comment with the comment's link and points t
   fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }));
   fireEvent.click(await screen.findByRole("button", { name: "PR 讨论" }));
   const discussion = await screen.findByRole("dialog", { name: "PR 讨论" });
+  // The code is over the comment opening the thread, as on the platform; the reply under it says it is one.
+  expect(await within(discussion).findAllByText(/new AbortController/u)).toHaveLength(1);
+  expect(within(discussion).getByText("回复")).toBeVisible();
   fireEvent.click(await within(discussion).findByRole("button", { name: "把 Example 的评论记为决策" }));
   // One dialog at a time: the discussion comes back once the record is saved.
   const form = await screen.findByRole("dialog", { name: "主动记录" });
@@ -79,10 +97,15 @@ it("records a decision made in a PR comment with the comment's link and points t
   expect(within(form).getByLabelText("标题")).toHaveValue("src/request.ts:12 怎么处理？");
   expect(within(form).getByLabelText("来源")).toHaveValue("PR 评论 · 示例 GitHub");
   expect(within(form).getByRole("button", { name: "偏好" })).toBeDisabled();
+  // What it was said about is in front of the reader: the code it is on and the reply it got, theirs to add to.
+  const context = within(form).getByLabelText<HTMLTextAreaElement>("当时上下文");
+  expect(context.value).toContain("代码（评论当时的改动，diff 片段）：\n@@ -9,2 +9,4 @@\n export async function request(");
+  expect(context.value).toMatch(/讨论串：\nExample · .+（本条）\n\nMaintainer · .+：\n同意，调用方传入的超时参数这次一起删掉。/u);
+  fireEvent.change(context, { target: { value: `${context.value}\n补充：5 秒是和网关约定的。` } });
   fireEvent.click(within(form).getByRole("button", { name: /保存记录/ }));
   await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({
     kind: "decision", sourceKind: "pr_comment", sourceUrl: "https://github.com/sample/app/pull/123#discussion_r2",
-    project: "sample", context: expect.stringContaining("PR：示例：调整请求超时（sample/app#123）"),
+    project: "sample", context: expect.stringMatching(/^PR：示例：调整请求超时（sample\/app#123）[\s\S]*补充：5 秒是和网关约定的。$/u),
   })));
   expect(await screen.findByText("已记为决策，并保留了评论链接。")).toBeInTheDocument();
   const reopened = await screen.findByRole("dialog", { name: "PR 讨论" });
@@ -94,15 +117,157 @@ it("records a decision made in a PR comment with the comment's link and points t
   expect(screen.queryByRole("dialog", { name: "PR 讨论" })).toBeNull();
 });
 
+it("reads a PR's comments for decisions only when asked, and forgets one the reader turns down", async () => {
+  const api = createPreviewApi();
+  const recognize = vi.spyOn(api, "recognizePrDiscussion");
+  const dismiss = vi.spyOn(api, "dismissPrCommentCandidate");
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "PR 讨论" }));
+  const discussion = await screen.findByRole("dialog", { name: "PR 讨论" });
+  expect(await within(discussion).findByText("今天还能调用 20 次")).toBeVisible();
+  // Opening the discussion spends nothing: the model reads only on the reader's word.
+  expect(recognize).not.toHaveBeenCalled();
+  expect(within(discussion).queryByText("像是决定")).toBeNull();
+  fireEvent.click(within(discussion).getByRole("button", { name: "找出像是决定的评论（2 条未识别）" }));
+  expect(await within(discussion).findByText("像是决定")).toBeVisible();
+  expect(recognize).toHaveBeenCalledWith({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123", title: "示例：调整请求超时" });
+  expect(within(discussion).getByText("评论都识别过了")).toBeVisible();
+  fireEvent.click(within(discussion).getByRole("button", { name: "只看像是决定的（1）" }));
+  expect(within(discussion).queryByText("整体思路没问题。")).toBeNull();
+  fireEvent.click(within(discussion).getByRole("button", { name: "Maintainer 的评论不是决定" }));
+  await waitFor(() => expect(within(discussion).queryByText("像是决定")).toBeNull());
+  expect(dismiss).toHaveBeenCalledWith("https://github.com/sample/app/pull/123#discussion_r3");
+});
+
+it("opens a PR's discussion at the comments read as decisions when the home page asks", async () => {
+  const api = createPreviewApi();
+  await api.recognizePrDiscussion({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123", title: "示例：调整请求超时" });
+  render(<PrReviewPanel api={api} openDiscussion={{ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123", title: "示例：调整请求超时" }} />);
+  const discussion = await screen.findByRole("dialog", { name: "PR 讨论" });
+  expect(await within(discussion).findByText("像是决定")).toBeVisible();
+  expect(within(discussion).queryByText("整体思路没问题。")).toBeNull();
+  fireEvent.click(within(discussion).getByRole("button", { name: "显示全部评论" }));
+  expect(within(discussion).getByText("整体思路没问题。")).toBeVisible();
+});
+
+it("drafts a comment the model read as a decision under the question it read there", () => {
+  const draft = commentDraft(
+    { id: "c1", url: "https://github.com/sample/app/pull/123#discussion_r1", author: "Example", path: "src/request.ts", line: 12, body: "超时统一由上层处理。", createdAt: "2026-10-01T02:00:00Z", replyTo: null, code: null, decisionId: null,
+      candidate: { question: "超时由哪一层处理？", choice: "统一由上层处理", quote: "超时统一由上层处理" } },
+    { title: "示例", reference: "sample/app#123", project: "app" },
+    "示例 GitHub",
+  );
+  // The comment's own words stay the choice; only the question is the model's, for the reader to rewrite.
+  expect([draft.title, draft.content]).toEqual(["超时由哪一层处理？", "超时统一由上层处理。"]);
+});
+
 it("dates a recorded PR comment on the day it shows, not the day in UTC", () => {
   // 04:30 on 1 October here: in UTC, east of Greenwich, still 30 September.
   const createdAt = new Date(2026, 9, 1, 4, 30).toISOString();
   const draft = commentDraft(
-    { id: "c1", url: "https://github.com/sample/app/pull/123#discussion_r1", author: "Example", path: "src/request.ts", line: 12, body: "超时统一由上层处理。", createdAt, decisionId: null },
+    { id: "c1", url: "https://github.com/sample/app/pull/123#discussion_r1", author: "Example", path: "src/request.ts", line: 12, body: "超时统一由上层处理。", createdAt, replyTo: null, code: null, decisionId: null, candidate: null },
     { title: "示例", reference: "sample/app#123", project: "app" },
     "示例 GitHub",
   );
   expect(draft.context).toContain("评论：Example · 2026-10-01");
+  // A conversation comment is on no line: the PR's title asks, and no place is given.
+  const general = commentDraft(
+    { id: "issuecomment-1", url: "https://github.com/sample/app/pull/123#issuecomment-1", author: "Reviewer", path: null, line: null, body: "整体思路没问题。", createdAt, replyTo: null, code: null, decisionId: null, candidate: null },
+    { title: "示例", reference: "sample/app#123", project: "app" },
+    "示例 GitHub",
+  );
+  expect([general.title, general.context?.includes("位置"), general.source?.url]).toEqual(["「示例」怎么处理？", false, "https://github.com/sample/app/pull/123#issuecomment-1"]);
+});
+
+it("gives a recorded PR comment the code it is on and the thread it was said in, oldest first", () => {
+  const pr = { title: "示例", reference: "sample/app#123", project: "app" };
+  const at = (hour: number) => new Date(2026, 9, 1, hour).toISOString();
+  const asked = { id: "1", url: "https://github.com/sample/app/pull/123#discussion_r1", author: "Example", path: "src/request.ts", line: 12, body: "超时放在哪一层？\n调用方，还是请求层？", createdAt: at(9), replyTo: null, code: { side: "new" as const, from: 9, text: "a\nb\nc\nd" }, decisionId: null, candidate: null };
+  const answer = { ...asked, id: "2", url: "https://github.com/sample/app/pull/123#discussion_r2", author: "Maintainer", body: "统一放在请求层。", createdAt: at(10), replyTo: "1" };
+  const elsewhere = { ...asked, id: "3", url: "https://github.com/sample/app/pull/123#discussion_r3", body: "另一处。", createdAt: at(11), code: null };
+  expect(commentDraft(answer, pr, "示例 GitHub", [elsewhere, answer, asked]).context).toBe([
+    "PR：示例（sample/app#123）", "位置：src/request.ts:12", "评论：Maintainer · 2026-10-01",
+    "代码（PR 当前版本第 9–12 行）：", "a", "b", "c", "d",
+    "讨论串：", "Example · 2026-10-01：", "超时放在哪一层？", "调用方，还是请求层？", "", "Maintainer · 2026-10-01（本条）",
+  ].join("\n"));
+  // A removed line is the old version's; alone in its thread, no thread is claimed.
+  expect(commentDraft({ ...asked, code: { side: "old", from: 12, text: "x" } }, pr, "示例 GitHub", [asked]).context).toBe(
+    "PR：示例（sample/app#123）\n位置：src/request.ts:12\n评论：Example · 2026-10-01\n代码（改动前版本第 12 行）：\nx");
+});
+
+it("keeps a thread's comments as written, and past what a record holds keeps the one opening it and drops those farthest from the comment first, saying so", () => {
+  const pr = { title: "示例", reference: "sample/app#123", project: "app" };
+  const said = (n: number, body: string) => ({ id: String(n), url: `https://github.com/sample/app/pull/123#discussion_r${n}`, author: `U${String(n).padStart(2, "0")}`, path: "src/a.ts", line: 3, body,
+    createdAt: new Date(2026, 9, 1, 0, n).toISOString(), replyTo: n === 1 ? null : "1", code: null, decisionId: null, candidate: null });
+  // A suggestion squashed onto one line read as prose, its fences in the middle of it.
+  const suggestion = "改成这样：\n```suggestion\nconst timeout = 5_000;\n```\n其余不变。";
+  const short = [said(1, "超时写死了？"), said(2, suggestion), said(3, "可以。")];
+  expect(commentDraft(short[2]!, pr, "示例 GitHub", short).context).toContain(
+    `讨论串：\nU01 · 2026-10-01：\n超时写死了？\n\nU02 · 2026-10-01：\n${suggestion}\n\nU03 · 2026-10-01（本条）`);
+
+  // Twelve comments of 1,000 characters, the seventh recorded: the first, the question it answers, stays as it does;
+  // then those next to it, the nearest that no longer fits whole keeping its start, and those left out are counted. A
+  // record holds 8,000 characters: what is put in for the reader leaves them 2,000 to add.
+  const long = Array.from({ length: 12 }, (_, index) => said(index + 1, `${String(index + 1).padStart(2, "0")}${"字".repeat(998)}`));
+  const context = commentDraft(long[6]!, pr, "示例 GitHub", long).context!;
+  expect(context.length).toBeLessThanOrEqual(6_000);
+  expect(context).toContain(`讨论串：\nU01 · 2026-10-01：\n01${"字".repeat(998)}\n\n（上下文已满，其间的 2 条评论未列出）\n\nU04 · 2026-10-01：\n04字`);
+  expect(context).toMatch(/\n\nU04 · 2026-10-01：\n04字{200,997}…（这条评论过长，后文省略）\n\nU05 · 2026-10-01：\n05字{998}\n\n/u);
+  expect(context).toContain(`U06 · 2026-10-01：\n06${"字".repeat(998)}\n\nU07 · 2026-10-01（本条）\n\nU08 · 2026-10-01：\n08`);
+  expect(context).toMatch(/\n\nU09 · 2026-10-01：\n09字{998}\n\n（上下文已满，之后的 3 条评论未列出）$/u);
+  expect(["U02", "U03", "U10", "U11", "U12"].filter((author) => context.includes(`${author} ·`))).toEqual([]);
+});
+
+it("closes a code block a cut leaves open, so a record copied as Markdown does not read as code from there on", () => {
+  const pr = { title: "示例", reference: "sample/app#123", project: "app" };
+  const said = (n: number, body: string) => ({ id: String(n), url: `https://github.com/sample/app/pull/123#discussion_r${n}`, author: `U0${n}`, path: "README.md", line: 3, body,
+    createdAt: new Date(2026, 9, 1, 0, n).toISOString(), replyTo: n === 1 ? null : "1", code: null, decisionId: null, candidate: null });
+  const fences = (text: string) => text.split("\n").filter((line) => /^ {0,3}(`{3,}|~{3,})/u.test(line));
+  // A suggestion longer than the record has room for, cut inside its block.
+  const thread = [said(1, "超时写死了？"), said(2, `改成这样：\n\`\`\`suggestion\n${"const timeout = 5_000;\n".repeat(400)}\`\`\`\n其余不变。`), said(3, "可以。")];
+  const context = commentDraft(thread[2]!, pr, "示例 GitHub", thread).context!;
+  expect(fences(context)).toEqual(["```suggestion", "```"]);
+  expect(context).toMatch(/\n```\n…（这条评论过长，后文省略）\n\nU03 · 2026-10-01（本条）$/u);
+  // So is the code, cut from a file in the middle of one.
+  const readme = commentDraft({ ...thread[0]!, code: { kind: "file", side: "new", from: 1, text: "# 用法\n```bash\nnpm test" } }, pr, "示例 GitHub").context!;
+  expect(readme).toBe("PR：示例（sample/app#123）\n位置：README.md:3\n评论：U01 · 2026-10-01\n代码（PR 当前版本第 1–3 行）：\n# 用法\n```bash\nnpm test\n```");
+  // A line of inline code that starts with three backticks opens no block (CommonMark): closed as if it did, the fence
+  // added opened one, and what followed read as code.
+  const inline = [said(1, "怎么装？"), said(2, `先跑\n\`\`\`npm install\`\`\`\n${"再看看日志。\n".repeat(1_500)}`), said(3, "可以。")];
+  expect(fences(commentDraft(inline[2]!, pr, "示例 GitHub", inline).context!)).toEqual(["```npm install```"]);
+});
+
+it("says where a recorded PR comment's code comes from, and shows a diff's removed and added lines apart", async () => {
+  const pr = { title: "示例", reference: "sample/app#123", project: "app" };
+  const comment = { id: "1", url: "https://github.com/sample/app/pull/123#discussion_r1", author: "Example", path: "src/request.ts", line: 11, body: "为什么改成大写？",
+    createdAt: new Date(2026, 9, 1, 9).toISOString(), replyTo: null, code: { kind: "hunk" as const, side: "new" as const, from: 10, text: "@@ -10,2 +10,3 @@\n a\n-b\n+B\n+C" }, decisionId: null, candidate: null };
+  // The change as the reviewer saw it, removed lines too; or the file as the PR has it now, by its lines.
+  expect(commentDraft(comment, pr, "示例 GitHub").context).toBe(
+    "PR：示例（sample/app#123）\n位置：src/request.ts:11\n评论：Example · 2026-10-01\n代码（评论当时的改动，diff 片段）：\n@@ -10,2 +10,3 @@\n a\n-b\n+B\n+C");
+  expect(commentDraft({ ...comment, code: { kind: "file", side: "new", from: 6, text: "x\ny\nz" } }, pr, "示例 GitHub").context).toContain("代码（PR 当前版本第 6–8 行）：\nx\ny\nz");
+  render(<PrDiscussionDialog api={{ listPrDiscussion: async () => ({ more: false, recognition: null, comments: [comment] }), recognizePrDiscussion: vi.fn(), dismissPrCommentCandidate: vi.fn(), openPrLink: vi.fn() }}
+    connectionId="00000000-0000-4000-8000-000000000011" pr={pr} onRecord={vi.fn()} onClose={vi.fn()} />);
+  // Its caption says where it comes from (jsdom does not name a figure by it, as a browser does).
+  const code = (await screen.findByText("评论当时的改动，diff 片段")).closest("figure")!;
+  expect(within(code).getByText("-b")).toHaveAttribute("data-diff", "removed");
+  expect(within(code).getByText("+B")).toHaveAttribute("data-diff", "added");
+  expect(within(code).getByText("@@ -10,2 +10,3 @@")).toHaveAttribute("data-diff", "hunk");
+});
+
+it("reads a PR's discussion again after a failed read, and lays out each comment's Markdown", async () => {
+  const comment = { id: "1", url: "https://github.com/sample/app/pull/123#discussion_r1", author: "Example", path: "src/request.ts", line: 11, body: "可以：\n\n- 去掉 `retry`\n- 超时交给上层",
+    createdAt: new Date(2026, 9, 1, 9).toISOString(), replyTo: null, code: null, decisionId: null, candidate: null };
+  const list = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ more: false, recognition: null, comments: [comment] });
+  render(<PrDiscussionDialog api={{ listPrDiscussion: list, recognizePrDiscussion: vi.fn(), dismissPrCommentCandidate: vi.fn(), openPrLink: vi.fn() }}
+    connectionId="00000000-0000-4000-8000-000000000011" pr={{ title: "示例", reference: "sample/app#123" }} onRecord={vi.fn()} onClose={vi.fn()} />);
+  // Said where the comments would be, with the way to read them again, not as a dead end in ink.
+  expect(await screen.findByRole("alert")).toHaveTextContent("PR 讨论读取失败");
+  fireEvent.click(screen.getByRole("button", { name: "重试" }));
+  expect((await screen.findByText("retry")).tagName).toBe("CODE");
+  expect(screen.getByText("超时交给上层").tagName).toBe("LI");
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(list).toHaveBeenCalledTimes(2);
 });
 
 it("lists what merged that I reviewed or wrote as one list, newest first, each read on from its own cursor", async () => {
@@ -208,7 +373,8 @@ const reviewSample = async (api: ReturnType<typeof createPreviewApi>) => {
   fireEvent.click(start);
   fireEvent.click(await screen.findByRole("button", { name: "把「超时后请求仍在运行」转为 PR 评论" }));
   const form = await screen.findByRole("form", { name: "发布评论表单" });
-  const submit = within(form).getByRole("button", { name: "发布评论" });
+  // 发布评论 sits in the dialog's footer, outside the form it submits.
+  const submit = within(form.closest<HTMLElement>('[role="dialog"]')!).getByRole("button", { name: "发布评论" });
   await waitFor(() => expect(submit).toBeEnabled());
   return { form, submit, body: within(form).getByLabelText("评论内容") as HTMLTextAreaElement };
 };
@@ -314,14 +480,15 @@ it("keeps the draft and says why when the platform rejects the comment", async (
   fireEvent.click(submit);
   expect(await within(form).findByRole("alert")).toHaveTextContent("HTTP 422");
   expect(body).toHaveValue("请取消底层请求。");
-  fireEvent.click(within(form).getByRole("button", { name: "取消" }));
+  fireEvent.click(within(form.closest<HTMLElement>('[role="dialog"]')!).getByRole("button", { name: "取消" }));
   expect(screen.queryByText("已发布为 PR 评论")).toBeNull();
   expect(screen.getByRole("button", { name: "把「超时后请求仍在运行」转为 PR 评论" })).toBeEnabled();
 });
 
 const runSampleReview = async (api: ReturnType<typeof createPreviewApi>) => {
   render(<PrReviewPanel api={api} />);
-  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }));
+  // The first test a worker runs renders the page cold: past a second, at times, before the list is there.
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }, { timeout: 5_000 }));
   const start = await screen.findByRole("button", { name: "开始评审" });
   await waitFor(() => expect(start).toBeEnabled());
   fireEvent.click(start);
@@ -414,7 +581,7 @@ it("copies the decisions a finding cites along with it", async () => {
   const run = api.runPrReview;
   vi.spyOn(api, "runPrReview").mockImplementation(async (input) => {
     const report = await run(input);
-    const record = { source: "decisions", id: "DEC-7", title: "请求超时必须释放资源", kind: "historical_decision", current: true, summary: "超时后取消底层请求。", appliesWhen: "", caution: "", warnings: [], lifecycleState: "active", sourceRef: { relativePath: "decisions/DEC-7.md" } };
+    const record = { source: "decisions", id: "DEC-7", title: "请求超时必须释放资源", kind: "summarized_decision", current: true, summary: "超时后取消底层请求。", appliesWhen: "", caution: "", warnings: [], lifecycleState: "active", sourceRef: { relativePath: "decisions/DEC-7.md" } };
     return { ...report, findings: [{ ...report.findings[0]!, decisionIndexes: [1] }], evidence: [{ index: 1, record: record as never }] };
   });
   await runSampleReview(api);
@@ -428,11 +595,14 @@ it("says a decision whose standing is unsure is to be checked, not replaced", as
   vi.spyOn(api, "runPrReview").mockImplementation(async (input) => {
     const report = await run(input);
     // Related to another by hand, then edited: whether it still stands is not known.
-    const record = { source: "decisions", id: "DEC-7", title: "请求超时必须释放资源", kind: "historical_decision", current: false, summary: "超时后取消底层请求。", appliesWhen: "", caution: "", warnings: [], lifecycleState: "uncertain", sourceRef: { relativePath: "decisions/DEC-7.md" } };
+    const record = { source: "decisions", id: "DEC-7", title: "请求超时必须释放资源", kind: "summarized_decision", current: false, summary: "超时后取消底层请求。", appliesWhen: "", caution: "", warnings: [], lifecycleState: "uncertain", sourceRef: { relativePath: "decisions/DEC-7.md" } };
     return { ...report, evidence: [{ index: 1, record: record as never }] };
   });
   await runSampleReview(api);
-  expect(screen.getByText(/历史选择 · 有效状态待核对/u, { selector: "p" })).toBeInTheDocument();
+  // Said on the card before it is opened: what kind of record, and that whether it still stands is to be checked.
+  const evidence = within(document.getElementById("review-evidence-1")!);
+  expect(evidence.getByText(/· 历史选择$/u)).toBeInTheDocument();
+  expect(evidence.getByText(/^有效状态待核对 · /u)).toBeInTheDocument();
   expect(screen.queryByText(/已替代或退役/u)).toBeNull();
 });
 
@@ -593,7 +763,7 @@ it("reads an old-side finding's line in the target commit's file", async () => {
   });
   const read = vi.spyOn(api, "loadPrReviewFile").mockResolvedValue({ content: Array.from({ length: 20 }, (_, index) => `line ${index + 1}`).join("\n"), binary: false });
   await runSampleReview(api);
-  fireEvent.click(screen.getByRole("button", { name: /src\/request\.ts:12（旧版本）/ }));
+  fireEvent.click(screen.getByRole("button", { name: /src\/request\.ts:12\s*旧版本/ }));
   const dialog = await screen.findByRole("dialog", { name: "PR 详情" });
   fireEvent.click(await within(dialog).findByRole("button", { name: "文件内容" }));
   const lines = await within(dialog).findByRole("list", { name: "文件内容" });
@@ -635,8 +805,8 @@ it("turns a finding down with a reason, and tells the next review of the reposit
   await runSampleReview(api);
   fireEvent.click(screen.getByRole("button", { name: "不采纳「超时后请求仍在运行」" }));
   const form = await screen.findByRole("form", { name: "不采纳这条问题" });
-  fireEvent.change(within(form).getByLabelText("不采纳的原因"), { target: { value: "有意为之：超时由上层统一取消。" } });
-  fireEvent.click(within(form).getByRole("button", { name: "不采纳" }));
+  fireEvent.change(within(form).getByLabelText(/^不采纳的原因/u), { target: { value: "有意为之：超时由上层统一取消。" } });
+  fireEvent.click(within(form.closest<HTMLElement>('[role="dialog"]')!).getByRole("button", { name: "不采纳" }));
   expect(await screen.findByRole("note", { name: "不采纳" })).toHaveTextContent("你不采纳 · 有意为之：超时由上层统一取消。");
   expect(screen.getByText(/^1 个问题（1 个不采纳） · 完成评审/u)).toBeVisible();
   // Closed like a drop, and the reviewer's own until taken back: no posting, no re-evaluation.
@@ -728,7 +898,7 @@ it("marks a finding like one turned down before, with the reason, and offers tha
   expect(screen.getByText("你在 sample/app#101 不采纳过同一问题：上层统一取消。")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: `不采纳「${finding.title}」` }));
   const form = await screen.findByRole("form", { name: "不采纳这条问题" });
-  expect(within(form).getByLabelText("不采纳的原因")).toHaveValue("上层统一取消。");
+  expect(within(form).getByLabelText(/^不采纳的原因/u)).toHaveValue("上层统一取消。");
 });
 
 it("asks about one finding from the follow-up box, after what is already typed there", async () => {
@@ -757,7 +927,7 @@ it("takes a turned-down finding back, open again", async () => {
   const api = createPreviewApi();
   await runSampleReview(api);
   fireEvent.click(screen.getByRole("button", { name: "不采纳「超时后请求仍在运行」" }));
-  fireEvent.click(within(await screen.findByRole("form", { name: "不采纳这条问题" })).getByRole("button", { name: "不采纳" }));
+  fireEvent.click(within(await screen.findByRole("dialog", { name: "不采纳这条问题" })).getByRole("button", { name: "不采纳" }));
   const note = await screen.findByRole("note", { name: "不采纳" });
   expect(note).toHaveTextContent("没有写原因。");
   fireEvent.click(within(note).getByRole("button", { name: "撤回" }));
@@ -879,7 +1049,7 @@ it("expands /describe into the PR overview request while the chat shows the comm
   expect(followUp.mock.calls[1]![0].command).toBeUndefined();
 });
 
-it("keeps the candidates the verification left out under the findings, with their score and why", async () => {
+it("keeps the candidates the verification left out under the findings, with why, and those it could not judge apart", async () => {
   const api = createPreviewApi();
   await runSampleReview(api);
   const filtered = screen.getByText("核验未通过的候选问题 · 1").closest("details")!;
@@ -887,8 +1057,22 @@ it("keeps the candidates the verification left out under the findings, with thei
   fireEvent.click(screen.getByText("核验未通过的候选问题 · 1"));
   expect(filtered).toHaveTextContent("超时时间写死");
   expect(filtered).toHaveTextContent("src/request.ts:11");
-  expect(filtered).toHaveTextContent("置信度 45 · 超时值本来就由调用方传入");
-  // One problem stands; the one left out is not counted with it.
+  expect(filtered).toHaveTextContent("核验找到了具体反证");
+  expect(filtered).not.toHaveTextContent("置信度");
+  // Neither confirmed nor refuted: with what is missing, and not one to post.
+  const waiting = screen.getByText("待核实的候选问题 · 1").closest("details")!;
+  fireEvent.click(screen.getByText("待核实的候选问题 · 1"));
+  expect(waiting).toHaveTextContent("缺少：调用 request() 的业务代码与服务端是否去重。");
+  // Only the confirmed finding is offered to post: neither section has a button at all.
+  expect(screen.getByRole("button", { name: "把「超时后请求仍在运行」转为 PR 评论" })).toBeEnabled();
+  expect(screen.queryByRole("button", { name: "把「重试时重复提交」转为 PR 评论" })).toBeNull();
+  expect(within(waiting).queryAllByRole("button")).toEqual([]);
+  const unplaced = screen.getByText("没能定位到变更行的候选问题 · 1").closest("details")!;
+  fireEvent.click(screen.getByText("没能定位到变更行的候选问题 · 1"));
+  expect(unplaced).toHaveTextContent("src/client.ts:40");
+  expect(screen.queryByRole("button", { name: "把「调用方没有处理超时错误」转为 PR 评论" })).toBeNull();
+  expect(within(unplaced).queryAllByRole("button")).toEqual([]);
+  // One problem stands; neither the one left out nor the one waiting is counted with it.
   expect(screen.getByText(/^1 个问题 · 完成评审 1\/1 个文件 · 分 1 组/u)).toBeVisible();
 });
 
@@ -1737,6 +1921,89 @@ it("marks a PR that changed after its last review or overview", async () => {
   expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/ })).toBeVisible();
 });
 
+it("marks a PR whose comments grew after its overview though its update time stayed, not for one posted from here", async () => {
+  const api = createPreviewApi();
+  const [item] = (await api.listPullRequests({ connectionId: "00000000-0000-4000-8000-000000000011", filter: "review-requested", page: 1 })).items;
+  // As Bitbucket lists it: a new comment moves the count and leaves the update time where it was.
+  const list = vi.spyOn(api, "listPullRequests").mockResolvedValue({ items: [{ ...item!, comments: 2 }], nextPage: null });
+  const load = vi.spyOn(api, "loadPrReview");
+  vi.spyOn(api, "followUpPrReview").mockResolvedValue({ answer: "概览" });
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }));
+  // The snapshot is checked against the count too, so its comments are read again once it moves.
+  await waitFor(() => expect(load).toHaveBeenCalledWith({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123", updatedAt: item!.updatedAt, commentCount: 2 }));
+  // A comment comes in after the list on screen was read: the overview counts from the platform as it starts.
+  list.mockResolvedValue({ items: [{ ...item!, comments: 3 }], nextPage: null });
+  fireEvent.click(await screen.findByRole("radio", { name: /PR 概览/ }));
+  const run = screen.getByRole("button", { name: "生成 PR 概览" });
+  await waitFor(() => expect(run).toBeEnabled());
+  fireEvent.click(run);
+  fireEvent.click(await screen.findByRole("button", { name: "把这条回答发布到 PR" }));
+  const post = within(await screen.findByRole("dialog", { name: "发布到 PR" })).getByRole("button", { name: "发布评论" });
+  await waitFor(() => expect(post).toBeEnabled());
+  fireEvent.click(post);
+  expect(await screen.findByText("已发布到 PR")).toBeVisible();
+  const refresh = async (comments: number) => {
+    const reads = list.mock.calls.length;
+    list.mockResolvedValue({ items: [{ ...item!, comments }], nextPage: null });
+    fireEvent.click(screen.getByRole("button", { name: "刷新 PR 列表" }));
+    await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(reads));
+    await waitFor(() => expect(screen.queryByText("正在读取 PR 列表…")).toBeNull());
+  };
+  // The one comment more is the overview just posted.
+  await refresh(4);
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/ })).not.toHaveTextContent("之后有更新");
+  await refresh(5);
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/ })).toHaveTextContent("PR 概览之后有更新");
+  expect(await screen.findByText(/这份记录之后，PR 又有新提交或新评论。/u)).toBeVisible();
+});
+
+it("takes a comment posted from an older record of a PR as no news to its newest record either", async () => {
+  const api = createPreviewApi();
+  const snapshot = await api.loadPrReview({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123" });
+  const [item] = (await api.listPullRequests({ connectionId: "00000000-0000-4000-8000-000000000011", filter: "review-requested", page: 1 })).items;
+  // An overview and, later, suggestions on the same commits, both made at two comments.
+  const record = (id: string, at: string, question: string): ReviewHistoryEntry => ({ id, kind: "chat", at, model: "本机", focus: "", draft: "", events: [], state: "finished", error: "", published: [], verdicts: [], rechecks: [],
+    connectionId: "00000000-0000-4000-8000-000000000011", report: null, snapshot, listedComments: 2, turns: [{ id: crypto.randomUUID(), at, model: "本机", question, answer: `${question} 的回答`, state: "done" }] });
+  saveReviewHistory([record("00000000-0000-4000-8000-0000000000c5", "2026-09-30T11:00:00.000Z", "/improve"), record("00000000-0000-4000-8000-0000000000c4", "2026-09-30T10:00:00.000Z", "/describe")]);
+  const list = vi.spyOn(api, "listPullRequests").mockResolvedValue({ items: [{ ...item!, comments: 2 }], nextPage: null });
+  render(<PrReviewPanel api={api} />);
+  await screen.findByRole("button", { name: /#123 示例：调整请求超时/ });
+  fireEvent.click(screen.getByRole("button", { name: /历史评审/u }));
+  fireEvent.click(document.querySelector<HTMLButtonElement>('[data-run-id="00000000-0000-4000-8000-0000000000c4"]')!);
+  fireEvent.click(await screen.findByRole("button", { name: "把这条回答发布到 PR" }));
+  const post = within(await screen.findByRole("dialog", { name: "发布到 PR" })).getByRole("button", { name: "发布评论" });
+  await waitFor(() => expect(post).toBeEnabled());
+  fireEvent.click(post);
+  expect(await screen.findByText("已发布到 PR")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "PR 1" }));
+  list.mockResolvedValue({ items: [{ ...item!, comments: 3 }], nextPage: null });
+  const reads = list.mock.calls.length;
+  fireEvent.click(screen.getByRole("button", { name: "刷新 PR 列表" }));
+  await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(reads));
+  await waitFor(() => expect(screen.queryByText("正在读取 PR 列表…")).toBeNull());
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/ })).toHaveTextContent("改进建议");
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/ })).not.toHaveTextContent("之后有更新");
+  await waitFor(() => expect(loadReviewHistory().entries.map((entry) => entry.listedComments)).toEqual([3, 3]));
+});
+
+it("counts the comments of a record made before the list counted them from what the list shows now", async () => {
+  const api = createPreviewApi();
+  const snapshot = await api.loadPrReview({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123" });
+  const [item] = (await api.listPullRequests({ connectionId: "00000000-0000-4000-8000-000000000011", filter: "review-requested", page: 1 })).items;
+  // Overviewed after the PR's last update, by a version that kept no count.
+  saveReviewHistory([{ id: "00000000-0000-4000-8000-0000000000c3", kind: "chat", at: "2026-09-30T10:00:00.000Z", model: "本机", focus: "", draft: "", turns: [], events: [], state: "finished", error: "", published: [], verdicts: [], rechecks: [],
+    connectionId: "00000000-0000-4000-8000-000000000011", report: null, snapshot }]);
+  const list = vi.spyOn(api, "listPullRequests").mockResolvedValue({ items: [{ ...item!, comments: 5 }], nextPage: null });
+  render(<PrReviewPanel api={api} />);
+  // What it saw is not known: nothing is said until the count moves on from here, and where it counts from is kept.
+  await waitFor(() => expect(loadReviewHistory().entries[0]?.listedComments).toBe(5));
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/ })).not.toHaveTextContent("之后有更新");
+  list.mockResolvedValue({ items: [{ ...item!, comments: 6 }], nextPage: null });
+  fireEvent.click(screen.getByRole("button", { name: "刷新 PR 列表" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/ })).toHaveTextContent("之后有更新"));
+});
+
 it("keeps the PR read before on screen when its commits cannot be confirmed", async () => {
   const api = createPreviewApi();
   const snapshot = await api.loadPrReview({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123" });
@@ -1792,8 +2059,8 @@ it("keeps focus on a finding when its no is taken back from its card", async () 
   await runSampleReview(api);
   fireEvent.click(screen.getByRole("button", { name: "不采纳「超时后请求仍在运行」" }));
   const form = await screen.findByRole("form", { name: "不采纳这条问题" });
-  fireEvent.change(within(form).getByLabelText("不采纳的原因"), { target: { value: "有意为之。" } });
-  fireEvent.click(within(form).getByRole("button", { name: "不采纳" }));
+  fireEvent.change(within(form).getByLabelText(/^不采纳的原因/u), { target: { value: "有意为之。" } });
+  fireEvent.click(within(form.closest<HTMLElement>('[role="dialog"]')!).getByRole("button", { name: "不采纳" }));
   const withdraw = within(await screen.findByRole("note", { name: "不采纳" })).getByRole("button", { name: "撤回" });
   withdraw.focus();
   fireEvent.click(withdraw);
@@ -2063,8 +2330,8 @@ it("reads a long report one priority at a time", async () => {
   expect(screen.getByRole("heading", { name: "P2 超时后请求仍在运行" })).toBeVisible();
   // The list says a P1 stands, so this PR can be found first; once the P1 is dropped it says no more.
   expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/u })).toHaveTextContent("评审完成 · 4 个问题（1 个 P1）");
-  // A screen reader hears it too, after the PR's name.
-  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/u })).toHaveAccessibleDescription("评审完成 · 4 个问题（1 个 P1）");
+  // A screen reader hears it too, after the PR's name, with the build the platform reports (the preview's: passing).
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/u })).toHaveAccessibleDescription("中风险，构建通过，评审完成 · 4 个问题（1 个 P1）");
   expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/u }).querySelector(".review-status-p1")).toHaveTextContent("（1 个 P1）");
   vi.spyOn(api, "reevaluatePrReviewFinding").mockResolvedValue({ verdict: "drop", reason: "日志里只有请求 ID。", replacement: null });
   fireEvent.click(screen.getByRole("button", { name: "复评「凭据写进日志」" }));
@@ -2117,12 +2384,12 @@ it("posts several findings in one go, each on its line, and stops at the first f
   const send = within(dialog).getByRole("button", { name: "发布 2 条" });
   await waitFor(() => expect(send).toBeEnabled());
   fireEvent.click(send);
-  expect(await within(dialog).findByRole("alert")).toHaveTextContent("「计时器未清理」发布失败：PR 版本或状态已变化（HTTP 409），请刷新后重新确认。已发布 1 条。");
+  expect(await within(dialog).findByRole("alert")).toHaveTextContent("第 2 条「计时器未清理」发布失败：PR 版本或状态已变化（HTTP 409），请刷新后重新确认。已发出的 1 条不会重发；处理好后再发布，只补发剩下的。");
   expect(publish).toHaveBeenCalledTimes(2);
   expect(publish).toHaveBeenNthCalledWith(1, expect.objectContaining({ path: "src/request.ts", line: 12, side: "new", body: expect.stringContaining("**P2 · 超时后请求仍在运行**") }));
   // The one that went out is not offered again; a retry sends the rest and counts both rounds.
   expect(within(dialog).getByText("已发布")).toBeVisible();
-  fireEvent.click(within(dialog).getByRole("button", { name: "发布 1 条" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "补发剩下的 1 条" }));
   expect(await screen.findByText("已发布 2 条评论。")).toBeVisible();
   expect(publish).toHaveBeenCalledTimes(3);
   expect(screen.queryByRole("button", { name: /批量发布为 PR 评论/u })).toBeNull();
@@ -2253,6 +2520,8 @@ it("retains separate runs across restart and exports the selected run's commit",
   view.unmount();
   render(<PrReviewPanel api={api} />);
   fireEvent.click(screen.getByRole("button", { name: /^历史评审/ }));
+  // Read from the App once the page opens.
+  await waitFor(() => expect(document.querySelector(`[data-run-id="${firstId}"]`)).not.toBeNull());
   fireEvent.click(document.querySelector(`[data-run-id="${firstId}"]`)!);
   fireEvent.click(screen.getByLabelText("评审操作"));
   fireEvent.click(screen.getByRole("button", { name: "导出报告" }));
@@ -2260,7 +2529,7 @@ it("retains separate runs across restart and exports the selected run's commit",
   fireEvent.click(screen.getByLabelText("评审操作"));
   fireEvent.click(screen.getByRole("button", { name: "删除评审" }));
   expect(loadReviewHistory().entries).toHaveLength(2);
-  fireEvent.click(screen.getByRole("button", { name: "确认删除" }));
+  fireEvent.click(within(screen.getByRole("dialog", { name: "删除这次评审记录？" })).getByRole("button", { name: "删除" }));
   await waitFor(() => expect(loadReviewHistory().entries).toHaveLength(1));
 });
 
@@ -2304,11 +2573,11 @@ it("restores unfinished runs as interrupted and keeps corrupt storage untouched"
   localStorage.setItem(key, JSON.stringify([{ id: crypto.randomUUID(), at: new Date().toISOString(), model: "测试模型", focus: "检查权限", snapshot, events: [], report: null, state: "running", error: "" }]));
   expect(loadReviewHistory().entries[0]?.state).toBe("interrupted");
   const view = render(<PrReviewPanel api={api} />);
-  expect(screen.getByText(/上次评审已中断/)).toBeVisible();
+  expect(await screen.findByText(/上次评审已中断/)).toBeVisible();
   view.unmount();
   localStorage.setItem(key, "{broken");
   render(<PrReviewPanel api={api} />);
-  expect(screen.getByRole("alert")).toHaveTextContent("原数据已保留");
+  expect(await screen.findByRole("alert")).toHaveTextContent("原数据已保留");
   fireEvent.click(await screen.findByRole("button", { name: /#123 示例/ }));
   fireEvent.click(await screen.findByRole("button", { name: "开始评审" }));
   await screen.findByRole("heading", { name: "P2 超时后请求仍在运行" });
@@ -2361,7 +2630,7 @@ it("keeps the result and follow-up replies in one conversation and persists the 
   expect(exporter.mock.calls[0]![0].markdown).toContain("怎么修复？");
   expect(exporter.mock.calls[0]![0].markdown).toContain("需要把取消信号传给底层请求。");
   view.unmount(); render(<PrReviewPanel api={api} />);
-  expect(screen.getByText("怎么修复？")).toBeVisible();
+  expect(await screen.findByText("怎么修复？")).toBeVisible();
   expect(screen.getByText("怎么测试？")).toBeVisible();
 });
 
@@ -2519,7 +2788,7 @@ it("expands cited evidence and keeps source opening and export available", async
   const api = createPreviewApi();
   const report = await api.runPrReview({ snapshotId: crypto.randomUUID(), runId: crypto.randomUUID(), profileId: "qwen-local", focus: "" });
   vi.spyOn(api, "runPrReview").mockResolvedValue({ ...report, findings: report.findings.map(item => ({ ...item, decisionIndexes: [1] })), evidence: [{ index: 1, record: {
-    source: "summarize", kind: "historical_decision", id: "DEC-1", title: "取消超时请求", project: "sample", status: "accepted", current: true,
+    source: "summarize", kind: "summarized_decision", id: "DEC-1", title: "取消超时请求", project: "sample", status: "accepted", current: true,
     summary: "超时需要释放资源", appliesWhen: "请求取消", caution: "后台任务另议", tags: [], supersedes: [], supersededBy: [], successors: [], unresolvedSuccessorIds: [],
     sourceRef: { relativePath: "summarize/DEC-1.md", client: null, sessionId: null, excerpt: "超时需要释放资源", excerptStartLine: 1, truncated: false }, matchReason: "超时", warnings: [],
   } }] });
@@ -2527,7 +2796,8 @@ it("expands cited evidence and keeps source opening and export available", async
   render(<PrReviewPanel api={api} />);
   fireEvent.click(await screen.findByRole("button", { name: /#123 示例/ }));
   fireEvent.click(await screen.findByRole("button", { name: "开始评审" }));
-  fireEvent.click(await screen.findByRole("link", { name: "[1]" }));
+  // The citation names the decision it points at, not only its number.
+  fireEvent.click(await screen.findByRole("link", { name: "[1] 取消超时请求" }));
   expect(document.getElementById("review-evidence-1")).toHaveAttribute("open");
   expect(document.querySelector(".review-evidence")).toHaveAttribute("open");
   fireEvent.click(screen.getByRole("button", { name: "打开来源笔记" }));
@@ -2597,8 +2867,8 @@ describe("a record left behind", () => {
     fireEvent.click(reevaluate);
     fireEvent.click(screen.getByRole("button", { name: "不采纳「超时后请求仍在运行」" }));
     const form = await screen.findByRole("form", { name: "不采纳这条问题" });
-    fireEvent.change(within(form).getByLabelText("不采纳的原因"), { target: { value: "有意为之，超时由上层统一处理" } });
-    fireEvent.click(within(form).getByRole("button", { name: "不采纳" }));
+    fireEvent.change(within(form).getByLabelText(/^不采纳的原因/u), { target: { value: "有意为之，超时由上层统一处理" } });
+    fireEvent.click(within(form.closest<HTMLElement>('[role="dialog"]')!).getByRole("button", { name: "不采纳" }));
 
     await act(async () => { land({ verdict: "keep", reason: "问题仍然成立。", replacement: null }); });
 
@@ -2822,4 +3092,636 @@ it("closes the PR 详情 opened on one record when another record is opened", as
   expect(await screen.findByRole("heading", { name: "PR 乙" })).toBeVisible();
   // Kept open, the same dialog went on to show PR 乙's files where the reader had opened PR 甲's.
   expect(screen.queryByRole("dialog", { name: "PR 详情" })).toBeNull();
+});
+
+it("moves the evidence, the review's numbers and its steps beside the report only while the pane is wide enough", async () => {
+  // Each observer is kept by what it observes, so the detail pane's own can be told its width changed.
+  const observers = new Map<Element, () => void>();
+  vi.stubGlobal("ResizeObserver", class {
+    constructor(private readonly callback: () => void) {}
+    observe(target: Element) { observers.set(target, this.callback); }
+    disconnect() {}
+  });
+  try {
+    const api = createPreviewApi();
+    await runSampleReview(api);
+    const detail = screen.getByLabelText("当前评审");
+    const resize = (width: number) => {
+      Object.defineProperty(detail, "clientWidth", { configurable: true, value: width });
+      act(() => observers.get(detail)?.());
+    };
+    // The default window keeps one column: the numbers, the evidence and the steps stay in the report.
+    resize(900);
+    expect(screen.queryByRole("complementary", { name: "决策证据与评审信息" })).toBeNull();
+    expect(screen.getByText(/^1 个问题 · 完成评审 1\/1 个文件/u)).toBeVisible();
+    expect(screen.getByText("决策证据：未取得相关决策证据；不能据此断言没有历史约束。")).toBeVisible();
+    expect(document.querySelector(".review-chat-messages .review-process")).not.toBeNull();
+    resize(1040);
+    const aside = within(screen.getByRole("complementary", { name: "决策证据与评审信息" }));
+    expect(aside.getByRole("heading", { name: "这次评审" })).toBeVisible();
+    expect(aside.getByText("1/1 个文件已评审，读取了 1 个文件的 diff")).toBeVisible();
+    expect(aside.getByText("未取得相关决策证据；不能据此断言没有历史约束。")).toBeVisible();
+    expect(aside.getByRole("heading", { name: "评审过程" })).toBeVisible();
+    // Said once: the report's own line and its steps go, while the findings stay where they were.
+    expect(screen.queryByText(/^1 个问题 · 完成评审/u)).toBeNull();
+    expect(document.querySelector(".review-chat-messages .review-process")).toBeNull();
+    expect(screen.getByRole("heading", { name: "P2 超时后请求仍在运行" })).toBeVisible();
+    resize(900);
+    expect(screen.queryByRole("complementary", { name: "决策证据与评审信息" })).toBeNull();
+    expect(screen.getByText(/^1 个问题 · 完成评审 1\/1 个文件/u)).toBeVisible();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("shows a PR's risk level by its files and the target branch's REVIEW.md, before a review and on the list after one", async () => {
+  const api = createPreviewApi();
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }));
+  await screen.findByRole("button", { name: "开始评审" });
+  const scope = screen.getByRole("heading", { name: "这次会带上" }).parentElement!;
+  expect(within(scope).getByText("风险等级")).toBeVisible();
+  expect(scope).toHaveTextContent("请求与重试：src/request.ts · 按目标分支 main 的 REVIEW.md 风险路径判定；等级按改动的文件定，不由作者选。");
+  expect(scope).toHaveTextContent("REVIEW.md、AGENTS.md · 读自目标分支 main");
+  const row = screen.getByRole("button", { name: /#123 示例：调整请求超时/ });
+  // The PR open now is known: its row carries the level, and the list can be narrowed by it.
+  await waitFor(() => expect(within(row).getByText("中风险")).toHaveAttribute("data-level", "medium"));
+  fireEvent.click(await screen.findByRole("button", { name: "开始评审" }));
+  await screen.findByRole("heading", { name: "P2 超时后请求仍在运行" });
+  expect(within(screen.getByRole("region", { name: "评审过程" })).getAllByText("中风险")[0]).toBeVisible();
+});
+
+it("says what each finding stands on, and ends a posted comment with a line saying so", async () => {
+  const api = createPreviewApi();
+  const original = api.runPrReview.bind(api);
+  vi.spyOn(api, "runPrReview").mockImplementation(async (request) => {
+    const result = await original(request);
+    const [first] = result.findings;
+    return { ...result, findings: [
+      { ...first!, title: "续期没有检查吊销", body: "违反 REVIEW.md 里的约定：续期前要检查吊销。" },
+      { ...first!, title: "错误码不一致", body: "按 Ruleset 1 的约定，错误码应和登录接口一致。", line: 13 },
+    ] };
+  });
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }));
+  const start = await screen.findByRole("button", { name: "开始评审" });
+  await waitFor(() => expect(start).toBeEnabled());
+  fireEvent.click(start);
+  const rule = (await screen.findByRole("heading", { name: "P2 续期没有检查吊销" })).closest("article")!;
+  expect(rule).toHaveTextContent("依据REVIEW.md仓库规则");
+  const personal = screen.getByRole("heading", { name: "P2 错误码不一致" }).closest("article")!;
+  expect(personal).toHaveTextContent("依据本机评审规则个人依据 · 只作建议");
+
+  fireEvent.click(screen.getByRole("button", { name: "把「续期没有检查吊销」转为 PR 评论" }));
+  let form = await screen.findByRole("form", { name: "发布评论表单" });
+  expect((within(form).getByRole("textbox") as HTMLTextAreaElement).value).toMatch(/\n\n— Paraself 预评审 · 依据 REVIEW\.md · P2$/u);
+  expect(screen.queryByText(/只有你的个人决策或本机评审规则支撑/u)).toBeNull();
+  fireEvent.click(within(screen.getByRole("dialog", { name: "发布为 PR 评论" })).getByRole("button", { name: "取消" }));
+  await waitFor(() => expect(screen.queryByRole("form", { name: "发布评论表单" })).toBeNull());
+
+  fireEvent.click(screen.getByRole("button", { name: "把「错误码不一致」转为 PR 评论" }));
+  form = await screen.findByRole("form", { name: "发布评论表单" });
+  expect((within(form).getByRole("textbox") as HTMLTextAreaElement).value).toMatch(/— Paraself 预评审 · 审阅人的个人经验，仓库暂无此规则 · P2 · 建议$/u);
+  expect(screen.getByText(/只有你的个人决策或本机评审规则支撑：发出去只是建议/u)).toBeVisible();
+});
+
+it("shows above a review what its approval needs, as the platform reports it, and what it could not read", async () => {
+  const api = createPreviewApi();
+  await runSampleReview(api);
+  const conditions = within(screen.getByRole("region", { name: "批准条件" }));
+  // The preview's platform: a passing build, nobody's approval, one open discussion; a medium-risk PR needs one person.
+  expect(conditions.getByText("风险等级").nextElementSibling).toHaveTextContent("中风险请求与重试");
+  expect(conditions.getByText("批准").nextElementSibling).toHaveTextContent("0 / 1");
+  expect(conditions.getByText("构建").nextElementSibling).toHaveTextContent("通过");
+  expect(conditions.getByText("阻塞项").nextElementSibling).toHaveTextContent("1 项未完成");
+  expect(conditions.getByText("PR 描述").nextElementSibling).toHaveTextContent("没写验证、风险、撤回");
+  expect(conditions.getByText(/^等级按改动的文件定，不由作者选；按目标分支 main 的 REVIEW\.md 风险路径判定。AI 的批准不算人。/u)).toHaveTextContent("这个平台的阻塞项是未解决的讨论。");
+  // An open blocker: approving asks why.
+  fireEvent.click(screen.getByRole("button", { name: "批准" }));
+  expect(await screen.findByText("还有 1 项未完成的阻塞项：批准要写明理由。")).toBeVisible();
+});
+
+it("says so when the platform's status cannot be read, rather than show it as none", async () => {
+  const api = createPreviewApi();
+  vi.spyOn(api, "listPrReviewStatuses").mockImplementation(async ({ references }) => ({ statuses: references.map(reference => ({ reference, status: null, error: "代码平台连接失败。" })) }));
+  await runSampleReview(api);
+  const conditions = within(screen.getByRole("region", { name: "批准条件" }));
+  expect(conditions.getByText("构建").nextElementSibling).toHaveTextContent("读不到");
+  expect(conditions.getByText("阻塞项").nextElementSibling).toHaveTextContent("读不到");
+  expect(conditions.getByText(/平台状态读不到：代码平台连接失败。/u)).toBeVisible();
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/u })).not.toHaveTextContent("构建");
+});
+
+it("posts a P1 the repository's rules stand behind as blocking unless told otherwise, and one on a personal basis never", async () => {
+  const api = createPreviewApi();
+  const run = api.runPrReview;
+  vi.spyOn(api, "runPrReview").mockImplementation(async (input) => {
+    const report = await run(input);
+    const base = report.findings[0]!;
+    return { ...report, findings: [
+      { ...base, priority: "P1", title: "超时不取消请求", body: "违反 REVIEW.md 第 2 条：超时要取消底层请求。" },
+      { ...base, priority: "P1", title: "和以前的决定不一致", body: "和你以前定的重试策略不一致。", line: 13, decisionIndexes: [1] },
+      { ...base, line: 14 },
+    ] };
+  });
+  const publish = vi.spyOn(api, "publishPrReviewComment").mockImplementation(async (input) => ({ message: "ok", ...(input.blocking ? { blocking: true } : {}) }));
+  await runSampleReview(api);
+  // Said on each finding before anything is posted.
+  expect(within(screen.getByRole("heading", { name: "P1 超时不取消请求" }).closest("article")!).getByText("发布时设为阻塞")).toBeVisible();
+  expect(within(screen.getByRole("heading", { name: "P1 和以前的决定不一致" }).closest("article")!).getByText("不能设为阻塞")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "批量发布为 PR 评论（3）" }));
+  const dialog = within(await screen.findByRole("dialog", { name: "批量发布为 PR 评论" }));
+  expect(dialog.getByRole("checkbox", { name: "把「超时不取消请求」设为阻塞" })).toBeChecked();
+  expect(dialog.getByRole("checkbox", { name: "把「和以前的决定不一致」设为阻塞" })).toBeDisabled();
+  expect(dialog.getByText("设为阻塞：个人依据不能设为阻塞（依据标记为阻塞的本机规则的 P1 除外）")).toBeVisible();
+  expect(dialog.getByRole("checkbox", { name: "把「超时后请求仍在运行」设为阻塞" })).not.toBeChecked();
+  expect(await dialog.findByText(/阻塞项：这个平台没有任务：发成普通评论，要仓库开启“讨论解决后才能合并”才拦得住。/u)).toBeVisible();
+  const send = dialog.getByRole("button", { name: "发布 3 条，其中 1 条阻塞" });
+  await waitFor(() => expect(send).toBeEnabled());
+  const statuses = vi.spyOn(api, "listPrReviewStatuses");
+  fireEvent.click(send);
+  expect(await screen.findByText("已发布 3 条评论。")).toBeVisible();
+  // The task posted is in the blockers the platform reports next.
+  expect(statuses).toHaveBeenCalledWith(expect.objectContaining({ references: ["sample/app#123"] }));
+  expect(publish.mock.calls.map(([input]) => input.blocking)).toEqual([true, undefined, undefined]);
+  expect(within(screen.getByRole("heading", { name: "P1 超时不取消请求" }).closest("article")!).getByText("已发布为 PR 评论（阻塞项）")).toBeVisible();
+  expect(within(screen.getByRole("heading", { name: "P2 超时后请求仍在运行" }).closest("article")!).getByText("已发布为 PR 评论")).toBeVisible();
+});
+
+it("reads again a record an agent changed through the App, and does not save its older copy over it", async () => {
+  const api = createPreviewApi();
+  let changed: ((input: { ids: string[] }) => void) | undefined;
+  vi.spyOn(api, "onPrReviewHistoryChanged").mockImplementation(listener => { changed = listener; return () => { changed = undefined; }; });
+  await runSampleReview(api);
+  await waitFor(async () => expect((await api.listPrReviewHistory()).entries[0]?.report).not.toBeNull());
+  // As update_pr_review_finding writes it: the App's copy, the page told which record moved.
+  const [entry] = (await api.listPrReviewHistory()).entries;
+  await api.savePrReviewHistory({ removed: [], entries: [{ ...entry!, verdicts: [{ finding: 0, verdict: "drop", reason: "超时由网关处理。", replacement: null, at: new Date().toISOString(), model: "评审者", by: "reviewer" }] }] });
+  const save = vi.spyOn(api, "savePrReviewHistory");
+  const statuses = vi.spyOn(api, "listPrReviewStatuses");
+  act(() => changed!({ ids: [entry!.id] }));
+  expect(await screen.findByText("超时由网关处理。", { exact: false })).toBeVisible();
+  // A comment it posted may be a task: the PR's blockers are read again.
+  expect(statuses).toHaveBeenCalledWith({ connectionId: entry!.connectionId, references: [entry!.snapshot.reference] });
+  expect(screen.getByRole("note", { name: "不采纳" })).toHaveTextContent("你不采纳");
+  // Taken as saved: nothing goes back over it.
+  await new Promise(resolve => setTimeout(resolve, 50));
+  expect(save.mock.calls.flatMap(([input]) => input.entries).every(item => item.verdicts?.length === 1)).toBe(true);
+  expect((await api.listPrReviewHistory()).entries[0]!.verdicts).toHaveLength(1);
+});
+
+it("lists a review an agent started through the App among the records, newest first, and shows it finished when told", async () => {
+  const api = createPreviewApi();
+  let changed: ((input: { ids: string[] }) => void) | undefined;
+  vi.spyOn(api, "onPrReviewHistoryChanged").mockImplementation(listener => { changed = listener; return () => { changed = undefined; }; });
+  await runSampleReview(api);
+  await waitFor(async () => expect((await api.listPrReviewHistory()).entries[0]?.report).not.toBeNull());
+  const [entry] = (await api.listPrReviewHistory()).entries;
+  // As run_pr_review keeps it: a record of its own, running from the start, which the page has not seen.
+  const started = { ...entry!, id: crypto.randomUUID(), at: new Date(Date.now() + 1_000).toISOString(), report: null, state: "running" as const, events: [], published: [], verdicts: [] };
+  let current: typeof entry = started;
+  const list = api.listPrReviewHistory;
+  vi.spyOn(api, "listPrReviewHistory").mockImplementation(async () => ({ ...(await list()), entries: [current!, entry!], running: current!.state === "running" ? [started.id] : [] }));
+  act(() => changed!({ ids: [started.id] }));
+  fireEvent.click(screen.getByRole("button", { name: /^历史评审/u }));
+  await waitFor(() => expect(within(screen.getByRole("list", { name: "历史评审" })).getAllByRole("button")).toHaveLength(2));
+  const [first] = within(screen.getByRole("list", { name: "历史评审" })).getAllByRole("button");
+  expect(first).toHaveTextContent("评审中");
+  fireEvent.click(first!);
+  expect(await screen.findByText("这次评审由 agent 发起，在 App 后台进行；结束后这里显示结果。")).toBeVisible();
+  current = { ...started, state: "finished", report: entry!.report };
+  act(() => changed!({ ids: [started.id] }));
+  await waitFor(() => expect(within(screen.getByRole("list", { name: "历史评审" })).getAllByRole("button")[0]).toHaveTextContent("第 2 轮"));
+});
+
+it("shows what the user's own PR received, each comment with what was done with it, and answers one with a standard reply", async () => {
+  const api = createPreviewApi();
+  const respond = vi.spyOn(api, "respondToPrComment");
+  const read = vi.spyOn(api, "listPrReceivedComments");
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(within(await screen.findByRole("group", { name: "PR 范围" }, { timeout: 5_000 })).getByRole("button", { name: "我创建的" }));
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例/ }, { timeout: 5_000 }));
+  const received = within(await screen.findByRole("region", { name: "收到的意见 · 2 条" }));
+  expect(received.getByText("1 / 2 条有去向")).toBeVisible();
+  // Over it, the conditions as the author reads them: what the merge waits for, and the answers.
+  const conditions = within(screen.getByRole("region", { name: "批准条件" }));
+  await waitFor(() => expect(conditions.getByText("回应").nextElementSibling).toHaveTextContent("1 / 2 条有去向"));
+  expect(screen.getByRole("region", { name: "批准条件" }).querySelector("p")).toHaveTextContent(/^合并要等：1 人批准、阻塞项完成。/u);
+  const [task, person] = received.getAllByRole("listitem");
+  expect(task).toHaveTextContent("阻塞P1超时后请求仍在运行示例审阅人 A· Paraself 预评审 · 依据 REVIEW.mdsrc/request.ts:12");
+  expect(within(task!).getByText("待你决定")).toBeVisible();
+  expect(person).toHaveTextContent("人工超时时间能不能做成可配置？");
+  expect(within(person!).getByText("已回复：有意为之 —— 超时由调用方传入，这里只给默认值。")).toBeVisible();
+  expect(within(person!).getByRole("button", { name: "不修" })).toBeDisabled();
+
+  // 转后续 offers the comment's title for the todo.
+  fireEvent.click(within(task!).getByRole("button", { name: "转后续" }));
+  expect(within(await screen.findByRole("dialog", { name: "转后续" })).getByLabelText("待办标题")).toHaveValue("超时后请求仍在运行");
+  fireEvent.click(screen.getByRole("button", { name: "取消" }));
+
+  fireEvent.click(within(task!).getByRole("button", { name: "不修" }));
+  const dialog = within(await screen.findByRole("dialog", { name: "不修" }));
+  const send = dialog.getByRole("button", { name: "发出回复" });
+  expect(send).toBeDisabled();
+  fireEvent.click(dialog.getByRole("radio", { name: /有意为之/ }));
+  fireEvent.change(dialog.getByLabelText("理由"), { target: { value: "网关会取消底层请求。" } });
+  // Shown as it will go out.
+  expect(dialog.getByText("将回复").parentElement).toHaveTextContent("将回复有意为之：网关会取消底层请求。— Paraself 作者回应");
+  fireEvent.click(send);
+  expect(await screen.findByText("界面预览：回复已模拟发出，未写入代码平台。")).toBeVisible();
+  expect(respond).toHaveBeenCalledWith({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123", commentId: "901", kind: "intended", reason: "网关会取消底层请求。" });
+  // Read again, as the platform now has it.
+  expect(read).toHaveBeenCalledTimes(2);
+});
+
+it("hands a line comment on the user's own PR to the local review, and pushes the fix onto the PR only once confirmed", async () => {
+  const api = createPreviewApi();
+  const submit = vi.spyOn(api, "submitLocalReviewFromPr");
+  const act = vi.spyOn(api, "actOnLocalReview");
+  vi.spyOn(api, "listModelProviderProfiles").mockResolvedValue([{ version: 1, profileId: "builtin-codex", kind: "codex-cli", label: "Codex CLI", enabled: true, priority: 0, timeoutMs: 120_000, model: "gpt-6-luna", executablePath: "/preview/codex" } as never]);
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(within(await screen.findByRole("group", { name: "PR 范围" }, { timeout: 5_000 })).getByRole("button", { name: "我创建的" }));
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例/ }, { timeout: 5_000 }));
+  const received = within(await screen.findByRole("region", { name: "收到的意见 · 2 条" }));
+  const [task, person] = received.getAllByRole("listitem");
+  // A comment on the PR as a whole has no line to fix at.
+  expect(within(person!).getByRole("button", { name: "修" })).toBeDisabled();
+  fireEvent.click(within(task!).getByRole("button", { name: "修" }));
+  expect(within(task!).getByText("将交给本地审阅修改")).toBeVisible();
+  const hand = within(screen.getByRole("group", { name: "交给本地审阅" }));
+  const send = hand.getByRole("button", { name: "交给本地审阅修改 1 条" });
+  await waitFor(() => expect(send).toBeEnabled());
+  fireEvent.click(send);
+  await waitFor(() => expect(submit).toHaveBeenCalledWith({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123", commentIds: ["901"], profileId: "builtin-codex", worker: "codex" }));
+  expect(await within(task!).findByText("本地审阅已改好：+2 −1 · 超时改为取消底层请求。")).toBeVisible();
+  expect(within(task!).getByRole("button", { name: "修" })).toBeDisabled();
+
+  // 本轮变化 as it will be written, and the push only on the author's word.
+  const round = within(screen.getByRole("region", { name: /^本轮变化/u }));
+  expect(round.getByText(/修复 1 条意见/u)).toBeVisible();
+  expect(round.getByText(/推送前核对远端分支头仍是/u)).toHaveTextContent("作为新提交推到原 PR 的 feature/request；推送前核对远端分支头仍是 aaaaaaaaaaaa，变了就停，不强推。");
+  fireEvent.click(round.getByRole("button", { name: "推送修复到原 PR" }));
+  const dialog = within(await screen.findByRole("dialog", { name: "推送修复到原 PR" }));
+  expect(act).not.toHaveBeenCalled();
+  fireEvent.click(dialog.getByRole("button", { name: "确认推送" }));
+  await waitFor(() => expect(act).toHaveBeenCalledWith(expect.objectContaining({ action: "approve", authorization: expect.objectContaining({ commitOid: "d".repeat(40), risks: [] }) })));
+  expect(await within(task!).findByText(`已推送到原 PR，提交 ${"d".repeat(12)}，已回复已修`)).toBeVisible();
+});
+
+it("reads what became of the findings a record posted when it is opened, and says on each card how the author answered", async () => {
+  const api = createPreviewApi();
+  const snapshot = await api.loadPrReview({ connectionId: "00000000-0000-4000-8000-000000000011", reference: "sample/app#123" });
+  const report = await api.runPrReview({ snapshotId: snapshot.snapshotId, runId: "00000000-0000-4000-8000-000000000002", profileId: "local", focus: "" });
+  const read = vi.spyOn(api, "readPrReviewOutcomes");
+  saveReviewHistory([{ kind: "review" as const, model: "本机", focus: "", draft: "", turns: [], events: [], state: "finished" as const, error: "", rechecks: [], verdicts: [],
+    connectionId: "00000000-0000-4000-8000-000000000011", id: "00000000-0000-4000-8000-0000000000e7", at: "2026-09-30T11:00:00.000Z", snapshot, report,
+    published: [{ finding: 0, at: "2026-09-30T11:05:00.000Z", comment: "c1", outcome: { kind: "wrong" as const, words: "超时由网关取消。", at: "2026-10-01T09:00:00.000Z" } }] }]);
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: /历史评审/u }, { timeout: 5_000 }));
+  fireEvent.click(within(screen.getByRole("list", { name: "历史评审" })).getAllByRole("button")[0]!);
+  const card = (await screen.findByRole("heading", { name: "P2 超时后请求仍在运行" })).closest("article")!;
+  expect(within(card).getByText("作者：说错了 —— 超时由网关取消。")).toBeVisible();
+  // Read again: the outcome is a month old.
+  await waitFor(() => expect(read).toHaveBeenCalledWith({ id: "00000000-0000-4000-8000-0000000000e7" }));
+});
+
+it("posts a single finding as blocking when it may be one, and says on the card that it went out so", async () => {
+  const api = createPreviewApi();
+  const run = api.runPrReview;
+  vi.spyOn(api, "runPrReview").mockImplementation(async (input) => {
+    const report = await run(input);
+    return { ...report, findings: [{ ...report.findings[0]!, priority: "P1", body: "违反 REVIEW.md 第 2 条：超时要取消底层请求。" }, report.findings[0]!] };
+  });
+  const publish = vi.spyOn(api, "publishPrReviewComment").mockImplementation(async (input) => ({ message: "评论已发布到 src/request.ts:12。", ...(input.blocking ? { blocking: true } : {}) }));
+  await runSampleReview(api);
+  fireEvent.click(screen.getAllByRole("button", { name: "把「超时后请求仍在运行」转为 PR 评论" })[0]!);
+  const dialog = within(await screen.findByRole("dialog", { name: "发布为 PR 评论" }));
+  const blocking = dialog.getByRole("checkbox", { name: /^设为阻塞：/u });
+  expect(blocking).toBeChecked();
+  expect(await dialog.findByText("设为阻塞：这个平台没有任务：发成普通评论，要仓库开启“讨论解决后才能合并”才拦得住")).toBeVisible();
+  const send = dialog.getByRole("button", { name: "发布评论" });
+  await waitFor(() => expect(send).toBeEnabled());
+  fireEvent.click(send);
+  expect(await screen.findByText("已发布为 PR 评论（阻塞项）")).toBeVisible();
+  expect(publish).toHaveBeenCalledWith(expect.objectContaining({ line: 12, blocking: true, body: expect.stringContaining("— Paraself 预评审 · 依据 REVIEW.md · P1") }));
+});
+
+it("offers a quick approval for a low-risk PR whose every check holds, and says so in the list", async () => {
+  const api = createPreviewApi();
+  const load = api.loadPrReview, run = api.runPrReview;
+  vi.spyOn(api, "loadPrReview").mockImplementation(async (input) => ({ ...(await load(input)), description: "## 验证\n预览单测。\n\n## 风险\n低。\n\n## 撤回\n回退。",
+    risk: { level: "low", table: "review_md", reasons: [{ level: "low", reason: "文案", paths: ["src/request.ts"], more: 0 }], changesRules: false, problems: [] } }));
+  vi.spyOn(api, "runPrReview").mockImplementation(async (input) => ({ ...(await run(input)), findings: [] }));
+  vi.spyOn(api, "listPrReviewStatuses").mockImplementation(async ({ references }) => ({ statuses: references.map(reference => ({ reference,
+    status: { sourceCommit: "a".repeat(40), build: "passed" as const, approvals: { count: 0, users: [], logins: [], stale: [] }, blockers: 0, blocking: "discussions" as const, blockersHold: null, sections: null, problems: [] } })) }));
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }));
+  const start = await screen.findByRole("button", { name: "开始评审" });
+  await waitFor(() => expect(start).toBeEnabled());
+  fireEvent.click(start);
+  expect(await screen.findByText("本次已覆盖范围内没有形成有效问题；不代表 PR 已获批准。")).toBeVisible();
+  expect(await screen.findByRole("button", { name: "快速批准" })).toBeVisible();
+  expect(screen.getByRole("button", { name: /#123 示例：调整请求超时/u })).toHaveTextContent("可以快速批准");
+});
+
+it("says the status could not be read when the link itself is refused, rather than read on", async () => {
+  const api = createPreviewApi();
+  vi.spyOn(api, "listPrReviewStatuses").mockRejectedValue(new Error("请先在设置 › 链接中添加并选择代码平台。"));
+  await runSampleReview(api);
+  const conditions = within(screen.getByRole("region", { name: "批准条件" }));
+  expect(conditions.getByText("构建").nextElementSibling).toHaveTextContent("读不到");
+  expect(conditions.getByText(/平台状态读不到：请先在设置 › 链接中添加并选择代码平台。/u)).toBeVisible();
+  expect(screen.queryByRole("button", { name: "快速批准" })).toBeNull();
+});
+
+it("says whose approval is on an older commit, whether a code owner approved a high-risk PR, and when blockers hold no merge", async () => {
+  const api = createPreviewApi();
+  const load = api.loadPrReview;
+  vi.spyOn(api, "loadPrReview").mockImplementation(async (input) => ({ ...(await load(input)), codeOwners: { file: "CODEOWNERS", owners: ["alice", "@auth"] },
+    risk: { level: "high", table: "review_md", reasons: [{ level: "high", reason: "认证与会话", paths: ["src/request.ts"], more: 0 }], changesRules: false, problems: [] } }));
+  const status = { sourceCommit: "a".repeat(40), build: "passed" as const, approvals: { count: 1, users: ["Alice"], logins: ["alice"], stale: ["老王"] }, blockers: 0, blocking: "discussions" as const, blockersHold: false, sections: null, problems: [] };
+  const statuses = vi.spyOn(api, "listPrReviewStatuses").mockImplementation(async ({ references }) => ({ statuses: references.map(reference => ({ reference, status })) }));
+  await runSampleReview(api);
+  const conditions = within(screen.getByRole("region", { name: "批准条件" }));
+  expect(conditions.getByText("批准").nextElementSibling).toHaveTextContent("1 / 2 · 1 人的批准在旧提交上 · 负责人 alice 已批准");
+  expect(conditions.getByText(/老王 批准的是旧提交，新提交还要再看。/u)).toHaveTextContent("仓库没有开启“讨论解决后才能合并”，阻塞项拦不住合并。");
+  expect(statuses).toHaveBeenCalled();
+});
+
+it("names the code owners a high-risk PR still needs when none of them approved", async () => {
+  const api = createPreviewApi();
+  const load = api.loadPrReview;
+  vi.spyOn(api, "loadPrReview").mockImplementation(async (input) => ({ ...(await load(input)), codeOwners: { file: "CODEOWNERS", owners: ["alice", "@auth"] },
+    risk: { level: "high", table: "review_md", reasons: [{ level: "high", reason: "认证与会话", paths: ["src/request.ts"], more: 0 }], changesRules: false, problems: [] } }));
+  vi.spyOn(api, "listPrReviewStatuses").mockImplementation(async ({ references }) => ({ statuses: references.map(reference => ({ reference,
+    status: { sourceCommit: "a".repeat(40), build: "passed" as const, approvals: { count: 1, users: ["Bob"], logins: ["bob"], stale: [] }, blockers: 0, blocking: "discussions" as const, blockersHold: null, sections: null, problems: [] } })) }));
+  await runSampleReview(api);
+  // Groups and teams cannot be checked by name: said so.
+  expect(within(screen.getByRole("region", { name: "批准条件" })).getByText("批准").nextElementSibling).toHaveTextContent("1 / 2 · 需含负责人：alice、@auth（组成员无法核对）");
+});
+
+it("leaves a finding another reviewer's Paraself already posted at its place unticked, and says whose", async () => {
+  const api = createPreviewApi();
+  const run = api.runPrReview;
+  vi.spyOn(api, "runPrReview").mockImplementation(async (input) => {
+    const report = await run(input);
+    return { ...report, findings: [report.findings[0]!, { ...report.findings[0]!, title: "计时器未清理", line: 20 }] };
+  });
+  const discussion = api.listPrDiscussion;
+  vi.spyOn(api, "listPrDiscussion").mockImplementation(async (input) => {
+    const read = await discussion(input);
+    return { ...read, comments: [...read.comments, { id: "9", url: "https://github.com/sample/app/pull/123#discussion_r9", author: "示例审阅人 B", path: "src/request.ts", line: 13,
+      body: "**P2 · 超时后请求还在跑**\n\n……\n\n— Paraself 预评审 · P2", createdAt: "2026-09-21T11:00:00Z", replyTo: null, code: null, decisionId: null, candidate: null }] };
+  });
+  const publish = vi.spyOn(api, "publishPrReviewComment");
+  await runSampleReview(api);
+  fireEvent.click(screen.getByRole("button", { name: "批量发布为 PR 评论（2）" }));
+  const dialog = within(await screen.findByRole("dialog", { name: "批量发布为 PR 评论" }));
+  expect(await dialog.findByText("PR 上已有同位置的同类意见（示例审阅人 B），默认不再发布。")).toBeVisible();
+  expect(dialog.getByRole("checkbox", { name: "超时后请求仍在运行（src/request.ts:12）" })).not.toBeChecked();
+  const send = dialog.getByRole("button", { name: "发布 1 条" });
+  await waitFor(() => expect(send).toBeEnabled());
+  fireEvent.click(send);
+  expect(await screen.findByText("已发布 1 条评论。")).toBeVisible();
+  expect(publish.mock.calls.map(([input]) => input.line)).toEqual([20]);
+});
+
+it("answers under the PR's review summary already there on Bitbucket, so each PR keeps one", async () => {
+  const api = createPreviewApi();
+  const context = api.getPrActionContext;
+  vi.spyOn(api, "getPrActionContext").mockImplementation(async (input) => ({ ...(await context(input)), platform: "bitbucket-server" }));
+  const discussion = api.listPrDiscussion;
+  vi.spyOn(api, "listPrDiscussion").mockImplementation(async (input) => ({ ...(await discussion(input)), comments: [{ id: "77", url: "https://code.example/77", author: "示例审阅人 B", path: null, line: null,
+    body: "**AI 评审**：1 个问题（提交 `aaaaaaaaaaaa`）", createdAt: "2026-09-21T11:00:00Z", replyTo: null, code: null, decisionId: null, candidate: null }] }));
+  const post = vi.spyOn(api, "publishPrGeneralComment");
+  await runSampleReview(api);
+  fireEvent.click(screen.getByLabelText("评审操作"));
+  fireEvent.click(screen.getByRole("button", { name: "发布评审摘要到 PR" }));
+  const dialog = within(await screen.findByRole("dialog", { name: "发布到 PR" }));
+  expect(await dialog.findByText("PR 上已有一份评审摘要（示例审阅人 B 发的）：这次接在它下面，不另发一条。")).toBeVisible();
+  const send = dialog.getByRole("button", { name: "发布评论" });
+  await waitFor(() => expect(send).toBeEnabled());
+  fireEvent.click(send);
+  await waitFor(() => expect(post).toHaveBeenCalledWith(expect.objectContaining({ replyTo: "77" })));
+});
+
+it("drafts the description's missing parts from the approval conditions, and writes them back over the version read", async () => {
+  const api = createPreviewApi();
+  const update = vi.spyOn(api, "updatePrDescription");
+  await runSampleReview(api);
+  const conditions = within(screen.getByRole("region", { name: "批准条件" }));
+  fireEvent.click(conditions.getByRole("button", { name: "起草" }));
+  const dialog = within(await screen.findByRole("dialog", { name: "起草 PR 描述" }));
+  const field = await dialog.findByRole("textbox", { name: "PR 描述" });
+  await waitFor(() => expect(field).toHaveValue([
+    "为请求添加超时保护。",
+    "## 验证\n\n构建通过。Paraself 预评审发现 1 个问题。（补上跑了哪些检查：单元测试、lint、手工验证……）",
+    "## 风险\n\n中风险：请求与重试（src/request.ts）。影响 src。",
+    "## 撤回\n\n（写明怎么撤回，以及哪些撤不掉：数据迁移、已发出的消息、对外接口等）",
+  ].join("\n\n")));
+  expect(dialog.getByText(/补上了验证、风险、撤回。 还没有 PR 概览，撤回一段留给你写/u)).toBeVisible();
+  fireEvent.change(field, { target: { value: `${(field as HTMLTextAreaElement).value.replace("（写明怎么撤回，以及哪些撤不掉：数据迁移、已发出的消息、对外接口等）", "回滚本 PR 即可。")}` } });
+  const statuses = vi.spyOn(api, "listPrReviewStatuses");
+  fireEvent.click(dialog.getByRole("button", { name: "写回 PR 描述" }));
+  expect(await screen.findByText("界面预览：PR 描述已模拟写回，未写入代码平台。")).toBeVisible();
+  expect(update).toHaveBeenCalledWith({ connectionId: expect.any(String), reference: "sample/app#123", description: expect.stringContaining("## 撤回\n\n回滚本 PR 即可。"), baseVersion: expect.stringMatching(/^[0-9a-f]{16}$/u) });
+  // The strip reads the PR again, the description as it now stands among it.
+  expect(statuses).toHaveBeenCalled();
+});
+
+it("reviews only what the new commits changed in a later round, unless asked for the whole PR", async () => {
+  const api = createPreviewApi();
+  await runSampleReview(api);
+  // The PR moved on: a new head commit.
+  const load = api.loadPrReview;
+  vi.spyOn(api, "loadPrReview").mockImplementation(async (input) => ({ ...(await load(input)), snapshotId: "00000000-0000-4000-8000-0000000000d2", sourceCommit: "d".repeat(40) }));
+  const run = vi.spyOn(api, "runPrReview");
+  fireEvent.click(screen.getByRole("button", { name: "重新评审最新提交" }));
+  const only = await screen.findByRole("checkbox", { name: /只看新提交/u });
+  expect(only).toBeChecked();
+  const start = await screen.findByRole("button", { name: "开始评审" });
+  await waitFor(() => expect(start).toBeEnabled());
+  fireEvent.click(start);
+  await waitFor(() => expect(run).toHaveBeenCalledWith(expect.objectContaining({ since: "a".repeat(40) })));
+});
+
+it("marks a review 自动预评审 started, and says on the PR list what the link spent of its day", async () => {
+  const api = createPreviewApi();
+  let changed: ((input: { ids: string[] }) => void) | undefined;
+  vi.spyOn(api, "onPrReviewHistoryChanged").mockImplementation(listener => { changed = listener; return () => { changed = undefined; }; });
+  const [link] = await api.listPrConnections();
+  vi.spyOn(api, "listPrConnections").mockResolvedValue([{ ...link!, autoReview: { profileId: "local", dailyReviews: 2 } }]);
+  let used = 1;
+  vi.spyOn(api, "getPrReviewSettings").mockImplementation(async () => ({ prReviewToolsVersion: 1, status: "ok", connections: [], models: [],
+    settings: [{ connectionId: link!.id, label: link!.label, platform: link!.platform, autoReview: { profileId: "local", model: "本机", dailyReviews: 2 }, usedToday: used }] }));
+  await runSampleReview(api);
+  expect(await screen.findByText("自动预评审已开：今天评审了 1 次，最多 2 次。")).toBeVisible();
+  await waitFor(async () => expect((await api.listPrReviewHistory()).entries[0]?.report).not.toBeNull());
+  const [entry] = (await api.listPrReviewHistory()).entries;
+  const started = { ...entry!, id: crypto.randomUUID(), at: new Date(Date.now() + 1_000).toISOString(), report: null, state: "running" as const, events: [], published: [], verdicts: [], auto: true as const };
+  const list = api.listPrReviewHistory;
+  vi.spyOn(api, "listPrReviewHistory").mockImplementation(async () => ({ ...(await list()), entries: [started, entry!], running: [started.id] }));
+  used = 2;
+  act(() => changed!({ ids: [started.id] }));
+  expect(await screen.findByText("自动预评审今天的 2 次已用完：余下的 PR 只列出，明天再评。")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: /^历史评审/u }));
+  await waitFor(() => expect(within(screen.getByRole("list", { name: "历史评审" })).getAllByRole("button")[0]).toHaveTextContent("自动 · 评审中"));
+  fireEvent.click(within(screen.getByRole("list", { name: "历史评审" })).getAllByRole("button")[0]!);
+  expect(await screen.findByText("这次评审由自动预评审发起，在 App 后台进行；结束后这里显示结果。")).toBeVisible();
+});
+
+it("shows 评审质量 for the link chosen: the team's figures, the outcomes by basis, and a noisy rule to turn off", async () => {
+  const api = createPreviewApi();
+  const turn = vi.spyOn(api, "updateReviewRule");
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: "评审质量" }, { timeout: 5_000 }));
+  const view = within(await screen.findByLabelText("评审质量", { selector: "div" }));
+  expect(await view.findByRole("heading", { name: "评审质量" })).toBeVisible();
+  expect(view.getByText("每个 PR 的人工批准").parentElement).toHaveTextContent("1.3之前 30 天 1.6");
+  expect(view.getByText("等人批准（中位）").parentElement).toHaveTextContent("5 小时之前 30 天 9 小时");
+  expect(view.getByRole("heading", { name: "已发布意见的结果 · 51 条" })).toBeVisible();
+  expect(within(view.getByRole("row", { name: /^仓库规则/u })).getAllByRole("cell").map(cell => cell.textContent)).toEqual(["21", "16", "1", "2", "0", "0", "2"]);
+  expect(view.getByText(/“可能修了”另有 5 条/u)).toBeVisible();
+  // Demo figures, as the preview says; the rule authors keep calling wrong, turned off and on again.
+  expect(view.getByText("只读的小表不需要分页。")).toBeVisible();
+  fireEvent.click(view.getByRole("button", { name: "停用" }));
+  await waitFor(() => expect(turn).toHaveBeenCalledWith({ rule: "list-pagination.md", enabled: false }));
+  expect(await view.findByText("已停用「list-pagination」：之后的评审不再用它，文件还在。")).toBeVisible();
+  expect(view.getByRole("button", { name: "重新启用" })).toBeVisible();
+  // The PR list's search and scope are not for this view.
+  expect(screen.queryByRole("searchbox", { name: "搜索评审列表" })).toBeNull();
+});
+
+it("writes an escape's four lines on 评审质量, then makes it a benchmark candidate from where the problem sat", async () => {
+  const api = createPreviewApi();
+  const update = vi.spyOn(api, "updateReviewEscape");
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: "评审质量" }, { timeout: 5_000 }));
+  const view = within(await screen.findByLabelText("评审质量", { selector: "div" }));
+  expect(await view.findByRole("heading", { name: "漏网复盘 · 1 条待写" })).toBeVisible();
+  expect(view.getByText("回滚 · 漏网").parentElement).toHaveTextContent("0 · 1之前 30 天 1 · 0");
+  expect(screen.getByRole("button", { name: /漏网复盘\s*1 条待写/u })).toBeVisible();
+  const card = within(view.getByRole("article", { name: /SYN\/app#119「导出报表加时间列」合并后被 SYN\/app#124/u }));
+  fireEvent.change(card.getByLabelText("问题是什么"), { target: { value: "导出时间按服务器时区格式化" } });
+  fireEvent.change(card.getByLabelText("本该哪一层拦住"), { target: { value: "human_review" } });
+  fireEvent.change(card.getByLabelText("为什么没拦住"), { target: { value: "评审只看了格式" } });
+  fireEvent.change(card.getByLabelText("改在哪里"), { target: { value: "norm" } });
+  fireEvent.click(card.getByRole("button", { name: "保存复盘" }));
+  await waitFor(() => expect(update).toHaveBeenCalledWith({ id: "00000000-0000-4000-8000-0000000000e1", action: "write",
+    writeup: { problem: "导出时间按服务器时区格式化", layer: "human_review", why: "评审只看了格式", change: "norm", changeText: "" } }));
+  expect(await card.findByText("人工评审")).toBeVisible();
+  expect(screen.getByRole("button", { name: /漏网复盘\s*1 条已写/u })).toBeVisible();
+  // Where the problem sat, as a file and its lines; not a place, not sent.
+  const add = card.getByRole("button", { name: "加入评测集" });
+  fireEvent.change(card.getByLabelText("问题在哪（PR 合入时的文件和行）"), { target: { value: "src/export.ts" } });
+  expect(add).toBeDisabled();
+  fireEvent.change(card.getByLabelText("问题在哪（PR 合入时的文件和行）"), { target: { value: "src/export.ts:42-48" } });
+  fireEvent.click(add);
+  await waitFor(() => expect(update).toHaveBeenLastCalledWith({ id: "00000000-0000-4000-8000-0000000000e1", action: "add_to_benchmark", location: { path: "src/export.ts", startLine: 42, endLine: 48 }, priority: "P2" }));
+  expect(await card.findByText(/已加入评测集的候选样本 case-000000000119/u)).toBeVisible();
+});
+
+it("shows an escape as written elsewhere once 评审质量 is read again", async () => {
+  const api = createPreviewApi();
+  const read = api.getReviewQuality;
+  let written = false;
+  vi.spyOn(api, "getReviewQuality").mockImplementation(async (input) => {
+    const result = await read(input);
+    return written ? { ...result, quality: { ...result.quality!, escapes: result.quality!.escapes.map(item => ({ ...item, state: "written" as const,
+      writeup: { problem: "导出时间按服务器时区格式化", layer: "ci" as const, why: "没有跨时区的测试", change: "check" as const, changeText: "加跨时区测试" } })) } } : result;
+  });
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: "评审质量" }, { timeout: 5_000 }));
+  const view = within(await screen.findByLabelText("评审质量", { selector: "div" }));
+  expect(await view.findByLabelText("问题是什么")).toBeVisible();
+  // An agent wrote its four lines through the bridge; the page reads it again.
+  written = true;
+  fireEvent.click(view.getByRole("button", { name: "重新读取" }));
+  expect(await view.findByText("没有跨时区的测试")).toBeVisible();
+  expect(view.getByText("CI 与测试")).toBeVisible();
+  expect(view.queryByLabelText("问题是什么")).toBeNull();
+});
+
+it("shows 评测集: the two sets, the change compared before and after with the gate's word, and the candidates to confirm", async () => {
+  const api = createPreviewApi();
+  const page = vi.spyOn(api, "reviewBenchmarkPage");
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: "评审质量" }, { timeout: 5_000 }));
+  fireEvent.click(await screen.findByRole("button", { name: /评测集\s*4 条待确认/u }));
+  const view = within(await screen.findByLabelText("评测集", { selector: "div" }));
+  expect(view.getByText("缺陷集 · 28 个")).toBeVisible();
+  expect(view.getByText(/留出集命中 11\/18 · 核验误杀 1 · 修复后再报 0/u)).toBeVisible();
+  expect(view.getByText(/有害意见 0 条 \/ 20 个 PR · 每个 PR 1.3 条意见 · 已知误报再犯 0/u)).toBeVisible();
+  // The latest run against the one before: recall level, harm down, so it can be taken.
+  expect(await view.findByText("召回没降，有害意见减少：可以采用。")).toBeVisible();
+  expect(within(view.getByRole("row", { name: /^有害意见/u })).getAllByRole("cell").map(cell => cell.textContent)).toEqual(["2", "0", "下降"]);
+  fireEvent.click(view.getByRole("button", { name: "采用" }));
+  await waitFor(() => expect(page).toHaveBeenCalledWith({ kind: "adopt", id: "00000000-0000-4000-8000-0000000000b2", note: "" }));
+  expect(await view.findByText(/^已采用（/u)).toBeVisible();
+  // A candidate confirmed by the one who checks it; a suggestion taken as a candidate.
+  const candidates = within(view.getByRole("region", { name: /待确认的候选样本 · 4/u }) as HTMLElement);
+  fireEvent.click(candidates.getAllByRole("button", { name: "确认入集" })[0]!);
+  await waitFor(() => expect(page).toHaveBeenCalledWith({ kind: "confirm", repositoryPath: "/preview/app", caseId: "case-000000000119" }));
+  fireEvent.click(candidates.getAllByRole("button", { name: "收为候选" })[0]!);
+  await waitFor(() => expect(page).toHaveBeenCalledWith(expect.objectContaining({ kind: "accept", key: "preview-121" })));
+  // Started only with what changed said; the holdout by default.
+  fireEvent.click(view.getByRole("button", { name: "运行评测" }));
+  const form = within(view.getByRole("form", { name: "运行评测" }));
+  expect(form.getByRole("button", { name: "开始评测" })).toBeDisabled();
+  fireEvent.change(form.getByLabelText("改了什么"), { target: { value: "换成新模型" } });
+  fireEvent.click(form.getByRole("button", { name: "开始评测" }));
+  await waitFor(() => expect(page).toHaveBeenCalledWith({ kind: "run", repositoryPath: "/preview/app", label: "换成新模型", split: "holdout", fixControl: false }));
+});
+
+it("proposes a rule for REVIEW.md from 评审质量 with the line as the user leaves it, handed to the local review", async () => {
+  const api = createPreviewApi();
+  const act = vi.spyOn(api, "actOnReviewPromotion");
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: "评审质量" }, { timeout: 5_000 }));
+  const view = within(await screen.findByLabelText("评审质量", { selector: "div" }));
+  expect(await view.findByRole("heading", { name: "晋升提议 · 1" })).toBeVisible();
+  expect(screen.getByRole("button", { name: /晋升提议\s*1 条/u })).toBeVisible();
+  const card = within(view.getByRole("article", { name: /「续期失败返回 401 \+ SESSION_EXPIRED」/u }));
+  expect(card.getByText("支撑的意见出现在 3 个 PR，修了 2 次")).toBeVisible();
+  fireEvent.change(card.getByLabelText("写进 REVIEW.md 的一条"), { target: { value: "- 续期失败一律返回 401 和 SESSION_EXPIRED。" } });
+  fireEvent.click(card.getByRole("button", { name: "提议写进 REVIEW.md" }));
+  await waitFor(() => expect(act).toHaveBeenCalledWith({ action: "propose", connectionId: expect.any(String), key: "decision|null|dec-9", draft: "- 续期失败一律返回 401 和 SESSION_EXPIRED。" }));
+  expect(await card.findByText(/已交给本地审阅（任务 00000000-0000-4000-8000-0000000000ab）/u)).toBeVisible();
+  await waitFor(() => expect(screen.queryByRole("button", { name: /晋升提议\s*1 条/u })).toBeNull());
+});
+
+it("posts a P1 on a rule the reviewer marked blocking as blocking, quoting the rule; with the quote edited out it may not block", async () => {
+  const api = createPreviewApi();
+  const load = api.loadPrReview, run = api.runPrReview;
+  vi.spyOn(api, "loadPrReview").mockImplementation(async (input) => ({ ...(await load(input)),
+    rules: [{ id: "money.md", source: "decision" as const, enforcement: "blocking" as const, text: "金额一律用整数分，不用浮点数。" }] }));
+  vi.spyOn(api, "runPrReview").mockImplementation(async (input) => {
+    const report = await run(input);
+    return { ...report, findings: [{ ...report.findings[0]!, priority: "P1", body: "违反 Ruleset 1：金额用了浮点数。" }] };
+  });
+  const publish = vi.spyOn(api, "publishPrReviewComment").mockImplementation(async (input) => ({ message: "ok", ...(input.blocking ? { blocking: true } : {}) }));
+  render(<PrReviewPanel api={api} />);
+  fireEvent.click(await screen.findByRole("button", { name: /#123 示例：调整请求超时/ }, { timeout: 5_000 }));
+  const start = await screen.findByRole("button", { name: "开始评审" });
+  await waitFor(() => expect(start).toBeEnabled());
+  fireEvent.click(start);
+  const card = within((await screen.findByRole("heading", { name: "P1 超时后请求仍在运行" })).closest("article")!);
+  expect(card.getByText("发布时设为阻塞")).toBeVisible();
+  expect(card.getByText("个人规则 · 标记为阻塞")).toBeVisible();
+  fireEvent.click(card.getByRole("button", { name: "把「超时后请求仍在运行」转为 PR 评论" }));
+  const form = await screen.findByRole("form", { name: "发布评论表单" });
+  const dialog = within(form.closest<HTMLElement>('[role="dialog"]')!);
+  const body = within(form).getByLabelText("评论内容") as HTMLTextAreaElement;
+  expect(body.value).toContain("> 审阅人的规则「money」（标记为阻塞）：\n> 金额一律用整数分，不用浮点数。\n\n— Paraself 预评审 · 依据 审阅人的规则（标记为阻塞） · P1");
+  const toggle = dialog.getByRole("checkbox", { name: /设为阻塞/u });
+  expect(toggle).toBeChecked();
+  // The quote taken out, it may not block; put back, it may again.
+  const full = body.value;
+  fireEvent.change(body, { target: { value: "**P1 · 超时后请求仍在运行**\n\n金额用了浮点数。" } });
+  expect(toggle).toBeDisabled();
+  expect(dialog.getByText("设为阻塞：正文里要保留规则原文的引用才能设为阻塞")).toBeVisible();
+  fireEvent.change(body, { target: { value: full } });
+  await waitFor(() => expect(toggle).toBeEnabled());
+  fireEvent.click(dialog.getByRole("button", { name: "发布评论" }));
+  await waitFor(() => expect(publish).toHaveBeenCalledWith(expect.objectContaining({ blocking: true, body: full.trim() })));
 });

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { decisionContextQuerySchema, decisionHandoffRequestSchema, decisionHandoffResponseSchema, decisionSourceReferenceSchema, type DecisionHandoffRequest, type DecisionHandoffResponse, type DecisionSourceReference, type DecisionSourceOpenResult } from "@cognelis/decision-protocol";
+import { decisionContextQuerySchema, decisionHandoffRequestSchema, decisionHandoffResponseSchema, decisionSourceReferenceSchema, type DecisionContextResult, type DecisionHandoffRequest, type DecisionHandoffResponse, type DecisionSourceReference, type DecisionSourceOpenResult } from "@cognelis/decision-protocol";
 import type { DecisionContextRepository, ObsidianVaultRepository } from "@cognelis/decision-storage";
 import { DecisionContextService } from "./decision-context-service.js";
 
@@ -13,7 +13,7 @@ const literal = (text: string): string => {
 
 // The words search_decision_context and the App's pages use: the enums, and instants in UTC, ran on inside the
 // handoff's Chinese. The structured fields keep the raw values.
-const kinds = { historical_decision: "历史决策", recorded_decision: "已记录选择", adopted_principle: "已采纳原则" };
+const kinds = { summarized_decision: "历史沉淀", recorded_decision: "已记录选择", adopted_principle: "已采纳原则", preference: "用户偏好（信号，不是原则）", idea: "用户想法（信号，不是原则）", experience: "执行经验（一次案例，不是原则）" };
 const lifecycles = { current: "未标记被替代", superseded: "已被替代或退役", uncertain: "可能已有后续决策，未能确认" };
 const applicabilities = { scope_match: "结构化范围匹配，仍需核对当前需求", needs_review: "需要核对", out_of_scope: "明确不适用" };
 const scopeStates = { unrecorded: "尚未记录", inline: "写在原笔记中", current: "已记录", stale: "原文变化，待核对", unavailable: "读取失败" };
@@ -32,6 +32,8 @@ export class DecisionHandoffService {
     private readonly vault: Pick<ObsidianVaultRepository, "resolveNotePath">,
     private readonly openExternal: (uri: string) => Promise<unknown>,
     private readonly now: () => Date = () => new Date(),
+    /** The results with what was added to or rewritten in them (decision-amendments): the handoff tells the decision as it stands. */
+    private readonly annotate: (results: DecisionContextResult[]) => Promise<{ results: DecisionContextResult[]; unread: boolean }> = async (results) => ({ results, unread: false }),
   ) {}
 
   async openSource(input: DecisionSourceReference): Promise<DecisionSourceOpenResult> {
@@ -60,7 +62,7 @@ export class DecisionHandoffService {
     // Resolve every selected record against one projection, never N changing scans.
     const snapshot = await this.repository.scan(true);
     const context = new DecisionContextService({ scan: async () => snapshot });
-    const selectedSources = new Set(request.references.map((ref) => ref.source));
+    const selectedSources = new Set<string>(request.references.map((ref) => ref.source));
     const sources = snapshot.sources.filter((source) => selectedSources.has(source.source));
     const failed = sources.some((source) => source.status === "partial" || source.status === "unavailable");
     const coverage = failed ? sources.some((source) => source.records > 0) ? "partial" : "unavailable" : "complete";
@@ -69,7 +71,9 @@ export class DecisionHandoffService {
     if (failed) reviewItems.push("所选来源或元数据覆盖不完整，不能据此确认全部有效决策。");
     for (const reference of request.references) {
       const result = await context.search(decisionContextQuerySchema.parse({ source: reference.source, recordId: reference.recordId, project: request.project, taskScope: request.taskScope }));
-      const record = result.results[0];
+      const { results: annotated, unread } = await this.annotate(result.results.slice(0, 1));
+      const record = annotated[0];
+      if (unread && !reviewItems.some((item) => item.startsWith("增补与改写记录"))) reviewItems.push("增补与改写记录这次没能读取：下面的内容可能缺少用户或 agent 对决策的修改，请核对。");
       const label = `${reference.source}/${reference.recordId}`;
       if (record === undefined || record.sourceRef.contentHash !== reference.expectedContentHash) {
         const status = record === undefined ? "source_unavailable" : "source_changed";
@@ -94,7 +98,7 @@ export class DecisionHandoffService {
       "## 当前任务", literal(request.objective),
       "### 本次核对范围", literal(JSON.stringify({ project: request.project ?? null, taskScope: request.taskScope ?? null }, null, 2)),
       "## 待核对事项", reviewItems.length === 0 ? "未发现结构化核对障碍，仍需结合当前需求与代码判断。" : literal(reviewItems.join("\n")),
-      "## 已记录的决策与原则", verified.length === 0 ? "没有可按所提供版本核对的记录；不可将本交接当作已完成历史核对。" : "下列内容来自原始笔记；已被替代、冲突或范围不匹配的记录仅作为历史证据。",
+      "## 已记录的决策与原则", verified.length === 0 ? "没有可按所提供版本核对的记录；不可将本交接当作已完成历史核对。" : "下列内容来自笔记，并叠加了用户或 agent 对它的修改（见各条的「改写」行和警告）；已被替代、冲突或范围不匹配的记录仅作为历史证据。",
     ];
     for (const { record } of verified) {
       if (record === null) continue;
@@ -105,6 +109,11 @@ export class DecisionHandoffService {
         `范围元数据：${scopeStates[record.scopeState ?? "unrecorded"]}；版本：${record.scopeRevision ?? 0}`,
         `已记录范围：${JSON.stringify(record.applicability?.scope ?? null)}`,
         `已记录内容：${record.summary}`,
+        ...(record.amendment === undefined ? [] : [
+          ...(record.amendment.revised === null ? [] : [`${record.amendment.revised.stale ? "改写（已失效，原笔记已变化，未应用）" : "改写（以下是改写后的值，不是原文）"}：${Object.entries(record.amendment.revised.values).map(([name, value]) => `${name}=${value ?? "（空）"}`).join("；").slice(0, 600)}`,
+            `最初版本：${Object.entries(record.amendment.originals ?? {}).map(([name, value]) => `${name}=${value ?? "（空）"}`).join("；").slice(0, 600)}`]),
+          ...(record.amendment.amendments.length === 0 ? [] : [`增补 ${record.amendment.amendments.length} 条（来自之后的会话，不是原文）：${record.amendment.amendments.slice(-3).map((item) => item.text).join(" / ").slice(0, 400)}`]),
+        ]),
         `适用条件：${record.appliesWhen ?? "未结构化记录"}`,
         `注意事项：${record.caution ?? "未记录"}`,
         ...(record.applicability?.reasons ?? []),
@@ -124,7 +133,7 @@ export class DecisionHandoffService {
         `原文摘录${record.sourceRef.truncated ? "（不完整）" : ""}：\n${record.sourceRef.excerpt}`,
       ].join("\n")));
     }
-    sections.push("## 当前任务提供的信息（未独立验证）", "这些内容由调用方提供，属于当前任务上下文，不会写入历史决策，也不作为已验证结果。",
+    sections.push("## 当前任务提供的信息（未独立验证）", "这些内容由调用方提供，属于当前任务上下文，不会写入决策记录，也不作为已验证结果。",
       "### 未决问题", literal(request.openQuestions.join("\n") || "未提供；不代表没有未决问题。"),
       "### 已提供的验证说明", literal(request.verification.join("\n") || "未提供验证说明。"),
       "### 后续步骤", literal(request.nextSteps.join("\n") || "未提供后续步骤。"),

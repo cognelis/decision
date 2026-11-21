@@ -10,10 +10,11 @@ export interface SemanticClassifierInput {
   assistantText: string;
   userText: string;
   locale: "zh-CN" | "en";
+  selectionOptions?: { id?: string | undefined; label: string }[];
 }
 
 export interface SemanticClassificationAuditContext {
-  sourceClient: "claude-code" | "codex";
+  sourceClient: string;
   sessionId: string;
   turnId?: string;
 }

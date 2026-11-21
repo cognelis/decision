@@ -1,0 +1,14 @@
+[
+  {
+    "id": "wb-pick-d-model-options-context-only-mentions-a",
+    "group": "guard-d-model-options-context",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "The current architecture already uses Redis for audit logs. For sessions, A would use Redis with a separate namespace, while B would use a local in-memory cache; which should I implement?",
+    "userText": "Use B, the local in-memory cache. Redis is already used for audit logs, so keep it out of session storage.",
+    "source": "synthetic"
+  }
+]

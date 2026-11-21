@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "description": "R9-RT 替代链的页内顺序（全部合成）：中间项靠关键词命中，现行后继只靠含义找到；标签在首跑前写定。",
+  "scenarios": [
+    {
+      "id": "chain-successor-order",
+      "description": "R9C01 → R9C02 → R9C03 的替代链。查询与 R9C02 共享主题词，与现行的 R9C03 没有共享词；同一页里 R9C03 应排在 R9C02 前面，R9C02 照常返回并标为已替代。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/会话缓存第一版.md",
+            "content": "---\nid: R9C01\ncreated: \"2026-09-01\"\nstatus: \"superseded\"\nselected_option: \"会话缓存放在浏览器本地存储，过期时间一小时。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: R9C02\n---\n# 会话缓存第一版\n\n## 决策\n会话缓存放在浏览器本地存储，过期时间一小时。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/会话缓存第二版.md",
+            "content": "---\nid: R9C02\ncreated: \"2026-09-01\"\nstatus: \"superseded\"\nselected_option: \"会话缓存改放进程内 LRU，容量五百条。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [R9C01]\nsuperseded_by: R9C03\n---\n# 会话缓存第二版\n\n## 决策\n会话缓存改放进程内 LRU，容量五百条。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/R9C03.md",
+            "content": "---\nid: R9C03\ncreated: \"2026-09-01\"\nstatus: \"accepted\"\nselected_option: \"登录态统一交给独立的键值服务保存，按租户分前缀，多实例共享。\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: [R9C02]\nsuperseded_by: null\n---\n# R9C03\n\n## 决策\n登录态统一交给独立的键值服务保存，按租户分前缀，多实例共享。\n\n合成数据，仅用于 R9-RT 实跑。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "chain-successor-first",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "会话缓存第二版现在还在用吗",
+            "project": "lab"
+          },
+          "expect": {
+            "mustInclude": [
+              "R9C03"
+            ],
+            "k": 1,
+            "mustFlag": [
+              {
+                "id": "R9C02",
+                "path": "lifecycleState",
+                "equals": "superseded"
+              }
+            ],
+            "notContains": [
+              "本机嵌入未在时限内完成"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

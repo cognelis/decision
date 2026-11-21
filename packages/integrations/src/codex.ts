@@ -1,40 +1,18 @@
-import {
-  mergeHookDocument,
-  type CommandSpec,
-  type HookConfigDocument,
-} from "./hooks.js";
+import { BUILT_IN_CLIENTS } from "./clients.js";
+import { mergeHookDocument, type CommandSpec, type HookConfigDocument } from "./hooks.js";
+import { mcpCommands, mcpRemoveCommands } from "./install.js";
+
+const codex = BUILT_IN_CLIENTS.find((client) => client.id === "codex")!;
 
 export const mergeCodexHooks = (
   hooks: unknown,
   bridgePath: string,
   platform: NodeJS.Platform = process.platform,
 ): HookConfigDocument =>
-  mergeHookDocument(hooks, bridgePath, "codex", platform);
+  mergeHookDocument(hooks, bridgePath, codex, platform);
 
 /** Takes the server out, once it is seen to run this app's bridge. */
-export const codexMcpRemoveCommands = (): CommandSpec[] => [
-  { command: "codex", args: ["mcp", "get", "decision"], tolerateFailure: true, expectsBridgeFor: "codex" },
-  {
-    command: "codex",
-    args: ["mcp", "remove", "decision"],
-    tolerateFailure: true,
-    absentMcpName: "decision",
-  },
-];
+export const codexMcpRemoveCommands = (): CommandSpec[] => mcpRemoveCommands(codex);
 
-export const codexMcpCommands = (bridgePath: string): CommandSpec[] => [
-  ...codexMcpRemoveCommands(),
-  {
-    command: "codex",
-    args: [
-      "mcp",
-      "add",
-      "decision",
-      "--",
-      bridgePath,
-      "mcp",
-      "codex",
-    ],
-    tolerateFailure: false,
-  },
-];
+// The bridge as it is on every platform: Codex starts a .cmd itself.
+export const codexMcpCommands = (bridgePath: string): CommandSpec[] => mcpCommands(codex, bridgePath, "linux");

@@ -72,6 +72,7 @@ const serviceFixture = () => {
       status,
     })),
     rebuild: vi.fn(async () => status),
+    readIndexedNote: vi.fn(async () => null),
     openNote: vi.fn(async () => undefined),
     close: vi.fn(async () => undefined),
   };

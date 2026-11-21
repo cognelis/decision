@@ -18,7 +18,7 @@ const REMINDER_GROUP = "decision-review-reminders";
  * Review reminders, each held until clicked or dismissed: held by nothing, one was garbage-collected, gone from
  * Notification Center by the morning, and a click on it did nothing. Clicked, it opens the decisions.
  */
-export const reviewReminderNotifier = (Notifications: ReminderNotificationClass, onClick: () => void) => {
+export const reviewReminderNotifier = (Notifications: ReminderNotificationClass, onClick: () => void, groupId = REMINDER_GROUP) => {
   const held = new Set<ReminderNotification>();
   const keep = (alert: ReminderNotification): void => {
     if (held.has(alert)) return;
@@ -33,7 +33,7 @@ export const reviewReminderNotifier = (Notifications: ReminderNotificationClass,
     held,
     notify(notice: { title: string; body: string }): void {
       if (!Notifications.isSupported()) return;
-      const alert = new Notifications({ title: notice.title, body: notice.body, groupId: REMINDER_GROUP });
+      const alert = new Notifications({ title: notice.title, body: notice.body, groupId });
       keep(alert);
       alert.show();
     },
@@ -45,7 +45,7 @@ export const reviewReminderNotifier = (Notifications: ReminderNotificationClass,
       } catch {
         // Not there to ask (unsigned builds, other platforms): nothing is left to re-attach.
       }
-      for (const alert of delivered) if (alert.groupId === REMINDER_GROUP) keep(alert);
+      for (const alert of delivered) if (alert.groupId === groupId) keep(alert);
     },
   };
 };

@@ -109,13 +109,14 @@ const titleKey = (title: string) => title.toLowerCase().replace(/[\s\p{P}\p{S}]+
  * One finding per problem: two groups (or a group that read another's diff) raising the same title on the same side
  * of a file within three lines are one problem; the more severe word, and every decision either cites, stands.
  */
-export function dedupeFindings<T extends { priority: "P1" | "P2" | "P3"; title: string; path: string; side: "old" | "new"; line: number; decisionIndexes: number[] }>(findings: T[]): T[] {
+export function dedupeFindings<T extends { priority: "P1" | "P2" | "P3"; title: string; path: string; side: "old" | "new"; line: number; decisionIndexes: number[] }>(findings: T[], merged: T[] = []): T[] {
   const kept: T[] = [];
   for (const finding of findings) {
     const index = kept.findIndex((item) => item.path === finding.path && item.side === finding.side && Math.abs(item.line - finding.line) <= 3
       && (titleKey(item.title) === titleKey(finding.title) || titleKey(item.title).includes(titleKey(finding.title)) || titleKey(finding.title).includes(titleKey(item.title))));
     if (index < 0) { kept.push(finding); continue; }
     const twin = kept[index]!;
+    merged.push(finding.priority < twin.priority ? twin : finding);
     const decisionIndexes = [...new Set([...twin.decisionIndexes, ...finding.decisionIndexes])].slice(0, 5);
     kept[index] = { ...(finding.priority < twin.priority ? finding : twin), decisionIndexes };
   }

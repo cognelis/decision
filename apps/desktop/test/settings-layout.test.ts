@@ -48,6 +48,7 @@ type Interaction =
   | "review-chat"
   | "review-chat-compact"
   | "trace-detail"
+  | "model-candidates"
   | "decision-outcome"
   | "decision-review"
   | "decision-schedule"
@@ -105,7 +106,8 @@ interface DesktopPageMetrics {
   nativeControlsUseAppAccent: boolean;
   everyControlIsNamed: boolean;
   cardsDoNotOverlap: boolean;
-  clientCardCount: number;
+  clientRowCount: number;
+  clientFoldedCount: number;
   clientHeight: number;
   clientWidth: number;
   controlsFitWidth: boolean;
@@ -128,16 +130,27 @@ interface DesktopPageMetrics {
   heading: string;
   headingVisible: boolean;
   modelProfileVisible: boolean;
+  judgeHeaderHeight: number;
+  judgeHelpCentered: boolean;
+  judgeHeadingFitsHeader: boolean;
+  globalProxyIndependent: boolean;
+  globalProxyBeforeBackends: boolean;
+  globalProxyScopeVisible: boolean;
+  globalProxyInputWidth: number;
+  globalProxyControlsAligned: boolean;
+  globalProxyControlsInside: boolean;
+  globalProxyButtonTextFits: boolean;
+  globalProxyFormPadding: number;
   methodologyColumnCount: number;
   methodologyColumnsAligned: boolean;
   methodologyActiveIndicatorHeight: string | null;
   methodologyBuildActionCount: number;
   methodologyBuildActionsFit: boolean;
   methodologyBuildGuideVisible: boolean;
-  methodologyBuildMetricCount: number;
-  methodologyBuildMetricsSingleRow: boolean;
+  methodologyBuildGuideBesideList: boolean;
+  methodologyBuildGuideBelowList: boolean;
   methodologyBuildPathCount: number;
-  methodologyBuildPathSingleRow: boolean;
+  methodologyBuildPathStacked: boolean;
   methodologyRecordsToolbarHeight: number | null;
   methodologyStatusFilterBackground: string | null;
   methodologyStatusFilterBorderWidth: string | null;
@@ -181,6 +194,7 @@ interface DesktopPageMetrics {
   };
   traceRowVisible: boolean;
   traceColumnCount: number;
+  traceTimesFit: boolean;
   traceColumnsAligned: boolean;
   traceGridTemplateColumns: string | null;
   traceCardBottom: number | null;
@@ -224,7 +238,9 @@ interface DesktopPageMetrics {
   decisionPrincipleDialogCentered?: boolean;
   decisionPrincipleEditorInsideDialog?: boolean;
   decisionPrincipleChoiceCount?: number;
-  decisionPrincipleChoicesTwoColumns?: boolean;
+  decisionPrincipleChoicesOneColumn?: boolean;
+  decisionPrincipleChoicesFit?: boolean;
+  decisionPrincipleEditorVisible?: boolean;
   decisionPrincipleSafetyCopyVisible?: boolean;
   decisionPrincipleListHeightStable?: boolean;
   methodologyCreateCentered?: boolean;
@@ -261,7 +277,7 @@ interface DesktopPageMetrics {
   methodologyWorkbenchCentered?: boolean;
   methodologyWorkbenchInsideDialog?: boolean;
   methodologyWorkbenchCardCount?: number;
-  methodologyWorkbenchCardsSingleRow?: boolean;
+  methodologyWorkbenchCardsStacked?: boolean;
   methodologyWorkbenchBoundaryVisible?: boolean;
   methodologyWorkbenchHorizontalOverflow?: boolean;
   methodologyWorkbenchToolbarStable?: boolean;
@@ -492,6 +508,11 @@ interface DesktopPageMetrics {
   traceListHeightStable?: boolean;
   traceListScrollHeightStable?: boolean;
   traceRowHeightStable?: boolean;
+  candidateMenuLevelWithField?: boolean;
+  candidateOptions?: number;
+  candidateInUse?: string;
+  candidateNameHidden?: boolean;
+  candidateMenuLevelWhileSaving?: boolean;
 }
 
 const cache = new Map<string, Promise<DesktopPageMetrics>>();
@@ -557,7 +578,10 @@ describe.skipIf(process.platform !== "darwin")(
             "问答",
             "知识",
             "评审",
+            "本地审阅",
+            "待办",
             "方法论",
+            "提示词",
             "设置",
           ],
           overflowY:
@@ -576,8 +600,8 @@ describe.skipIf(process.platform !== "darwin")(
         expect(metrics.stageWidth).toBe(
           DESKTOP_WINDOW_SIZE.width - metrics.sidebarWidth - 2,
         );
-        expect(metrics.headerHeight).toBe(44);
-        // 标题条现在真的写着你在哪一页：类目、标题、一句说明排成一行，
+        expect(metrics.headerHeight).toBe(58);
+        // 页头真的写着你在哪一页：标题和一句说明（IMP-141），
         // 而不是把标题整块藏掉、只在右上角留一个飘着的计数气泡。
         expect(metrics.headingVisible).toBe(true);
         expect(metrics.pagePaddingTop).toBe(16);
@@ -701,7 +725,8 @@ describe.skipIf(process.platform !== "darwin")(
       });
     });
 
-    it("links actually used principles in a compact two-column editor", async () => {
+    // The detail's side column (画板「二级页面 · 决策详情」) is narrow: a choice a row, nothing cut off, the editor in view.
+    it("links actually used principles in the detail's side column, one choice a row", async () => {
       const metrics = await measurePage(
         "dark",
         "decisions",
@@ -711,7 +736,9 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics).toMatchObject({
         decisionPrincipleDialogCentered: true,
         decisionPrincipleEditorInsideDialog: true,
-        decisionPrincipleChoicesTwoColumns: true,
+        decisionPrincipleChoicesOneColumn: true,
+        decisionPrincipleChoicesFit: true,
+        decisionPrincipleEditorVisible: true,
         decisionPrincipleSafetyCopyVisible: true,
         decisionPrincipleListHeightStable: true,
       });
@@ -725,22 +752,21 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics.methodologyColumnsAligned).toBe(true);
       expect(metrics).toMatchObject({
         methodologyActiveIndicatorHeight: "2px",
-        methodologyStatusFilterBackground: "rgba(0, 0, 0, 0)",
-        methodologyStatusFilterBorderWidth: "0px",
-        // 标签页搬到页头下面之后，它和设置区的分栏导航站在同一条横栏上，
-        // 底色也该是同一个。
-        methodologyViewTabsBackground: "rgb(18, 19, 21)",
+        // 状态筛选是一个分段控件：凹槽的底色加一道细线，选中的那一格是抬起的纸。
+        methodologyStatusFilterBackground: "rgb(18, 20, 25)",
+        methodologyStatusFilterBorderWidth: "1px",
+        // 标签页落在内容区的底色上，和页头对齐，不再自带一条底色。
+        methodologyViewTabsBackground: "rgba(0, 0, 0, 0)",
         methodologyViewTabsBorderWidth: "0px",
       });
-      // 卡片工具栏只剩筛选动作一行。
+      // 卡片工具栏只剩筛选和计数一行；操作搬到了页头。
       expect(metrics.methodologyToolbarHeight).toBeLessThanOrEqual(44);
       expect(metrics.methodologyRecordsToolbarHeight).toBeLessThanOrEqual(42);
       expect(metrics.methodologyRecordsToolbarSingleRow).toBe(true);
       expect(metrics.methodologyBuildGuideVisible).toBe(true);
-      expect(metrics.methodologyBuildMetricCount).toBe(5);
-      expect(metrics.methodologyBuildMetricsSingleRow).toBe(true);
+      expect(metrics.methodologyBuildGuideBesideList).toBe(true);
       expect(metrics.methodologyBuildPathCount).toBe(3);
-      expect(metrics.methodologyBuildPathSingleRow).toBe(true);
+      expect(metrics.methodologyBuildPathStacked).toBe(true);
       expect(metrics.methodologyBuildActionCount).toBeGreaterThanOrEqual(2);
       expect(metrics.methodologyBuildActionsFit).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
@@ -753,8 +779,9 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics).toMatchObject({
         controlsFitWidth: true,
         methodologyBuildActionsFit: true,
-        methodologyBuildMetricsSingleRow: true,
-        methodologyBuildPathSingleRow: true,
+        // 放不下并排时，建设进度落到列表下面，三步仍一步一行。
+        methodologyBuildGuideBelowList: true,
+        methodologyBuildPathStacked: true,
         methodologyRecordsToolbarSingleRow: true,
       });
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
@@ -789,7 +816,8 @@ describe.skipIf(process.platform !== "darwin")(
         methodologyWorkbenchCentered: true,
         methodologyWorkbenchInsideDialog: true,
         methodologyWorkbenchCardCount: 3,
-        methodologyWorkbenchCardsSingleRow: true,
+        // 三个队列是三行（标题、说明、计数、箭头），不再是下半截空着的三张卡（审计 M5）。
+        methodologyWorkbenchCardsStacked: true,
         methodologyWorkbenchBoundaryVisible: true,
         methodologyWorkbenchHorizontalOverflow: false,
         methodologyWorkbenchToolbarStable: true,
@@ -1460,19 +1488,23 @@ describe.skipIf(process.platform !== "darwin")(
       });
     });
 
-    it("shows both clients, loaded model profiles, and trace rows", async () => {
+    it("shows every client, loaded model profiles, and trace rows", async () => {
       const [clients, models, activity] = await Promise.all([
         measurePage("dark", "clients"),
         measurePage("dark", "models"),
         measurePage("dark", "activity"),
       ]);
 
-      expect(clients.clientCardCount).toBe(2);
+      // Those connected or found on this machine in the preview (the four built-in, Qwen Code, Cursor CLI and the
+      // reader's own), the catalog's other seven folded away.
+      expect(clients.clientRowCount).toBe(7);
+      expect(clients.clientFoldedCount).toBe(7);
       expect(models.modelProfileVisible).toBe(true);
       // Four built-ins plus the saved remote backend; the remote one is what
-      // makes this page draw a row that leaves the machine.
-      expect(models.providerSwitchCount).toBe(5);
-      expect(models.providerDragHandleCount).toBe(5);
+      // makes this page draw a row that leaves the machine. The sixth switch is
+      // jev's, in its own section and ordered among the judges by a handle of its own.
+      expect(models.providerSwitchCount).toBe(6);
+      expect(models.providerDragHandleCount).toBe(6);
       expect(models.providerLegacyMoveActionsVisible).toBe(false);
       expect(Math.max(...models.providerRowHeights)).toBeLessThanOrEqual(66);
       for (const positions of [
@@ -1495,8 +1527,10 @@ describe.skipIf(process.platform !== "darwin")(
     it("keeps model traces contained without showing a scrollbar", async () => {
       const metrics = await measurePage("dark", "activity");
 
-      expect(metrics.traceColumnCount).toBe(6);
+      // 时间、后端、用途、模型、状态、Tokens、耗时和「详情」，每列对齐；时间带秒完整显示，不被模型列挤成省略号。
+      expect(metrics.traceColumnCount).toBe(8);
       expect(metrics.traceColumnsAligned).toBe(true);
+      expect(metrics.traceTimesFit).toBe(true);
       expect(metrics.traceCardBottom).toBeCloseTo(
         metrics.traceContentBottom,
         0,
@@ -1532,7 +1566,7 @@ describe.skipIf(process.platform !== "darwin")(
         expect(metrics.nativeControlsUseAppAccent).toBe(true);
         expect(metrics.cardsDoNotOverlap).toBe(true);
         expect(metrics.controlsFitWidth).toBe(true);
-        expect(metrics.headerHeight).toBe(44);
+        expect(metrics.headerHeight).toBe(58);
         expect(metrics.sidebarWidth).toBe(152);
         expect(metrics.stageWidth).toBe(
           DESKTOP_WINDOW_SIZE.width - metrics.sidebarWidth - 2,
@@ -1558,8 +1592,10 @@ describe.skipIf(process.platform !== "darwin")(
 
       expect(metrics.viewportHeight).toBe(DESKTOP_WINDOW_MIN_SIZE.height);
       expect(metrics.viewportWidth).toBe(DESKTOP_WINDOW_MIN_SIZE.width);
-      expect(metrics.traceColumnCount).toBe(4);
+      // 窄窗让出模型和 Tokens 两列，其余六列仍然对齐、不横向溢出。
+      expect(metrics.traceColumnCount).toBe(6);
       expect(metrics.traceColumnsAligned).toBe(true);
+      expect(metrics.traceTimesFit).toBe(true);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
     });
 
@@ -1599,6 +1635,13 @@ describe.skipIf(process.platform !== "darwin")(
       expect(metrics.editorTop).toBeGreaterThan(0);
     });
 
+    it("lists every model candidate beside the field, level with it", async () => {
+      // A datalist offered only the candidates containing the model typed: with gpt-6-luna filled in, Codex's eight showed as two.
+      const metrics = await measurePage("light", "models", "model-candidates");
+
+      expect(metrics).toMatchObject({ candidateMenuLevelWithField: true, candidateOptions: 8, candidateInUse: "gpt-6-luna", candidateNameHidden: true, candidateMenuLevelWhileSaving: true });
+    });
+
     it("opens model trace details in a centered dialog without expanding a row", async () => {
       const metrics = await measurePage("dark", "activity", "trace-detail");
 
@@ -1612,8 +1655,9 @@ describe.skipIf(process.platform !== "darwin")(
       });
       // 对话框是一张实心的纸：不叠渐变光泽，背后的页面交给遮罩压暗。
       expect(metrics.traceDetailBackgroundImage).toBe("none");
-      expect(metrics.traceDetailSurfaceFilter).toContain("blur(24px)");
-      expect(metrics.traceDetailBackdropFilter).toContain("blur(24px)");
+      // 不做毛玻璃（IMP-139）：遮罩只压暗，对话框本身不模糊背后。
+      expect(metrics.traceDetailSurfaceFilter).toBe("none");
+      expect(metrics.traceDetailBackdropFilter).toBe("none");
       expect(metrics.tokens.modalSurface).not.toContain("/");
       expect(alphaOf(metrics.tokens.modalBackdrop)).toBeGreaterThanOrEqual(
         0.34,
@@ -1621,23 +1665,17 @@ describe.skipIf(process.platform !== "darwin")(
     });
 
     /*
-     * 半透明只留在窗口这一层，好让 macOS 的原生玻璃有东西可透；工作面一律不
-     * 透明。旧版每一层都半透明，桌面壁纸透过四层叠加上来，正文的对比度实际上
-     * 取决于用户的桌面背景是什么。
+     * 窗口不透明、不做毛玻璃（IMP-139）：透明窗口哪怕被别的窗口挡住，也让
+     * WindowServer 一直在合成它。工作面同样是实色。
      */
-    it.each([
-      { theme: "light" as const, maximumWindow: 0.2 },
-      { theme: "dark" as const, maximumWindow: 0.5 },
-    ])(
-      "keeps $theme window glass translucent over opaque work surfaces",
-      async ({ theme, maximumWindow }) => {
+    it.each([{ theme: "light" as const }, { theme: "dark" as const }])(
+      "paints the $theme window opaque, without blur",
+      async ({ theme }) => {
         const metrics = await measurePage(theme, "settings");
 
-        expect(metrics.backdropFilter).toContain("blur(24px)");
-        expect(alphaOf(metrics.tokens.window)).toBeGreaterThan(0);
-        expect(alphaOf(metrics.tokens.window)).toBeLessThanOrEqual(
-          maximumWindow,
-        );
+        expect(metrics.backdropFilter).toBe("none");
+        expect(metrics.tokens.window).not.toContain("/");
+        expect(metrics.tokens.window).toMatch(/^(rgb|#)/u);
         // 高光和工具条底色都归零：层级交给发丝线，不靠一层层的白膜。
         expect(alphaOf(metrics.tokens.windowHighlight)).toBe(0);
         expect(alphaOf(metrics.tokens.toolbar)).toBe(0);
@@ -1648,3 +1686,19 @@ describe.skipIf(process.platform !== "darwin")(
     );
   },
 );
+
+describe("global model proxy card", () => {
+  it.each([["light", "default"], ["dark", "compact"]] as const)("keeps the global proxy separate and aligned in %s / %s", async (theme, interaction) => {
+    const metrics = await measurePage(theme, "models", interaction);
+    expect(metrics).toMatchObject({ globalProxyIndependent: true, globalProxyBeforeBackends: true, globalProxyScopeVisible: true, globalProxyControlsAligned: true, globalProxyControlsInside: true, globalProxyButtonTextFits: true, globalProxyFormPadding: 14, cardsFitWidth: true, cardsDoNotOverlap: true });
+    expect(metrics.globalProxyInputWidth).toBeGreaterThan(240);
+    expect(metrics.globalProxyInputWidth).toBeLessThanOrEqual(600);
+  });
+});
+
+describe("judge model heading", () => {
+  it.each([["light", "default"], ["dark", "compact"]] as const)("keeps the help icon centered without stretching the %s / %s heading", async (theme, interaction) => {
+    const metrics = await measurePage(theme, "models", interaction);
+    expect(metrics).toMatchObject({ judgeHeaderHeight: 40, judgeHelpCentered: true, judgeHeadingFitsHeader: true });
+  });
+});

@@ -3,6 +3,7 @@ import {
   decisionConsultationFeedbackRatingSchema,
   decisionConsultationMetricsSnapshotSchema,
   decisionConsultationResponseSchema,
+  sourceClientSchema,
   type DecisionConsultationMetricsPeriod,
   type DecisionConsultationMetricsSnapshot,
   type DecisionConsultationFeedbackRating,
@@ -25,14 +26,15 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_RECENT_DAYS = 30;
 
 export interface DecisionConsultationMetricRecord {
-  sourceClient: "claude-code" | "codex";
+  sourceClient: string;
   response: DecisionConsultationResponse;
   durationMs: number;
   recordedAt: string;
 }
 
 export interface DecisionConsultationFeedbackMetricRecord {
-  source: "claude-code" | "codex" | "preview";
+  /** A client's id, or `preview`. */
+  source: string;
   result: "strong" | "possible" | "noMatch";
   rating: DecisionConsultationFeedbackRating;
   recordedAt: string;
@@ -67,13 +69,13 @@ const emptySnapshot = (): DecisionConsultationMetricsSnapshot => ({
   strongMatches: 0,
   possibleMatches: 0,
   durationMs: 0,
-  byClient: { claudeCode: 0, codex: 0 },
+  byClient: {},
   feedback: {
     total: 0,
     helpful: 0,
     notHelpful: 0,
     misleading: 0,
-    bySource: { claudeCode: 0, codex: 0, preview: 0 },
+    bySource: {},
     byResult: {
       strong: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
       possible: { total: 0, helpful: 0, notHelpful: 0, misleading: 0 },
@@ -150,12 +152,8 @@ export class DecisionConsultationMetricsStore {
       snapshot.strongMatches = plus(snapshot.strongMatches, strongMatches);
       snapshot.possibleMatches = plus(snapshot.possibleMatches, possibleMatches);
       snapshot.durationMs = plus(snapshot.durationMs, durationMs);
-      snapshot.byClient[
-        input.sourceClient === "claude-code" ? "claudeCode" : "codex"
-      ] = plus(
-        snapshot.byClient[
-          input.sourceClient === "claude-code" ? "claudeCode" : "codex"
-        ],
+      snapshot.byClient[input.sourceClient] = plus(
+        snapshot.byClient[input.sourceClient] ?? 0,
         1,
       );
       snapshot.lastConsultedAt = laterDate(
@@ -178,7 +176,7 @@ export class DecisionConsultationMetricsStore {
     input: DecisionConsultationFeedbackMetricRecord,
   ): Promise<void> {
     const rating = decisionConsultationFeedbackRatingSchema.parse(input.rating);
-    if (!["claude-code", "codex", "preview"].includes(input.source)) {
+    if (!sourceClientSchema.safeParse(input.source).success) {
       throw new Error("事前核对反馈来源无效");
     }
     if (!["strong", "possible", "noMatch"].includes(input.result)) {
@@ -195,8 +193,7 @@ export class DecisionConsultationMetricsStore {
         : rating === "not_helpful"
           ? "notHelpful"
           : "misleading";
-    const sourceKey =
-      input.source === "claude-code" ? "claudeCode" : input.source;
+    const sourceKey = input.source;
 
     await this.#exclusive(async () => {
       const snapshot = await this.#load();
@@ -207,7 +204,7 @@ export class DecisionConsultationMetricsStore {
       snapshot.feedback.total = plus(snapshot.feedback.total, 1);
       snapshot.feedback[ratingKey] = plus(snapshot.feedback[ratingKey], 1);
       snapshot.feedback.bySource[sourceKey] = plus(
-        snapshot.feedback.bySource[sourceKey],
+        snapshot.feedback.bySource[sourceKey] ?? 0,
         1,
       );
       snapshot.feedback.byResult[input.result].total = plus(

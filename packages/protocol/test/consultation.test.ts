@@ -175,13 +175,35 @@ describe("decision consultation protocol", () => {
       },
     };
 
+    // Written by 1.2.0 with fixed keys: read by client id.
+    const migrated = {
+      ...metrics,
+      byClient: { "claude-code": 1, codex: 2 },
+      feedback: { ...metrics.feedback, bySource: { "claude-code": 1, codex: 1, preview: 1 } },
+    };
     expect(decisionConsultationMetricsSnapshotSchema.parse(metrics)).toEqual(
-      metrics,
+      migrated,
     );
+    expect(decisionConsultationMetricsSnapshotSchema.parse(migrated)).toEqual(
+      migrated,
+    );
+    // A client added later counts as the built-in ones do.
+    expect(
+      decisionConsultationMetricsSnapshotSchema.parse({
+        ...migrated,
+        byClient: { "claude-code": 1, codex: 1, grok: 1 },
+      }).byClient,
+    ).toEqual({ "claude-code": 1, codex: 1, grok: 1 });
     expect(() =>
       decisionConsultationMetricsSnapshotSchema.parse({
         ...metrics,
         noMatch: 2,
+      }),
+    ).toThrow("counters must remain consistent");
+    expect(() =>
+      decisionConsultationMetricsSnapshotSchema.parse({
+        ...migrated,
+        byClient: { "claude-code": 1, codex: 1 },
       }),
     ).toThrow("counters must remain consistent");
   });

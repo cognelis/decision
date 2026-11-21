@@ -103,7 +103,7 @@ const sortSources = (
       compareText(left.label, right.label),
   );
 
-const RETROSPECTIVE_WINDOWS = [7, 30];
+export const RETROSPECTIVE_WINDOWS = [7, 30];
 const RETROSPECTIVE_LESSON_LIMIT = 8;
 
 /** A retrospective is read for what went wrong before what went right. */
@@ -174,11 +174,15 @@ const repeatedQuestions = (
     }));
 };
 
+/** Whether each decision followed the agent's marked recommendation; absent when there was none. */
+export type RecommendationFollows = ReadonlyMap<string, "followed" | "not_followed">;
+
 const retrospectivePeriod = (
   decisions: IndexedDecision[],
   now: Date,
   days: number,
   principleTitles: ReadonlyMap<string, string>,
+  follows: RecommendationFollows,
 ): DecisionRetrospectivePeriod => {
   const startDate = localDayStart(now, days - 1);
   const start = startDate.getTime();
@@ -248,6 +252,12 @@ const retrospectivePeriod = (
     ).length,
     reviews: lessons.length,
     previousReviews,
+    recommendation: {
+      offered: current.filter(({ decision }) => follows.has(decision.id)).length,
+      followed: current.filter(
+        ({ decision }) => follows.get(decision.id) === "followed",
+      ).length,
+    },
     lessons: lessons
       .sort(
         (left, right) =>
@@ -281,6 +291,7 @@ const buildRetrospective = (
   decisions: IndexedDecision[],
   now: Date,
   principleTitles: ReadonlyMap<string, string>,
+  follows: RecommendationFollows,
 ): DecisionRetrospective => {
   const today = localCalendarDate(now);
   return {
@@ -291,7 +302,7 @@ const buildRetrospective = (
           (decision.reviewDueDate !== null && decision.reviewDueDate <= today)),
     ).length,
     periods: RETROSPECTIVE_WINDOWS.map((days) =>
-      retrospectivePeriod(decisions, now, days, principleTitles),
+      retrospectivePeriod(decisions, now, days, principleTitles, follows),
     ),
   };
 };
@@ -306,6 +317,7 @@ export class DecisionAnalyticsService {
   async analyze(
     decisions: IndexedDecision[],
     principleTitles: ReadonlyMap<string, string> = new Map(),
+    follows: RecommendationFollows = new Map(),
   ): Promise<DecisionAnalyticsSnapshot> {
     const totals: DecisionAnalyticsTotals = {
       decisions: decisions.length,
@@ -386,7 +398,7 @@ export class DecisionAnalyticsService {
         .sort((left, right) => compareText(right.period, left.period))
         .slice(0, 12)
         .reverse(),
-      retrospective: buildRetrospective(decisions, now, principleTitles),
+      retrospective: buildRetrospective(decisions, now, principleTitles, follows),
     };
   }
 }

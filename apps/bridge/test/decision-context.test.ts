@@ -102,7 +102,7 @@ describe("decision context client integration", () => {
       await clientTransport.send({ jsonrpc: "2.0", method: "notifications/initialized" });
       const result = await request(2, "tools/call", { name: "search_decision_context", arguments: { query: "业务标识", project: "web" } });
       expect(result).toMatchObject({ result: { structuredContent: { availability: "available", context: {
-        status: "matched", coverage: "complete", results: [expect.objectContaining({ id: "DEC-0001", kind: "historical_decision", sourceRef: expect.objectContaining({ sessionId: "source-session" }) })],
+        status: "matched", coverage: "complete", results: [expect.objectContaining({ id: "DEC-0001", kind: "summarized_decision", sourceRef: expect.objectContaining({ sessionId: "source-session" }) })],
       } } } });
       expect(JSON.stringify(result)).not.toContain(fixture.vault);
       expect(fixture.queue.snapshot().current).toBeNull();
@@ -153,7 +153,7 @@ describe("decision context client integration", () => {
       expect(feedback).toMatchObject({ result: { structuredContent: { feedbackUpdate: { status: "saved", revision: 1, noDecisionChanged: true } } } });
       const repeated = await request(12, "tools/call", { name: "record_decision_context_feedback", arguments: observation });
       expect(repeated).toMatchObject({ result: { structuredContent: { feedbackUpdate: { status: "unchanged", revision: 1 } } } });
-      const summary = await request(13, "tools/call", { name: "get_decision_context_feedback", arguments: { source: current.source, recordId: current.id } });
+      const summary = await request(13, "tools/call", { name: "list_decision_context_feedback", arguments: { source: current.source, recordId: current.id } });
       expect(summary).toMatchObject({ result: { structuredContent: { feedback: { activeCount: 1, ratings: { insufficient_context: 1 }, results: [{ record: { task: observation.task } }] } } } });
       expect(await readFile(fixture.path, "utf8")).toBe(original);
     } finally { await Promise.all([clientTransport.close(), server.close()]); }
@@ -225,6 +225,35 @@ describe("decision context client integration", () => {
     expect(outcome.content[0]!.text).toContain("已有复盘评价");
   });
 
+  it("tells an agent a review the user cleared is not one to schedule again (IMP-123)", async () => {
+    type Result = { content: Array<{ text: string }>; structuredContent: Record<string, unknown> };
+    const tools = new Map<string, (input: unknown) => Promise<Result>>();
+    const definitions = new Map<string, { description?: string }>();
+    const hash = "a".repeat(64);
+    const state = (reviewDueDate: string | null) => ({ expectedOutcome: null, outcome: null, review: null, reviewDueDate, reviewScheduleReasons: ["release" as const] });
+    const result = (id: string, reviewDueDate: string | null) => ({
+      source: "decisions", kind: "recorded_decision", id, title: "今天发版吗", project: "web", status: "captured", current: true,
+      summary: "周五灰度", appliesWhen: null, caution: null, tags: [], supersedes: [], supersededBy: [], successors: [], unresolvedSuccessorIds: [],
+      sourceRef: { relativePath: `Decisions/${id}.md`, contentHash: hash, client: null, sessionId: null, excerpt: "周五灰度", excerptStartLine: 1, truncated: false },
+      matchReason: "编号", warnings: [], outcomeState: state(reviewDueDate),
+    });
+    registerDecisionContextTool({ registerTool: (name: string, definition: { description?: string }, handler: never) => { tools.set(name, handler); definitions.set(name, definition); } } as never, {
+      searchContext: async () => ({
+        contextVersion: 1, status: "matched", coverage: "complete", total: 2, nextOffset: null, guidance: "仅供核对。",
+        boundary: { advisoryOnly: true, noDecisionWritten: true, noPrincipleApplied: true },
+        sources: [{ source: "decisions", status: "ready", records: 2, skipped: 0 }],
+        results: [result("DEC-1", null), result("DEC-2", "2026-11-04")],
+      }),
+    } as never);
+
+    const text = (await tools.get("search_decision_context")!({ source: "decisions" })).content[0]!.text;
+    expect(text).toContain("下次复盘日期：未安排（记录时曾因「发布类决策」自动安排，用户已取消，不要重新安排）");
+    expect(text).toContain("下次复盘日期：2026-11-04（记录时曾因「发布类决策」自动安排）");
+    expect(definitions.get("record_decision_outcome")?.description).toContain("reviewDueDate is null and reviewScheduleReasons is present");
+    // The one write that keeps no copy of what it replaces: the user sees the new text before the old is gone.
+    expect(definitions.get("record_decision_outcome")?.description).toContain("show the user the complete new text beside the old and wait for their yes first");
+  });
+
   it("words what the App answered as its own pages do, leaving the raw values in structuredContent", async () => {
     type Result = { content: Array<{ text: string }>; structuredContent: Record<string, unknown> };
     const tools = new Map<string, (input: unknown) => Promise<Result>>();
@@ -264,7 +293,7 @@ describe("decision context client integration", () => {
     const relation = await tools.get("record_decision_relation")!({ first: reference, second: { ...reference, recordId: "DEC-2" }, disposition: "revoked", successor: null, expectedRevision: 0, reason: "用户撤回" });
     const opened = await tools.get("open_decision_source")!({ source: "decisions", recordId: "DEC-1", expectedContentHash: hash });
     const feedback = await tools.get("record_decision_context_feedback")!({ feedbackId, expectedRevision: 1, reference: { source: "decisions", recordId: "DEC-1", expectedContentHash: hash }, task: "排序", rating: "helpful", reason: "撤回", withdrawn: true });
-    const feedbackList = await tools.get("get_decision_context_feedback")!({});
+    const feedbackList = await tools.get("list_decision_context_feedback")!({});
     const search = await tools.get("search_decision_context")!({ recordId: "DEC-1" });
 
     // The enum was the whole reason given, and relation_not_found (nothing to revoke) was answered with the general advice.

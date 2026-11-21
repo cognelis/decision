@@ -2,15 +2,16 @@ import { chmodSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+import { isSqliteCorruptionError } from "./obsidian-search-index.js";
 import { openRebuildable } from "./sqlite-index.js";
 
-export type SemanticVectorEntityType = "decision" | "methodology";
+export type SemanticVectorEntityType = "decision" | "methodology" | "summary";
 
 export interface SemanticVectorRecord {
   entityType: SemanticVectorEntityType;
   entityId: string;
   contentHash: string;
-  /** The content hash of the note its text was made from, where there is one (a decision's). */
+  /** The note its text was made from, where there is one (a decision's): its content hash, with what the caller adds. */
   sourceHash?: string | null;
   model: string;
   vector: number[];
@@ -62,29 +63,61 @@ const decodeVector = (row: VectorRow): number[] => {
   );
 };
 
+const vectorTable = (name: string): string => `
+  CREATE TABLE IF NOT EXISTS ${name} (
+    entity_type TEXT NOT NULL CHECK(entity_type IN ('decision', 'methodology', 'summary')),
+    entity_id TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    model TEXT NOT NULL,
+    dimension INTEGER NOT NULL,
+    vector BLOB NOT NULL,
+    updated_at TEXT NOT NULL,
+    source_hash TEXT,
+    PRIMARY KEY(entity_type, entity_id)
+  )`;
+
+const holdsSummaries = (database: DatabaseSync): boolean =>
+  (database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'semantic_vectors'").get() as { sql: string }).sql
+    .includes("'summary'");
+
 const openVectors = (path: string): DatabaseSync => {
   const database = new DatabaseSync(path);
   try {
     database.exec(`
       PRAGMA journal_mode = WAL;
       PRAGMA synchronous = NORMAL;
-      CREATE TABLE IF NOT EXISTS semantic_vectors (
-        entity_type TEXT NOT NULL CHECK(entity_type IN ('decision', 'methodology')),
-        entity_id TEXT NOT NULL,
-        content_hash TEXT NOT NULL,
-        model TEXT NOT NULL,
-        dimension INTEGER NOT NULL,
-        vector BLOB NOT NULL,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY(entity_type, entity_id)
-      );
-      CREATE INDEX IF NOT EXISTS semantic_vectors_model
-        ON semantic_vectors(entity_type, model);
+      ${vectorTable("semantic_vectors")};
     `);
     // The note a decision's vector was made from: a start reads again only a decision whose note changed since.
     // Unknown for vectors from before it, whose decisions are read once more and kept as found, not embedded again.
     const columns = (database.prepare("PRAGMA table_info(semantic_vectors)").all() as Array<{ name: string }>).map((column) => column.name);
     if (!columns.includes("source_hash")) database.exec("ALTER TABLE semantic_vectors ADD COLUMN source_hash TEXT");
+    // Made before summaries had vectors, its CHECK refused every one and the sync with it. SQLite cannot widen a CHECK
+    // in place: the table is made again with its rows. The app before reads and prunes only the kinds it asks for.
+    if (!holdsSummaries(database)) {
+      try {
+        database.exec(`
+          BEGIN IMMEDIATE;
+          ${vectorTable("semantic_vectors_next")};
+          INSERT INTO semantic_vectors_next (entity_type, entity_id, content_hash, model, dimension, vector, updated_at, source_hash)
+            SELECT entity_type, entity_id, content_hash, model, dimension, vector, updated_at, source_hash FROM semantic_vectors;
+          DROP TABLE semantic_vectors;
+          ALTER TABLE semantic_vectors_next RENAME TO semantic_vectors;
+          COMMIT;
+        `);
+      } catch (error) {
+        // None open: BEGIN itself was refused, or SQLite rolled the transaction back.
+        try {
+          database.exec("ROLLBACK");
+        } catch {}
+        // Damaged, it is set aside and made again (openRebuildable), as a cache is: kept, every read of it said
+        // "malformed" and no summary's vector was ever added. Not now (the app before still quitting holds the lock,
+        // the disk is full), thrown, the app did not start: the table as it is serves decisions and principles, and
+        // summaries go without vectors (holdsSummaries) until a start widens it.
+        if (isSqliteCorruptionError(error)) throw error;
+      }
+    }
+    database.exec("CREATE INDEX IF NOT EXISTS semantic_vectors_model ON semantic_vectors(entity_type, model)");
     chmodSync(path, 0o600);
     return database;
   } catch (error) {
@@ -95,12 +128,15 @@ const openVectors = (path: string): DatabaseSync => {
 
 export class SemanticVectorIndex {
   readonly #database: DatabaseSync;
+  /** Whether summaries' vectors can be kept: not in a table from before them that this start could not widen. */
+  readonly holdsSummaries: boolean;
 
   constructor(path: string) {
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     // Only a cache of what the notes say: one SQLite cannot read is set aside and filled again, as the index is,
     // rather than keeping the app from opening.
     this.#database = openRebuildable(path, openVectors);
+    this.holdsSummaries = holdsSummaries(this.#database);
   }
 
   metadata(entityType: SemanticVectorEntityType): SemanticVectorMetadata[] {
@@ -219,6 +255,10 @@ export class SemanticVectorIndex {
       this.#database.exec("ROLLBACK");
       throw error;
     }
+  }
+
+  remove(entityType: SemanticVectorEntityType, entityId: string): void {
+    this.#database.prepare("DELETE FROM semantic_vectors WHERE entity_type = ? AND entity_id = ?").run(entityType, entityId);
   }
 
   clear(): void {

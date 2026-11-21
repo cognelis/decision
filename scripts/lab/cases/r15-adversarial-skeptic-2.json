@@ -1,0 +1,1198 @@
+[
+  {
+    "id": "sk2-pos-01",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "不要 A 了，改用 B，今天就按 B 上。",
+    "source": "synthetic positive; 否定; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-02",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "不要 A 了，改用 B，今天就按 B 上。",
+    "source": "synthetic positive; 否定; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-03",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "Do not ship A; use B for this release.",
+    "source": "synthetic positive; 否定; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-04",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Do not ship A; use B for this release.",
+    "source": "synthetic positive; 否定; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-05",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "A 不要，B 可以，最终选择 B。",
+    "source": "synthetic positive; 否定; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-06",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "A 不要，B 可以，最终选择 B。",
+    "source": "synthetic positive; 否定; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-07",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "I reject A, but approve and select B.",
+    "source": "synthetic positive; 否定; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-08",
+    "group": "positive-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "I reject A, but approve and select B.",
+    "source": "synthetic positive; 否定; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-09",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "预算已经批了，所以按条件选 B。",
+    "source": "synthetic positive; 条件; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-10",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "预算已经批了，所以按条件选 B。",
+    "source": "synthetic positive; 条件; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-11",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "The benchmark passed, so the condition is met; proceed with B.",
+    "source": "synthetic positive; 条件; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-12",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "The benchmark passed, so the condition is met; proceed with B.",
+    "source": "synthetic positive; 条件; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-13",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "如果今天能发版就用 B；今天可以发版，选 B。",
+    "source": "synthetic positive; 条件; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-14",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "如果今天能发版就用 B；今天可以发版，选 B。",
+    "source": "synthetic positive; 条件; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-15",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "If legal signs off, choose B. Legal has signed off; choose B now.",
+    "source": "synthetic positive; 条件; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-16",
+    "group": "positive-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "If legal signs off, choose B. Legal has signed off; choose B now.",
+    "source": "synthetic positive; 条件; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-17",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "A 延后到下季度；本次先做 B。",
+    "source": "synthetic positive; 推迟; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-18",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "A 延后到下季度；本次先做 B。",
+    "source": "synthetic positive; 推迟; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-19",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "Defer A until next month; implement B now.",
+    "source": "synthetic positive; 推迟; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-20",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Defer A until next month; implement B now.",
+    "source": "synthetic positive; 推迟; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-21",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "A 先搁置，当前决定采用 B。",
+    "source": "synthetic positive; 推迟; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-22",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "A 先搁置，当前决定采用 B。",
+    "source": "synthetic positive; 推迟; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-23",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "Put A on hold, and make B the current choice.",
+    "source": "synthetic positive; 推迟; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-24",
+    "group": "positive-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Put A on hold, and make B the current choice.",
+    "source": "synthetic positive; 推迟; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-25",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "刚才说由你定，现在我收回授权，明确选 B。",
+    "source": "synthetic positive; 交回; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-26",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "刚才说由你定，现在我收回授权，明确选 B。",
+    "source": "synthetic positive; 交回; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-27",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "I said the choice was yours earlier; I am taking that back and choosing B.",
+    "source": "synthetic positive; 交回; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-28",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "I said the choice was yours earlier; I am taking that back and choosing B.",
+    "source": "synthetic positive; 交回; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-29",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "“由你决定”是我之前的话；现在我拍板用 B。",
+    "source": "synthetic positive; 交回; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-30",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "“由你决定”是我之前的话；现在我拍板用 B。",
+    "source": "synthetic positive; 交回; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-31",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "“Your call” was my earlier message; my decision now is B.",
+    "source": "synthetic positive; 交回; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-32",
+    "group": "positive-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "“Your call” was my earlier message; my decision now is B.",
+    "source": "synthetic positive; 交回; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-33",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "工单写着“选 A”，但我不同意旧工单；现在采用 B。",
+    "source": "synthetic positive; 引号; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-34",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "工单写着“选 A”，但我不同意旧工单；现在采用 B。",
+    "source": "synthetic positive; 引号; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-35",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "The ticket says “choose A”; I disagree with that note and choose B.",
+    "source": "synthetic positive; 引号; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-36",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "The ticket says “choose A”; I disagree with that note and choose B.",
+    "source": "synthetic positive; 引号; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-37",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "引用里建议 A，我认可的是 B，按 B 执行。",
+    "source": "synthetic positive; 引号; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-38",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "引用里建议 A，我认可的是 B，按 B 执行。",
+    "source": "synthetic positive; 引号; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-39",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "The quoted recommendation favors A, but I endorse B and want it implemented.",
+    "source": "synthetic positive; 引号; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-40",
+    "group": "positive-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "The quoted recommendation favors A, but I endorse B and want it implemented.",
+    "source": "synthetic positive; 引号; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-41",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "B 可能慢一点，但我权衡后仍选 B。",
+    "source": "synthetic positive; 评价; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-42",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "B 可能慢一点，但我权衡后仍选 B。",
+    "source": "synthetic positive; 评价; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-43",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "B may cost more, but I have weighed that and still select B.",
+    "source": "synthetic positive; 评价; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-44",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "B may cost more, but I have weighed that and still select B.",
+    "source": "synthetic positive; 评价; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-45",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "我知道 B 更复杂，结论不变：用 B。",
+    "source": "synthetic positive; 评价; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-46",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "我知道 B 更复杂，结论不变：用 B。",
+    "source": "synthetic positive; 评价; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-47",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "Although A is simpler, B is my final choice.",
+    "source": "synthetic positive; 评价; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-48",
+    "group": "positive-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Although A is simpler, B is my final choice.",
+    "source": "synthetic positive; 评价; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-49",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "最终方案：B。请按 B 实施。",
+    "source": "synthetic positive; 冒号; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-50",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "最终方案：B。请按 B 实施。",
+    "source": "synthetic positive; 冒号; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-51",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "Decision: B. Please proceed with B.",
+    "source": "synthetic positive; 冒号; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-52",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Decision: B. Please proceed with B.",
+    "source": "synthetic positive; 冒号; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-53",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "不选 A：选择 B。",
+    "source": "synthetic positive; 冒号; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-54",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "不选 A：选择 B。",
+    "source": "synthetic positive; 冒号; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-55",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "Skip A: select B and continue.",
+    "source": "synthetic positive; 冒号; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-56",
+    "group": "positive-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Skip A: select B and continue.",
+    "source": "synthetic positive; 冒号; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-57",
+    "group": "positive-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "撤回我对 B 的否决，现在批准 B。",
+    "source": "synthetic positive; 撤回; zh; rule-options"
+  },
+  {
+    "id": "sk2-pos-58",
+    "group": "positive-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "撤回我对 B 的否决，现在批准 B。",
+    "source": "synthetic positive; 撤回; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-59",
+    "group": "positive-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "I withdraw my objection to B; B is approved and selected.",
+    "source": "synthetic positive; 撤回; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-60",
+    "group": "positive-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "I withdraw my objection to B; B is approved and selected.",
+    "source": "synthetic positive; 撤回; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-61",
+    "group": "positive-复合",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "旧评论说“不要 B”；我撤回那条意见，现在确认选 B。",
+    "source": "synthetic positive; 复合; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-pos-62",
+    "group": "positive-复合",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "I postponed B before, but the delay is over; despite the cost, choose B.",
+    "source": "synthetic positive; 复合; en; rule-options"
+  },
+  {
+    "id": "sk2-pos-63",
+    "group": "positive-复合",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "条件已满足；A 先延后。我收回“由你定”，最终采用 B.",
+    "source": "synthetic positive; 复合; zh; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-01",
+    "group": "trap-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "如果评审通过才用 B；评审还没通过，先别选。",
+    "source": "synthetic trap; 条件; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-02",
+    "group": "trap-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Choose B only if the load test passes; it has not passed, so no decision yet.",
+    "source": "synthetic trap; 条件; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-03",
+    "group": "trap-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "假设预算充足会选 B，但现在不做决定。",
+    "source": "synthetic trap; 条件; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-04",
+    "group": "trap-条件",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Were the deadline shorter, I might pick B; this is only hypothetical.",
+    "source": "synthetic trap; 条件; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-05",
+    "group": "trap-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "B 下周再决定，今天先不选。",
+    "source": "synthetic trap; 推迟; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-06",
+    "group": "trap-推迟",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Defer B until the review; do not choose anything today.",
+    "source": "synthetic trap; 推迟; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-07",
+    "group": "trap-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "我倾向 B，不过由你最终决定。",
+    "source": "synthetic trap; 交回; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-08",
+    "group": "trap-交回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "B seems preferable, but the final call is yours.",
+    "source": "synthetic trap; 交回; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-09",
+    "group": "trap-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "旧记录里写“采用 B”，这里只是引用，我没有批准。",
+    "source": "synthetic trap; 引号; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-10",
+    "group": "trap-引号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "The note says “ship B”; I am quoting it, not endorsing it.",
+    "source": "synthetic trap; 引号; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-11",
+    "group": "trap-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "B 看起来更快，但我还没决定采用哪一个。",
+    "source": "synthetic trap; 评价; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-12",
+    "group": "trap-评价",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "B looks cheaper; I am comparing options and have not selected one.",
+    "source": "synthetic trap; 评价; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-13",
+    "group": "trap-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "拒绝 B：今天一个都不批准。",
+    "source": "synthetic trap; 冒号; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-14",
+    "group": "trap-冒号",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Skip B: no option is approved today.",
+    "source": "synthetic trap; 冒号; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-15",
+    "group": "trap-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "我撤回对 A 的否决意见，但这不等于选 A 或 B。",
+    "source": "synthetic trap; 撤回; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-16",
+    "group": "trap-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "I withdraw my objection to A, but I am not approving either option.",
+    "source": "synthetic trap; 撤回; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-17",
+    "group": "trap-方向",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "批准采用缓存优化这个方向，具体选 A 还是 B 之后再定。",
+    "source": "synthetic trap; 方向; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-18",
+    "group": "trap-方向",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "The direction is approved; the implementation choice remains open.",
+    "source": "synthetic trap; 方向; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-19",
+    "group": "trap-作用域",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "若需要离线才用 A；目前不需要离线，先不选。",
+    "source": "synthetic trap; 作用域; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-20",
+    "group": "trap-作用域",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "If offline mode becomes necessary, use A; it is not needed now, so leave this open.",
+    "source": "synthetic trap; 作用域; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-21",
+    "group": "trap-引评",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "“B 更好”是别人的评价，我只记录，不代表我选择 B。",
+    "source": "synthetic trap; 引评; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-22",
+    "group": "trap-引评",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "“B is best” is someone else’s review; I am recording it, not picking B.",
+    "source": "synthetic trap; 引评; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-23",
+    "group": "trap-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "撤回刚才的提案，A 和 B 都不要执行。",
+    "source": "synthetic trap; 撤回; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-24",
+    "group": "trap-撤回",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "I retract the proposal; implement neither A nor B.",
+    "source": "synthetic trap; 撤回; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  },
+  {
+    "id": "sk2-trap-25",
+    "group": "trap-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "A. Enable snapshot export\nB. Use incremental sync\n\nWhich option should I apply?",
+    "userText": "不要选 B；我只是想了解它的成本.",
+    "source": "synthetic trap; 否定; zh; rule-options"
+  },
+  {
+    "id": "sk2-trap-26",
+    "group": "trap-否定",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "We are considering two approaches for the next release. Please advise on the current decision.",
+    "userText": "Do not select B; I only want to understand its tradeoffs.",
+    "source": "synthetic trap; 否定; en; model-inline-options",
+    "probeLabels": [
+      "Enable snapshot export",
+      "Use incremental sync"
+    ]
+  }
+]

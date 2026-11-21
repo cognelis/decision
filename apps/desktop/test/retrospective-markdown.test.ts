@@ -9,7 +9,7 @@ const period = {
   decisions: 4,
   previousDecisions: 1,
   rationaleCaptured: 3,
-  rationaleDeferred: 1,
+  rationaleDeferred: 1, recommendation: { offered: 0, followed: 0 },
   expectationMissing: 1,
   reviews: 3,
   previousReviews: 0,
@@ -82,6 +82,17 @@ describe("retrospectiveMarkdown", () => {
     );
   });
 
+  it("states how often the marked recommendation was picked, only when there was one", () => {
+    const withRecommendation = retrospectiveMarkdown(
+      { ...period, recommendation: { offered: 4, followed: 3 } },
+      2,
+    );
+    expect(withRecommendation).toContain(
+      "- agent 标了推荐项的选择共 4 次，其中选了推荐项的 3 次（75%）\n",
+    );
+    expect(retrospectiveMarkdown(period, 2)).not.toContain("推荐项");
+  });
+
   it("lists the first five of each and counts the rest", () => {
     const six = Array.from({ length: 6 }, (_, index) => index + 1);
     const markdown = retrospectiveMarkdown(
@@ -110,7 +121,7 @@ describe("retrospectiveMarkdown", () => {
         ...period,
         decisions: 0,
         rationaleCaptured: 0,
-        rationaleDeferred: 0,
+        rationaleDeferred: 0, recommendation: { offered: 0, followed: 0 },
         expectationMissing: 0,
         reviews: 0,
         lessons: [],

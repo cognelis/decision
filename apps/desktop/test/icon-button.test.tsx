@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { StrictMode, useState } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { IconButton, ActionIcon } from "../src/renderer/components/IconButton.js";
 import { ModalDialog } from "../src/renderer/components/ModalDialog.js";
@@ -25,6 +25,21 @@ it("shows a portal tooltip on hover, hides on leave and scroll, and preserves cl
   expect(screen.queryByRole("tooltip")).toBeNull();
   fireEvent.click(button);
   expect(click).toHaveBeenCalledTimes(1);
+});
+
+// A dialog opened by a click puts focus on its close button: its tooltip stood over the dialog until the next click.
+it("says what a button does when Tab reaches it, not when code focuses it after a click", () => {
+  render(<IconButton aria-label="关闭决策详情" onClick={vi.fn()}>×</IconButton>);
+  const button = screen.getByRole("button", { name: "关闭决策详情" });
+
+  fireEvent.pointerDown(document.body);
+  act(() => button.focus());
+  expect(screen.queryByRole("tooltip")).toBeNull();
+  act(() => button.blur());
+
+  fireEvent.keyDown(document.body, { key: "Tab" });
+  act(() => button.focus());
+  expect(screen.getByRole("tooltip")).toHaveTextContent("关闭决策详情");
 });
 
 it("dismisses the tooltip without blocking the dialog Escape shortcut", () => {

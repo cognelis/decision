@@ -226,7 +226,7 @@ const breadcrumb = (stack: HeadingEntry[]): string => {
   return `${root}…${leaf}`;
 };
 
-const sections = (body: string): Section[] => {
+const sections = (body: string, onHeading?: (index: number, level: number, path: string) => void): Section[] => {
   const result: Section[] = [];
   const stack: Array<HeadingEntry & { level: number }> = [];
   let current: Section = { heading: null, headingDigest: EMPTY_DIGEST, lines: [] };
@@ -254,7 +254,9 @@ const sections = (body: string): Section[] => {
       while (stack.length && stack[stack.length - 1]!.level >= level) stack.pop();
       const parentDigest = stack.length ? stack[stack.length - 1]!.digest : EMPTY_DIGEST;
       stack.push({ level, title: match.title, digest: hash(`heading\0${parentDigest}\0${match.title}`) });
-      current = { heading: breadcrumb(stack), headingDigest: stack[stack.length - 1]!.digest, lines: [] };
+      const path = breadcrumb(stack);
+      current = { heading: path, headingDigest: stack[stack.length - 1]!.digest, lines: [] };
+      onHeading?.(match.start, level, path);
       index = match.end;
     } else current.lines.push(line);
   }
@@ -292,6 +294,16 @@ const splitText = (raw: string): string[] => {
   }
   if (pending) output.push(pending);
   return output;
+};
+
+/** A note's headings, by the parse that named its chunks, at their 1-based lines: a hit is placed where it was found. */
+export const obsidianNoteHeadings = (content: string): Array<{ line: number; level: number; path: string }> => {
+  const text = content.replace(/\r\n?/gu, "\n");
+  const { body } = parseFrontmatter(text);
+  const offset = text.slice(0, text.length - body.length).split("\n").length - 1;
+  const found: Array<{ line: number; level: number; path: string }> = [];
+  sections(body, (index, level, path) => found.push({ line: offset + index + 1, level, path }));
+  return found;
 };
 
 export const buildObsidianMarkdownDocument = (note: ObsidianVaultNote): ObsidianMarkdownDocument => {

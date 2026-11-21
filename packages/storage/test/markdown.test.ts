@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, open, readFile, readdir, rename, symlink, utimes, write
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { parse as parseYaml } from "yaml";
 import { createManualDecisionRecord } from "@cognelis/decision-core";
 
@@ -26,6 +27,13 @@ import { recordFixture } from "./fixtures.js";
 const makeVault = () => mkdtemp(join(tmpdir(), "decision-vault-"));
 
 describe("decision Markdown", () => {
+  it("round-trips confirmation time, normalizes offsets, and rejects invalid timestamps", () => {
+    const record = recordFixture({ confirmedAt: "2026-11-16T10:00:00+08:00" });
+    expect(parseDecision(serializeDecision(record)).confirmedAt).toBe("2026-11-16T02:00:00.000Z");
+    expect(parseDecision(serializeDecision(recordFixture())).confirmedAt).toBeUndefined();
+    expect(() => parseDecision(serializeDecision({ ...record, confirmedAt: "not-a-date" }))).toThrow(/confirmed_at/u);
+  });
+
   it("refuses to write into a vault folder that has gone, rather than making up an empty one", async () => {
     const { JournalEntryRepository } = await import("../src/index.js");
     const { createJournalEntry } = await import("@cognelis/decision-core");
@@ -55,12 +63,74 @@ describe("decision Markdown", () => {
 
     // One that is there with none yet still has none.
     await expect(new MethodologyRepository(root, { existingVault: true }).list()).resolves.toEqual([]);
-    await expect(new JournalEntryRepository(root, { existingVault: true }).list()).resolves.toEqual({ entries: [], diagnostics: [] });
+    await expect(new JournalEntryRepository(root, { existingVault: true }).list()).resolves.toMatchObject({ entries: [], diagnostics: [] });
   });
 
   it("round-trips current format markers", () => {
     const record = recordFixture();
     expect(parseDecision(serializeDecision(record))).toEqual(record);
+  });
+
+  // R2-IA2: an option read off a written reply keeps the reply under it.
+  it("writes an option read off a reply with the reply under it, and reads both back", () => {
+    const record = recordFixture({
+      selectedAnswer: { kind: "preset", values: ["Markdown"], reply: "选 A 吧，人能直接读最重要" },
+    });
+    const markdown = serializeDecision(record);
+    const chosen = markdown.slice(markdown.indexOf("## 我的选择"), markdown.indexOf("<!-- decision:selection-base64"));
+    expect(chosen).toBe("## 我的选择\n\nMarkdown\n\n原话：选 A 吧，人能直接读最重要\n\n");
+    expect(markdown).toContain('selected_option: "Markdown"');
+    expect(parseDecision(markdown)).toEqual(record);
+  });
+
+  it("writes several options read off a reply, and a reply in the reader's own words as it was", () => {
+    const several = recordFixture({
+      selectedAnswer: { kind: "multiple", values: ["Markdown", "SQLite"], reply: "1 和 2 都要" },
+    });
+    expect(serializeDecision(several)).toContain("Markdown、SQLite\n\n原话：1 和 2 都要");
+    expect(parseDecision(serializeDecision(several))).toEqual(several);
+    const custom = recordFixture({ selectedAnswer: { kind: "custom", values: ["先别动，等评审"] } });
+    expect(serializeDecision(custom)).not.toContain("原话：");
+  });
+
+  // R2-IA3: the selection marker stays in the format main reads, so a note
+  // written here still opens after a downgrade; the reply lives in the text.
+  describe("reply kept outside the selection marker", () => {
+    // main's strict answer schema, as it was before `reply` existed.
+    const humanText = (maximum: number) => z.string().trim().min(1).max(maximum);
+    const mainAnswerSchema = z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("preset"), values: z.array(humanText(2_000)).length(1) }).strict(),
+      z.object({ kind: z.literal("multiple"), values: z.array(humanText(2_000)).min(1).max(8) }).strict(),
+      z.object({ kind: z.literal("custom"), values: z.array(humanText(2_000)).length(1) }).strict(),
+    ]);
+    const markerValue = (markdown: string): unknown =>
+      JSON.parse(
+        Buffer.from(/<!-- decision:selection-base64 ([A-Za-z0-9_-]+) -->/u.exec(markdown)?.[1] ?? "", "base64url").toString("utf8"),
+      );
+
+    it.each([
+      { kind: "preset" as const, values: ["Markdown"], reply: "选 A 吧" },
+      { kind: "multiple" as const, values: ["Markdown", "SQLite"], reply: "1 和 2 都要" },
+    ])("writes a marker main's strict schema accepts: $kind", (selectedAnswer) => {
+      const markdown = serializeDecision(recordFixture({ selectedAnswer }));
+      const parsed = mainAnswerSchema.safeParse(markerValue(markdown));
+      expect(parsed.success).toBe(true);
+      expect(markerValue(markdown)).toEqual({ kind: selectedAnswer.kind, values: selectedAnswer.values });
+      expect(parseDecision(markdown).selectedAnswer).toEqual(selectedAnswer);
+    });
+
+    it("reads a note written before replies with no reply", () => {
+      const record = recordFixture();
+      const markdown = serializeDecision(record);
+      expect(markdown).not.toContain("原话：");
+      expect(parseDecision(markdown).selectedAnswer).toEqual({ kind: "preset", values: ["Markdown"] });
+    });
+
+    it("brings back a reply the note had to escape, lines and all", () => {
+      const reply = "选 A。\n## 不是标题\n`$=dv.x` <img src=x> <% tp %> ```code``` ~~~ <!-- decision:selection-base64 AAAA -->";
+      const record = recordFixture({ selectedAnswer: { kind: "preset", values: ["Markdown"], reply } });
+      expect(parseDecision(serializeDecision(record)).selectedAnswer).toEqual({ kind: "preset", values: ["Markdown"], reply });
+    });
   });
 
   it("serializes flat Obsidian properties and readable sections", () => {
@@ -618,6 +688,28 @@ describe("decision Markdown", () => {
     expect(parsed).toEqual(record);
   });
 
+  it("round-trips the recognition signals with the rest of the detection metadata", () => {
+    const record = recordFixture({
+      captureMode: "transcript",
+      detection: { band: "medium", score: 61, detectorVersion: "rules-v5", signals: ["has_choice_prompt", "awaits_confirmation"] },
+    });
+    const markdown = serializeDecision(record);
+    expect(markdown).toContain("capture_signals:");
+    expect(parseDecision(markdown)).toEqual(record);
+  });
+
+  it("reads at most 32 recognition signals of at most 100 characters, as a capture may carry", () => {
+    const record = recordFixture({ captureMode: "transcript", detection: { band: "high", score: 80, detectorVersion: "rules-v5", signals: [] } });
+    const signals = [...Array.from({ length: 40 }, (_, index) => `signal_${index}`)];
+    signals.splice(1, 0, "x".repeat(101));
+    const markdown = serializeDecision(record).replace("capture_signals: []", `capture_signals: ${JSON.stringify(signals)}`);
+    expect(markdown).toContain("signal_39");
+    const parsed = parseDecision(markdown).detection!.signals!;
+    expect(parsed).toHaveLength(32);
+    expect(parsed.every((signal) => signal.length <= 100)).toBe(true);
+    expect(parsed[0]).toBe("signal_0"); expect(parsed[1]).toBe("signal_1");
+  });
+
   it("round-trips reserved Markdown headings inside structured context", () => {
     const record = recordFixture({
       contextSummary: null,
@@ -954,5 +1046,40 @@ describe("noteProblem", () => {
     expect(noteProblem(message("---\ntype: decision\ntitle: 选 SQLite: 更快\n---\n\n"))).toBe("开头的属性区不是有效的 YAML，笔记第 3 行附近有误");
     expect(noteProblem(message("---\ntype: decision\ntitle: a: b\n---\n\n"))).toBe("开头的属性区不是有效的 YAML，笔记第 3 行附近有误");
     expect(noteProblem("原则笔记 a.md 和 b.md 都写着这个 id")).toBe("原则笔记 a.md 和 b.md 都写着这个 id");
+  });
+});
+
+describe("default review schedule in the note (IMP-123)", () => {
+  const scheduled = () => recordFixture({ id: "dec-scheduled", question: "今天发版吗？", reviewDueDate: "2026-08-07", reviewScheduleReasons: ["release"] });
+
+  it("keeps why the review was scheduled, and an older note without it reads as before", () => {
+    const note = serializeDecision(scheduled());
+    expect(parseYaml(note.split("---\n")[1]!)).toMatchObject({ review_due_date: "2026-08-07", review_schedule_reasons: ["release"] });
+    expect(parseDecision(note).reviewScheduleReasons).toEqual(["release"]);
+
+    const plain = serializeDecision(recordFixture());
+    expect(plain).not.toContain("review_schedule_reasons");
+    expect(parseDecision(plain).reviewScheduleReasons).toBeUndefined();
+    // A reason a later version adds is left out, not a note refused.
+    expect(parseDecision(note.replace('- "release"', '- "release"\n  - "budget"')).reviewScheduleReasons).toEqual(["release"]);
+  });
+
+  it("clears the date but keeps the reasons, so a cleared schedule stays cleared through later edits", async () => {
+    const repository = new MarkdownRepository(await makeVault());
+    await repository.write(scheduled());
+    const cleared = await repository.updateReviewDueDate("dec-scheduled", null);
+    expect(cleared.record).toMatchObject({ reviewDueDate: null, reviewScheduleReasons: ["release"] });
+
+    await repository.updateExpectedOutcome("dec-scheduled", "周五前用户能用上");
+    const edited = await repository.updateOutcome("dec-scheduled", "已上线");
+    expect(edited.record).toMatchObject({ reviewDueDate: null, reviewScheduleReasons: ["release"] });
+  });
+
+  it("never schedules a decision already in the vault, not even when its expected outcome is added", async () => {
+    const repository = new MarkdownRepository(await makeVault());
+    await repository.write(recordFixture({ question: "今天发版吗？", expectedOutcome: null }));
+    const edited = await repository.updateExpectedOutcome("018f-example-decision", "周五前用户能用上");
+    expect(edited.record.reviewDueDate).toBeNull();
+    expect(edited.record.reviewScheduleReasons).toBeUndefined();
   });
 });

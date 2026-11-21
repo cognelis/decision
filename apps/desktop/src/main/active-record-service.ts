@@ -22,6 +22,7 @@ import {
   journalEntryGone,
   JournalEntryRepository,
   type JournalEntryQuery,
+  type JournalEntryScan,
 } from "@cognelis/decision-storage";
 import { basename } from "node:path";
 
@@ -168,7 +169,7 @@ const restatedDraft = (
  * does not rewrite it. What an agent said (or a prompt slipped into it) stood as the user's own words, a
  * hard constraint softened, an exception added or the entry archived, and was read back to every later agent.
  */
-const userWrote = (entry: JournalEntry): boolean =>
+export const userWrote = (entry: JournalEntry): boolean =>
   entry.sourceKind !== "agent_capture" || entry.revisionEvents.some((event) => event.sourceKind !== "agent_capture");
 
 export class ActiveRecordService {
@@ -199,6 +200,11 @@ export class ActiveRecordService {
   }
 
   async listJournalEntries(query: JournalEntryQuery = {}): Promise<JournalEntry[]> {
+    return (await this.scanJournalEntries(query)).entries;
+  }
+
+  /** As listJournalEntries, with the notes that could not be read and where each entry's note is. */
+  async scanJournalEntries(query: JournalEntryQuery = {}): Promise<JournalEntryScan> {
     const started = ++this.#journalScansStarted;
     const scan = await this.#journalRepository.list(query).catch((error: unknown) => {
       // Not read at all (the vault gone, a preferences or ideas folder it may not list): the list shows this error
@@ -209,7 +215,7 @@ export class ActiveRecordService {
     });
     // A note that cannot be read is left out of the list: said, rather than gone without a word.
     this.#reportJournalScan(started, scan.diagnostics);
-    return scan.entries;
+    return scan;
   }
 
   /** Reads can finish out of order; one begun earlier does not undo what a later one said. */

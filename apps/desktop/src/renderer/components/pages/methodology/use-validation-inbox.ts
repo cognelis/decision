@@ -47,6 +47,8 @@ export const useValidationInbox = ({
   const [validationActionError, setValidationActionError] = useState<
     string | null
   >(null);
+  // 重试 after a failed read asks for the inbox alone, not the whole page again.
+  const [validationAttempt, setValidationAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -71,7 +73,7 @@ export const useValidationInbox = ({
     return () => {
       active = false;
     };
-  }, [api, revisionKey]);
+  }, [api, revisionKey, validationAttempt]);
 
   const openValidationInbox = (): void => {
     setValidationActionError(null);
@@ -122,6 +124,7 @@ export const useValidationInbox = ({
     closeValidationInbox,
     openValidationInbox,
     openValidationItem,
+    retryValidation: () => setValidationAttempt((value) => value + 1),
     validationActionError,
     validationActionId,
     validationError,

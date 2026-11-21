@@ -16,6 +16,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DecisionLibraryPanel } from "../src/renderer/components/pages/decisions/DecisionLibraryPanel.js";
 import { SameQuestionDecisions } from "../src/renderer/components/pages/decisions/SameQuestionDecisions.js";
+import { PastAnswers } from "../src/renderer/components/PastAnswers.js";
+import { parseDecisionContextNote } from "../../../packages/storage/src/decision-context.js";
+import { serializeDecision } from "../../../packages/storage/src/markdown.js";
+import { recordFixture } from "../../../packages/storage/test/fixtures.js";
 import type { DecisionLibraryItem } from "../src/shared/renderer-api.js";
 import {
   acceptedMethodologyFixture,
@@ -34,6 +38,54 @@ afterEach(cleanup);
 
 
 describe("knowledge page", () => {
+  it.each(["preset", "multiple", "custom"] as const)("shows and copies the %s reply without duplicating a custom answer", async (kind) => {
+    const { api } = apiFixture(rationaleSnapshot({ current: null, primarySurface: "decisions" }));
+    const decision: DecisionLibraryItem = {
+      id: "reply", created: "2026-07-30T03:04:00.000Z", sourceClient: "codex", project: "decision",
+      question: "存储层怎么选？", selectedAnswer: "Markdown", answer: { kind, values: ["Markdown"], reply: "先用普通笔记，方便撤回。" },
+      rationaleStatus: "captured", rationale: null, context: null, outcome: null, outcomeReview: null,
+      reviewDueDate: null, appliedPrincipleIds: [], appliedPrinciples: [],
+    };
+    vi.mocked(api.listDecisions).mockResolvedValue([decision]);
+    const user = userEvent.setup();
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    await renderDecisionLibrary(api);
+    await user.click(await screen.findByText(decision.question));
+    const details = within(screen.getByRole("dialog", { name: "决策详情" }));
+    if (kind === "custom") expect(details.queryByText("原话：先用普通笔记，方便撤回。")).toBeNull();
+    else expect(details.getByText("原话：先用普通笔记，方便撤回。")).toBeVisible();
+    await user.click(details.getByRole("button", { name: "复制为 Markdown" }));
+    expect(writeText).toHaveBeenCalledWith(kind === "custom" ? expect.not.stringContaining("原话：") : expect.stringContaining("\n\n原话：先用普通笔记，方便撤回。\n"));
+  });
+
+  it.each(["preset", "multiple", "custom"] as const)("compares legacy %s option IDs by their own labels and ignores the original reply", async (kind) => {
+    const record = recordFixture({ options: [{ id: "A", label: "Markdown", tradeoffs: [] }], selectedAnswer: { kind, values: ["A"], ...(kind === "custom" ? {} : { reply: "先按第一项吧。" }) } });
+    const answer = parseDecisionContextNote({ content: serializeDecision(record), relativePath: "Decision Journal/decisions/legacy.md", contentHash: "hash", size: 1, modifiedAtMs: 0 }, "decisions")!.answer;
+    const earlier: DecisionLibraryItem = {
+      id: record.id, created: record.created, sourceClient: record.sourceClient, project: record.project,
+      question: record.question, selectedAnswer: "A", answer: answer!,
+      rationaleStatus: "captured", rationale: null, context: null, outcome: "不够理想",
+      outcomeReview: { verdict: "worse", lesson: null, reviewedAt: record.created },
+      reviewDueDate: null, appliedPrincipleIds: [], appliedPrinciples: [],
+    };
+    const listDecisions = vi.fn(async () => [earlier]);
+    const { rerender } = render(<PastAnswers question={record.question} answer="Markdown" excludeId="current" listDecisions={listDecisions} />);
+    const past = await screen.findByRole("region", { name: "以前也回答过这个问题" });
+    expect(within(past).getByText("答案相同")).toBeVisible();
+    expect(within(past).getByText(/上次同样选了/u)).toBeVisible();
+    rerender(<PastAnswers question={record.question} answer="先按第一项吧。" excludeId="current" listDecisions={listDecisions} />);
+    expect(within(past).getByText("答案不同")).toBeVisible();
+    expect(within(past).queryByText(/上次同样选了/u)).toBeNull();
+
+    // A deferred legacy note is itself still shown as a raw letter by the dashboard.
+    listDecisions.mockResolvedValue([earlier, { ...earlier, id: "current", outcomeReview: null }]);
+    rerender(<PastAnswers question={record.question} answer="A" excludeId="current" listDecisions={listDecisions} key="legacy-current" />);
+    const legacyPast = await screen.findByRole("region", { name: "以前也回答过这个问题" });
+    expect(within(legacyPast).getByText("1 次")).toBeVisible();
+    expect(within(legacyPast).getByText("答案相同")).toBeVisible();
+  });
+
   it("searches, filters, and opens decisions from the decision library", async () => {
     const { api } = apiFixture(
       rationaleSnapshot({
@@ -273,6 +325,33 @@ describe("knowledge page", () => {
     expect(details.getByText("理由完整")).toBeVisible();
     expect(details.getByText("已补充")).toBeVisible();
     expect(details.queryByRole("button", { name: "补充理由" })).toBeNull();
+  });
+
+  // A question captured from an assistant's whole message: a row names it in plain words, not in its Markdown marks.
+  it("lists a Markdown question as plain text", async () => {
+    const { api } = apiFixture(
+      rationaleSnapshot({ current: null, primarySurface: "decisions" }),
+    );
+    vi.mocked(api.listDecisions).mockResolvedValue([{
+      id: "markdown",
+      created: "2026-07-30T03:04:00.000Z",
+      sourceClient: "codex",
+      project: "decision",
+      question: "- **已完成**：页头改版。\n- **下一步**：`发布` 到画布。",
+      selectedAnswer: "按画板改",
+      rationaleStatus: "captured",
+      rationale: null,
+      context: null,
+      outcome: null,
+      outcomeReview: null,
+      reviewDueDate: null,
+      appliedPrincipleIds: [],
+      appliedPrinciples: [],
+    }]);
+
+    await renderDecisionLibrary(api);
+    const row = (await screen.findByText("已完成：页头改版。下一步：发布 到画布。")).closest("button")!;
+    expect(row.textContent).not.toMatch(/\*\*|`|^- /u);
   });
 
   it("steps through the listed decisions without leaving the detail", async () => {
@@ -606,6 +685,27 @@ describe("knowledge page", () => {
     await user.keyboard("{Home}");
     expect(decisions).toHaveAttribute("aria-selected", "true");
     expect(decisions).toHaveFocus();
+  });
+
+  it("keeps 历史决定 a tab of its own between the preferences and what stays on this device, counted in the header", async () => {
+    const { api } = apiFixture(rationaleSnapshot({ current: null, primarySurface: "decisions" }));
+    const user = userEvent.setup();
+    await renderDecisionLibrary(api);
+    expect((await screen.findAllByRole("tab")).map((tab) => tab.textContent)).toEqual(["决策", "偏好与想法", "历史决定", "仅本机保留"]);
+    await user.click(screen.getByRole("tab", { name: "偏好与想法" }));
+    await user.keyboard("{ArrowRight}");
+    const history = screen.getByRole("tab", { name: "历史决定" });
+    expect(history).toHaveAttribute("aria-selected", "true");
+    expect(history).toHaveFocus();
+    const panel = within(screen.getByRole("tabpanel", { name: "历史决定" }));
+    expect(await panel.findByText("向量索引放在哪里？")).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".desktop-view-meta")).toHaveTextContent("10历史决定"));
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "仅本机保留" })).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "决策" })).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{End}");
+    expect(screen.getByRole("tab", { name: "仅本机保留" })).toHaveFocus();
   });
 
   it("filters by any project, not only one reached from the retrospective", async () => {
@@ -1165,7 +1265,7 @@ describe("knowledge page", () => {
     await user.click(await screen.findByText("发布窗口放在周几？"));
     const details = within(screen.getByRole("dialog", { name: "决策详情" }));
     const same = await details.findByRole("region", { name: "同一问题的其它决定 · 1" });
-    expect(api.listDecisions).toHaveBeenCalledWith({ query: "发布窗口放在周几", limit: 50 });
+    expect(api.listDecisions).toHaveBeenCalledWith({ query: "发 布 窗 口 放 在 周 几", limit: 50 });
     expect(within(same).getByText(/答案不同/u)).toBeVisible();
     // How the earlier answer turned out is what makes it worth a look.
     expect(within(same).getByText("低于预期")).toBeVisible();
@@ -1187,7 +1287,8 @@ describe("knowledge page", () => {
     await user.click(await screen.findByText(question));
 
     // Longer than 200, the search was refused at the boundary and the history quietly left out.
-    await waitFor(() => expect(api.listDecisions).toHaveBeenCalledWith({ query: question.slice(0, 200), limit: 50 }));
+    await waitFor(() => expect(api.listDecisions).toHaveBeenCalledWith({ query: expect.stringMatching(/^离 线 优 先/u), limit: 50 }));
+    expect(vi.mocked(api.listDecisions).mock.calls.every(([input]) => (input.query ?? "").length <= 200)).toBe(true);
   });
 
   it("shows every other decision on the same question when asked", async () => {
@@ -1538,7 +1639,7 @@ describe("knowledge page", () => {
     const cache = item("A", "缓存放哪一侧", "读取端");
     const earlier = item("A0", "缓存放哪一侧", "写入端", "2026-08-01T03:04:00.000Z");
     const listDecisions = vi.fn((query: { query: string }) =>
-      query.query.startsWith("缓存") ? Promise.resolve([cache, earlier]) : new Promise<DecisionLibraryItem[]>(() => undefined));
+      query.query.replace(/\s/gu, "").startsWith("缓存") ? Promise.resolve([cache, earlier]) : new Promise<DecisionLibraryItem[]>(() => undefined));
     const { rerender } = render(<SameQuestionDecisions api={{ listDecisions } as never} decision={cache} onOpen={vi.fn()} />);
     expect(await screen.findByText("同一问题的其它决定 · 1")).toBeInTheDocument();
 

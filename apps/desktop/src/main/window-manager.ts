@@ -2,7 +2,6 @@ import type { AppSnapshot } from "../shared/renderer-api.js";
 import {
   DESKTOP_WINDOW_MIN_SIZE,
   DESKTOP_WINDOW_SIZE,
-  type DecisionWindowMode,
 } from "../shared/decision-layout.js";
 
 export interface Rectangle {
@@ -22,7 +21,6 @@ export interface BrowserWindowOptionsLike {
   frame: boolean;
   titleBarStyle?: "hiddenInset";
   trafficLightPosition?: { x: number; y: number };
-  transparent: boolean;
   roundedCorners: boolean;
   alwaysOnTop: boolean;
   skipTaskbar: boolean;
@@ -30,9 +28,6 @@ export interface BrowserWindowOptionsLike {
   maximizable: boolean;
   fullscreenable: boolean;
   show: boolean;
-  backgroundColor: string;
-  vibrancy?: "under-window";
-  visualEffectState?: "active";
   webPreferences: {
     nodeIntegration: boolean;
     contextIsolation: boolean;
@@ -59,7 +54,6 @@ interface NavigationStart {
 }
 
 export interface BrowserWindowLike {
-  nativeGlassActive?: boolean;
   webContents: {
     on(event: "will-navigate", listener: (event: NavigationEvent) => void): void;
     on(event: "did-start-navigation", listener: (details: NavigationStart) => void): void;
@@ -69,20 +63,17 @@ export interface BrowserWindowLike {
     reload(): void;
   };
   loadURL(url: string): Promise<void>;
-  loadFile(
-    path: string,
-    options?: { query?: Record<string, string> },
-  ): Promise<void>;
+  loadFile(path: string): Promise<void>;
   on(event: "close", listener: (event: CloseEvent) => void): void;
   maximize(): void;
   show(): void;
+  showInactive(): void;
   focus(): void;
   hide(): void;
   // Required: left optional, the production adapter left them out, and a minimized or ⌘H-hidden window read as in view.
   isMinimized(): boolean;
   isVisible(): boolean;
   restore(): void;
-  setNativeSurfaceMode?(mode: DecisionWindowMode): void;
   isDestroyed(): boolean;
 }
 
@@ -106,6 +97,12 @@ interface WindowManagerOptions {
   onRendererGone?: (reason: string) => void;
   /** The page shown is left (reloaded, or its renderer gone): nothing is there any more to take what it asked for. */
   onPageLeft?: () => void;
+  /**
+   * How the window comes up. `visible` (the reader's app): maximized the first time, in front, focused. A run started
+   * by a script (smoke) leaves the reader at work: `hidden` never puts it on screen, `inactive` shows it behind the
+   * app in front, as it is, unfocused. The page loads all the same either way.
+   */
+  presentation?: "visible" | "inactive" | "hidden";
 }
 
 /** Loaded again on its own this often in a minute at most: a page whose renderer dies as it loads would loop. */
@@ -136,8 +133,10 @@ export class WindowManager {
   #presented = false;
   #initialPresentation = true;
   #quitting = false;
-  /** The captured decision last put before the reader: a new one is brought forward even when minimized. */
+  /** The captured decision last put before the reader, or its failed save: a new one is brought forward even when minimized. */
   #shownTask: string | null = null;
+  /** Closed by the reader: kept closed until the next capture comes up, or the reader brings it back (show). */
+  #closedByReader = false;
   /** When the renderer went, within the last minute. */
   #rendererLosses: number[] = [];
   /** Left blank, its renderer gone too often to load again on its own: loaded again once the reader asks for it. */
@@ -165,7 +164,6 @@ export class WindowManager {
             trafficLightPosition: { x: 16, y: 18 },
           }
         : {}),
-      transparent: true,
       roundedCorners: true,
       alwaysOnTop: false,
       skipTaskbar: false,
@@ -173,13 +171,6 @@ export class WindowManager {
       maximizable: true,
       fullscreenable: true,
       show: false,
-      backgroundColor: "#00000000",
-      ...(darwin
-        ? {
-            vibrancy: "under-window" as const,
-            visualEffectState: "active" as const,
-          }
-        : {}),
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -203,24 +194,15 @@ export class WindowManager {
       }
       event.preventDefault();
       this.#presented = false;
+      this.#closedByReader = true;
       window.hide();
       this.#options.onCloseRequested?.();
     });
     this.#window = window;
-    window.setNativeSurfaceMode?.("desktop");
     if (this.#options.renderer.kind === "url") {
-      const url = new URL(this.#options.renderer.value);
-      if (window.nativeGlassActive === true) {
-        url.searchParams.set("nativeGlass", "1");
-      }
-      await window.loadURL(url.toString());
+      await window.loadURL(this.#options.renderer.value);
     } else {
-      await window.loadFile(
-        this.#options.renderer.value,
-        window.nativeGlassActive === true
-          ? { query: { nativeGlass: "1" } }
-          : undefined,
-      );
+      await window.loadFile(this.#options.renderer.value);
     }
   }
 
@@ -230,12 +212,17 @@ export class WindowManager {
       this.#blank = false;
       window.webContents.reload();
     }
-    if (this.#initialPresentation) {
-      window.maximize();
-      this.#initialPresentation = false;
-    }
+    const presentation = this.#options.presentation ?? "visible";
+    if (this.#initialPresentation && presentation === "visible") window.maximize();
+    this.#initialPresentation = false;
     this.#presented = true;
+    this.#closedByReader = false;
+    if (presentation === "hidden") return;
     if (window.isMinimized()) window.restore();
+    if (presentation === "inactive") {
+      window.showInactive();
+      return;
+    }
     window.show();
     window.focus();
   }
@@ -262,9 +249,12 @@ export class WindowManager {
       snapshot.current !== null ||
       (snapshot.candidateReviewOpen &&
         snapshot.decisionCandidates.current !== null);
+    // A save that fails comes up as a task of its own: closed while it was written, the window stayed closed, why it
+    // failed said in it alone, and the one that failed held the queue, so no capture came up to bring it back.
+    const failed = snapshot.current?.status === "completed" && snapshot.persistenceStatus === "failed";
     const task =
       snapshot.current !== null
-        ? snapshot.current.candidateId
+        ? `${snapshot.current.candidateId}${failed ? " failed" : ""}`
         : snapshot.candidateReviewOpen
           ? (snapshot.decisionCandidates.current?.candidateId ?? null)
           : null;
@@ -278,7 +268,12 @@ export class WindowManager {
     // Minimized, or hidden with ⌘H, the window still counts as presented: a capture arriving then is put in
     // front of the reader all the same, or it waited unseen. Once: refreshes of it do not undo a minimize.
     const outOfSight = window.isMinimized() || !window.isVisible();
-    if (!this.#presented || (arrived && outOfSight)) this.show();
+    // Closed while a capture waited, or 待处理 was open: shown again at once by the close's own refresh, focus
+    // taken, it could not be put away; nor did a 待处理 session ending meanwhile bring it up with nothing to do.
+    // Closed, it comes back for the next capture to come up (one queued behind the current waits, as when
+    // minimized), or when the reader asks (show). Said apart from outOfSight: on macOS that reads ⌘H alone, and a
+    // closed window reads as in view.
+    if ((!this.#presented && (!this.#closedByReader || arrived)) || (arrived && outOfSight)) this.show();
   }
 
   prepareToQuit(): void {
@@ -301,7 +296,7 @@ export class WindowManager {
 
   #requireWindow(): BrowserWindowLike {
     if (this.#window === null || this.#window.isDestroyed()) {
-      throw new Error("Decision window has not been created");
+      throw new Error("Paraself window has not been created");
     }
     return this.#window;
   }

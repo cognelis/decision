@@ -80,6 +80,7 @@ const apiFixture = (
   checkAssistantSource: vi.fn(async () => ({ status: "matched" as const, content: "当前内容", truncated: false })),
   searchAssistantSources: vi.fn(async () => ({ sources: [CITED_DECISION], issues: [] })),
   runAssistantTurn: vi.fn(async () => response),
+  sendOnboarding: vi.fn(async () => { throw new Error("no onboarding here"); }),
   openVaultDocument: vi.fn(async () => undefined),
   cancelAssistantTurn: vi.fn(async () => undefined),
   saveAssistantFeedback: vi.fn(async () => ({
@@ -158,7 +159,7 @@ afterEach(() => {
 });
 
 describe("AssistantPanel", () => {
-  it.skipIf(process.env.DECISION_BENCHMARK !== "1")("benchmarks long-conversation input", async () => {
+  it.skipIf(process.env.PARASELF_BENCHMARK !== "1")("benchmarks long-conversation input", async () => {
     const history = emptyConversation();
     history.messages = Array.from({ length: 20 }, (_unused, index) => [
       { role: "user" as const, content: `问题 ${index}` },
@@ -239,7 +240,7 @@ describe("AssistantPanel", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "问一句你自己的历史" }), { target: { value: "" } });
 
     fireEvent.click(menuButton("删除此对话"));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "删除对话" })).getByRole("button", { name: "确认删除" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "删除这个对话？" })).getByRole("button", { name: "删除" }));
     await waitFor(() => expect(loadSessions().conversations.map((entry) => entry.id)).toEqual([originalId]));
     expect(loadSessions().conversations.map((entry) => entry.id)).not.toContain(branchId);
   });
@@ -719,7 +720,7 @@ describe("AssistantPanel", () => {
     renderPanel(api);
     expect(screen.getByRole("textbox", { name: "问一句你自己的历史" })).toHaveValue("第二段未发送的问题");
     await user.click(menuButton("删除此对话"));
-    await user.click(screen.getByRole("button", { name: "确认删除" }));
+    await user.click(within(screen.getByRole("dialog", { name: "删除这个对话？" })).getByRole("button", { name: "删除" }));
     expect(screen.getByRole("textbox", { name: "问一句你自己的历史" })).toHaveValue("第一段未发送的追问");
     expect(loadSessions().conversations.some((entry) => entry.id === secondId)).toBe(false);
   });
@@ -732,8 +733,8 @@ describe("AssistantPanel", () => {
     const user = userEvent.setup();
 
     await user.click(menuButton("删除此对话"));
-    expect(within(screen.getByRole("dialog", { name: "删除对话" })).getByText(/以及这些回答的模型调用记录和评分/u)).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "确认删除" }));
+    expect(within(screen.getByRole("dialog", { name: "删除这个对话？" })).getByText(/以及这些回答的模型调用记录和评分/u)).toBeVisible();
+    await user.click(within(screen.getByRole("dialog", { name: "删除这个对话？" })).getByRole("button", { name: "删除" }));
 
     // Deleted from this window alone, its question and the notes read for it stayed in the ratings and the call records.
     expect(api.forgetAssistantTurns).toHaveBeenCalledWith(["turn-fixture"]);
@@ -1094,7 +1095,9 @@ describe("AssistantPanel", () => {
     await ask("配置变更怎么决定的？");
 
     // Billed for the calls it made, and said only on an answer: the failure said nothing of them.
-    expect(await screen.findByText("OpenAI 这次没能回答。本轮 16.0k tokens（输入 15.0k · 输出 1.0k）。")).toBeInTheDocument();
+    expect(await screen.findByText((_text, element) => element?.tagName === "P" && element.textContent === "OpenAI 这次没能回答。本轮 16.0k tokens（输入 15.0k · 输出 1.0k）。")).toBeInTheDocument();
+    // Said after the reason, apart from it: the bill is not part of the failure.
+    expect(screen.getByText("本轮 16.0k tokens（输入 15.0k · 输出 1.0k）。")).toHaveClass("assistant-error-spent");
   });
 
   it("shows full conversation titles in the library", async () => {
@@ -1695,6 +1698,9 @@ describe("AssistantPanel", () => {
     renderPanel(apiFixture());
 
     expect(menuButton("导出")).toBeDisabled();
+    // Nothing in the menu can be used, so it does not open.
+    expect(screen.getByLabelText("对话操作")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByLabelText("对话操作").closest("details")).not.toHaveAttribute("open");
   });
 
   it("keeps the previous conversation when a new one is started", async () => {
@@ -1743,7 +1749,7 @@ describe("AssistantPanel", () => {
     await screen.findByText((_text, element) => element?.tagName === "P" && element.textContent === "先留测试环境 [1]。");
 
     await user.click(menuButton("删除此对话"));
-    await user.click(screen.getByRole("button", { name: "确认删除" }));
+    await user.click(within(screen.getByRole("dialog", { name: "删除这个对话？" })).getByRole("button", { name: "删除" }));
 
     // A conversation the reader deleted must not survive a remount.
     expect(within(stream()).queryByText("要删掉的问题")).toBeNull();

@@ -300,6 +300,47 @@ describe("TextCaptureFallback", () => {
     });
   });
 
+  it("takes the turn that asked for a numbered reply paired with a later progress report", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-numbered-reply-"));
+    const fallback = new TextCaptureFallback({
+      store: new TextCaptureStore(join(root, "text-pending"), { now: fixedNow }),
+      now: fixedNow,
+      readEarlierDecisionTurns: async () => [
+        { userText: "继续", assistantText: "在跑测试。" },
+        {
+          userText: "看看发版",
+          assistantText: "三件事需要你定：\n\n1. 直推还是走 PR？\n2. 先合 S01 可以吗？\n3. 版本号升不升？\n\n请逐项回复。",
+        },
+      ],
+    });
+    await fallback.onStop({ session_id: "s", cwd: "/tmp/project", last_assistant_message: "还在复跑全量测试，大约还要几分钟。跑完发给你。" }, "codex");
+
+    const pair = expectPair(await fallback.onUserPrompt(
+      { session_id: "s", cwd: "/tmp/project", prompt: "1 直推，2 可以，3 升", transcript_path: "/tmp/transcript.jsonl" },
+      "codex",
+    ));
+
+    expect(pair.assistantText).toContain("直推还是走 PR");
+    expect(pair.context?.taskBackground).toBe("看看发版");
+  });
+
+  it("keeps the pair as it was when no earlier turn holds the numbers, or none can be read", async () => {
+    const root = await mkdtemp(join(tmpdir(), "decision-numbered-reply-"));
+    const fallback = new TextCaptureFallback({
+      store: new TextCaptureStore(join(root, "text-pending"), { now: fixedNow }),
+      now: fixedNow,
+      readEarlierDecisionTurns: async () => { throw new Error("unreadable"); },
+    });
+    await fallback.onStop({ session_id: "s", cwd: "/tmp/project", last_assistant_message: "还在复跑全量测试。" }, "codex");
+
+    const pair = expectPair(await fallback.onUserPrompt(
+      { session_id: "s", cwd: "/tmp/project", prompt: "1 直推，2 可以，3 升", transcript_path: "/tmp/transcript.jsonl" },
+      "codex",
+    ));
+
+    expect(pair.assistantText).toBe("还在复跑全量测试。");
+  });
+
   it("leaves a prompt the client wrote itself unpaired, and pairs the reader's answer after it", async () => {
     const { fallback } = await setup();
     await fallback.onStop(
@@ -380,6 +421,120 @@ describe("TextCaptureFallback", () => {
     await writeFile(join(root, "text-pending", "earlier-build.json.held"), "");
     await store.pruneExpired();
     expect((await readdir(join(root, "text-pending"))).filter((name) => name.endsWith(".held"))).toEqual([]);
+  });
+
+  it("leaves the prompts Claude Code injects itself unpaired, by their wrapper or by the source it names", async () => {
+    const { fallback } = await setup();
+    const question = "CI 失败是依赖升级导致的。要我回滚依赖还是修复代码？";
+    const reminder = "<system-reminder>\nThe user opened src/app.ts in the IDE.\n</system-reminder>";
+    const injected: Array<Record<string, string>> = [
+      // As 2.1.304 hands them to the hook: a background agent's report coming back, another session's message.
+      { prompt: '<agent-message from="a1">\n[Subagent hand-back] The text below is the final report of a subagent.\n  评审已完成。\n</agent-message>' },
+      { prompt: '<cross-session-message from="reviewer">PR #12 的评审已经完成。</cross-session-message>' },
+      { prompt: reminder },
+      // A /loop wakeup or a schedule repeats a configured prompt as plain text: only the source, once sent, tells.
+      { prompt: "检查 CI 状态，失败就修复", source: "loop_wakeup" },
+      { prompt: "每天早上汇总一下昨晚的构建结果", source: "schedule_wakeup" },
+      { prompt: "PR #12 有新评论", source: "system" },
+      // A subagent's own prompt (Codex gives it the session id of the thread that spawned it).
+      { prompt: "回滚依赖", agent_id: "subagent-1" },
+    ];
+    for (const [index, fields] of injected.entries()) {
+      const session = { session_id: `session-${index}`, cwd: "/tmp/project" };
+      await fallback.onStop({ ...session, last_assistant_message: question }, "claude-code");
+      // Paired, it took the question's place: a /loop wakeup was recorded as the reader's choice, and the reader's
+      // own answer after it found nothing to pair with.
+      expect(await fallback.onUserPrompt({ ...session, ...fields }, "claude-code")).toBeNull();
+      expect(expectPair(await fallback.onUserPrompt({ ...session, prompt: "回滚依赖", source: "user" }, "claude-code")))
+        .toMatchObject({ assistantText: question, userText: "回滚依赖" });
+    }
+
+    // What the reader typed into an app on the SDK is the answer, past the reminder the app joined before it.
+    for (const [session, fields] of [
+      ["session-reminded", { prompt: `${reminder}\n修复代码`, source: "sdk" }],
+      ["session-sdk", { prompt: "修复代码", source: "sdk" }],
+    ] as const) {
+      await fallback.onStop({ session_id: session, cwd: "/tmp/project", last_assistant_message: question }, "claude-code");
+      expect(expectPair(await fallback.onUserPrompt({ session_id: session, cwd: "/tmp/project", ...fields }, "claude-code")))
+        .toMatchObject({ assistantText: question, userText: "修复代码" });
+    }
+  });
+
+  it("leaves an autonomous /loop's firing and a missed task's notice unpaired, by the headings Claude Code writes them under", async () => {
+    const { fallback } = await setup();
+    const question = "CI 失败是依赖升级导致的。要我回滚依赖还是修复代码？";
+    for (const [index, prompt] of [
+      // As 2.1.304 hands them to the hook, with no `source` to tell: the loop's sentinel resolved to its instructions
+      // on the first firing and to a reminder after, a loop.md loop's tasks, a one-shot task the scheduler missed.
+      "# Autonomous loop check\nYou're being invoked on a timer while the user is away or occupied.\n\n# Autonomous loop tick (dynamic pacing)\nRun the autonomous check using the loop instructions established earlier in this conversation.",
+      "# Autonomous loop tick\nRun the autonomous check using the loop instructions established earlier in this conversation.",
+      "# /loop tick — tasks from /tmp/project/.claude/loop.md\nThe user configured a loop-tasks file.",
+      "The following one-shot scheduled task was missed while Claude was not running. It has already been removed from .claude/scheduled_tasks.json.\nDo NOT execute this prompt yet.",
+    ].entries()) {
+      const session = { session_id: `loop-${index}`, cwd: "/tmp/project" };
+      await fallback.onStop({ ...session, last_assistant_message: question }, "claude-code");
+      // Paired, the loop's firing was recorded as the reader's choice, and their own answer found nothing to pair with.
+      expect(await fallback.onUserPrompt({ ...session, prompt }, "claude-code")).toBeNull();
+      expect(expectPair(await fallback.onUserPrompt({ ...session, prompt: "回滚依赖" }, "claude-code")))
+        .toMatchObject({ assistantText: question, userText: "回滚依赖" });
+    }
+  });
+
+  it("leaves a Codex automation's heartbeat unpaired, and pairs the reader's answer after it", async () => {
+    const { fallback } = await setup();
+    const session = { session_id: "codex-heartbeat", cwd: "/tmp/project" };
+    const question = "要先修复登录超时，还是先补测试？";
+    await fallback.onStop({ ...session, turn_id: "question", last_assistant_message: question }, "codex");
+    // The scheduler's envelope as codex-rs (history/src/heartbeat.rs) reads it: the hook names no trigger to tell it by.
+    const heartbeat = "<heartbeat>\n  <automation_id>nightly-check</automation_id>\n  <current_time_iso>2026-09-08T09:00:00Z</current_time_iso>\n  <instructions>\n检查 CI，失败就修复\n  </instructions>\n</heartbeat>\n";
+
+    expect(await fallback.onUserPrompt({ ...session, turn_id: "heartbeat", prompt: heartbeat }, "codex")).toBeNull();
+    expect(expectPair(await fallback.onUserPrompt({ ...session, turn_id: "answer", prompt: "先修复登录超时" }, "codex")))
+      .toMatchObject({ assistantText: question, userText: "先修复登录超时" });
+  });
+
+  it("pairs what the reader typed into Codex, past the browser state and the context its app and IDE put before it", async () => {
+    const { fallback } = await setup();
+    const question = "要先修复登录超时，还是先补测试？";
+    const browser = '<in-app-browser-context source="ambient-ui-state">\nThis block is automatically supplied ambient UI state, not part of the user\'s request.\n# In app browser:\n- The user has the in-app browser open with 1 tab.\n- Current URL: https://intranet.example.com/private-dashboard\n</in-app-browser-context>';
+    for (const [index, prompt] of [
+      // As the Codex app hands it to the hook: the browser's state, then the request under its heading. Paired whole,
+      // the open page's URL went into the note and the index as the reader's answer.
+      `\n${browser}\n\n## My request for Codex:\n先修复登录超时\n`,
+      // The app also names the heading shorter, and puts the files the reader mentioned before it.
+      `\n${browser}\n\n## My request:\n先修复登录超时\n`,
+      "\n# Files mentioned by the user:\n\n## login.ts: /Users/me/src/login.ts\n\n## My request:\n先修复登录超时\n",
+      // Codex's IDE context: the request follows the last heading, which a selection quoted in the context may hold too.
+      "# Context from my IDE setup:\n\n## Active file: src/login.ts\n\n## Active selection of the file:\n## My request for Codex:\n\n## Open tabs:\n- login.ts: src/login.ts\n\n## My request for Codex:\n先修复登录超时",
+      "## My request for Codex:\n先修复登录超时",
+    ].entries()) {
+      const session = { session_id: `codex-${index}`, cwd: "/tmp/project" };
+      await fallback.onStop({ ...session, turn_id: `question-${index}`, last_assistant_message: question }, "codex");
+      expect(expectPair(await fallback.onUserPrompt({ ...session, turn_id: `answer-${index}`, prompt }, "codex")))
+        .toMatchObject({ assistantText: question, userText: "先修复登录超时" });
+    }
+
+    // The reader's own Markdown is kept whole, a heading of the same name further down included.
+    const typed = "# 我的想法\n先修复登录超时\n## My request:\n顺手补测试";
+    await fallback.onStop({ session_id: "codex-typed", turn_id: "question-typed", cwd: "/tmp/project", last_assistant_message: question }, "codex");
+    expect(expectPair(await fallback.onUserPrompt({ session_id: "codex-typed", turn_id: "answer-typed", cwd: "/tmp/project", prompt: typed }, "codex")))
+      .toMatchObject({ userText: typed });
+  });
+
+  it("tells apart the same question answered the same way twice in one Claude Code session", async () => {
+    const { fallback } = await setup();
+    const answer = async (promptId: string) => {
+      await fallback.onStop(
+        { session_id: "session-1", cwd: "/tmp/project", last_assistant_message: "测试已全部通过。要我提交这些改动吗？" },
+        "claude-code",
+      );
+      return expectPair(await fallback.onUserPrompt(
+        { session_id: "session-1", cwd: "/tmp/project", prompt_id: promptId, prompt: "提交" },
+        "claude-code",
+      )).pairId;
+    };
+    // Claude Code sends no turn id: the second commit's pair took the first one's id and was dropped as its replay.
+    expect(await answer("prompt-1")).not.toBe(await answer("prompt-2"));
   });
 
   it("pairs non-decision text for asynchronous classification", async () => {
@@ -563,6 +718,26 @@ describe("TextCaptureFallback", () => {
     expect(JSON.stringify(pair)).not.toContain(unrelated);
   });
 
+  it("takes as the task only what the reader typed, past the browser state Codex joined to it in the transcript", async () => {
+    // With no last_assistant_message the turn is read from the transcript, and its task was the whole prompt there:
+    // the open page's URL went into the note's background.
+    const root = await mkdtemp(join(tmpdir(), "decision-text-context-"));
+    const fallback = new TextCaptureFallback({ store: new TextCaptureStore(join(root, "text-pending"), { now: fixedNow }), readLastDecisionTurn, now: fixedNow });
+    const transcriptPath = join(root, "rollout.jsonl");
+    const url = "https://intranet.example.com/private-dashboard";
+    const typed = `\n<in-app-browser-context source="ambient-ui-state">\n# In app browser:\n- Current URL: ${url}\n</in-app-browser-context>\n\n## My request:\n修复登录超时\n`;
+    await writeFile(transcriptPath, [
+      JSON.stringify({ type: "response_item", payload: { type: "message", role: "user", content: [{ type: "input_text", text: typed }] } }),
+      JSON.stringify({ type: "response_item", payload: { type: "message", role: "assistant", content: [{ type: "output_text", text: "先修复登录超时，还是先补测试？" }] } }),
+    ].join("\n"), "utf8");
+
+    await fallback.onStop({ session_id: "codex-transcript", turn_id: "question", cwd: "/tmp/project", transcript_path: transcriptPath }, "codex");
+    const pair = expectPair(await fallback.onUserPrompt({ session_id: "codex-transcript", turn_id: "answer", cwd: "/tmp/project", prompt: "先修复" }, "codex"));
+
+    expect(pair).toMatchObject({ assistantText: "先修复登录超时，还是先补测试？", context: { taskBackground: "修复登录超时" } });
+    expect(JSON.stringify(pair)).not.toContain(url);
+  });
+
   it("does not attach stale transcript context to direct text", async () => {
     const root = await mkdtemp(
       join(tmpdir(), "decision-stale-turn-"),
@@ -742,6 +917,56 @@ describe("TextCaptureFallback", () => {
     expect(record.mock.calls[0]?.[0]).not.toHaveProperty(
       "errorCode",
     );
+  });
+
+  it.each(["rules-v1", "rules-v2", "rules-v3", "rules-v4", "rules-v5", "rules-v6", "rules-v7", "rules-v8", "rules-v9", "rules-v10"])(
+    "accepts a pending analysis saved by %s rules",
+    async (detectorVersion) => {
+      const store = new TextCaptureStore(
+        join(await mkdtemp(join(tmpdir(), "decision-text-version-")), "text-pending"),
+      );
+      await store.save({
+        version: 2,
+        sourceClient: "codex",
+        sessionId: `version-${detectorVersion}`,
+        cwd: "/tmp/project",
+        analysis: {
+          question: "1 和 3 要做吗？",
+          options: [],
+          preScore: 80,
+          signals: ["has_choice_prompt"],
+          detectorVersion,
+        },
+        capturedAt: new Date().toISOString(),
+      } as never);
+      await expect(
+        store.consume("codex", `version-${detectorVersion}`),
+      ).resolves.toMatchObject({
+        pending: { version: 3, assistantText: "1 和 3 要做吗？" },
+      });
+    },
+  );
+
+  it("does not read a pending analysis from unknown rules", async () => {
+    const store = new TextCaptureStore(
+      join(await mkdtemp(join(tmpdir(), "decision-text-version-")), "text-pending"),
+    );
+    await expect(
+      store.save({
+        version: 2,
+        sourceClient: "codex",
+        sessionId: "version-rules-v11",
+        cwd: "/tmp/project",
+        analysis: {
+          question: "继续吗？",
+          options: [],
+          preScore: 80,
+          signals: [],
+          detectorVersion: "rules-v11",
+        },
+        capturedAt: new Date().toISOString(),
+      } as never),
+    ).rejects.toThrow();
   });
 
   it("stores private version-3 pending data and migrates legacy versions", async () => {

@@ -46,14 +46,14 @@ describe("tray configuration", () => {
     expect(image.setTemplateImage).toHaveBeenCalledWith(true);
     expect(tray.setTitle).toHaveBeenCalledWith("");
     expect(tray.setToolTip).toHaveBeenCalledWith(
-      "Decision · 5 项待办",
+      "Paraself · 5 项待处理",
     );
     expect(tray.setContextMenu).toHaveBeenCalledWith(menu);
     expect(menu.template).toHaveLength(4);
     expect(menu.template[0]).toMatchObject({
       label: "首页",
-      sublabel: "5 项待办",
-      accessibilityLabel: "打开首页，5 项待办",
+      sublabel: "5 项待处理",
+      accessibilityLabel: "打开首页，5 项待处理",
     });
     expect(menu.template[1]).toMatchObject({
       label: "设置…",
@@ -98,11 +98,11 @@ describe("tray configuration", () => {
 
     expect(tray.setTitle).toHaveBeenCalledWith("");
     expect(tray.setToolTip).toHaveBeenCalledWith(
-      "Decision · 暂无待办",
+      "Paraself · 暂无待处理",
     );
-    expect(menu.template[0]?.sublabel).toBe("暂无待办");
+    expect(menu.template[0]?.sublabel).toBe("暂无待处理");
     expect(menu.template[0]?.accessibilityLabel).toBe(
-      "打开首页，暂无待办",
+      "打开首页，暂无待处理",
     );
   });
 
@@ -123,7 +123,7 @@ describe("tray configuration", () => {
     });
 
     expect(tray.setTitle).toHaveBeenCalledWith("");
-    expect(menu.template[0]?.sublabel).toBe("128 项待办");
+    expect(menu.template[0]?.sublabel).toBe("128 项待处理");
   });
 
   it("names due reviews apart from the rest of the workload", () => {
@@ -148,7 +148,7 @@ describe("tray configuration", () => {
     // A single merged number cannot say that a review came due; counted on top of a smaller total as 待复盘,
     // it said another number, and another name, than the home page.
     expect(tray.setToolTip).toHaveBeenCalledWith(
-      "Decision · 5 项待办，其中 3 条需复盘",
+      "Paraself · 5 项待处理，其中 3 条需复盘",
     );
   });
 
@@ -171,6 +171,6 @@ describe("tray configuration", () => {
       quit: vi.fn(),
     });
 
-    expect(tray.setToolTip).toHaveBeenCalledWith("Decision · 暂无待办");
+    expect(tray.setToolTip).toHaveBeenCalledWith("Paraself · 暂无待处理");
   });
 });

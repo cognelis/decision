@@ -1,9 +1,10 @@
 import { fetch as proxyFetch, type Dispatcher } from "undici";
-import type {
-  ModelProxy,
-  NormalizedTokenUsage,
+import {
+  clipText,
+  type ModelProxy,
+  type NormalizedTokenUsage,
 } from "@cognelis/decision-protocol";
-import { createProviderDispatcher, isLoopback, proxyPrivateValues } from "./provider-network.js";
+import { ModelNetworkPolicy, isLoopback, proxyPrivateValues } from "./provider-network.js";
 import type {
   ModelInvocationErrorCode,
   ModelInvocationInput,
@@ -20,6 +21,8 @@ export interface HttpModelRequest {
   sensitivePaths?: string[];
   signal?: AbortSignal;
   proxy?: ModelProxy;
+  provider?: string;
+  model?: string | undefined;
 }
 
 export interface HttpModelResponse {
@@ -162,7 +165,11 @@ const failureText = (error: unknown): string => {
 
 const statusErrorCode = (
   status: number,
+  body: unknown,
 ): ModelInvocationErrorCode => {
+  if (refusedContent(status, body)) {
+    return "content_refused";
+  }
   // No such address or model: what is wrong is the configuration, not what came back.
   if (status === 404) {
     return "invalid_configuration";
@@ -186,6 +193,80 @@ const statusErrorCode = (
     ? "provider_unavailable"
     : "invalid_configuration";
 };
+
+const record = (value: unknown): Record<string, unknown> | undefined =>
+  value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+
+/**
+ * The codes a 400 names the provider's content moderation by, as each documents them: DashScope's data inspection and
+ * its custom and FAQ rules, Zhipu's 1301, and Volcano Ark's codes for sensitive text in and out (its risk service
+ * failing to answer, ContentSecurityDetectionError, is not one).
+ */
+const REFUSAL_CODES = new Set([
+  "DataInspectionFailed", "data_inspection_failed", "CustomRoleBlocked", "FaqRuleBlocked",
+  "1301",
+  "SensitiveContentDetected", "SensitiveContentDetected.SevereViolation", "SensitiveContentDetected.Violence",
+  "InputTextSensitiveContentDetected", "InputTextSensitiveContentDetected.PolicyViolation", "OutputTextSensitiveContentDetected",
+  "InputTextRiskDetection", "OutputTextRiskDetection",
+]);
+
+/**
+ * Whether the provider's content moderation refused the request, by the signals each documents: OpenRouter a 403
+ * with the reasons the input was flagged for, or an error_type of content_policy_violation or refusal (in the error's
+ * metadata, the error or the body, as each API puts it); Azure OpenAI and Kimi a 400 with code or type content_filter;
+ * the rest a 400 with one of REFUSAL_CODES. Filed with the other 403s, it read as a key without access and a PR review
+ * stopped every group for one group's diff; with the other 400s, as a setting to fix.
+ */
+const refusedContent = (status: number, body: unknown): boolean => {
+  const root = record(body) ?? {};
+  const error = record(root.error) ?? root;
+  const metadata = record(error.metadata);
+  if (status === 403) {
+    const type = metadata?.error_type ?? error.error_type ?? root.error_type;
+    return Array.isArray(metadata?.reasons) || type === "content_policy_violation" || type === "refusal";
+  }
+  return status === 400 && (error.code === "content_filter" || error.type === "content_filter" || REFUSAL_CODES.has(String(error.code)));
+};
+
+/** What a body that is not JSON looked like: its length and whether it opens as markup, never what it said. */
+const unparsedBody = (status: number, text: string): string =>
+  `HTTP ${status}: the body is not JSON (length=${text.length}${text.trimStart().startsWith("<") ? ", opens as markup" : ""})`;
+
+/**
+ * What a provider's error body calls itself (type, code, status, message), as JSON, never the rest of it; undefined
+ * when it names none. Providers quote the request back in a refusal (OpenRouter's moderation names the flagged input,
+ * a FastAPI service each invalid field's input, Azure what its filter matched, in innererror), and a trace keeps this
+ * even with trace content off. Each value is cleaned before it is cut: cut first, a key or a path across the cut left
+ * its first characters, which were no longer the whole value to replace.
+ */
+export const describedError = (body: unknown, clean: (value: string) => string): string | undefined => {
+  // Gemini answers with a list of one error; FastAPI with `detail`, a sentence or a list of field errors.
+  const root = record(Array.isArray(body) ? body[0] : body) ?? {};
+  const field = Array.isArray(root.detail) ? record(root.detail[0]) : undefined;
+  const error = record(root.error) ?? (field === undefined ? root : { type: field.type, message: field.msg });
+  const message = typeof root.error === "string" ? root.error : typeof root.detail === "string" ? root.detail : error.message;
+  const said = Object.fromEntries(
+    ([["type", error.type], ["code", error.code], ["status", error.status], ["message", message]] as const)
+      .filter(([, value]) => (typeof value === "string" && value.trim().length > 0) || Number.isInteger(value))
+      .map(([key, value]) => [key, typeof value === "string" ? clipText(clean(value), key === "message" ? 300 : 100) : value]),
+  );
+  return Object.keys(said).length === 0 ? undefined : JSON.stringify({ error: said });
+};
+
+/** A body as JSON, or undefined when it is not JSON. */
+const parsedBody = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+};
+
+/** A refusal, described: its status and what its error calls itself. Written as "HTTP 403: {json}", which the trace page reads the message from. */
+const refusalDiagnostic = (status: number, text: string, body: unknown, clean: (value: string) => string): string =>
+  body === undefined
+    ? unparsedBody(status, text)
+    : `HTTP ${status}: ${describedError(body, clean) ?? `a JSON body without an error message (length=${text.length})`}`;
 
 const requestIdFrom = (headers: Pick<Headers, "get">): string | undefined =>
   headers.get("x-request-id") ??
@@ -227,11 +308,20 @@ const readBoundedBody = async (
   return Buffer.concat(chunks, total);
 };
 
+export interface ModelNetworkAudit {
+  provider: string;
+  model: string;
+  policy: "required";
+  route: "proxy" | "loopback" | "blocked";
+  result: "succeeded" | "proxy_failed" | "failed" | "blocked";
+  status?: number;
+  errorCode?: ModelInvocationErrorCode;
+}
+
 export class HttpModelTransport {
   constructor(
     private readonly environment: NodeJS.ProcessEnv = process.env,
-    /** Tests only: a loopback server standing in for a remote endpoint, to exercise proxy routing. */
-    private readonly options: { proxyLoopback?: boolean } = {},
+    private readonly options: { audit?: (event: ModelNetworkAudit) => void } = {},
   ) {}
   async postJson(input: HttpModelRequest): Promise<HttpModelResponse> {
     return this.#requestJson(input, "POST");
@@ -282,11 +372,20 @@ export class HttpModelTransport {
     }, input.timeoutMs);
     timer.unref();
     let dispatcher: Dispatcher | undefined;
+    let route: ModelNetworkAudit["route"] = "blocked";
+    let status: number | undefined;
+    let outcome: ModelNetworkAudit["result"] = "blocked";
+    let errorCode: ModelInvocationErrorCode | undefined;
     try {
-      // Loopback never goes through a proxy: plain HTTP is allowed only because it does not leave the
-      // machine, and a proxy would see the key and the prompt (and its own "localhost" is not this one).
-      try { dispatcher = createProviderDispatcher(input.proxy, this.environment, this.options.proxyLoopback === true ? undefined : url); }
-      catch { throw new ModelProviderError("invalid_configuration", "Model proxy configuration is invalid"); }
+      try {
+        const policy = new ModelNetworkPolicy(this.environment);
+        const resolved = policy.route(url, input.proxy);
+        dispatcher = policy.dispatcher(resolved);
+        route = resolved.kind;
+        outcome = "failed";
+      } catch {
+        throw new ModelProviderError("invalid_configuration", "Model network policy blocked request: configure a valid MODEL_PROXY_URL or model proxy; external DIRECT and bypass lists are forbidden");
+      }
       let response: Awaited<ReturnType<typeof proxyFetch>>;
       try {
         response = await proxyFetch(url, {
@@ -314,13 +413,17 @@ export class HttpModelTransport {
         }
         throw new ModelProviderError(
           "network_error",
-          "Model API request failed",
+          route === "proxy" ? "Model proxy connection failed" : "Model API request failed",
           {
-            diagnosticExcerpt: sanitize(failureText(error)),
+            diagnosticExcerpt: route === "proxy" ? "Model proxy connection failed (no direct fallback)" : sanitize(failureText(error)),
           },
         );
       }
-      const providerRequestId = requestIdFrom(response.headers);
+      status = response.status;
+      // Cleaned as the diagnostics are: a service that echoes the key in a request id would carry it into every
+      // trace and test result that keeps the id, whatever the backend.
+      const echoedRequestId = requestIdFrom(response.headers);
+      const providerRequestId = echoedRequestId === undefined ? undefined : sanitize(echoedRequestId);
       if (response.status >= 300 && response.status < 400) {
         throw new ModelProviderError(
           "redirect_rejected",
@@ -340,14 +443,13 @@ export class HttpModelTransport {
       );
       const text = bytes.toString("utf8");
       if (!response.ok) {
+        const body = parsedBody(text);
         throw new ModelProviderError(
-          statusErrorCode(response.status),
+          statusErrorCode(response.status, body),
           `Model API returned HTTP ${response.status}`,
           {
             providerRequestId,
-            diagnosticExcerpt: sanitize(
-              `HTTP ${response.status}: ${text}`,
-            ),
+            diagnosticExcerpt: refusalDiagnostic(response.status, text, body, sanitize),
           },
         );
       }
@@ -362,25 +464,37 @@ export class HttpModelTransport {
           "Model API returned malformed JSON",
           {
             providerRequestId,
-            diagnosticExcerpt: `HTTP ${response.status}: the body is not JSON (length=${text.length}${text.trimStart().startsWith("<") ? ", opens as markup" : ""})`,
+            diagnosticExcerpt: unparsedBody(response.status, text),
           },
         );
       }
 
+      outcome = "succeeded";
       return {
         status: response.status,
-        headers: Object.fromEntries(response.headers.entries()),
+        headers: Object.fromEntries([...response.headers.entries()].map(([name, value]) => [name, sanitize(value)])),
         ...(providerRequestId === undefined
           ? {}
           : { requestId: providerRequestId }),
         json,
       };
     } catch (error) {
+      errorCode = timedOut ? "timeout" : input.signal?.aborted ? "cancelled" : error instanceof ModelProviderError ? error.code : "network_error";
+      if (route === "proxy" && status === undefined && errorCode !== "cancelled") outcome = "proxy_failed";
       if (timedOut) throw new ModelProviderError("timeout", "Model API request timed out");
       if (input.signal?.aborted) throw new ModelProviderError("cancelled", "Model API request was cancelled");
       if (error instanceof ModelProviderError) throw error;
-      throw new ModelProviderError("network_error", "Model API response could not be read", { diagnosticExcerpt: sanitize(failureText(error)) });
+      throw new ModelProviderError("network_error", "Model API response could not be read", { diagnosticExcerpt: route === "proxy" ? "Model proxy response stream failed (no direct fallback)" : sanitize(failureText(error)) });
     } finally {
+      const event: ModelNetworkAudit = {
+        provider: sanitize(input.provider ?? "http-model"),
+        model: sanitize(input.model ?? "catalog"),
+        policy: "required", route, result: outcome,
+        ...(status === undefined ? {} : { status }),
+        ...(errorCode === undefined ? {} : { errorCode }),
+      };
+      // Logging failures cannot prevent dispatcher cleanup or change the request result.
+      try { (this.options.audit ?? ((value) => console.info("model-network", JSON.stringify(value))))(event); } catch {}
       // Destroy also closes incomplete/error bodies, so a dead proxy cannot stall fallback cleanup.
       await dispatcher?.destroy().catch(() => undefined);
       clearTimeout(timer);

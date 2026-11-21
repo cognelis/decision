@@ -1,0 +1,26 @@
+/* 快速添加对话框（挂在 body 上，不在 .todo-panel 里）。 */
+.todo-quick-add-form .todo-quick-add-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 24px; margin: 0; padding: 0; list-style: none; }
+.todo-quick-add-form .todo-quick-add-chip {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 22px; padding: 0 8px; border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm); background: var(--surface-inset); color: var(--text); cursor: pointer; font: inherit; font-size: var(--t-body);
+}
+.todo-quick-add-form .todo-quick-add-chip:hover { background: var(--surface-hover); }
+.todo-quick-add-form .todo-quick-add-chip:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 1px; }
+.todo-quick-add-form .todo-quick-add-chip > span { color: var(--muted); }
+.todo-quick-add-form .todo-quick-add-chip > strong { font-weight: 600; }
+.todo-quick-add-form .todo-quick-add-chip svg { width: 10px; height: 10px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; }
+.todo-quick-add-form .todo-quick-add-recognised { margin: 0; color: var(--muted); font-size: var(--t-small); }
+.todo-quick-add-form .todo-quick-add-summary { margin: 0; color: var(--text-soft); font-size: var(--t-body); line-height: 1.6; overflow-wrap: anywhere; }
+.todo-quick-add-form .todo-quick-add-summary strong { color: var(--text); font-weight: 600; }
+.todo-quick-add-form .todo-quick-add-unmatched {
+  display: grid; gap: 8px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--border));
+  border-radius: var(--r-md); background: var(--warning-surface); color: var(--text-soft); font-size: var(--t-body); line-height: 1.5;
+}
+.todo-quick-add-form .todo-quick-add-unmatched p { margin: 0; }
+.todo-quick-add-form .todo-quick-add-unmatched button { justify-self: start; }
+
+.todo-quick-add-notice {
+  position: fixed; right: 20px; bottom: 20px; z-index: 50; margin: 0; padding: 8px 14px; border: 1px solid var(--border-strong);
+  border-radius: var(--r-md); background: var(--surface-raised); color: var(--text); font-size: var(--t-body); box-shadow: var(--shadow-md, 0 4px 16px rgb(0 0 0 / 18%));
+}
+.todo-quick-add-form .todo-quick-add-archived { margin: 0; padding: 6px 10px; border-radius: var(--r-sm); background: var(--warning-surface); color: var(--warning); font-size: var(--t-body); }

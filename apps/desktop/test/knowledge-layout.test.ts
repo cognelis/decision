@@ -26,7 +26,17 @@ const scriptPath = new URL(
 const repositoryRoot = new URL("../../../", import.meta.url).pathname;
 
 type Theme = "light" | "dark";
-type Mode = "default" | "compact" | "indexing" | "semantic-unavailable";
+type Mode = "default" | "compact" | "indexing" | "semantic-unavailable" | "journal-long";
+
+interface JournalLayoutMetrics {
+  mode: "journal-long";
+  cards: number;
+  listScrolls: boolean;
+  viewInsideWindow: boolean;
+  lastCardReachable: boolean;
+  noHorizontalOverflow: boolean;
+  missingFields: string[];
+}
 
 interface FocusEvidence {
   active: boolean;
@@ -141,7 +151,10 @@ const expectStableShell = (metrics: KnowledgeLayoutMetrics) => {
     "问答",
     "知识",
     "评审",
+    "本地审阅",
+    "待办",
     "方法论",
+    "提示词",
     "设置",
   ]);
   expect(metrics.heading).toBe("知识");
@@ -262,6 +275,22 @@ describe.skipIf(process.platform !== "darwin")(
         expect(metrics.resultPathTextOverflow).not.toContain("ellipsis");
       },
     );
+
+    it("keeps every preference and idea reachable, inside its card and shown in full", async () => {
+      // The page scroll is overflow:hidden: an unbounded journal list there was cut off with nothing to scroll, and a
+      // token with no break pushed the cards past the window.
+      const metrics = (await measure("light", "journal-long")) as unknown as JournalLayoutMetrics;
+
+      expect(metrics).toEqual({
+        mode: "journal-long",
+        cards: 20,
+        listScrolls: true,
+        viewInsideWindow: true,
+        lastCardReachable: true,
+        noHorizontalOverflow: true,
+        missingFields: [],
+      });
+    });
 
     it("wraps controls without horizontal overflow at the minimum window", async () => {
       const metrics = await measure("dark", "compact");

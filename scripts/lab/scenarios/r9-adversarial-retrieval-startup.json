@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "r9-startup-immediate-en",
+      "description": "App 启动后立即写入合成笔记并查询，验证查询嵌入不被同步索引批次阻塞",
+      "beforeSeed": [
+        {
+          "id": "startup-seed",
+          "file": {
+            "path": "Decision Journal/summarize/D9140.md",
+            "content": "---\nid: D9140\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"付款请求必须携带幂等键\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# payment idempotency\n\nEvery payment request carries an idempotency key; retries return the first result.\n"
+          }
+        },
+        {
+          "id": "startup-seed",
+          "file": {
+            "path": "Decision Journal/summarize/D9141.md",
+            "content": "---\nid: D9141\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"访问令牌每小时轮换\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# access token rotation\n\nShort-lived access tokens rotate hourly.\n"
+          }
+        },
+        {
+          "id": "immediate-after-start",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "How can retries avoid charging for the same payment twice?",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "mustInclude": [
+              "D9140"
+            ],
+            "k": 3,
+            "mustExclude": [
+              "D9141"
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "id": "after-index-ready",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "How can retries avoid charging for the same payment twice?",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "mustInclude": [
+              "D9140"
+            ],
+            "k": 3,
+            "mustExclude": [
+              "D9141"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-startup-immediate-zh",
+      "description": "App 启动后立刻查询中文同义表达，并排除其他项目近词记录",
+      "beforeSeed": [
+        {
+          "id": "startup-seed",
+          "file": {
+            "path": "Decision Journal/summarize/D9142.md",
+            "content": "---\nid: D9142\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"通知投递失败后间隔翻倍重发\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 消息重试\n\n通知发送失败后按指数退避自动重试。\n"
+          }
+        },
+        {
+          "id": "startup-seed",
+          "file": {
+            "path": "Decision Journal/summarize/D9143.md",
+            "content": "---\nid: D9143\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"导入失败由人工处理\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 导入重试\n\n导入失败后由操作员手工重跑。\n"
+          }
+        },
+        {
+          "id": "immediate-after-start",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "告警没有送达时怎么自动延迟补发？",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "mustInclude": [
+              "D9142"
+            ],
+            "k": 3,
+            "mustExclude": [
+              "D9143"
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "id": "after-index-ready",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "告警没有送达时怎么自动延迟补发？",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "mustInclude": [
+              "D9142"
+            ],
+            "k": 3,
+            "mustExclude": [
+              "D9143"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "r9-startup-immediate-rank",
+      "description": "启动时查询词面弱的语义命中，目标不能被相近词项挤出前列",
+      "beforeSeed": [
+        {
+          "id": "startup-seed",
+          "file": {
+            "path": "Decision Journal/summarize/D9144.md",
+            "content": "---\nid: D9144\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"失败三次后进入死信队列\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 任务故障策略\n\nRepeated background job failures use exponential backoff and then move to a dead-letter queue.\n"
+          }
+        },
+        {
+          "id": "startup-seed",
+          "file": {
+            "path": "Decision Journal/summarize/D9145.md",
+            "content": "---\nid: D9145\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"任务记录采用 JSON\"\nproject: \"lab\"\ntags: [\"synthetic\"]\nsupersedes: []\nsuperseded_by: null\n---\n# 数据库表格式\n\n数据库任务记录序列化为 JSON 格式。\n"
+          }
+        },
+        {
+          "id": "immediate-after-start",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "What is the recovery path when asynchronous work keeps failing?",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "mustInclude": [
+              "D9144"
+            ],
+            "k": 3,
+            "mustExclude": [
+              "D9145"
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "id": "after-index-ready",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "What is the recovery path when asynchronous work keeps failing?",
+            "project": "lab",
+            "limit": 3
+          },
+          "expect": {
+            "mustInclude": [
+              "D9144"
+            ],
+            "k": 3,
+            "mustExclude": [
+              "D9145"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

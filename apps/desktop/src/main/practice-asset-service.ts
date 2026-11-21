@@ -65,7 +65,7 @@ export const practiceAssetOutputJsonSchema = {
   },
 } as const;
 
-const promptFor = (kind: PracticeAssetKind): string => `你是 Decision 的${
+const promptFor = (kind: PracticeAssetKind): string => `你是 Paraself 的${
   kind === "skill" ? "技能草案" : "工作流草案"
 }生成器。输入只包含用户已经审核并采纳的方法论原则。
 

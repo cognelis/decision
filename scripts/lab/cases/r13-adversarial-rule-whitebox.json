@@ -1,0 +1,336 @@
+[
+  {
+    "id": "wb-r13-note-simple-no-tools",
+    "group": "closing-note",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "A. 用 SQLite 保存本机任务。\nB. 用 PostgreSQL 保存共享任务。\n\n这次你想采用哪种？\n\n按你的要求，我没有运行工具或修改文件。",
+    "userText": "选 A。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-wait-note-three-blocks",
+    "group": "closing-note",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 立即全量发布。\nB. 先灰度发布。\n\n选 A 还是 B？\n\n我会等你的回复再继续。\n\nStatus: 尚未发布。",
+    "userText": "选 B。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-asterisk-note",
+    "group": "closing-note",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [
+      "C"
+    ],
+    "assistantText": "A. 本地 JSON。\nB. SQLite。\nC. PostgreSQL。\n\n你决定用哪一个？\n\n*注：本次没有运行测试。*",
+    "userText": "C。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-note-but-deployed",
+    "group": "closing-note-material",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 手动回滚。\nB. 自动回滚。\n\n你想选 A 还是 B？\n\n本轮没有运行测试，但 A 已经部署到生产环境。",
+    "userText": "收到，当前状态清楚。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-note-request-after-negation",
+    "group": "closing-note-material",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 保留旧索引。\nB. 重建索引。\n\n哪个更合适？\n\n未运行迁移；请现在先执行回滚，再检查索引状态。",
+    "userText": "我先照你说的检查状态。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-status-label-with-result",
+    "group": "closing-note-material",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. Redis。\nB. 本地缓存。\n\n你要采用哪项？\n\nStatus: B 已经在生产环境启用。",
+    "userText": "知道了。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-factual-question-no-tests",
+    "group": "closing-note-material",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "测试报告里有 3 个失败。\n\n你想知道哪个测试失败吗？\n\n本次没有运行额外测试。",
+    "userText": "先解释失败原因。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-status-no-choice-question",
+    "group": "closing-note-material",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "Status: 两个 worker 都已启动。\n本次没有修改任何文件。",
+    "userText": "好的。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-quoted-reply-in-tail",
+    "group": "closing-note-material",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 立即修复。\nB. 暂缓修复。\n\n你倾向哪一个？\n\n注：文档里原话是“请回复 A 或 B”，这里只是在引用旧说明。",
+    "userText": "引用已经看到了。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-three-reminders-last-material",
+    "group": "closing-note-material",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 先迁移。\nB. 先备份。\n\n你希望先做哪件事？\n\n我会等你确认。\n\n这次没有运行工具。\n\n但数据库已经迁移完成。",
+    "userText": "迁移完成这个状态我知道了。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-recommendation-then-wait",
+    "group": "closing-remark-run",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 同步写入。\nB. 后台队列。\n\n这次你想采用 A 还是 B？\n\n我倾向 B，因为它不会阻塞请求。\n\n我会等你决定。",
+    "userText": "采用 B。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-conditional-and-completed-action",
+    "group": "conditional-on-reply",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 逐步灰度。\nB. 一次全量。\n\n你批准 A 还是 B？\n\n确认后我会继续操作。\n\n实际上 A 已经部署到生产环境。",
+    "userText": "生产已经部署，我知道了。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-conditional-live-question",
+    "group": "conditional-on-reply",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "A. 用 PostgreSQL。\nB. 用 SQLite。\n\nWhich option should I adopt, A or B?\n\nIf you choose A, I will update the configuration and add a migration script.",
+    "userText": "Choose A.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-remarker-claims-current-work",
+    "group": "closing-remark-run",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. 重启服务。\nB. 只清理缓存。\n\n你要我选 A 还是 B？\n\n收到回复后，我会按你的选择继续。\n\n我已经重启了服务并清掉缓存。",
+    "userText": "操作已经做完。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-three-explanatory-blocks",
+    "group": "closing-remark-run",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [
+      "C"
+    ],
+    "assistantText": "A. 每次请求刷新缓存。\nB. 每小时刷新缓存。\nC. 使用 TTL 自动过期。\n\n你想选哪一种？\n\nA 会增加请求延迟。\n\nB 需要处理刷新失败。\n\n等你回复后我再修改配置。",
+    "userText": "选 C。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-question-in-quoted-tail",
+    "group": "closing-remark-run",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "排查结果已经写入报告。\n\n报告引用了旧消息：“你会选择 A 还是 B？”\n\n没有待确认的改动。",
+    "userText": "收到。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-use-option-b-go-ahead",
+    "group": "takes-a-go",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 保留旧接口。\nB. 切换到新接口。\n\n需要我采用哪个方案？",
+    "userText": "Please use B to update the client.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-we-will-use-option-b",
+    "group": "takes-a-go",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 继续使用 REST。\nB. 改用 GraphQL。\n\n你决定采用哪种 API？",
+    "userText": "We will use B for the new endpoint.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-switch-to-option-b",
+    "group": "takes-a-go",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 使用旧版运行时。\nB. 升级到新版运行时。\n\n选 A 还是 B？",
+    "userText": "Switch to B.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-use-b-diff-only-review",
+    "group": "takes-a-go-look",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. 应用新的重试策略。\nB. 保留当前重试策略。\n\nWould you like to review B's diff or apply A?",
+    "userText": "Use B's diff to review the change; do not implement it yet.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-use-option-b-only-inspect",
+    "group": "takes-a-go-look",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. 执行迁移。\nB. 保持当前 schema。\n\n现在是检查 B 的迁移 diff，还是执行 A？",
+    "userText": "Use option B only to inspect the migration diff.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-use-b-version",
+    "group": "takes-a-go",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 维持 Node 20。\nB. 升级到 Node 22。\n\n你想采用哪个版本？",
+    "userText": "Use B's version for the build.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-use-material-not-option",
+    "group": "takes-a-go-look",
+    "decision": true,
+    "expectedBand": "medium",
+    "expectedSelected": [],
+    "assistantText": "A. 立即发布。\nB. 暂缓发布。\n\nWould you like to review B's release notes or publish A?",
+    "userText": "Use B's release notes to review the risks; do not publish.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-measure-before-handoff-cn",
+    "group": "handed-back-measure",
+    "decision": true,
+    "expectedBand": "low",
+    "expectedSelected": [],
+    "assistantText": "A. 处理速度快。\nB. 资源占用少。\n\n你想采用哪项？\n\n按响应时间最短的由你决定。",
+    "userText": "都可以，你按响应时间最短的决定。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-measure-after-handoff-en",
+    "group": "handed-back-measure",
+    "decision": true,
+    "expectedBand": "low",
+    "expectedSelected": [],
+    "assistantText": "A. Lower latency.\nB. Lower memory use.\n\nWhich option should we use?\n\nLet the option with the shortest response time decide the choice.",
+    "userText": "Either is fine; whichever has the shortest response time is your choice.",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-time-detail-and-explicit-option",
+    "group": "handed-back-measure",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "A. 逐步扩容。\nB. 一次扩容。\n\n你选哪种扩容策略？",
+    "userText": "选 B；具体上线时间由你安排。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-handoff-numeric-id",
+    "group": "hands-over-choice",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ],
+    "assistantText": "1. 只更新 API。\n2. 同时更新 API 和 worker。\n\n请选择要批准的项目。请回复批准的数字 ID。",
+    "userText": "2",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-handoff-factual-id-request",
+    "group": "hands-over-choice-false-positive",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "日志里有多个 job。\n\n请回复失败 job 的任务 ID，我会帮你查原因。",
+    "userText": "job-17。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-handoff-ticket-id",
+    "group": "hands-over-choice-false-positive",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "请告诉我这次失败对应的 ticket ID，便于我查日志。",
+    "userText": "TCK-42。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-handoff-letter-ambiguous-fact",
+    "group": "hands-over-choice-false-positive",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "配置项 A/B 表示两个环境。\n\n请回复部署记录中的环境 ID，以便定位日志。",
+    "userText": "prod-2。",
+    "source": "synthetic"
+  },
+  {
+    "id": "wb-r13-conditional-without-question",
+    "group": "conditional-on-reply",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": [],
+    "assistantText": "A. Update the cache TTL.\nB. Keep the current TTL.\n\nIf you choose A, I will update the configuration and add a migration note.",
+    "userText": "A sounds reasonable, but I have not decided yet.",
+    "source": "synthetic"
+  }
+]

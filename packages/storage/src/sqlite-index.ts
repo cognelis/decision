@@ -14,7 +14,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { isSqliteCorruptionError } from "./obsidian-search-index.js";
 import { expireQuarantined, QUARANTINE_MAXIMUM_AGE_MS } from "./quarantine.js";
-import { foldedText, searchTokens } from "./search-text.js";
+import { foldedText, searchedContext, searchTokens } from "./search-text.js";
 
 import type { ParsedStoredNote } from "./markdown.js";
 
@@ -44,6 +44,8 @@ export interface IndexedDecision {
   outcomeLesson: string | null;
   outcomeReviewedAt: string | null;
   reviewDueDate: string | null;
+  /** Why the review was scheduled as the decision was written (IMP-123); empty for every other. */
+  reviewScheduleReasons?: string[];
   appliedPrincipleIds: string[];
 }
 
@@ -102,6 +104,7 @@ interface DecisionRow {
   outcome_lesson: string | null;
   outcome_reviewed_at: string | null;
   review_due_date: string | null;
+  review_schedule_reasons: string | null;
   applied_principle_ids: string;
 }
 
@@ -153,6 +156,7 @@ const mapRow = (row: DecisionRow): IndexedDecision => ({
   outcomeLesson: row.outcome_lesson,
   outcomeReviewedAt: row.outcome_reviewed_at,
   reviewDueDate: row.review_due_date,
+  reviewScheduleReasons: JSON.parse(row.review_schedule_reasons ?? "[]") as string[],
   appliedPrincipleIds: parseAppliedPrincipleIds(
     row.applied_principle_ids ?? "[]",
   ),
@@ -193,6 +197,7 @@ const ensureCaptureColumns = (database: DatabaseSync): void => {
     ).map((column) => column.name),
   );
   const columns = [
+    ["confirmed_at", "TEXT"],
     ["capture_mode", "TEXT"],
     ["capture_semantic_key", "TEXT"],
     ["source_event_id", "TEXT"],
@@ -206,6 +211,7 @@ const ensureCaptureColumns = (database: DatabaseSync): void => {
     ["outcome_reviewed_at", "TEXT"],
     ["review_due_date", "TEXT"],
     ["applied_principle_ids", "TEXT NOT NULL DEFAULT '[]'"],
+    ["review_schedule_reasons", "TEXT NOT NULL DEFAULT '[]'"],
   ] as const;
   for (const [name, type] of columns) {
     if (!existing.has(name)) {
@@ -295,7 +301,8 @@ const REFILLED_COLUMNS = [
   "question",
   "selected_option",
   "coalesce(rationale, '')",
-  "coalesce(context, '')",
+  // As a written row has it (searchedContext): made again with the summary's lines, a migration brought them back.
+  "searched_context(coalesce(context, ''))",
   "coalesce(expected_outcome, '')",
   "coalesce(outcome, '')",
   "coalesce(outcome_lesson, '')",
@@ -343,6 +350,7 @@ const createDatabase = (path: string): DatabaseSync => {
       CREATE TABLE IF NOT EXISTS decisions (
         id TEXT PRIMARY KEY,
         created TEXT NOT NULL,
+        confirmed_at TEXT,
         status TEXT NOT NULL,
         source_client TEXT NOT NULL,
         project TEXT NOT NULL,
@@ -367,6 +375,7 @@ const createDatabase = (path: string): DatabaseSync => {
         outcome_reviewed_at TEXT,
         review_due_date TEXT,
         applied_principle_ids TEXT NOT NULL DEFAULT '[]',
+        review_schedule_reasons TEXT NOT NULL DEFAULT '[]',
         file_stamp TEXT
       );
       CREATE INDEX IF NOT EXISTS decisions_rationale_status
@@ -389,6 +398,7 @@ const createDatabase = (path: string): DatabaseSync => {
     ensureCaptureColumns(database);
     ensureStampColumn(database);
     database.function("fold", { deterministic: true }, (text) => (typeof text === "string" ? foldedText(text) : text));
+    database.function("searched_context", { deterministic: true }, (text) => (typeof text === "string" ? searchedContext(text) : text));
     ensureContextFts(database);
     alignFtsRows(database);
     database.exec(`
@@ -396,9 +406,11 @@ const createDatabase = (path: string): DatabaseSync => {
         ON decisions(capture_semantic_key, created);
       CREATE INDEX IF NOT EXISTS decisions_review_due
         ON decisions(review_due_date, outcome_verdict);
-      -- The newest first, as every list and each snapshot's twelve are read: sorted whole, on every push.
+      -- Calendar lists keep the capture date; the home page brings a newly confirmed old decision back.
       CREATE INDEX IF NOT EXISTS decisions_created
         ON decisions(created DESC, id DESC);
+      CREATE INDEX IF NOT EXISTS decisions_recent
+        ON decisions(COALESCE(confirmed_at, created) DESC, id DESC);
     `);
     for (const candidate of [path, `${path}-wal`, `${path}-shm`]) {
       if (existsSync(candidate)) {
@@ -698,7 +710,7 @@ export class SqliteIndex {
     );
     const rows = this.#database
       .prepare(
-        "SELECT * FROM decisions ORDER BY created DESC, id DESC LIMIT ?",
+        "SELECT * FROM decisions ORDER BY COALESCE(confirmed_at, created) DESC, id DESC LIMIT ?",
       )
       .all(bounded) as unknown as DecisionRow[];
     return rows.map(mapRow);
@@ -722,6 +734,14 @@ export class SqliteIndex {
       )
       .all(principleId) as unknown as DecisionRow[];
     return rows.map(mapRow);
+  }
+
+  /** How many other indexed decisions came from the same multi-question capture. */
+  countBatch(batchId: string, exceptId: string): number {
+    const row = this.#database
+      .prepare("SELECT count(*) AS total FROM decisions WHERE batch_id = ? AND id != ?")
+      .get(batchId, exceptId) as { total: number };
+    return Number(row.total);
   }
 
   findDecisions(ids: string[]): IndexedDecision[] {
@@ -934,10 +954,11 @@ export class SqliteIndex {
           question_index, rationale_status, file_path, content_hash,
           question, rationale, context, outcome, outcome_verdict,
           expected_outcome, outcome_lesson, outcome_reviewed_at, review_due_date,
-          applied_principle_ids, file_stamp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          applied_principle_ids, file_stamp, review_schedule_reasons, confirmed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           created = excluded.created,
+          confirmed_at = excluded.confirmed_at,
           status = excluded.status,
           source_client = excluded.source_client,
           project = excluded.project,
@@ -962,6 +983,7 @@ export class SqliteIndex {
           outcome_reviewed_at = excluded.outcome_reviewed_at,
           review_due_date = excluded.review_due_date,
           applied_principle_ids = excluded.applied_principle_ids,
+          review_schedule_reasons = excluded.review_schedule_reasons,
           file_stamp = excluded.file_stamp
       `)
       .run(
@@ -992,6 +1014,8 @@ export class SqliteIndex {
         record.reviewDueDate,
         JSON.stringify(record.appliedPrincipleIds),
         note.stamp ?? null,
+        JSON.stringify(record.reviewScheduleReasons ?? []),
+        record.confirmedAt ?? null,
       );
     if (replacing) database.prepare("DELETE FROM decisions_fts WHERE rowid = (SELECT rowid FROM decisions WHERE id = ?)").run(record.id);
     // The alternatives weighed too: a decision asked "存储层怎么选？" with its candidates only among the options was not
@@ -1011,7 +1035,7 @@ export class SqliteIndex {
           record.question,
           selectedOption,
           record.rationaleOriginal ?? "",
-          context,
+          searchedContext(context),
           record.expectedOutcome ?? "",
           record.outcome ?? "",
           record.outcomeReview?.lesson ?? "",

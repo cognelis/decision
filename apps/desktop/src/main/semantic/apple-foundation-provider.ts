@@ -64,6 +64,7 @@ const helperClassificationSchema = z
     optionLabels: z
       .array(z.string().trim().min(1).max(500))
       .max(8),
+    selectedOptionIndices: z.array(z.number().int().min(1).max(8)).max(8).optional(),
     answerExcerpt: z
       .string()
       .trim()
@@ -156,7 +157,7 @@ const defaultHelperPath = (resourcesPath?: string): string =>
   join(
     resourcesPath ?? process.resourcesPath,
     "semantic",
-    "decision-foundation-model-helper",
+    "paraself-foundation-model-helper",
   );
 
 const abortError = (): Error => {

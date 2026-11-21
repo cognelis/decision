@@ -224,7 +224,7 @@ describe("packaged bridge invocation", () => {
       bridgeProcessInvocation({
         platform: "win32",
         bridge:
-          "C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd",
+          "C:\\Program Files\\Paraself\\resources\\bridge\\paraself-bridge.cmd",
         args: ["hook", "stop", "codex"],
         commandInterpreter: "C:\\Windows\\System32\\cmd.exe",
       }),
@@ -236,7 +236,7 @@ describe("packaged bridge invocation", () => {
         "/s",
         "/v:off",
         "/c",
-        '""C:\\Program Files\\Decision\\resources\\bridge\\decision-bridge.cmd" "hook" "stop" "codex""',
+        '""C:\\Program Files\\Paraself\\resources\\bridge\\paraself-bridge.cmd" "hook" "stop" "codex""',
       ],
     });
   });
@@ -245,12 +245,12 @@ describe("packaged bridge invocation", () => {
     expect(
       bridgeProcessInvocation({
         platform: "darwin",
-        bridge: "/Applications/Decision.app/Contents/Resources/bridge/decision-bridge",
+        bridge: "/Applications/Paraself.app/Contents/Resources/bridge/paraself-bridge",
         args: ["mcp", "codex"],
       }),
     ).toEqual({
       command:
-        "/Applications/Decision.app/Contents/Resources/bridge/decision-bridge",
+        "/Applications/Paraself.app/Contents/Resources/bridge/paraself-bridge",
       args: ["mcp", "codex"],
       windowsVerbatimArguments: false,
     });
@@ -260,23 +260,23 @@ describe("packaged bridge invocation", () => {
     expect(
       resolvePackagedSmokeTarget({
         target: {
-          packageRoot: "C:\\source\\out\\Decision-win32-x64",
+          packageRoot: "C:\\source\\out\\Paraself-win32-x64",
           packagedExecutable:
-            "C:\\source\\out\\Decision-win32-x64\\Decision.exe",
+            "C:\\source\\out\\Paraself-win32-x64\\Paraself.exe",
           bridgePath:
-            "C:\\source\\out\\Decision-win32-x64\\resources\\bridge\\decision-bridge.cmd",
+            "C:\\source\\out\\Paraself-win32-x64\\resources\\bridge\\paraself-bridge.cmd",
         },
         platform: "win32",
-        productName: "Decision",
-        packageRoot: "C:\\Users\\runner\\AppData\\Local\\Decision\\app-1.1.0",
+        productName: "Paraself",
+        packageRoot: "C:\\Users\\runner\\AppData\\Local\\Paraself\\app-1.1.0",
       }),
     ).toMatchObject({
       packageRoot:
-        "C:\\Users\\runner\\AppData\\Local\\Decision\\app-1.1.0",
+        "C:\\Users\\runner\\AppData\\Local\\Paraself\\app-1.1.0",
       packagedExecutable:
-        "C:\\Users\\runner\\AppData\\Local\\Decision\\app-1.1.0\\Decision.exe",
+        "C:\\Users\\runner\\AppData\\Local\\Paraself\\app-1.1.0\\Paraself.exe",
       bridgePath:
-        "C:\\Users\\runner\\AppData\\Local\\Decision\\app-1.1.0\\resources\\bridge\\decision-bridge.cmd",
+        "C:\\Users\\runner\\AppData\\Local\\Paraself\\app-1.1.0\\resources\\bridge\\paraself-bridge.cmd",
     });
   });
 });

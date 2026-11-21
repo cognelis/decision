@@ -1,0 +1,306 @@
+[
+  {
+    "id": "R6IR2SKWB-001",
+    "group": "preference-in-comparison",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I prefer 2 over 3 for this example, but I am only comparing them.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "偏好谓词在比较限定中出现，不作决定。"
+  },
+  {
+    "id": "R6IR2SKWB-002",
+    "group": "preference-in-question",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Would you prefer option 2 or option 3?",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "询问偏好而非用户表达选择。"
+  },
+  {
+    "id": "R6IR2SKWB-003",
+    "group": "preference-hypothetical",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "If I prefer option 2, what would the migration look like?",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "假设条件里的 I prefer。"
+  },
+  {
+    "id": "R6IR2SKWB-004",
+    "group": "preference-hypothetical",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I would prefer 2 if the latency tradeoff holds.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "would prefer 属于条件偏好。"
+  },
+  {
+    "id": "R6IR2SKWB-005",
+    "group": "preference-hypothetical",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I might prefer 2 after we see the benchmark.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "might prefer 且等待证据。"
+  },
+  {
+    "id": "R6IR2SKWB-006",
+    "group": "preference-comparison",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 更合适吗？我还在比较，不是定案。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "更合适出现在比较疑问和否认定案里。"
+  },
+  {
+    "id": "R6IR2SKWB-007",
+    "group": "preference-comparison",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 更合适，但暂不决定，先继续比成本。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "偏好形容后明确暂缓。"
+  },
+  {
+    "id": "R6IR2SKWB-008",
+    "group": "switch-hypothetical",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Switching to 2 would be safer; let us compare the alternatives first.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "switch to 的名词化假设+比较。"
+  },
+  {
+    "id": "R6IR2SKWB-009",
+    "group": "switch-hypothetical",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Would you switch to 2 if the test passed?",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "switch to 出现在条件问句。"
+  },
+  {
+    "id": "R6IR2SKWB-010",
+    "group": "switch-comparison",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Compare switching to 2 with keeping option 3.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "switch to 2 是比较对象。"
+  },
+  {
+    "id": "R6IR2SKWB-011",
+    "group": "switch-hypothetical",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I could switch to option 2, but no decision has been made.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "could switch 加明确无决定。"
+  },
+  {
+    "id": "R6IR2SKWB-012",
+    "group": "current-state-still",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "目前就还是 2，先照旧观察。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "就还是 N 是现状陈述。"
+  },
+  {
+    "id": "R6IR2SKWB-013",
+    "group": "current-state-still",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "现在配置就还是第 2 项，暂时不改。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "就还是 N 与暂时不改同句。"
+  },
+  {
+    "id": "R6IR2SKWB-014",
+    "group": "current-state-keep-it",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The current record says “keep it”; that is the old status, not a new choice.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "keep it 引语用于解释旧状态。"
+  },
+  {
+    "id": "R6IR2SKWB-015",
+    "group": "current-state-keep-it",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is active in production; “keep it” is just the status note.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "keep it 是状态备注，不是新动作。"
+  },
+  {
+    "id": "R6IR2SKWB-016",
+    "group": "current-state-keep-it",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "We already kept option 2 last year; today I am only describing that state.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "过去 keep it，不是今天作决定。"
+  },
+  {
+    "id": "R6IR2SKWB-017",
+    "group": "current-state-keep-it",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "We still use option 2. I am recording the current state, not choosing again.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "当前状态后明确没有新选择。"
+  },
+  {
+    "id": "R6IR2SKWB-018",
+    "group": "read-then-inspect",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "看看 2，然后再看看 3。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "然后接查看动作，不是实施。"
+  },
+  {
+    "id": "R6IR2SKWB-019",
+    "group": "read-then-inspect",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "先看一下 2，再查一下 2 的日志。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "再接日志查询动作。"
+  },
+  {
+    "id": "R6IR2SKWB-020",
+    "group": "read-then-inspect",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Check option 2, then review the logs before choosing.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "then 接 review，仍在选前调查。"
+  },
+  {
+    "id": "R6IR2SKWB-021",
+    "group": "read-then-inspect",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Please inspect option 2 and then compare it with option 3.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "and then 接比较动作。"
+  },
+  {
+    "id": "R6IR2SKWB-022",
+    "group": "read-then-inspect",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "再读一下选项 2，然后解释它的风险。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "然后接解释请求。"
+  },
+  {
+    "id": "R6IR2SKWB-023",
+    "group": "read-then-inspect",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "只查看 2 再说，不要实施或批准。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "再说是后续查看语气，明确不实施。"
+  },
+  {
+    "id": "R6IR2SKWB-024",
+    "group": "read-then-inspect",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Look at option 2, then check whether it meets the SLO.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "check whether 属于查看，不是勾选或批准。"
+  },
+  {
+    "id": "R6IR2SKWB-025",
+    "group": "preference-direct",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I prefer option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "直接表达偏好，确保没有过度压低。"
+  },
+  {
+    "id": "R6IR2SKWB-026",
+    "group": "preference-direct",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 更合适，就选 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "偏好谓词后明确采用。"
+  },
+  {
+    "id": "R6IR2SKWB-027",
+    "group": "preference-direct",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is faster, so option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "比较属性后直接选择编号。"
+  },
+  {
+    "id": "R6IR2SKWB-028",
+    "group": "switch-direct",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Switch to option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "直接 switch to 的决定用法。"
+  },
+  {
+    "id": "R6IR2SKWB-029",
+    "group": "read-then-act",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "看一下 2，然后就用它。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "先读后明确采用同一选项。"
+  },
+  {
+    "id": "R6IR2SKWB-030",
+    "group": "read-then-act",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Check option 2 against the latency target, then approve it.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "只读前缀后跟独立批准。"
+  },
+  {
+    "id": "R6IR2SKWB-031",
+    "group": "read-then-act",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "看看 2，再上这个。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "再接上线动作并指向刚查看项。"
+  },
+  {
+    "id": "R6IR2SKWB-032",
+    "group": "current-state-new-decision",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "这次配置重新确认：就还是 2，按这个方案继续。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "同样的就还是 N 结构，但明确是本次新决定。"
+  }
+]

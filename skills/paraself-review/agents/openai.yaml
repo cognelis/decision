@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paraself Review"
+  short_description: "Review changes against your Paraself history"
+  default_prompt: "Use $paraself-review to review this change against my past decisions and notes."

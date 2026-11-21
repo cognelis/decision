@@ -61,7 +61,7 @@ const decisionResponse = (
     results: [
       {
         source: "decisions",
-        kind: "historical_decision",
+        kind: "summarized_decision",
         id: "dec-1",
         title: "配置变更先留测试环境",
         project: "decision",
@@ -1678,6 +1678,9 @@ describe("decision assistant service", () => {
     const { service, reads, generate, searches, noteSearches } = harness([LOCAL], [
       { action: "read", index: 1 },
       { action: "answer", answer: "依据本轮材料回答。", citedIndexes: [1, 2, 3, 4, 5] },
+    ], undefined, {}, [], [
+      journalEntry({ id: "历史材料-preference.md", title: "历史材料-preference", content: "独立摘录-preference" }),
+      journalEntry({ id: "历史材料-idea.md", kind: "idea", title: "历史材料-idea", content: "独立摘录-idea", ideaForm: "hypothesis", whyInteresting: null, openQuestions: [], nextTest: null, incubateUntil: null }),
     ]);
     const result = await service.runTurn(turn([
       { role: "user", content: "上一个问题" },
@@ -2166,6 +2169,21 @@ describe("decision assistant service", () => {
     expect(generate).toHaveBeenCalledTimes(2);
   });
 
+  it("says the provider's moderation refused the turn, without sending it again as it was", async () => {
+    const { service, generate } = harness([LOCAL], []);
+    generate.mockImplementation((() => {
+      throw new ProfiledModelGatewayError("refused", "content_refused");
+    }) as never);
+
+    const result = await service.runTurn(turn(conversation("问题")));
+
+    // The same request is refused the same way: the retry was a second refusal, the reader told to look at timeouts.
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("unavailable");
+    if (result.status !== "unavailable") return;
+    expect(result.message).toContain("服务商的内容审核拒绝了这次请求，不是凭据问题");
+  });
+
   it("shares the retry budget across the whole turn, not per step", async () => {
     const { service, generate } = harness(
       [LOCAL],
@@ -2513,7 +2531,7 @@ describe("decision assistant service", () => {
       ["adopted_principle", "dec-1"],
       // Read straight from Markdown in the old format; the current index may
       // not carry that id at all, so a page opened by it would be empty.
-      ["historical_decision", undefined],
+      ["summarized_decision", undefined],
     ] as const) {
       const { service } = harness(
         [LOCAL],
@@ -2531,6 +2549,58 @@ describe("decision assistant service", () => {
       if (result.status !== "answered") continue;
       expect(result.message.citations?.[0]?.recordId).toBe(recordId);
     }
+  });
+
+  it("RSI-16 does not reuse a carried stance whose current state cannot be verified", async () => {
+    const entry = journalEntry({ content: "RSI16_UNVERIFIABLE_STANCE" });
+    const h = harness([LOCAL], [{ action: "answer", answer: "材料不足。", citedIndexes: [] }], undefined, {}, [], [entry]);
+    h.readJournalEntry.mockRejectedValue(new Error("synthetic amendment unreadable"));
+    const result = await h.service.runTurn(turn([
+      { role: "user", content: "此前约定？" },
+      { role: "assistant", content: "旧回答", citations: [{ index: 1, kind: "preference", title: entry.title, reference: entry.id, recordId: entry.id, excerpt: entry.content, matchReason: "偏好记录" }] },
+      { role: "user", content: "现在还适用吗？" },
+    ]));
+    expect(h.generate).toHaveBeenCalled();
+    expect(JSON.stringify(h.generate.mock.calls)).not.toContain(entry.content);
+    expect(result).toMatchObject({ status: "answered", truncated: true });
+  });
+
+  it("RSI-16 refuses an answer if a stance is withdrawn while generation is in flight", async () => {
+    const entry = journalEntry({ content: "RSI16_INFLIGHT_STANCE" });
+    const h = harness([LOCAL], [{ action: "answer", answer: "沿用旧约定 [1]。", citedIndexes: [1] }], undefined, {}, [], [entry]);
+    const generate = h.generate.getMockImplementation()!;
+    h.generate.mockImplementationOnce(async (...args) => { const result = await generate(...args); h.readJournalEntry.mockResolvedValue(null); return result; });
+    const source = { index: 1, kind: "preference", title: entry.title, reference: entry.id, recordId: entry.id, excerpt: entry.content, matchReason: "偏好记录" };
+    const result = await h.service.runTurn(turn(conversation("当前约定？"), { selectedSources: [source] }));
+    expect(h.generate.mock.calls[0]![0].userPrompt).toContain(entry.content);
+    expect(result).toMatchObject({ status: "unavailable", message: expect.stringContaining("生成期间") });
+  });
+
+  it("RSI-16 invalidates in-flight answers even when the edit is beyond the clipped excerpt", async () => {
+    const prefix = "合成材料".repeat(1500);
+    const entry = journalEntry({ content: `${prefix}旧边界` });
+    const h = harness([LOCAL], [{ action: "answer", answer: "原约定 [1]。", citedIndexes: [1] }], undefined, {}, [], [entry]);
+    const generate = h.generate.getMockImplementation()!;
+    h.generate.mockImplementationOnce(async (...args) => { const result = await generate(...args); h.readJournalEntry.mockResolvedValue({ ...entry, content: `${prefix}新边界` }); return result; });
+    const result = await h.service.runTurn(turn(conversation("当前约定？"), { selectedSources: [{ index: 1, kind: "preference", title: entry.title, reference: entry.id, recordId: entry.id, excerpt: "合成材料", matchReason: "偏好" }] }));
+    expect(result).toMatchObject({ status: "unavailable", message: expect.stringContaining("生成期间") });
+  });
+
+  it("RSI-16 rechecks stances before retrying a failed provider call", async () => {
+    const entry = journalEntry({ content: "RSI16_RETRY_STANCE" });
+    const h = harness([LOCAL], [{ action: "answer", answer: "材料不足。", citedIndexes: [] }], undefined, {}, [], [entry]);
+    h.generate.mockImplementationOnce(async () => { h.readJournalEntry.mockResolvedValue(null); throw new ProfiledModelGatewayError("synthetic retry"); });
+    await h.service.runTurn(turn([{ role: "user", content: "此前约定？" }, { role: "assistant", content: "旧回答", citations: [{ index: 1, kind: "preference", title: entry.title, reference: entry.id, recordId: entry.id, excerpt: entry.content, matchReason: "偏好" }] }, { role: "user", content: "现在呢？" }]));
+    expect(h.generate).toHaveBeenCalledTimes(2);
+    expect(h.generate.mock.calls[1]![0].userPrompt).not.toContain(entry.content);
+  });
+
+  it("RSI-16 drops a journal excerpt before the next model step when its source was withdrawn", async () => {
+    const entry = journalEntry({ content: "RSI16_WITHDRAWN_BETWEEN_STEPS" });
+    const h = harness([LOCAL], [{ action: "search", query: "回滚" }, { action: "read", index: 2 }, { action: "answer", answer: "材料不足。", citedIndexes: [] }], undefined, {}, [], [entry]);
+    h.readJournalEntry.mockResolvedValue(null);
+    await h.service.runTurn(turn(conversation("当前约定？")));
+    expect(JSON.stringify(h.generate.mock.calls.slice(1))).not.toContain(entry.content);
   });
 
   it("answers from preferences and ideas, and says what they are", async () => {

@@ -12,7 +12,7 @@ it("shows the rules reviewer another project's decision behind records a recorde
   const test = harness(["src/request.ts"], "diff --git a/src/request.ts b/src/request.ts\n--- a/src/request.ts\n+++ b/src/request.ts\n@@ -1,2 +1,2 @@\n const timeout = 100;\n-old();\n+changed();\n", () => ({ action: "finish_review", summary: "已核对", findings: [] }));
   const scope = (paths: string[]) => ({ projects: [], repositoryIds: [], modules: [], layers: [], paths, excludedPaths: [], exceptions: [] });
   const document = (id: string, project: string, created: string, paths?: string[]) => ({
-    source: "summarize" as const, kind: "historical_decision" as const, id, title: `请求超时 ${id}`, project, status: "accepted", created, summary: "请求超时后必须释放资源", appliesWhen: null, caution: null,
+    source: "summarize" as const, kind: "summarized_decision" as const, id, title: `请求超时 ${id}`, project, status: "accepted", created, summary: "请求超时后必须释放资源", appliesWhen: null, caution: null,
     tags: [], supersedes: [], supersededBy: [], relativePath: `summarize/${id}.md`, client: "codex", sessionId: null, body: "请求超时后取消实际调用", bodyStartLine: 1, contentHash: id.replace(/\D/gu, "").padStart(64, "0"),
     ...(paths ? { scope: scope(paths), scopeState: "current" as const } : {}),
   });

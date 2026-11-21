@@ -30,6 +30,7 @@ import {
 import { DesktopPageHeader } from "../DesktopPageHeader.js";
 import { ModalDialog, PageHidden } from "../../ModalDialog.js";
 import { SourcePicker } from "./SourcePicker.js";
+import { OnboardingConversation, type OnboardingTranscript } from "./OnboardingConversation.js";
 import { ConversationLibrary } from "./ConversationLibrary.js";
 import { AnswerEvidence, citationStanding, citationTarget } from "./AnswerEvidence.js";
 import {
@@ -55,6 +56,7 @@ export type AssistantApi = Pick<
   | "openVaultDocument"
   | "onAssistantProgress"
   | "forgetAssistantTurns"
+  | "sendOnboarding"
 >;
 
 interface AssistantPanelProps {
@@ -63,8 +65,11 @@ interface AssistantPanelProps {
   onOpenDecision(id: string): void;
   onOpenJournalEntry(id: string): void;
   onOpenPrinciple(id: string): void;
-  /** A conversation picked elsewhere (quick jump), opened here as if from the list. */
-  openConversationId?: { id: string } | null;
+  /**
+   * A conversation picked elsewhere (quick jump), opened here as if from the list; or (`onboarding`) a new 接入新工具
+   * conversation, as the 接入 page starts one. A new object each time.
+   */
+  openConversationId?: { id: string } | { onboarding: true } | null;
   /** The vault open now: its conversations are kept apart from another vault's. */
   vault?: string | null;
 }
@@ -78,7 +83,7 @@ const NO_CITATIONS: readonly RetrievalAnswerCitation[] = [];
 
 const SCOPES: ReadonlyArray<{ key: RetrievalAnswerScope; label: string }> = [
   { key: "all", label: "全部" },
-  { key: "decisions", label: "Decision 记录" },
+  { key: "decisions", label: "Paraself 记录" },
   { key: "obsidian", label: "Obsidian" },
 ];
 
@@ -107,7 +112,7 @@ const tokenLabel = (
   const money =
     tokens.cost === undefined
       ? ""
-      : ` ≈ ${tokens.cost.currency}${tokens.cost.amount.toFixed(
+      : ` ≈\u00a0${tokens.cost.currency}${tokens.cost.amount.toFixed(
           tokens.cost.amount < 1 ? 4 : 2,
         )}`;
   return tokens.unreportedSteps === 0
@@ -189,7 +194,9 @@ const AssistantConversationPanel = ({
   );
   const [updatedAt, setUpdatedAt] = useState(opened.updatedAt);
   const [input, setInput] = useState(opened.draft);
-  const hasContent = messages.length > 0 || input.trim().length > 0;
+  // A 接入新工具 conversation's own: none for an ordinary one.
+  const [onboarding, setOnboarding] = useState<OnboardingTranscript | undefined>(opened.onboarding);
+  const hasContent = messages.length > 0 || input.trim().length > 0 || (onboarding?.entries.length ?? 0) > 0;
   // Asked, typed, named, starred or given material: kept when left, so it can be deleted too.
   const worthKeeping = hasContent || title.trim() !== "" || favorite || selectedSources !== undefined;
   const inputTooLong = input.trim().length > ASSISTANT_MAX_MESSAGE_CHARS;
@@ -200,7 +207,8 @@ const AssistantConversationPanel = ({
   const running = runningProvider !== null;
   const [exporting, setExporting] = useState(false);
   const exportInFlight = useRef(false);
-  const [error, setError] = useState<string | null>(null);
+  // What a failed turn spent is said after the reason, quieter: the bill is not part of the failure.
+  const [error, setError] = useState<string | { message: string; spent: string } | null>(null);
   const [storageFailed, setStorageFailed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [openSteps, setOpenSteps] = useState<number | null>(null);
@@ -286,6 +294,7 @@ const AssistantConversationPanel = ({
     scope,
     messages,
     draft: input,
+    ...(onboarding === undefined ? {} : { onboarding }),
     // This conversation's answers only: the map holds every conversation's.
     ratings: Object.fromEntries(
       messages.flatMap((message) => {
@@ -322,7 +331,7 @@ const AssistantConversationPanel = ({
     return () => clearTimeout(timer);
     // `active` is rebuilt every render; its parts are the real dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId, title, favorite, selectedSources, profileId, scope, messages, input, updatedAt, others, rated]);
+  }, [activeId, title, favorite, selectedSources, profileId, scope, messages, input, updatedAt, others, rated, onboarding]);
   useEffect(() => {
     const flush = () => unsaved.current?.();
     window.addEventListener("pagehide", flush);
@@ -402,7 +411,7 @@ const AssistantConversationPanel = ({
           return;
         }
         handBackQuestion(history);
-        setError(`${response.message}${spent}`);
+        setError(spent === "" ? response.message : { message: response.message, spent });
       })
       .catch((caught: unknown) => {
         turnRef.current = null;
@@ -463,6 +472,7 @@ const AssistantConversationPanel = ({
     setProfileId(conversation.profileId);
     setScope(conversation.scope);
     setMessages(conversation.messages);
+    setOnboarding(conversation.onboarding);
     setUpdatedAt(conversation.updatedAt);
     setInput(conversation.draft);
     setError(null);
@@ -475,10 +485,17 @@ const AssistantConversationPanel = ({
 
   // Picked elsewhere (⌘K) while an answer, an export or feedback is in flight: opened once that is done,
   // saying so meanwhile; and only once, so a later turn does not pull the reader back to it.
-  const openedRequest = useRef<{ id: string } | null>(null);
+  const openedRequest = useRef<{ id: string } | { onboarding: true } | null>(null);
   const openWaited = useRef(false);
   useEffect(() => {
     if (openConversationId === null || openedRequest.current === openConversationId) return;
+    if ("onboarding" in openConversationId) {
+      if (running || exporting || feedbackPending !== null) { setNotice("当前回答或操作完成后会开始接入新工具。"); return; }
+      openedRequest.current = openConversationId;
+      // An empty one already open is used as it is, rather than one more left behind.
+      if (onboarding === undefined || onboarding.entries.length > 0) reset(true);
+      return;
+    }
     const target = others.find((entry) => entry.id === openConversationId.id);
     if (target !== undefined && (running || exporting || feedbackPending !== null)) {
       openWaited.current = true;
@@ -524,6 +541,8 @@ const AssistantConversationPanel = ({
       void api.forgetAssistantTurns(turnIds).catch(() =>
         setNotice("对话已删除，但它的模型调用记录和评分这次没能一并删除；调用记录可以在「日志」里删除。"));
     }
+    // A probe it left waiting goes with it.
+    if (onboarding?.sessionId != null) void api.sendOnboarding({ sessionId: onboarding.sessionId, event: { type: "close" } }).catch(() => undefined);
     const [next, ...rest] = byRecency(others);
     const replacement = next ?? emptyConversation();
     setOthers(next === undefined ? [] : rest);
@@ -534,6 +553,7 @@ const AssistantConversationPanel = ({
     setProfileId(replacement.profileId);
     setScope(replacement.scope);
     setMessages(replacement.messages);
+    setOnboarding(replacement.onboarding);
     setUpdatedAt(replacement.updatedAt);
     setInput(replacement.draft);
     setError(null);
@@ -544,7 +564,7 @@ const AssistantConversationPanel = ({
     setOpenSteps(null);
   };
 
-  const reset = (): void => {
+  const reset = (asOnboarding = false): void => {
     if (turnRef.current !== null || exportInFlight.current || feedbackInFlight.current) return;
     // The conversation being left is kept, not erased: "新对话" used to be the
     // only way to start over and it took the previous one with it.
@@ -559,6 +579,7 @@ const AssistantConversationPanel = ({
     setSelectedSources(fresh.selectedSources);
     setUpdatedAt(fresh.updatedAt);
     setMessages([]);
+    setOnboarding(asOnboarding ? { sessionId: null, entries: [] } : undefined);
     setInput("");
     setError(null);
     setFeedbackError(null);
@@ -733,13 +754,39 @@ const AssistantConversationPanel = ({
     }
   };
 
+  const modelPicker = (
+    <select
+              className="assistant-model-picker"
+              value={selected?.profileId ?? ""}
+              disabled={running || exporting || modelsStatus !== "ready" || models.length === 0}
+              onChange={(event) => setProfileId(event.target.value)}
+              aria-label="回答模型"
+              aria-describedby={missingModel ? modelErrorId : undefined}
+            >
+              {selected === null ? (
+                <option value="" disabled>{modelsStatus === "loading" ? "正在加载模型…" : modelsStatus === "failed" ? "—" : models.length === 0 ? "暂无可用模型" : "请重新选择模型"}</option>
+              ) : null}
+              {displayedModels.map((model) => (
+                <option key={model.profileId} value={model.profileId}>
+                  {providerLabel(model)}
+                </option>
+              ))}
+            </select>
+  );
+
   return (
     <section
       className="desktop-view assistant-panel"
       hidden={hidden}
       style={hidden ? { display: "none" } : undefined}
     >
-      <header className="desktop-view-header drag-region"><div><h1>问答</h1><p>从自己的决策、原则和笔记中寻找答案。</p></div><IconButton className="assistant-nav-toggle no-drag" aria-label="切换会话导航" aria-expanded={navigationOpen} aria-controls="assistant-navigation" onClick={() => setNavigationOpen(value => !value)}><ActionIcon name="panel" /></IconButton></header>
+      <header className="desktop-view-header drag-region"><div><h1>问答</h1><p>从自己的决策、原则和笔记中寻找答案。</p></div>
+        <div className="assistant-header-actions no-drag">
+          <button type="button" className="secondary-button assistant-new" disabled={running || exporting || feedbackPending !== null || !worthKeeping} onClick={() => reset()}><ActionIcon name="edit" />新对话</button>
+          <button type="button" className="secondary-button assistant-new" disabled={running || exporting || feedbackPending !== null || (onboarding !== undefined && onboarding.entries.length === 0)} onClick={() => reset(true)}><ActionIcon name="plus" />接入新工具</button>
+          <IconButton className="assistant-nav-toggle" aria-label="切换会话导航" aria-expanded={navigationOpen} aria-controls="assistant-navigation" onClick={() => setNavigationOpen(value => !value)}><ActionIcon name="panel" /></IconButton>
+        </div>
+      </header>
 
       {/* Out of sight while the page is, not closed: a captured decision taking the window threw away the edits. */}
       {draft === null ? null : (
@@ -756,34 +803,40 @@ const AssistantConversationPanel = ({
         </PageHidden.Provider>
       )}
 
-      {showSources ? <ModalDialog title="材料范围" onClose={() => setShowSources(false)}>
-        <div className="assistant-materials-dialog"><h3>检索范围</h3>
-          <div className="assistant-scope" role="group" aria-label="检索范围">
-            {SCOPES.map((entry) => (
-              <button
-                key={entry.key}
-                type="button"
-                aria-pressed={scope === entry.key}
-                disabled={running || selectedSources !== undefined}
-                onClick={() => setScope(entry.key)}
-              >
-                {entry.label}
-              </button>
-            ))}
-          </div>
-        <SourcePicker key={activeId} api={api} sources={selectedSources} disabled={running || exporting || feedbackPending !== null} onChange={(sources) => {
-          if (turnRef.current !== null || exportInFlight.current || feedbackInFlight.current) return;
-          setSelectedSources(sources);
-        }} />
-        <p className="assistant-source-hint">助手仅检索与回答，不会自动写入记录。</p></div>
+      {showSources ? <ModalDialog title="材料范围" description="助手只检索与回答，不会自动写入记录。" onClose={() => setShowSources(false)}
+        footer={<button type="button" className="primary-button" onClick={() => setShowSources(false)}>完成</button>}>
+        <div className="assistant-materials-dialog">
+          <section className="assistant-materials-group"><h3>检索范围</h3>
+            <div className="assistant-scope" role="group" aria-label="检索范围">
+              {SCOPES.map((entry) => (
+                <button
+                  key={entry.key}
+                  type="button"
+                  aria-pressed={scope === entry.key}
+                  disabled={running || selectedSources !== undefined}
+                  onClick={() => setScope(entry.key)}
+                >
+                  {entry.label}
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="assistant-materials-group"><h3>回答依据</h3>
+            <SourcePicker key={activeId} api={api} sources={selectedSources} disabled={running || exporting || feedbackPending !== null} onChange={(sources) => {
+              if (turnRef.current !== null || exportInFlight.current || feedbackInFlight.current) return;
+              setSelectedSources(sources);
+            }} />
+          </section>
+        </div>
       </ModalDialog> : null}
-      {deleteConversation ? <ModalDialog title="删除对话" size="compact" onClose={() => setDeleteConversation(false)}>
-        <p>删除「{conversationTitle(active)}」的本机对话和草稿，以及这些回答的模型调用记录和评分？引用的决策、原则和笔记不会被删除。</p>
-        <div className="modal-form-actions"><button className="secondary-button" onClick={() => setDeleteConversation(false)}>取消</button><button className="primary-button" disabled={running || exporting || feedbackPending !== null} onClick={() => { forget(); setDeleteConversation(false); }}>确认删除</button></div>
+      {deleteConversation ? <ModalDialog title="删除这个对话？" size="compact" onClose={() => setDeleteConversation(false)}
+        footer={<><button type="button" className="secondary-button" autoFocus onClick={() => setDeleteConversation(false)}>取消</button><button type="button" className="primary-button danger-button" disabled={running || exporting || feedbackPending !== null} onClick={() => { forget(); setDeleteConversation(false); }}>删除</button></>}>
+        <p>本机保存的对话和草稿，以及这些回答的模型调用记录和评分，会一起删除，不能恢复。</p>
+        <p className="assistant-delete-subject">{conversationTitle(active)}</p>
+        <p>引用的决策、原则和笔记不受影响。</p>
       </ModalDialog> : null}
       <div className="assistant-workspace" data-navigation={navigationOpen}>
       <aside id="assistant-navigation" className="assistant-sidebar" aria-label="会话库">
-        <div className="assistant-sidebar-heading"><h2>会话</h2><IconButton aria-label="新对话" disabled={running || exporting || feedbackPending !== null || !worthKeeping} onClick={reset}><ActionIcon name="edit" /></IconButton></div>
         <ConversationLibrary
           active={active}
           conversations={[active, ...others]}
@@ -802,14 +855,30 @@ const AssistantConversationPanel = ({
       </aside>
       <ListWidthHandle storageKey="decision.assistant.list-width" label="调整会话列表宽度" controls="assistant-navigation" />
       <div className="assistant-content">
-        <div className="assistant-conversation-heading"><div><h2>{conversationTitle(active)}</h2><p>{messages.length ? `${messages.length} 条消息` : "从一个问题开始"} · {selectedSources === undefined ? SCOPES.find(item => item.key === scope)?.label : `指定 ${selectedSources.length} 份材料`}</p></div>
+        <div className="assistant-conversation-heading"><div><h2>{conversationTitle(active)}</h2><p>{onboarding !== undefined ? "接入新工具 · 不检索记录，也不计入评分" : <>{messages.length ? `${messages.length} 条消息` : "从一个问题开始"} · {selectedSources === undefined ? `检索范围：${SCOPES.find(item => item.key === scope)?.label}` : `指定 ${selectedSources.length} 份材料`}</>}</p></div>
           <details className="assistant-more" ref={actionsRef} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }} onKeyDown={event => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>
-            <summary aria-label="对话操作"><ActionIcon name="more" /></summary><div className="assistant-more-menu">
+            {/* Nothing to export or delete in an empty conversation: the menu stays shut rather than opening onto two
+                dead items. Still in place, so focus coming back from 删除 lands where it left. */}
+            <summary aria-label="对话操作" aria-disabled={!worthKeeping || undefined} onClick={event => { if (!worthKeeping) event.preventDefault(); }}><ActionIcon name="more" /></summary><div className="assistant-more-menu">
               <button className="assistant-export" disabled={running || exporting || !hasContent} aria-busy={exporting} onClick={() => void exportConversation()}><ActionIcon name="download" />{exporting ? "正在导出…" : "导出"}</button>
               <button className="danger-text" disabled={running || exporting || feedbackPending !== null || !worthKeeping} onClick={() => { if (turnRef.current || exportInFlight.current || feedbackInFlight.current) return; actionsRef.current?.querySelector("summary")?.focus(); if (actionsRef.current) actionsRef.current.open = false; setDeleteConversation(true); }}><ActionIcon name="trash" />删除此对话</button>
             </div>
           </details>
         </div>
+        {onboarding !== undefined ? (
+          <OnboardingConversation
+            key={activeId}
+            api={api}
+            transcript={onboarding}
+            hidden={hidden}
+            model={selected}
+            modelPicker={modelPicker}
+            onChange={(next) => { setOnboarding(next); setUpdatedAt(Date.now()); if (title === "" && next.entries.length > 0) setTitle(conversationTitle({ ...active, onboarding: next })); }}
+            // While a step runs or a probe waits, the conversation is not switched away from: as a turn in flight holds it.
+            onBusy={(value) => { turnRef.current = value ? "onboarding" : null; setRunningProvider(value ? selected : null); }}
+          />
+        ) : <>
+        <div className="assistant-stream-frame">
         <div className="assistant-stream" ref={streamRef} role="log" aria-label="问答消息" tabIndex={0} aria-live={hidden ? "off" : "polite"} onScroll={event => {
           const stream = event.currentTarget;
           const distance = stream.scrollHeight - stream.scrollTop - stream.clientHeight;
@@ -836,8 +905,8 @@ const AssistantConversationPanel = ({
             const index = firstVisible + position;
             return message.role === "user" ? (
               <article key={index} className="assistant-turn user">
-                <p>{message.content}</p>
                 <IconButton type="button" className="assistant-action" aria-label="修改问题并分支" disabled={running || exporting || feedbackPending !== null} onClick={() => branchConversation(index, true)}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 3.5 4 4M3 17l4.5-1 10-10a1.4 1.4 0 0 0 0-2l-1.5-1.5a1.4 1.4 0 0 0-2 0L4 12.5 3 17Z" /></svg></IconButton>
+                <p>{message.content}</p>
               </article>
             ) : (
               <article key={`${activeId}-${index}`} className="assistant-turn assistant">
@@ -948,13 +1017,10 @@ const AssistantConversationPanel = ({
                   </form>
                 )}
 
-                {message.provider === undefined ? null : (
-                  <p className="assistant-provider">{answerProviderLabel(message.provider)}</p>
-                )}
-
-                {message.tokens === undefined ? null : (
-                  <p className="assistant-tokens">
-                    {tokenLabel(message.tokens)}
+                {message.provider === undefined && message.tokens === undefined ? null : (
+                  <p className="assistant-answer-meta">
+                    {message.provider === undefined ? null : <span>{answerProviderLabel(message.provider)}</span>}
+                    {message.tokens === undefined ? null : <span>{tokenLabel(message.tokens)}</span>}
                   </p>
                 )}
 
@@ -1007,12 +1073,17 @@ const AssistantConversationPanel = ({
             </div>
           ) : null}
         </div>
+        <IconButton hidden={!showLatest} className="assistant-scroll-latest" aria-label="滚动到底部" onClick={() => { followLatest.current = true; setShowLatest(false); if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight; }}><ActionIcon name="down" /></IconButton>
+        </div>
 
+        {/* What happened and what went wrong, in one band under the stream: a rule above it, so a message cut off by
+            the scroll does not run into it. */}
+        <div className="assistant-status">
         {modelsStatus === "loading" ? <p className="assistant-notice" role="status">正在加载回答模型…</p> : null}
         {modelsStatus === "failed" ? (
-          <div className="error-message assistant-error" role="alert">
-            无法读取回答模型列表，请重试。
-            <button type="button" className="text-button" onClick={() => setModelsReload((value) => value + 1)}>重试加载模型</button>
+          <div className="load-failure assistant-error" role="alert">
+            <span>无法读取回答模型列表，请重试。</span>
+            <button type="button" className="secondary-button" onClick={() => setModelsReload((value) => value + 1)}>重试加载模型</button>
           </div>
         ) : null}
 
@@ -1023,9 +1094,9 @@ const AssistantConversationPanel = ({
         ) : null}
 
         {storageFailed ? (
-          <div className="error-message assistant-error" role="alert">
-            对话更改尚未保存到本机，关闭应用可能丢失。本机存储可能已满：删除不需要的对话后重试保存，或先导出需要保留的对话。
-            <button type="button" className="text-button" onClick={persistConversations}>重试保存</button>
+          <div className="load-failure assistant-error" role="alert">
+            <span>对话更改尚未保存到本机，关闭应用可能丢失。本机存储可能已满：删除不需要的对话后重试保存，或先导出需要保留的对话。</span>
+            <button type="button" className="secondary-button" onClick={persistConversations}>重试保存</button>
           </div>
         ) : null}
 
@@ -1037,7 +1108,7 @@ const AssistantConversationPanel = ({
 
         {error === null ? null : (
           <p className="error-message assistant-error" role="alert">
-            {error}
+            {typeof error === "string" ? error : <>{error.message}<span className="assistant-error-spent">{error.spent}</span></>}
           </p>
         )}
 
@@ -1059,6 +1130,8 @@ const AssistantConversationPanel = ({
           </p>
         ) : null}
 
+        </div>
+
         <form className="assistant-composer" onSubmit={submit}>
           <div className="assistant-compose-box">
           <textarea
@@ -1074,7 +1147,8 @@ const AssistantConversationPanel = ({
             placeholder={
               running ? "正在等待本轮回答…"
                 : modelsStatus === "loading" ? "正在加载回答模型…"
-                : modelsStatus === "failed" ? "回答模型列表读取失败，请重试"
+                // A list that failed to load is said once, in the line above with its retry.
+                : modelsStatus === "failed" ? "问一句，⌘↩ 发送"
                 : models.length === 0
                 ? "先在“模型”里启用一个可用于回答的后端"
                 : selected === null ? "请先重新选择回答模型" : "问一句，⌘↩ 发送"
@@ -1091,30 +1165,20 @@ const AssistantConversationPanel = ({
             onKeyDown={handleKeyDown}
           />
           <div className="assistant-compose-tools">
-<select
-              className="assistant-model-picker"
-              value={selected?.profileId ?? ""}
-              disabled={running || exporting || modelsStatus !== "ready" || models.length === 0}
-              onChange={(event) => setProfileId(event.target.value)}
-              aria-label="回答模型"
-              aria-describedby={missingModel ? modelErrorId : undefined}
-            >
-              {selected === null ? (
-                <option value="" disabled>{modelsStatus === "loading" ? "正在加载模型…" : modelsStatus === "failed" ? "模型列表读取失败" : models.length === 0 ? "暂无可用模型" : "请重新选择模型"}</option>
-              ) : null}
-              {displayedModels.map((model) => (
-                <option key={model.profileId} value={model.profileId}>
-                  {providerLabel(model)}
-                </option>
-              ))}
-            </select>
-            <button type="button" className="assistant-materials-trigger" aria-label="材料范围" disabled={running || exporting || feedbackPending !== null} onClick={() => setShowSources(true)}><ActionIcon name="search" /><span>{selectedSources === undefined ? `自动检索 · ${SCOPES.find(item => item.key === scope)?.label}` : `指定材料 · ${selectedSources.length}`}</span></button>
-            <div className="assistant-send-actions"><IconButton hidden={!showLatest} aria-label="滚动到底部" onClick={() => { followLatest.current = true; setShowLatest(false); if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight; }}><ActionIcon name="down" /></IconButton>
-            {running ? <IconButton className="assistant-send" aria-label="停止" onClick={event => { if (event.detail > 1) return; void stop(); }}><ActionIcon name="stop" /></IconButton> : <IconButton className="assistant-send" type="submit" aria-label="发送" disabled={sourcesMissing || exporting || modelsStatus !== "ready" || input.trim().length === 0 || inputTooLong || selected === null}><ActionIcon name="send" /></IconButton>}
+{modelPicker}
+            <button type="button" className={sourcesMissing ? "assistant-materials-trigger warning" : "assistant-materials-trigger"} aria-label="材料范围" disabled={running || exporting || feedbackPending !== null} onClick={() => setShowSources(true)}><ActionIcon name="search" /><span>{selectedSources === undefined ? `材料：自动检索 · ${SCOPES.find(item => item.key === scope)?.label}` : `材料：指定 ${selectedSources.length} 份`}</span></button>
+            <div className="assistant-send-actions">
+            {running ? <IconButton className="assistant-send assistant-stop" aria-label="停止" onClick={event => { if (event.detail > 1) return; void stop(); }}><ActionIcon name="stop" /></IconButton> : <IconButton className="assistant-send" type="submit" aria-label="发送" disabled={sourcesMissing || exporting || modelsStatus !== "ready" || input.trim().length === 0 || inputTooLong || selected === null}><ActionIcon name="send" /></IconButton>}
             </div>
           </div></div>
-          <p className="assistant-compose-hint"><span>{selected === null ? "请选择可用模型" : selected.leavesDevice ? "问题与检索材料会发送给远端模型" : "在本机回答"}</span><span>⌘ / Ctrl + Enter 发送</span></p>
+          <p className="assistant-compose-hint">
+            {modelsStatus !== "ready" ? <span /> : selected === null ? <span>请选择可用模型</span>
+              : sourcesMissing ? <span className="assistant-compose-warning">还没选材料：选好后才能发送</span>
+              : <span>{selected.leavesDevice ? "问题与检索材料会发送给远端模型" : "在本机回答"}</span>}
+            <span>⌘ / Ctrl + Enter 发送</span>
+          </p>
         </form>
+        </>}
       </div>
       </div>
     </section>

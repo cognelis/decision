@@ -1,0 +1,154 @@
+[
+  {
+    "id": "delegate-en",
+    "category": "no-selection",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "I lean toward B, but you should make the final choice.",
+    "expectedIds": []
+  },
+  {
+    "id": "delegate-details-en",
+    "category": "true-choice",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "B is my choice. You decide who will implement it.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "quote-zh",
+    "category": "no-selection",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "旧记录里写着“选 2”，那是上次的决定，这次还没有选。",
+    "expectedIds": []
+  },
+  {
+    "id": "quote-adopt-zh",
+    "category": "true-choice",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "旧记录里写着“选 2”，这次也按 2 实施。",
+    "expectedIds": [
+      "2"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "direction-zh",
+    "category": "no-selection",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "异步化这个方向没问题，具体实现方案先不要定。",
+    "expectedIds": []
+  },
+  {
+    "id": "direction-adopt-zh",
+    "category": "true-choice",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "异步化这个方向没问题，具体实现就选 2。",
+    "expectedIds": [
+      "2"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "negated-zh",
+    "category": "no-selection",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "我没有选 2，先解释一下它和 1 的区别。",
+    "expectedIds": []
+  },
+  {
+    "id": "negation-adopt-zh",
+    "category": "true-choice",
+    "assistantText": "1. 保留旧接口\n2. 改成异步接口\n3. 加一层缓存\n\n你选哪个？",
+    "userText": "我没有选 1，这次确定选 2。",
+    "expectedIds": [
+      "2"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "condition-open",
+    "category": "no-selection",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "If the benchmark passes, B might work; wait for the results before choosing.",
+    "expectedIds": []
+  },
+  {
+    "id": "choice-delivery-later",
+    "category": "true-choice",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "Choose B. Wait for the benchmark results before scheduling deployment.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "partial-choice",
+    "category": "true-choice",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "Use A and C; do not implement B.",
+    "expectedIds": [
+      "A",
+      "C"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "except-choice",
+    "category": "true-choice",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "All except B.",
+    "expectedIds": [
+      "A",
+      "C"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "alternative-not-listed",
+    "category": "true-choice",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "Reject all three. Use a message queue instead.",
+    "expectedIds": [],
+    "mustCapture": true
+  },
+  {
+    "id": "current-not-choice",
+    "category": "no-selection",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "We currently use B, but I have not decided what to use next.",
+    "expectedIds": []
+  },
+  {
+    "id": "current-renewed",
+    "category": "true-choice",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "We currently use B; keep B for the next release as well.",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "question-after-choice",
+    "category": "true-choice",
+    "assistantText": "A. Keep the synchronous API.\nB. Switch to an asynchronous API.\nC. Add a cache.\n\nWhich implementation should we adopt?",
+    "userText": "Choose B. What would C cost?",
+    "expectedIds": [
+      "B"
+    ],
+    "mustCapture": true
+  },
+  {
+    "id": "names-conjunction",
+    "category": "true-choice",
+    "assistantText": "1. 日志和指标\n2. 只记录日志\n3. 不采集\n\n请选择观测方案。",
+    "userText": "日志和指标",
+    "expectedIds": [
+      "1"
+    ],
+    "mustCapture": true
+  }
+]

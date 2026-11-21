@@ -22,6 +22,39 @@ export const isSubmitShortcut = (event: AnyKeyboardEvent): boolean =>
 
 export const SUBMIT_SHORTCUT_KEYS = "Meta+Enter Control+Enter";
 
+/**
+ * Cmd+L or Ctrl+L, L for later: puts a rationale off. By the key's place as well as its letter, so a layout or an
+ * input method that reports another character still reaches it.
+ */
+export const isDeferShortcut = (event: AnyKeyboardEvent): boolean =>
+  (event.key.toLowerCase() === "l" || event.code === "KeyL") &&
+  (event.metaKey || event.ctrlKey) &&
+  !event.shiftKey &&
+  !event.altKey &&
+  !isComposing(event);
+
+export const DEFER_SHORTCUT_KEYS = "Meta+L Control+L";
+
+/** Cmd+P or Ctrl+P, P for preference: what is before you is no decision, but where you stand. */
+export const isPreferenceShortcut = (event: AnyKeyboardEvent): boolean =>
+  (event.key.toLowerCase() === "p" || event.code === "KeyP") &&
+  (event.metaKey || event.ctrlKey) &&
+  !event.shiftKey &&
+  !event.altKey &&
+  !isComposing(event);
+
+export const PREFERENCE_SHORTCUT_KEYS = "Meta+P Control+P";
+
+/** Cmd+D or Ctrl+D, D for dismiss: asks whether to let what is before you go. */
+export const isDismissShortcut = (event: AnyKeyboardEvent): boolean =>
+  (event.key.toLowerCase() === "d" || event.code === "KeyD") &&
+  (event.metaKey || event.ctrlKey) &&
+  !event.shiftKey &&
+  !event.altKey &&
+  !isComposing(event);
+
+export const DISMISS_SHORTCUT_KEYS = "Meta+D Control+D";
+
 export const isApplePlatform = (): boolean => {
   if (typeof navigator === "undefined") return false;
   return (
@@ -36,6 +69,15 @@ export const modifierKeyLabel = (): string =>
 
 /** Visible label for the submit shortcut, e.g. "⌘↩" or "Ctrl+↩". */
 export const submitShortcutLabel = (): string => `${modifierKeyLabel()}↩`;
+
+/** Visible label for the defer shortcut, e.g. "⌘L" or "Ctrl+L". */
+export const deferShortcutLabel = (): string => `${modifierKeyLabel()}L`;
+
+/** Visible label for the preference shortcut, e.g. "⌘P" or "Ctrl+P". */
+export const preferenceShortcutLabel = (): string => `${modifierKeyLabel()}P`;
+
+/** Visible label for the dismiss shortcut, e.g. "⌘D" or "Ctrl+D". */
+export const dismissShortcutLabel = (): string => `${modifierKeyLabel()}D`;
 
 /** Escape inside a text field, ignoring IME composition. */
 export const isClearShortcut = (event: AnyKeyboardEvent): boolean =>

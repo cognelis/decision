@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "rt2-v3-unrelated-successor-pointer",
+      "description": "旧记录可在当前项目检索；错误 superseded_by 指向另一项目的无关当前记录时，不应把它提示为有效替代选择。",
+      "seed": {
+        "files": [
+          {
+            "path": "Decision Journal/summarize/WB8831.md",
+            "content": "---\nid: WB8831\ncreated: \"2026-10-22\"\nstatus: \"superseded\"\nselected_option: \"支付写入使用请求序号防止重复扣款\"\nproject: \"lab\"\ntags: [\"synthetic\", \"rt2-v3\"]\nsupersedes: []\nsuperseded_by: [WB8832]\n---\n# WB8831\n\n支付写入使用请求序号防止重复扣款。\n"
+          },
+          {
+            "path": "Decision Journal/summarize/WB8832.md",
+            "content": "---\nid: WB8832\ncreated: \"2026-10-22\"\nstatus: \"accepted\"\nselected_option: \"报表压缩使用列式存储\"\nproject: \"analytics\"\ntags: [\"synthetic\", \"rt2-v3\"]\nsupersedes: []\nsuperseded_by: []\n---\n# WB8832\n\n报表压缩使用列式存储。\n"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "id": "unrelated-current-target",
+          "tool": "search_decision_context",
+          "args": {
+            "query": "支付写入使用请求序号防止重复扣款",
+            "project": "lab",
+            "relation": "superseded",
+            "limit": 8
+          },
+          "expect": {
+            "mustInclude": ["WB8831"],
+            "notContains": ["当前有效的是 summarize/WB8832"],
+            "k": 8
+          }
+        }
+      ]
+    }
+  ]
+}

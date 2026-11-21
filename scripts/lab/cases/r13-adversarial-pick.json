@@ -1,0 +1,2282 @@
+[
+  {
+    "id": "accept-recommendation-claude-sonnet-1",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：自建 Redis\n- 可控性高、能按需调参,但运维成本大:高可用、备份、扩容、打补丁都要自己管,出故障也得自己排查\n\nB：托管 Redis（如 AWS ElastiCache / 阿里云 Redis 等）\n- 开箱即用的高可用、自动备份、监控报警都有,出问题有 SLA 兜底,团队不用养运维专精知识,成本可预期\n\nC：内存缓存（进程内,如本地 Map/LRU）\n- 零外部依赖、延迟最低,但多实例间缓存不共享、重启就丢、容量受限于单机内存,适合小规模或对一致性要求低的场景\n\n推荐 B。多实例场景下 C 会有缓存不一致的问题,A 的运维投入对大多数团队不值得,B 用托管服务的钱换团队的时间,是最省心的选择。\n\n你们是单实例部署还是多实例?数据量和读写量级大概多大?这两点决定了 C 是否可行、B 该选什么规格。",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "accept-recommendation-claude-sonnet-2",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A/自己维护 Redis、B/托管 Redis、C/内存缓存，对比：\n\n- **A 自己维护 Redis**：灵活可控，但需要自己搭高可用、打补丁、扩容、处理故障恢复，运维成本最高。\n- **B 托管 Redis**（如云厂商的 ElastiCache/云数据库 Redis 版）：高可用、备份、监控、扩容都托管方处理，运维成本低，故障恢复快，只是比自建贵一些。\n- **C 内存缓存**（进程内，如本地 LRU）：最简单最快，零运维成本，但没有持久化、不能跨实例共享，重启就丢，多实例场景下各节点数据还会不一致。\n\n推荐 **B**：团队不需要自己背 Redis 的运维负担，同时又能保留跨实例共享、持久化、丰富数据结构这些 A 和 C 都给不全的能力，性价比最高。\n\n你们现在是已经有专人运维 Redis 的团队，还是只是单机/单进程场景、数据可以丢？这个决定了 B 是不是真的比 C 划算。",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "accept-recommendation-claude-sonnet-3",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：自己维护 Redis\n- 可控性最高，没有厂商锁定，长期大规模场景成本可压到最低\n- 代价是要自己扛高可用、备份、扩容、打补丁、故障排查，3am 被叫起来修 Redis 的大概率是这个选项\n\nB：托管 Redis（推荐）\n- 高可用、备份、监控、补丁交给云厂商，接入几乎零运维成本\n- 比自建贵一些，但换来的是不用自己维护一套分布式系统，出问题有 SLA 兜底\n- 对大多数场景这笔运维时间换钱的账是划得来的\n\nC：内存缓存（如本机 in-process cache）\n- 最简单、零额外组件，延迟最低\n- 但多实例间不共享、重启就丢、没有持久化和跨进程能力，一旦服务要横向扩展或需要缓存一致性就会露馅\n\n推荐 B：除非你们已经有专门的 Redis 运维能力/团队，或者规模大到自建能省下明显的钱，否则没必要自己扛这摊运维成本。\n\n你这边更看重哪个因素——团队当前有没有运维 Redis 的经验和人力？还是已经对云成本有明确的预算上限？",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "accept-recommendation-claude-sonnet-4",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A（自建 Redis）vs B（托管 Redis）vs C（内存缓存）\n\n- **A 自己维护 Redis**：需要自己管高可用、备份、扩容、打补丁，初期看似省钱，但运维负担和故障风险都在自己身上，团队小的话很容易出问题。\n- **B 托管 Redis**（推荐）：云厂商负责高可用、备份、监控、扩缩容，上线快、出故障有 SLA 兜底，成本可预期；唯一代价是按量付费，比自建贵一些。\n- **C 内存缓存**（如进程内 LRU）：最简单最快，零运维成本，但重启就丢、多实例间不共享，适合单机小规模场景，扩展性和持久性都不够。\n\n综合可靠性、运维成本和上线速度，推荐 **B**。\n\n你这边是刚立项阶段还是已经有线上流量？预算和团队运维能力是怎样的？",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "accept-recommendation-codex-1",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：自己维护 Redis——控制力强，但要自行负责部署、备份、监控和故障处理。\n\nB：托管 Redis——具备共享缓存能力，运维负担较低，但服务费用通常更高。**推荐 B**，适合希望尽快上线并减少维护工作的团队。\n\nC：内存缓存——实现简单、成本低，但多实例之间无法共享缓存，重启后数据也会丢失。\n\n你倾向按开发和运维成本、服务费用，还是缓存是否需要跨实例共享来决定？",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "accept-recommendation-codex-2",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：自己维护 Redis——控制权高，但要自行负责部署、监控、备份和故障处理。\n\nB：托管 Redis——具备 Redis 的共享缓存能力，运维负担较小，但服务费用通常更高。**我推荐 B**，适合作为默认选择。\n\nC：内存缓存——实现简单、成本低，但多实例间无法共享缓存，重启后数据会丢失。\n\n你决定选 A、B 还是 C？",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "accept-recommendation-codex-3",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：自己维护 Redis——配置灵活，但部署、监控、备份和故障处理都要自己负责，适合已有运维能力的团队。\n\nB：托管 Redis——运维负担较小，通常也更容易获得高可用能力，但费用会更高一些。**推荐 B**，尤其适合希望尽快上线、把精力放在业务上的团队。\n\nC：内存缓存——实现简单、成本低，但缓存只在单个进程内，多实例共享和扩容时会受限。\n\n你想按成本、运维投入，还是上线速度来做最终决定？",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "accept-recommendation-codex-4",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "- **A：自己维护 Redis**：控制权高，但要自行负责部署、监控、备份和故障恢复。\n- **B：托管 Redis**：有共享缓存能力，运维负担较小，但服务费用通常更高。\n- **C：内存缓存**：实现简单、成本低，但缓存只在单个实例内，重启后会丢失。\n\n**我推荐 B：托管 Redis**，适合需要多实例共享缓存、又希望减少运维工作的场景。你想选哪一种？",
+    "userText": "按你推荐的来。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "all-options-claude-sonnet-1",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这个改动可以从三个角度补强质量保障：\n\n- **A：新增单元测试** —— 覆盖具体函数/模块的边界与异常分支\n- **B：补充集成测试** —— 验证模块间联调、真实依赖下的端到端行为\n- **C：添加监控** —— 上线后观察指标、异常告警\n\n你想选哪一项或哪几项？",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "all-options-claude-sonnet-2",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "针对这部分改动，可以考虑以下几个方向：\n\nA：新增单元测试\nB：补充集成测试\nC：添加监控\n\n你想选哪一项或哪几项？",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "all-options-claude-sonnet-3",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "可以从以下三个方向改进，选一项或多项都行：\n\nA：新增单元测试\nB：补充集成测试\nC：添加监控\n\n想先做哪个,或者都要?",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "all-options-claude-sonnet-4",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "可以从以下几个方向推进:\n\nA：新增单元测试\nB：补充集成测试\nC：添加监控\n\n你想选哪一项或哪几项?",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "all-options-codex-1",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：新增单元测试  \nB：补充集成测试  \nC：添加监控  \n\n你想选择哪一项？也可以选多项。",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "all-options-codex-2",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：新增单元测试  \nB：补充集成测试  \nC：添加监控\n\n你想选择哪一项？也可以选多项。",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "all-options-codex-3",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：新增单元测试  \nB：补充集成测试  \nC：添加监控  \n\n你想选择哪一项？可以多选。",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "all-options-codex-4",
+    "group": "all-or-none",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：新增单元测试  \nB：补充集成测试  \nC：添加监控  \n\n你想选择哪一项？也可以选择多项。",
+    "userText": "三项都选，A、B、C 一起做。",
+    "expectedSelected": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "codeblock-reference-claude-sonnet-1",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "配置方式有三种思路:\n\n```\n# A: 进程内配置(旧)\nconfig = Config(timeout=30, retries=3)\n\n# B: 环境变量\nTIMEOUT=30 RETRIES=3 ./app\n```\n\n- **A 进程内配置**:启动时写死在代码/构造参数里,简单但改配置要重新发布。\n- **B 环境变量**:部署时注入,改配置不用重新打包,12-factor 风格,适合容器化部署。\n- **C 远端配置服务**:运行时拉取、可热更新、可按环境/租户分发,但多了一个依赖和运维成本。\n\n你倾向哪个,还是现在用 A/B 过渡、以后再上 C?",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "codeblock-reference-claude-sonnet-2",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```\n# A: 进程内配置（旧）\nconfig = {\"timeout\": 30, \"retries\": 3}\n\n# B: 环境变量（示例）\nexport APP_TIMEOUT=30\nexport APP_RETRIES=3\n```\n\nA 简单但改配置要重新发布；B 部署时就能调整，但分散、难统一管理；C 能集中管理、支持热更新，但多引入一个依赖和网络环节。你倾向选哪个,A、B 还是 C？",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "codeblock-reference-claude-sonnet-3",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```python\n# A：进程内配置（旧）\nconfig = {\"timeout\": 30, \"retries\": 3}\n\n# B：环境变量（示例）\nimport os\nTIMEOUT = int(os.environ.get(\"APP_TIMEOUT\", 30))\n```\n\nC（远端配置服务）没列代码，涉及拉取逻辑和依赖服务，可以展开说说。先选个方向：A、B、C，选哪个？",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "codeblock-reference-claude-sonnet-4",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这三种配置方式各有取舍,先看旧配置和环境变量示例:\n\n```bash\n# A:进程内配置(旧)\nconfig.set(\"timeout\", 30)\nconfig.set(\"retries\", 3)\n\n# B:环境变量\nexport APP_TIMEOUT=30\nexport APP_RETRIES=3\n```\n\nA 改配置要重新部署,胜在简单零依赖;B 可以热替换容器环境,但类型全是字符串,敏感信息还容易在 `env` 里泄露;C(远端配置服务,如 etcd/Consul)能做到运行时动态推送、多实例统一管理,但多引入一个依赖和网络故障点。\n\n你们想选哪个方向?还是先说说这次改动的背景(比如是不是要支持动态下发)?",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "codeblock-reference-codex-1",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：进程内配置——实现简单，但改配置通常要重新部署。  \nB：环境变量——适合按环境注入配置，也方便容器部署。  \nC：远端配置服务——支持集中管理和动态更新，但需要额外维护服务。\n\n```python\n# 旧配置 A：进程内配置\nDB_HOST = \"localhost\"\n\n# 示例 B：环境变量\nDB_HOST = os.environ[\"DB_HOST\"]\n```\n\n你倾向选 A、B 还是 C？",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "codeblock-reference-codex-2",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：进程内配置，读取简单，但改配置通常要重新部署。  \nB：环境变量，适合按部署环境设置，改动通常要重启进程。  \nC：远端配置服务，适合集中管理和动态更新，但需要维护服务及故障处理。\n\n```python\n# 旧配置 A\ntimeout = 30\n\n# 示例 B\ntimeout = int(os.getenv(\"APP_TIMEOUT\", \"30\"))\n```\n\n你选 A：进程内配置、B：环境变量，还是 C：远端配置服务？",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "codeblock-reference-codex-3",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：进程内配置——改动直接，但调整配置通常要重新部署。  \nB：环境变量——便于按环境设置，适合配置项不多的场景。  \nC：远端配置服务——适合集中管理和动态更新，但需要维护服务及其可用性。\n\n```python\n# 旧配置 A\nTIMEOUT = 30\n\n# 示例 B\nTIMEOUT = int(os.environ.get(\"TIMEOUT\", \"30\"))\n```\n\n你倾向选 A：进程内配置、B：环境变量，还是 C：远端配置服务？",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "codeblock-reference-codex-4",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "可以从这三项里选：\n\n- A：进程内配置——沿用旧方式，改动需重新部署。\n- B：环境变量——部署时注入，适合各环境使用不同配置。\n- C：远端配置服务——集中管理，适合需要动态更新的配置。\n\n```python\n# 旧配置 A\nTIMEOUT = 30\n\n# 示例 B\nTIMEOUT = int(os.environ.get(\"TIMEOUT\", \"30\"))\n```\n\n你倾向选 A、B 还是 C？",
+    "userText": "配置里的 `A` 是旧值，示例代码里的 `B` 也不用；这次选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "compare-only-claude-sonnet-1",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A/B/C 三种存储方案简要比较:\n\n**A：SQLite 本地存储**\n优点：零配置、部署简单、文件即数据库，适合单机/离线场景。\n缺点：并发写入能力弱，不适合多实例/多用户同时写。\n\n**B：PostgreSQL 服务端存储**\n优点：成熟的关系型数据库，事务、约束、复杂查询都扎实，生态和运维工具最全。\n缺点：需要独立部署和维护服务端，比 A 多一层运维成本。\n\n**C：MongoDB**\n优点：schema 灵活，适合数据结构多变或嵌套较深的场景，水平扩展相对容易。\n缺点：事务和关联查询不如关系型数据库直接，强一致性场景需要多想一步。\n\n三者定位不同：A 适合轻量单机场景，B 适合强一致性、关系复杂的服务端场景，C 适合数据结构灵活、需要扩展性的场景。你倾向哪个方向，或者能说说使用场景（单机 vs 多用户、数据结构是否固定）吗？",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "compare-only-claude-sonnet-2",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A/B/C 三个本地存储方案简要对比:\n\n- **A: SQLite 本地存储** — 零部署成本,单文件,适合单机/嵌入式场景,但并发写入弱,多端同步要自己搭。\n- **B: PostgreSQL 服务端存储** — 事务和一致性最强,支持复杂查询和多用户并发,但需要独立部署运维,多一层基础设施。\n- **C: MongoDB** — schema 灵活,适合数据结构多变/嵌套文档的场景,水平扩展方便,但事务和关联查询能力弱于 PostgreSQL。\n\n你倾向选哪个,还是想先看看具体用在什么场景(数据量、并发量、是否多端同步)再决定?",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "compare-only-claude-sonnet-3",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "三者简要比较一下:\n\n**A. SQLite(本地存储)**\n- 零部署成本,单文件,适合单机/嵌入式、数据量不大的场景\n- 不支持多实例并发写、没有网络访问能力,扩展性差\n\n**B. PostgreSQL(服务端存储)**\n- 关系型+事务一致性强,支持复杂查询、索引、JSON 字段也兼顾\n- 需要独立部署运维,多并发写入和水平扩展成本高于 B 方案中的 NoSQL 选项\n\n**C. MongoDB**\n- 文档模型灵活,适合字段多变/嵌套结构的数据,水平扩展相对容易\n- 事务和复杂关联查询能力弱于 PostgreSQL,一致性模型也要额外注意\n\n你更倾向哪种,还是想先说下这次的数据规模和访问模式(单机 vs 多实例、读写比例、数据结构是否固定)?",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "compare-only-claude-sonnet-4",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "三种存储方式各有侧重：\n\n**A：SQLite 本地存储**\n- 零部署成本，单文件、无需额外服务\n- 并发写入能力弱，多实例/多进程场景容易锁冲突\n- 适合单机应用、原型、低并发场景\n\n**B：PostgreSQL 服务端存储**\n- 强一致性、成熟的事务和索引能力，SQL 生态完善\n- 需要独立部署和运维，有一定基础设施成本\n- 适合结构化数据、需要复杂查询/事务保证的场景\n\n**C：MongoDB**\n- 灵活的文档模型，适合 schema 多变或嵌套结构的数据\n- 事务支持没有 Postgres 那么原生，水平扩展能力较强\n- 适合数据结构不固定、迭代频繁的场景\n\n你更看重哪个方向：部署简单、数据一致性，还是 schema 灵活性?",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "compare-only-codex-1",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：SQLite 本地存储——部署最简单，适合单机或轻量应用；多人同时写入和跨设备共享受限。\n\nB：PostgreSQL 服务端存储——适合多人协作、复杂查询和长期扩展；需要维护数据库服务。\n\nC：MongoDB——适合结构变化频繁的文档数据；关系查询和数据约束通常需要更多设计。\n\n如果目前只是先做单机原型，A 最省事；如果要多人共享，优先考虑 B。你想选 A、B 还是 C？",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "compare-only-codex-2",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：SQLite 本地存储——部署简单，适合单机应用或原型；多人同时写入和跨设备共享较受限。\n\nB：PostgreSQL 服务端存储——适合多用户、复杂查询和长期扩展，但需要部署与维护数据库服务。\n\nC：MongoDB——适合结构经常变化的文档数据；如果数据关系复杂，需要更仔细地设计查询和一致性处理。\n\n你的应用主要是单机使用，还是需要多人共享？目前更倾向选 A、B 还是 C？",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "compare-only-codex-3",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：SQLite 本地存储——部署最简单，适合单机使用；多人同时写入或跨设备共享时限制较多。\n\nB：PostgreSQL 服务端存储——适合多人协作和复杂查询，但需要维护数据库服务。\n\nC：MongoDB——适合字段经常变化的文档数据，也需要维护服务；涉及多表关联的查询通常不如 PostgreSQL 直接。\n\n你更倾向于 A、B 还是 C？如果还没决定，可以说说是否需要多人同时使用、数据是否要跨设备共享。",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "compare-only-codex-4",
+    "group": "mention-compare",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：SQLite 本地存储——部署简单，适合单机使用；多人同时写入时限制较多。  \nB：PostgreSQL 服务端存储——适合多用户协作和复杂查询，但需要维护数据库服务。  \nC：MongoDB——适合结构经常变化的文档数据；如果数据关系复杂，设计和查询可能更费心。\n\n你倾向选 A、B 还是 C？",
+    "userText": "先只比较 A 和 B 的故障恢复差异，我还没有决定采用哪一个。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "cross-en-zh-claude-sonnet-1",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "Here are the options:\n\nA: Request logging\nB: Distributed tracing\nC: Alerting\n\nWhich one(s) would you like to go with — A, B, C, or a combination?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "cross-en-zh-claude-sonnet-2",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "Here are the options:\n\nA: Request logging\nB: Distributed tracing\nC: Alerting\n\nWhich one (or more) would you like to go with?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "cross-en-zh-claude-sonnet-3",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "Here are the options:\n\nA: Request logging\nB: Distributed tracing\nC: Alerting\n\nWhich one(s) would you like to go with — A, B, C, or a combination?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "cross-en-zh-claude-sonnet-4",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "Here are the options for improving observability:\n\n**A:** Request logging\n**B:** Distributed tracing\n**C:** Alerting\n\nWhich one(s) would you like to go with — pick one or more?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "cross-en-zh-codex-1",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: request logging  \nB: distributed tracing  \nC: alerting  \n\nWhich one or more would you like to choose?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "cross-en-zh-codex-2",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: request logging  \nB: distributed tracing  \nC: alerting  \n\nWhich option or options would you like to choose?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "cross-en-zh-codex-3",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: request logging  \nB: distributed tracing  \nC: alerting\n\nWhich option or options would you like to choose?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "cross-en-zh-codex-4",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: request logging  \nB: distributed tracing  \nC: alerting  \n\nWhich option or options would you like to choose?",
+    "userText": "我选 A 和 C；B 先不做。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "cross-zh-en-claude-sonnet-1",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选型有三个方向可以考虑:\n\n**A：本地 SQLite** —— 零运维，单文件,适合单机/低并发场景,但不支持多机共享写入。\n\n**B：托管 PostgreSQL**（如云厂商 RDS）—— 免运维、自带备份和高可用,成本相对高,且依赖网络和厂商。\n\n**C：自建 PostgreSQL** —— 完全可控、成本低,但备份、升级、高可用都要自己搭建和维护。\n\n你更看重哪一点：免运维、成本,还是并发/多机访问能力？倾向选哪个？",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "cross-zh-en-claude-sonnet-2",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选型有三个方向:\n\n**A：本地 SQLite**\n单文件、零运维，适合单机/小规模场景,但并发写入能力弱,扩展性有限。\n\n**B：托管 PostgreSQL**（如 RDS、Supabase 等云服务）\n免运维,自带备份、高可用,按量付费,但有持续成本,且数据托管在第三方。\n\n**C：自建 PostgreSQL**\n自己掌控全部数据和配置,成本可控,但需要自己处理备份、监控、升级等运维工作。\n\n你倾向选哪个,或者方便说一下使用场景（并发量、是否要多机访问、预算)?",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "cross-zh-en-claude-sonnet-3",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库方案有三个选项：\n\n- **A：本地 SQLite** —— 零部署成本，单文件存储，适合单机/低并发场景，但不支持多实例并发写入。\n- **B：托管 PostgreSQL**（如 RDS/云数据库）—— 免运维、自带备份高可用，但有持续费用。\n- **C：自建 PostgreSQL** —— 完全可控、成本可能更低，但需要自己维护备份、升级、高可用。\n\n你倾向选哪个？还是先说一下使用场景（并发量、是否要上云、预算），我再帮你判断。",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "cross-zh-en-claude-sonnet-4",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选型，有三个方向：\n\n**A：本地 SQLite**\n单文件、零运维，适合单机/小规模场景，但不支持多实例并发写入，扩展性有限。\n\n**B：托管 PostgreSQL**\n云厂商负责备份、高可用、升级，上线快,但有持续的托管费用，且受限于厂商的配置能力。\n\n**C：自建 PostgreSQL**\n自己掌控全部配置和成本，但需要自己处理备份、监控、故障恢复等运维工作。\n\n你倾向选哪个，还是想先说说使用场景（并发量、团队运维能力、预算)，我再帮你判断？",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "cross-zh-en-codex-1",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 SQLite  \nB：托管 PostgreSQL  \nC：自建 PostgreSQL  \n\n你想选择哪一种？",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "cross-zh-en-codex-2",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 SQLite  \nB：托管 PostgreSQL  \nC：自建 PostgreSQL  \n\n你想选择哪一种？",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "cross-zh-en-codex-3",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 SQLite  \nB：托管 PostgreSQL  \nC：自建 PostgreSQL  \n\n你想选哪一种？",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "cross-zh-en-codex-4",
+    "group": "cross-language",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 SQLite  \nB：托管 PostgreSQL  \nC：自建 PostgreSQL  \n\n你想选哪一种？",
+    "userText": "I choose B, the managed PostgreSQL option.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "defer-named-claude-sonnet-1",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "好的,整理一下三个方案:\n\n**A:同步写入** —— 调用方直接写,等结果返回。简单直接,但吞吐受限、调用方会被阻塞。\n\n**B:异步队列** —— 写请求先入队,后台消费。解耦、抗突发流量,但引入延迟和额外的队列基础设施。\n\n**C:批量任务** —— 攒一批再统一写入。吞吐最高,但实时性最差,逻辑也更复杂。\n\n这轮确定用 A,B 先放一放。那 C 这轮也先不做,等后面有吞吐压力再一起考虑,还是现在就定下以后要补上 C?",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "defer-named-claude-sonnet-2",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "写入方式有三个选项:\n\nA：同步写入 — 简单直接,实时性好,但吞吐和容错差一些\nB：异步队列 — 解耦、抗峰值能力强,但引入延迟和额外的运维复杂度\nC：批量任务 — 吞吐最高,适合大批量场景,但实时性最差,逻辑也最复杂\n\n本轮先按 A（同步写入）落地,B（异步队列）先搁置,以后有需要再接入。要我现在按 A 开始改代码吗？",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "defer-named-claude-sonnet-3",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "本轮先写入方案用 A：同步写入。\n\n- **A：同步写入** — 本轮采纳\n- **B：异步队列** — 明确推迟，以后再做\n- **C：批量任务** — 待定\n\nB 推迟后，C 这轮要不要也先搭个雏形，还是等 B 一起做？",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "defer-named-claude-sonnet-4",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个选项列一下,本轮先敲定 A,B 先放着:\n\n- **A：同步写入** — 请求内直接落库,简单但吞吐和延迟都受限\n- **B：异步队列** — 解耦写入,扛峰值好,但多一层基础设施和排查成本（本轮暂不做，留到以后）\n- **C：批量任务** — 攒批定时写,吞吐最高但实时性最差\n\n这轮按 A 走，你是想先做最简单的直接写入，等量上来再切 B 吗？还是已经有别的顾虑让你倾向 A？",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "defer-named-codex-1",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：同步写入——本轮采用。  \nB：异步队列——推迟到以后。  \nC：批量任务——尚未决定。\n\nC 也留到后续讨论吗？",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "defer-named-codex-2",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "- A：同步写入——本轮采用\n- B：异步队列——推迟到以后\n- C：批量任务——尚未决定\n\nC 本轮也先搁置吗？",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "defer-named-codex-3",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "- A：同步写入——本轮采用\n- B：异步队列——推迟到以后\n- C：批量任务——尚未决定\n\nC 这轮也先搁置，还是需要继续讨论？",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "defer-named-codex-4",
+    "group": "mention-defer",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "- A：同步写入——本轮采用。\n- B：异步队列——推迟到以后讨论。\n- C：批量任务——尚未决定。\n\n本轮先按 A 推进；C 是否也留待以后评估？",
+    "userText": "现在先做 A；B 留到下个迭代再讨论。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-all-named-claude-sonnet-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三个方案:\n\nA:增加重试\nB:加入幂等键\nC:扩大超时\n\n这几项可以组合使用,哪些获批?",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-all-named-claude-sonnet-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三个待确认的改动项：\n\nA：增加重试\nB：加入幂等键\nC：扩大超时\n\n可以多选，请回复批准哪些项（例如\"A、B\"或\"全部批准\"）。",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-all-named-claude-sonnet-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三个待批准的方案：\n\n- **A：增加重试** —— 请求失败时自动重试\n- **B：加入幂等键** —— 避免重复提交导致重复处理\n- **C：扩大超时** —— 放宽超时阈值，减少误判失败\n\n这三项可以单独批准，也可以组合批准（比如同时做 A 和 B）。请告诉我批准哪些选项（可多选）？",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-all-named-claude-sonnet-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三个候选方案:\n\nA：增加重试\nB：加入幂等键\nC：扩大超时\n\n这三项可以叠加使用,不互斥。请回复批准哪些(可多选,如\"A、B\"或\"全部批准\"),我再按批准的范围实施。",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-all-named-codex-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "可选方案：\n\n- A：增加重试\n- B：加入幂等键\n- C：扩大超时\n\n你批准实施哪些项？可以选择多个，请回复对应字母。",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-all-named-codex-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "可选方案：\n\n- A：增加重试\n- B：加入幂等键\n- C：扩大超时\n\n你批准哪些项？可以选多项，请直接回复对应字母。",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-all-named-codex-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：增加重试  \nB：加入幂等键  \nC：扩大超时  \n\n你批准哪些项？可以选择多个，例如 A、B。",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-all-named-codex-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：增加重试  \nB：加入幂等键  \nC：扩大超时  \n\n请问哪些项获批？可以选择多项，例如「A、B」。",
+    "userText": "A 和 B 都批准，C 不做。",
+    "expectedSelected": [
+      "A",
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-long-name-claude-sonnet-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个迁移方案如下：\n\n**A：按固定月份创建分区**\n- 优点：实现简单，查询时按月份路由很直观，历史分区可以直接 drop 来做清理。\n- 缺点：需要提前规划好分区范围，月份对不上或者数据量分布不均时会出现某些分区过大、某些几乎空的情况；新增分区通常得靠定时任务或人工维护，容易漏建导致写入失败。\n\n**B：分区键自动轮转**\n- 优点：不用人工维护分区创建，到了阈值自动切换，运维负担小，长期跑着比较省心。\n- 缺点：实现复杂度明显更高，需要额外的轮转逻辑和状态管理，一旦轮转逻辑出 bug（比如并发写入时的边界判断），排查起来比固定分区麻烦很多，出问题影响面也更大。\n\n**C：单表加归档字段**\n- 优点：改动量最小，不涉及分区机制，兼容性和迁移成本都低，适合数据量还没大到必须分区的阶段。\n- 缺点：treats 症状不治根本——表会持续膨胀，查询和索引效率随数据量增长逐渐下降，归档字段只是标记\"该不该看\"，不解决单表过大的问题，后面大概率还得重新做分区迁移。\n\n这三个方案你想选哪个？或者需要我先看看现在的数据量和写入模式再给建议？",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-long-name-claude-sonnet-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个迁移方案供参考：\n\n**方案 A：按固定月份创建分区（Fixed Monthly Partitioning）**\n- 优点：实现简单，查询按月过滤时命中单一分区，性能可预测；运维心智负担低，分区边界固定好推理。\n- 缺点：需要提前建好未来分区（或配套定时任务），容易因为忘建分区导致写入失败；数据分布不均的月份会出现分区大小失衡；历史分区多了之后 schema 变更要逐个分区跑。\n\n**方案 B：分区键自动轮转（Auto-Rotating Partition Key）**\n- 优点：免维护，到阈值自动切新分区，不用人工建分区或排期；能按数据量而非日期动态调整分区粒度，避免冷热不均。\n- 缺点：实现复杂，轮转逻辑本身是新的故障点（轮转失败、并发写入时的竞态都要处理）；分区边界不再和自然时间对齐，排查问题和做时间范围查询时不直观。\n\n**方案 C：单表加归档字段（Single Table + Archive Flag）**\n- 优点：改动最小，不涉及分区管理,一个 `archived`/`archived_at` 字段加索引就能跑;上线和回滚都轻量。\n- 缺点：不解决单表数据量增长的根本问题,大表的索引和全表扫描成本还是会涨;長期来看只是把\"迁移\"这件事推迟,而不是真正降低存储/查询压力。\n\n你更倾向哪一项,还是想先了解某一项的具体落地细节?",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-long-name-claude-sonnet-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "方案 A：按固定月份创建分区（如每月一张 `orders_202610`）\n\n优点：实现最简单，直接用数据库原生分区功能，查询按月份裁剪分区即可，历史数据清理也方便（drop 整个分区）。\n缺点：分区数量随时间线性增长,需要有人（或脚本）提前建好未来分区，否则插入会失败;如果数据分布不均（有些月份数据量暴涨）,单分区可能过大,失去分区意义。\n\n方案 B：分区键自动轮转（按数据量或时间窗口自动滚动，不固定到\"月\"这个粒度）\n\n优点：不依赖人工/脚本提前建分区，能按实际数据量动态调整分区边界，比固定月份更抗数据倾斜。\n缺点：实现复杂度明显上升，轮转逻辑本身要维护（触发条件、边界计算、并发写入时的轮转时机），排查问题时分区边界不直观，不如按月份那么好理解。\n\n方案 C：单表加归档字段（如 `is_archived` / `archived_at`，不做物理分区）\n\n优点：改动量最小，几乎不涉及迁移脚本，查询逻辑不用适配分区路由。\n缺点：治标不治本——表本身还是会无限增长，索引和全表扫描的开销不会减少，长期来看归档字段只是个标记，没有真正解决单表过大的问题。\n\n你倾向选哪个方案？或者这几项目前都用不上，想先问问要不要现在就动这个迁移？",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-long-name-claude-sonnet-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三个分区迁移方案：\n\n**A：按固定月份创建分区（Fixed Monthly Partitioning）**\n- 优点：规则简单直观，运维和查询都容易按月定位数据；大部分数据库/中间件原生支持，改造成本低。\n- 缺点：需要提前预建未来分区（或配套定时任务自动创建），否则写入会因分区不存在而失败；月份边界固定，业务量不均匀时会出现分区大小严重不均。\n\n**B：分区键自动轮转（Auto-Rotating Partition Key）**\n- 优点：按数据量或时间窗口动态轮转，分区大小更均衡，能自适应业务增长速度，减少人工预建分区的维护负担。\n- 缺点：实现复杂度高，轮转策略（阈值、触发时机）需要调优；出问题时排查链路更长，对团队的理解和运维成本要求更高。\n\n**C：单表加归档字段（Single Table + Archive Flag）**\n- 优点：改造最小，不涉及分区机制，兼容现有查询逻辑；上线风险低，回滚也简单。\n- 缺点：不解决单表数据量持续膨胀的根本问题，长期索引和查询性能会下降；\"归档\"本质只是逻辑标记，没有物理隔离热/冷数据的收益。\n\n你倾向选哪个方案？",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-long-name-codex-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：按固定月份创建分区。优点是分区边界清晰，按时间查询和清理历史数据方便；缺点是需要定期创建新分区，并处理漏建分区的风险。\n\nB：分区键自动轮转。优点是日常维护较少，适合持续写入；缺点是实现和排障更复杂，需要确认数据库及现有工具是否支持。\n\nC：单表加归档字段。优点是改动较小，迁移容易；缺点是数据增长后，查询、索引和清理成本可能持续上升。\n\n你倾向选哪项？",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-long-name-codex-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：按固定月份创建分区（按月预建并定期维护分区）。优点是查询和清理历史数据方便；缺点是要持续创建新分区，跨月查询也更复杂。\n\nB：分区键自动轮转（按时间规则自动创建和切换分区）。优点是日常维护少，适合数据持续增长；缺点是需要验证数据库支持情况和轮转机制。\n\nC：单表加归档字段（保留单表并用字段标记归档状态）。优点是迁移简单、对现有查询改动较小；缺点是表会持续变大，历史数据清理和查询性能需要额外管理。\n\n你倾向选哪项？",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-long-name-codex-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：按固定月份创建分区。优点是数据按月组织，查询和归档范围清晰；缺点是要持续创建新分区，并处理跨月查询。\n\nB：分区键自动轮转。优点是减少人工维护，适合持续增长的数据；缺点是轮转逻辑和故障排查更复杂。\n\nC：单表加归档字段。优点是迁移改动小，上线较快；缺点是数据仍集中在单表，数据量增长后查询和清理成本可能上升。\n\n你倾向选哪项？",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-long-name-codex-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：按固定月份创建分区。优点是分区边界清晰，按月查询和清理历史数据方便；缺点是需要定期创建新分区，跨月查询可能涉及多个分区。\n\nB：分区键自动轮转。优点是日常维护少，适合持续增长的数据；缺点是轮转规则和故障处理更复杂，需要确认数据库是否支持。\n\nC：单表加归档字段。优点是改造最简单，现有查询容易兼容；缺点是数据量增长后，查询和清理性能可能下降。\n\n你想选哪一项？",
+    "userText": "采用“分区键自动轮转”这个方案。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-partial-delay-claude-sonnet-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三项待处理工作：\n\n- **A：修复登录重试**\n- **B：更换数据库**\n- **C：增加审计日志**\n\n现在批准哪些项？哪一项需要推迟？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-partial-delay-claude-sonnet-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：修复登录重试\nB：更换数据库\nC：增加审计日志\n\n这三项里，您现在批准哪些、推迟哪一项？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-partial-delay-claude-sonnet-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：修复登录重试\nB：更换数据库\nC：增加审计日志\n\n这三项您现在批准哪些、推迟哪项？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-partial-delay-claude-sonnet-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "本次计划三项：\n\nA：修复登录重试\nB：更换数据库\nC：增加审计日志\n\n用户会部分批准并推迟一项，现在确认一下：这三项里您现在批准哪些，哪一项先推迟？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-partial-delay-codex-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：修复登录重试  \nB：更换数据库  \nC：增加审计日志  \n\n现在批准哪些项？哪一项先推迟？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-partial-delay-codex-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：修复登录重试  \nB：更换数据库  \nC：增加审计日志  \n\n现在批准哪些项？哪一项要推迟？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-partial-delay-codex-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：修复登录重试  \nB：更换数据库  \nC：增加审计日志  \n\n你现在批准哪些项？哪一项要推迟？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-partial-delay-codex-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：修复登录重试  \nB：更换数据库  \nC：增加审计日志  \n\n现在批准哪些项？哪一项先推迟？",
+    "userText": "A 和 C 批准现在做；B 等性能数据出来再说。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "hard-recommended-with-caveat-claude-sonnet-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据导入方案有三种:\n\n**A：手动导入** —— 人工操作触发,适合一次性、低频的数据迁移或补数场景。\n\n**B：后台异步导入**(推荐) —— 提交后交给后台任务处理,不阻塞请求,适合数据量大、耗时长的导入,还能支持重试和进度查询。\n\n**C：请求内同步导入** —— 在请求生命周期内直接完成导入,适合数据量很小、需要立即拿到结果的场景(比如导入后马上要用导入结果做后续处理)。\n\nB 更稳:接口响应快,不用担心超时,失败也容易做重试机制。如果你们的导入数据量小且调用方需要立刻知道结果,C 会更省事;A 更适合纯人工运维类场景。\n\n你倾向哪个,还是直接定 B?",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "hard-recommended-with-caveat-claude-sonnet-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三种导入方式对比：\n\n- **A：手动导入** —— 需要人工触发/操作，适合低频、临时性的一次性导入场景\n- **B：后台异步导入**（推荐） —— 提交请求后立即返回，实际导入在后台执行，适合数据量大、耗时长的场景，不占用请求线程、不会让用户等待超时，还能加重试和进度查询\n- **C：请求内同步导入** —— 请求等导入跑完才返回，适合数据量很小、要求导入结果立刻可见（比如紧接着就要用导入结果做下一步操作）的场景\n\n推荐 B：数据量稍大时同步导入容易超时或阻塞请求线程，异步方案更稳妥，也方便加失败重试和进度反馈。如果你们的场景是导入数据量很小且需要立即拿到结果，C 会更简单直接；A 更多用在不需要自动化、偶尔手动跑一次的场景。\n\n你这边倾向哪个，还是按 B 走？",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "hard-recommended-with-caveat-claude-sonnet-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三种导入方式对比一下:\n\n**A：手动导入**——人工触发,简单可控,但量大或高频时费人力,不适合自动化流程。\n\n**B：后台异步导入（推荐）**——请求先返回,导入放到后台队列/任务里跑,不阻塞主流程,可重试、可扩展,适合数据量大或耗时不确定的场景。\n\n**C：请求内同步导入**——导入完才返回,逻辑最简单,但量一大就容易超时/拖垮接口响应,适合数据量很小、要求导入结果立即可见的场景。\n\n你的场景数据量和实时性要求是怎样的?倾向用 B,还是有别的考虑?",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "hard-recommended-with-caveat-claude-sonnet-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据导入方式有三种:\n\n**A：手动导入** —— 用户手动上传/操作触发\n**B：后台异步导入** —— 提交后交给后台任务处理，不阻塞请求\n**C：请求内同步导入** —— 在当前请求里直接完成导入\n\n推荐 **B**。原因:导入通常涉及较大数据量和不确定耗时的处理(解析、校验、写库),同步做容易导致请求超时或阻塞用户操作;异步方式可以配合进度查询/回调,用户体验和系统稳定性都更好。\n\n不过 A 和 C 也各有适用场景:\n- **A** 适合导入频率低、数据量小、需要人工确认每一步的场景(比如运营配置类数据),不值得为此搭建异步机制\n- **C** 适合数据量很小且要求导入结果立即可用的场景(比如几十条记录、导入后马上要跳转展示结果),同步简单直接,没必要上队列\n\n你这边数据量和耗时大致是什么量级?如果数据量不大、也不要求后台任务基础设施,A 或 C 可能更省事;如果要支持批量/大文件导入,就定 B。你怎么选?",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "hard-recommended-with-caveat-codex-1",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：手动导入  \nB：后台异步导入（推荐）  \nC：请求内同步导入  \n\n推荐 B，适合导入耗时较长、又不希望请求一直等待的情况。A 适合偶尔由人工触发的导入；C 适合数据量小、能很快完成的导入。你决定选哪一种？",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "hard-recommended-with-caveat-codex-2",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：手动导入  \nB：后台异步导入（推荐）  \nC：请求内同步导入  \n\nB 适合避免导入耗时影响请求响应；A 适合需要人工控制导入时机，C 适合数据量小、需要立即得到结果的场景。你决定选哪一种？",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "hard-recommended-with-caveat-codex-3",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：手动导入  \nB：后台异步导入（推荐）  \nC：请求内同步导入  \n\nA 适合偶尔导入、需要人工控制的场景；C 适合数据量小、能很快完成的场景。B 更适合常规导入，用户无需等待请求完成。\n\n你决定选哪一种？",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "hard-recommended-with-caveat-codex-4",
+    "group": "hard-positive",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：手动导入——适合低频、需要人工检查的场景。  \nB：后台异步导入——推荐，适合导入耗时较长、又不想让请求一直等待的场景。  \nC：请求内同步导入——适合数据量小、需要立即返回结果的场景。\n\n你决定采用哪一种？",
+    "userText": "我接受你推荐的 B；A 和 C 暂时不考虑。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "inspect-only-claude-sonnet-1",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "以下是三个方案的简要说明：\n\n**A：自动迁移**\n用脚本/工具批量执行迁移，一次性完成，耗时短，但对数据和逻辑的边界情况覆盖不足时容错性差，出错后排查和回滚成本较高。\n\n**B：手动迁移**\n人工逐步核对和迁移，灰度可控、出问题能及时发现，但耗时长、依赖人力，适合数据量小或迁移逻辑复杂、不放心自动化的场景。\n\n**C：暂不迁移**\n先维持现状，不做改动，适合时间紧、优先级不高或还未确认迁移必要性的情况，但会积累技术债，后续迁移成本可能更高。\n\n你想选哪个方案？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "inspect-only-claude-sonnet-2",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "这三个方案给用户参考一下：\n\n**A：自动迁移**\n写脚本/工具一次性批量迁移数据或代码，速度快、人力成本低，但前期需要投入开发和测试脚本的时间，遇到不规则/脏数据时容错要求高。\n\n**B：手动迁移**\n逐项人工核对迁移，灵活、出错易发现易纠正，适合数据量小或情况复杂多变的场景，但耗时且容易疲劳出错，不适合大规模数据。\n\n**C：暂不迁移**\n先维持现状，等条件（时间、需求、风险）更明确后再处理，短期零成本，但会累积技术债，拖得越久后续迁移成本可能越高。\n\n你倾向选哪个，还是想先了解数据规模/时间窗口再决定？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "inspect-only-claude-sonnet-3",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "这是三个迁移方案的简要说明：\n\n**A：自动迁移** —— 用脚本/工具批量执行迁移，速度快、人工介入少，但出错时排查和回滚成本较高，适合规则明确、数据量大的场景。\n\n**B：手动迁移** —— 人工逐项处理，可控性强、能随时核对，但耗时长、容易出错，适合数据量小或存在大量特殊情况的场景。\n\n**C：暂不迁移** —— 先维持现状，等条件（时间、人力、依赖项）成熟再启动，适合当前优先级不高或还有阻塞因素的场景。\n\n你想选哪个方案？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "inspect-only-claude-sonnet-4",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：自动迁移——用脚本/工具批量转换数据或代码，省人工，但出错时排查成本高，适合规则明确、量大的场景。\nB：手动迁移——逐项人工处理，可控性强、能顺手处理边界情况，但耗时耗人力，适合量小或规则不稳定的场景。\nC：暂不迁移——先维持现状，留出观察/缓冲期，但问题会继续累积，后续迁移成本可能更高。\n\n你想选哪个方案？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "inspect-only-codex-1",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：自动迁移——由工具批量完成，速度快，但需要检查迁移结果。  \nB：手动迁移——逐项处理，控制更细，但耗时较长。  \nC：暂不迁移——维持现状，之后再决定。\n\n你想选择哪一种？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "inspect-only-codex-2",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：自动迁移——由工具执行迁移，省时，但需要检查结果。  \nB：手动迁移——逐项处理，便于控制细节，但耗时较多。  \nC：暂不迁移——维持现状，之后再决定。\n\n你想选哪个方案？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "inspect-only-codex-3",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：自动迁移——由工具批量完成，速度快，但迁移后需要检查结果。  \nB：手动迁移——逐项处理，便于控制细节，但耗时较长。  \nC：暂不迁移——保持现状，之后再安排迁移。\n\n你想选择哪个方案？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "inspect-only-codex-4",
+    "group": "mention-inspect",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：自动迁移——由工具批量处理，省时，但完成后需要检查结果。\n\nB：手动迁移——逐项处理，便于控制细节，但耗时较多。\n\nC：暂不迁移——保持现状，等需要时再处理。\n\n你想选择哪个方案？",
+    "userText": "先把 B 的迁移脚本贴出来让我检查，暂时不批准任何方案。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "long-descriptions-claude-sonnet-1",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 JSON 文件\n优点很直接——零依赖、零部署成本,文件就是数据,用 Git 就能做版本管理,排查问题时直接打开看肉眼可读,很适合配置、小数据集或原型阶段。缺点是没有并发写入保护,多进程同时写容易脏数据或丢更新;而且没有索引和查询能力,数据量一大(几千条往上)查找和修改都得整体读写,性能会明显变差。\n\nB：SQLite\n优点是带完整的 SQL 查询能力和事务保证,单文件部署,性能对中小数据量很够用,还是标准库自带或几乎所有语言都有现成驱动,几乎不需要额外运维。缺点是写并发有限——同一时间基本只能有一个写事务,高并发写入场景容易锁等待;另外它是单机文件,没有原生的多机复制或网络访问能力,跨服务共享数据不方便。\n\nC：PostgreSQL\n优点是功能最完整——成熟的并发控制、丰富的索引类型、复杂查询和 JSON 字段支持都很强,适合数据量大、读写并发高、未来要扩展的场景。缺点是需要单独部署和维护一个数据库服务,带来运维成本(备份、权限、连接池等),对于小工具或个人项目来说有点\"杀鸡用牛刀\",启动和接入的门槛也比前两者高。\n\n你这边场景的数据量、并发读写需求、是否要跨进程/跨机访问大概是什么样?想选哪一个?",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "long-descriptions-claude-sonnet-2",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 JSON 文件\n优点是简单直接，不需要任何额外依赖或服务进程，读写就是普通的文件 I/O，调试时打开文件就能肉眼看懂内容，适合原型阶段或数据量很小、几乎不并发访问的场景。缺点也很明显：没有事务和并发控制，多个进程同时写很容易把文件搞坏；数据量上去之后每次读写都要整个文件反序列化/序列化，性能会线性恶化；查询能力几乎为零，想按条件筛选只能自己写遍历逻辑。\n\nB：SQLite\n优点是单文件嵌入式数据库，零部署成本，却带来了完整的 SQL 查询能力、索引和事务支持，并发读取和轻量写入场景下表现稳定，WAL 模式下读写也能较好共存。缺点是高并发写入场景下容易遇到锁等待（毕竟是单文件锁机制），不支持多机访问，也没有用户权限、复制、分片这些面向服务端的能力，数据量极大或写入压力很高时会遇到瓶颈。\n\nC：PostgreSQL\n优点是功能最完整的选择：成熟的事务隔离级别、丰富的数据类型（JSONB、数组、全文检索）、强大的索引和查询优化器，天然支持多客户端并发访问和网络访问，扩展性和生态（复制、分区、各种插件）也最好，适合长期要扩展或多服务共享数据的场景。缺点是需要单独部署和维护一个数据库服务进程，本地开发和轻量项目里显得偏重，运维成本（备份、升级、监控、连接池）也比前两者高出一个量级。\n\n你想选哪一个？",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "long-descriptions-claude-sonnet-3",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**A：本地 JSON 文件**\n优点：零依赖，读写就是普通文件操作，部署和迁移极其简单，适合配置、小规模数据或原型阶段快速验证想法。缺点：没有事务和并发控制，多进程/多线程同时写入容易出现数据损坏或丢失更新；数据量变大后全量读写会越来越慢，也没有索引和查询能力，想按条件过滤只能自己写代码遍历。\n\n**B：SQLite**\n优点：单文件嵌入式数据库，支持 SQL、事务和基本的并发读（WAL 模式下读写分离较好），性能和可靠性比手写 JSON 强一个档次，适合单机应用、桌面程序或中小型服务。缺点：写并发仍然有限（本质是文件锁，多个进程同时写容易互相阻塞），不支持多机访问和水平扩展，没有内置的用户权限、复制、细粒度类型系统等生产级数据库特性。\n\n**C：PostgreSQL**\n优点：功能最全的选项，完整事务、丰富的数据类型（JSONB、数组、全文检索等）、成熟的索引和查询优化器，支持高并发读写、复制和水平/垂直扩展方案，适合长期要支撑真实业务的系统。缺点：需要独立部署和运维一个数据库服务（备份、监控、连接池、版本升级等），本地开发和测试的环境搭建成本明显高于前两者，对于小工具或一次性脚本来说是过度设计。\n\n你更倾向选哪一个？",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "long-descriptions-claude-sonnet-4",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 JSON 文件\n\n最大的优点是零依赖、零运维：不用装数据库、不用建连接池，一个文件就是全部数据，调试时直接打开肉眼可读，部署和备份就是复制文件这么简单，很适合单机小工具、配置存储或原型阶段。但缺点也很致命——没有并发控制，多个进程同时写很容易把文件写坏或丢数据，而且每次读写往往要整个文件加载进内存再重新序列化，数据量一大（比如上万条记录）性能会明显下降，也没有索引和查询能力，想按条件筛选只能自己写遍历逻辑。\n\nB：SQLite\n\n优点是在\"文件级简单\"和\"数据库能力\"之间取得了很好的平衡：支持 SQL 查询、事务和索引，单文件部署依然免安装、免配置，而且性能对中小规模数据（几十万到百万行）相当够用，Python/Node 等几乎所有语言都有现成库。缺点是并发写入能力有限，默认情况下同一时刻只能有一个写事务，多进程高并发写入场景容易遇到锁等待甚至超时；另外它本质还是单机文件，没有内置的网络访问控制、多实例复制或横向扩展能力，不适合多个服务实例共享同一份数据的场景。\n\nC：PostgreSQL\n\n优点是功能最全：真正的多用户并发、完善的事务隔离级别、丰富的数据类型（JSON、数组、全文检索等）、成熟的权限体系和复制/备份方案，适合长期要承载业务增长、多人多服务同时读写的场景。缺点是代价也最高——需要单独部署和维护一个数据库服务（或付费托管），本地开发环境搭建比前两者麻烦,对于只是想存点配置或做个小工具的场景来说明显是\"杀鸡用牛刀\"，运维和连接管理的心智负担都更重。\n\n你会选哪一个？还是方便告诉我一下具体场景（比如数据量、是否多进程/多人并发写入、部署环境）？",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "long-descriptions-codex-1",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 JSON 文件。实现最简单，直接读写文件即可，适合数据量小、只有一个进程使用的场景；文件也容易查看、复制和备份。缺点是并发写入容易发生冲突，数据增长后查询和修改会变慢，还需要自己处理写入中断、数据校验等问题。\n\nB：SQLite。无需单独部署数据库服务，却支持 SQL 查询、事务和索引，适合单机应用或中小规模项目；数据库集中在一个文件里，备份和迁移也比较方便。缺点是多个进程频繁写入时可能遇到锁竞争，跨机器共享和独立扩容也不方便。\n\nC：PostgreSQL。支持复杂查询、并发访问、事务和较完善的权限管理，适合多人使用或预计持续增长的服务；应用与数据库分开部署后，也更容易管理备份和扩容。缺点是需要部署、监控和维护数据库服务，初期配置与运行成本高于前两种方案。\n\n你想选 A：本地 JSON 文件、B：SQLite，还是 C：PostgreSQL？",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "long-descriptions-codex-2",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：本地 JSON 文件  \n实现最简单，直接读写文件即可，适合数据量小、只有一个进程使用的原型或个人工具。文件内容也容易查看和备份；但数据量增长后，查询和更新会变慢，多个进程同时写入时还需要自行处理冲突和文件损坏风险。\n\nB：SQLite  \n无需单独部署数据库服务，却能提供 SQL 查询、索引和事务，适合本地应用及访问量不高的服务。它比 JSON 文件更适合管理结构化数据；但并发写入能力有限，如果未来需要多台服务器共同访问，迁移或调整架构的可能性较高。\n\nC：PostgreSQL  \n功能完整，并发处理、复杂查询和数据一致性都有成熟支持，适合多人使用或预计持续增长的服务。代价是需要部署、监控和备份数据库，初期配置与运维工作也比前两种方案多。\n\n你想选择 A、B 还是 C？",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "long-descriptions-codex-3",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**A：本地 JSON 文件**  \n优点是实现简单，直接读写文件即可，适合数据量小、只有一个进程使用的场景。文件也容易查看、复制和备份。缺点是并发写入和事务处理需要自己实现；数据量增长后，查询和更新通常要读取或改写较多内容。\n\n**B：SQLite**  \n优点是无需单独部署数据库服务，却支持 SQL、索引和事务，适合单机应用及中小规模数据。备份和迁移也比较方便。缺点是写入并发能力有限；如果多个服务实例需要共享同一份数据，部署和访问方式会受到限制。\n\n**C：PostgreSQL**  \n优点是适合多用户、多服务同时访问，支持复杂查询、事务和较完善的权限管理，数据规模增长后也有更多扩展空间。缺点是需要部署、维护数据库服务，并处理连接、备份和监控等事项；对小型单机项目来说，初期成本可能偏高。\n\n你想选哪一个：A、B 还是 C？",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "long-descriptions-codex-4",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**A：本地 JSON 文件**  \n优点是实现最简单，不需要安装数据库，数据也方便直接查看和备份。缺点是数据量增大后，查询、更新和并发写入都会变得麻烦；如果写入过程中出错，还需要额外处理文件损坏和数据恢复。\n\n**B：SQLite**  \n优点是仍然不需要单独部署数据库服务，却能使用 SQL 查询、索引和事务，适合单机应用或规模适中的项目。缺点是多人或多进程频繁写入时容易遇到写入竞争，跨机器共享数据和集中管理也不如服务型数据库方便。\n\n**C：PostgreSQL**  \n优点是适合多用户并发访问，查询能力、数据约束和运维工具都比较完善，后续扩展空间较大。缺点是需要部署和维护数据库服务，还要考虑连接配置、备份与升级；对很小的项目来说，初期投入可能偏高。\n\n你想选哪一个？",
+    "userText": "看完说明后，我选第三种，也就是 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "near-name-claude-sonnet-1",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选项如下：\n\n- A：PostgreSQL-compatible 托管服务\n- B：PostgreSQL 自建\n- C：SQLite\n\n选哪一项?",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "near-name-claude-sonnet-2",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选型有三个方向：\n\nA：PostgreSQL-compatible 托管服务\nB：PostgreSQL 自建\nC：SQLite\n\n选哪个?",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "near-name-claude-sonnet-3",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选哪种，三个选项名称接近些:\n\nA：Postgres 托管（PostgreSQL-compatible 托管服务）\nB：Postgres 自建（PostgreSQL 自建）\nC：SQLite\n\n选哪个?",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "near-name-claude-sonnet-4",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选哪个?\n\nA：PostgreSQL-compatible 托管服务\nB：PostgreSQL 自建\nC：SQLite\n\n你倾向选哪一项?",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "near-name-codex-1",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库可选：\n\n- A：PostgreSQL-compatible 托管服务\n- B：PostgreSQL 自建\n- C：SQLite\n\n你想选哪项？",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "near-name-codex-2",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库可以选：\n\n- A：PostgreSQL-compatible 托管服务\n- B：PostgreSQL 自建\n- C：SQLite\n\n你想选哪项？",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "near-name-codex-3",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库选项：\n\nA：PostgreSQL-compatible 托管服务  \nB：PostgreSQL 自建  \nC：SQLite\n\n你选哪项？",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "near-name-codex-4",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "数据库有三个选项：\n\nA：PostgreSQL-compatible 托管服务  \nB：PostgreSQL 自建  \nC：SQLite\n\n你选哪项？",
+    "userText": "选择 PostgreSQL，不是 PostgreSQL-compatible 的托管替代品。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "negate-mentioned-claude-sonnet-1",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个方案列一下:\n\n**A：进程内 LRU**——简单快,但多实例不共享,重启丢失\n**B：Redis**——跨实例共享,需要额外运维一套 Redis\n**C：HTTP 缓存头**（Cache-Control/ETag 等)——交给浏览器/CDN,服务端基本零维护成本\n\n你更倾向哪个?还是结合业务场景另有考虑?",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "negate-mentioned-claude-sonnet-2",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个缓存方案各有侧重:\n\n- **A：进程内 LRU** —— 实现简单,但多实例间不共享,重启即丢\n- **B：Redis** —— 跨实例共享,支持过期和淘汰策略,但多了一个外部依赖和运维成本\n- **C：HTTP 缓存头**(如 Cache-Control、ETag) —— 利用浏览器/CDN 做缓存,服务端几乎零维护成本,但控制粒度较粗,依赖客户端配合\n\n你倾向选哪一项?",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "negate-mentioned-claude-sonnet-3",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个方案:\n\nA：进程内 LRU 缓存\nB：Redis 缓存\nC：HTTP 缓存头\n\n你之前提到对 A 比较认可，但后来又明确否定了 A，最终选定 C。想确认一下，接下来要按 C（HTTP 缓存头）这个方向继续吗？",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "negate-mentioned-claude-sonnet-4",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个方案列一下:\n\n- **A：进程内 LRU** —— 实现简单,延迟最低,但多实例部署下各进程缓存不一致,重启就丢失\n- **B：Redis** —— 跨实例共享、支持过期策略,但多了一个外部依赖,要考虑网络开销和运维成本\n- **C：HTTP 缓存头**（Cache-Control / ETag 等） —— 交给客户端和中间层（CDN、浏览器）处理,服务端基本零维护,但命中率和失效时机不完全可控,依赖调用方遵守协议\n\n你倾向选哪个,还是有别的考虑？",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "negate-mentioned-codex-1",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：进程内 LRU——实现简单、访问快，但多实例间缓存不共享。  \nB：Redis——多实例共享缓存，但需要额外运维。  \nC：HTTP 缓存头——利用浏览器和 CDN 缓存，适合可缓存的 HTTP 响应。\n\n你之前认可过 A，但最终已否定 A、选择 C。现在是按 C 推进，还是想重新选一项？",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "negate-mentioned-codex-2",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三个方案各有取舍：\n\n- A：进程内 LRU。实现简单、访问快，但多实例之间无法共享缓存。\n- B：Redis。多实例可共享，但需要额外维护服务。\n- C：HTTP 缓存头。利用客户端和中间缓存，适合可通过 HTTP 缓存的响应。\n\n你之前认可过 A，但最终明确否定了 A、选择了 C。现在仍按 C 推进，还是想改选 B？",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "negate-mentioned-codex-3",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：进程内 LRU——简单、访问快；你之前认可这一点，但最终已明确排除 A。  \nB：Redis——多实例可共享缓存，但需要额外服务。  \nC：HTTP 缓存头——让浏览器或 CDN 缓存响应；你最终选择了 C。\n\n最终按 C 来做，对吗？",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "negate-mentioned-codex-4",
+    "group": "mention-negated",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：进程内 LRU——实现简单，但缓存只在单个进程内生效。  \nB：Redis——多实例可共享，但需要额外维护服务。  \nC：HTTP 缓存头——利用客户端和中间层缓存，适合可复用的 HTTP 响应。\n\n你最后明确否定了 A，选择 C。我们就按 C 落地，对吗？",
+    "userText": "A 看起来不错，但我不选 A；比较后我决定选 C。",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "none-options-claude-sonnet-1",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "关于发布时机，有三个方案可以选：\n\nA：立即发布\nB：灰度发布\nC：延期发布\n\n你想选哪一个?可以选一项,也可以多项组合。",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "none-options-claude-sonnet-2",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "发布方式有以下几种选择：\n\nA：立即发布\nB：灰度发布\nC：延期发布\n\n你想选哪一项(或哪几项)?",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "none-options-claude-sonnet-3",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "发布方式有以下三个选项,想听听你的想法:\n\nA：立即发布\nB：灰度发布\nC：延期发布\n\n要选哪一个,或者同时考虑多个?",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "none-options-claude-sonnet-4",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "关于发布计划，有以下几个选项：\n\n- **A：立即发布**\n- **B：灰度发布**\n- **C：延期发布**\n\n你想选哪一项？也可以多选，说说你的考虑或者有没有其他想法。",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "none-options-codex-1",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：立即发布  \nB：灰度发布  \nC：延期发布\n\n你选择哪一项或哪几项？",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "none-options-codex-2",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：立即发布  \nB：灰度发布  \nC：延期发布  \n\n你选择哪一项或哪几项？",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "none-options-codex-3",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：立即发布  \nB：灰度发布  \nC：延期发布  \n\n你选择哪一项或哪几项？",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "none-options-codex-4",
+    "group": "all-or-none",
+    "decision": false,
+    "expectedBand": "any",
+    "assistantText": "A：立即发布  \nB：灰度发布  \nC：延期发布  \n\n你选择哪一项或哪几项？",
+    "userText": "都不选，先保持现状。",
+    "expectedSelected": [],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "quoted-reference-claude-sonnet-1",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "好的,三种 API 方案:\n\n**A：REST** — 基于 HTTP 动词和资源路径,简单直观,生态和工具链最成熟\n**B：GraphQL** — 客户端按需声明查询字段,能减少过度请求和多次往返\n**C：gRPC** — 基于 HTTP/2 和 Protobuf,强类型、高性能,适合服务间调用\n\n刚才提到 A 时说它\"生态和工具链最成熟\",这其实也是很多团队默认选它的主要原因——不是性能或灵活性最优,而是接入成本低、团队都熟。\n\n你这边倾向选哪个,还是说有具体的使用场景(比如对外开放 API / 内部微服务通信)要考虑?",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "quoted-reference-claude-sonnet-2",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三种 API 方案可以这样列：\n\n- **A：REST** —— 简单、生态成熟，缓存和调试都方便\n- **B：GraphQL** —— 按需取字段，减少过度请求，适合前端需求多变的场景\n- **C：gRPC** —— 二进制协议、强类型、性能高，适合服务间通信\n\n刚才提到 A 的时候说\"REST 简单、生态成熟\",如果团队对外部开放接口、调用方多是第三方，这点其实是比较大的优势。\n\n你倾向选哪个,A、B 还是 C?",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "quoted-reference-claude-sonnet-3",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三种 API 方案：\n\nA：REST\nB：GraphQL\nC：gRPC\n\n刚才提到 A（REST）时说它是接口最通用、生态最成熟的方案，落地成本最低——这也是它常被当默认选项的原因。\n\n你现在想选哪个？",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "quoted-reference-claude-sonnet-4",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "API 方案有三种可选:\n\n**A：REST** — 简单直观，生态成熟，调试方便，但多端点往返和过度/不足获取的问题比较明显。\n**B：GraphQL** — 客户端按需取字段，减少 over-fetching，适合复杂前端场景，但服务端缓存和权限控制更复杂。\n**C：gRPC** — 基于 HTTP/2 和 Protobuf，性能高、强类型，适合内部服务间调用，但浏览器直连支持弱，调试没那么直观。\n\n前面提到 A 的时候说它\"生态成熟，调试方便\",这点在团队排查问题时其实挺重要的。你们现在倾向选哪个?",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "quoted-reference-codex-1",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "可选方案有：\n\n- A：REST\n- B：GraphQL\n- C：gRPC\n\n先前提到的“A：REST”也在其中。你现在选择哪一种？",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "quoted-reference-codex-2",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "你前面提到的“A：REST”也在这三个选项里：\n\n- A：REST\n- B：GraphQL\n- C：gRPC\n\n你现在倾向选哪一个？",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "quoted-reference-codex-3",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "三种 API 方案：\n\n- A：REST\n- B：GraphQL\n- C：gRPC\n\n你刚才提到的“A：REST”也在其中。你现在选择哪一种？",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "quoted-reference-codex-4",
+    "group": "codeblock-quoted-long",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "可选方案有：\n\n- A：REST\n- B：GraphQL\n- C：gRPC\n\n前面提到的「A：REST」也在其中。你现在选择哪一种？",
+    "userText": "引用中的 “选 A” 是旧讨论；这次我选 B。",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "same-as-last-claude-sonnet-1",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "新一轮测试框架选择：\n\nA：Vitest\nB：Jest\nC：Playwright\n\n这次也可以直接沿用你之前选过的那个。这次选哪个?",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "same-as-last-claude-sonnet-2",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这是新一轮测试框架选择：\n\nA：Vitest\nB：Jest\nC：Playwright\n\n也可以沿用你之前选过的那个。这次想选哪个？",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "same-as-last-claude-sonnet-3",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这次是新一轮选择：\n\nA：Vitest\nB：Jest\nC：Playwright\n\n也可以直接沿用你之前选的那个，不用重新挑。这次想选哪个，还是沿用之前的？",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "same-as-last-claude-sonnet-4",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这是新一轮技术选型，列几个测试相关的选项：\n\nA：Vitest\nB：Jest\nC：Playwright\n\n和之前一样，也可以直接沿用上次选的那个。想选哪个？",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "same-as-last-codex-1",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这是新一轮选择，你可以选：\n\nA：Vitest  \nB：Jest  \nC：Playwright  \n\n也可以沿用之前的选择。你想选哪一个？",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "same-as-last-codex-2",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这是新一轮选择，也可以沿用你之前的选择：\n\n- A：Vitest\n- B：Jest\n- C：Playwright\n\n这次你想选哪个？",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "same-as-last-codex-3",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这是新一轮选择，也可以沿用你之前的选择：\n\nA：Vitest  \nB：Jest  \nC：Playwright\n\n这次你选哪一个？",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "same-as-last-codex-4",
+    "group": "implicit-reference",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这是新一轮选择，也可以沿用你之前的选择：\n\nA：Vitest  \nB：Jest  \nC：Playwright\n\n这次你想选哪个？",
+    "userText": "和上次一样，A 和 C。",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "similar-cache-claude-sonnet-1",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster —— 原生分片集群，水平扩展、自动故障转移，适合数据量大或要求高可用的场景\nB：Redis 单节点 —— 单机部署,无分片无自动failover，运维最简单，适合数据量小或对可用性要求不高的场景\nC：KeyDB —— Redis 的多线程 fork，协议和命令兼容 Redis，单机多核性能更好，但生态和社区支持不如原生 Redis\n\n你倾向选哪个？还是想先说一下你的数据量、可用性要求和团队运维能力，我再帮你判断？",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "similar-cache-claude-sonnet-2",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster —— 原生分片集群方案，多节点自动分片、支持横向扩容和故障转移，运维复杂度较高\nB：Redis 单节点 —— 单实例部署，架构简单、延迟最低，但容量和可用性受限于单机\nC：KeyDB —— Redis 的多线程分支，兼容 Redis 协议，单机多核性能更好，也支持多主复制\n\n你更看重哪个因素（数据量、可用性要求、还是运维成本），想选哪个？",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "similar-cache-claude-sonnet-3",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster —— 原生分片集群，自动分片与故障转移，水平扩展能力强，但部署和运维复杂度较高\nB：Redis 单节点 —— 单实例部署，架构简单、延迟低，但容量和可用性受限于单机，无内建故障转移\nC：KeyDB —— Redis 的多线程分叉版本，协议兼容 Redis，多核利用率更高，但生态和社区支持不如 Redis 原生\n\n你更倾向选哪个？还是想让我按你的场景（数据量、可用性要求、团队运维能力）给个推荐？",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "similar-cache-claude-sonnet-4",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster —— Redis 原生分片集群方案，多节点分布数据、支持横向扩展和自动故障转移\nB：Redis 单节点 —— 单实例部署，架构简单、维护成本低，但容量和可用性受限于单机\nC：KeyDB —— Redis 的多线程 fork，协议兼容 Redis，靠多线程提升单机吞吐，也支持主动复制等扩展特性\n\n你倾向选哪个,或者想先说说你的场景(数据量、QPS、高可用要求)?",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "similar-cache-codex-1",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster——多节点集群，支持分片和高可用。  \nB：Redis 单节点——部署简单，适合规模较小的场景。  \nC：KeyDB——兼容 Redis，支持多线程处理。\n\n你想选哪一个？",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "similar-cache-codex-2",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster — 多节点部署，支持分片和高可用。  \nB：Redis 单节点 — 单节点部署，配置简单。  \nC：KeyDB — 兼容 Redis，支持多线程。\n\n你想选哪一种？",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "similar-cache-codex-3",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster — 多节点集群，支持水平扩展和故障转移。  \nB：Redis 单节点 — 部署简单，适合规模较小的场景。  \nC：KeyDB — 兼容 Redis，支持多线程处理。\n\n你倾向选哪一个？",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "similar-cache-codex-4",
+    "group": "similar-names",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A：Redis Cluster — 多节点部署，支持分片和高可用。  \nB：Redis 单节点 — 部署简单，适合规模较小的场景。  \nC：KeyDB — 兼容 Redis 协议，支持多线程处理。\n\n你想选哪一个？",
+    "userText": "用 Redis Cluster；普通 Redis 单节点不满足要求。",
+    "expectedSelected": [
+      "A"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  }
+]

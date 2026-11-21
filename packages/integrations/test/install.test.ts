@@ -61,7 +61,7 @@ vi.mock("node:child_process", async (importOriginal) => {
 });
 
 const bridgePath =
-  "/Applications/Decision.app/Contents/Resources/bridge/decision-bridge";
+  "/Applications/Paraself.app/Contents/Resources/bridge/paraself-bridge";
 
 const makeConfig = async () => {
   const root = await mkdtemp(join(tmpdir(), "decision-install-"));
@@ -93,7 +93,7 @@ describe("installIntegrations", () => {
         "mcp",
         "add",
         "--",
-        "C:\\Program Files\\Decision\\decision-bridge.cmd",
+        "C:\\Program Files\\Paraself\\paraself-bridge.cmd",
       ], {
         platform: "win32",
         commandInterpreter: "C:\\Windows\\System32\\cmd.exe",
@@ -108,19 +108,19 @@ describe("installIntegrations", () => {
         "/s",
         "/v:off",
         "/c",
-        '""claude" "mcp" "add" "--" "C:\\Program Files\\Decision\\decision-bridge.cmd""',
+        '""claude" "mcp" "add" "--" "C:\\Program Files\\Paraself\\paraself-bridge.cmd""',
       ],
     });
   });
 
   it("keeps POSIX client execution argument-safe", () => {
     expect(
-      commandInvocation("codex", ["mcp", "remove", "decision"], {
+      commandInvocation("codex", ["mcp", "remove", "paraself"], {
         platform: "darwin",
       }),
     ).toEqual({
       command: "codex",
-      args: ["mcp", "remove", "decision"],
+      args: ["mcp", "remove", "paraself"],
       windowsVerbatimArguments: false,
     });
   });
@@ -129,11 +129,12 @@ describe("installIntegrations", () => {
     const paths = await makeConfig();
     spawned.cwd.length = 0;
 
-    // Started from a repository with a `decision` server of another tool's in its .mcp.json, `claude mcp get` showed
+    // Started from a repository with a `paraself` server of another tool's in its .mcp.json, `claude mcp get` showed
     // that one, and this app's user-scoped server was refused as not its own.
     await installIntegrations({ mode: "apply", bridgePath, claudeSettingsPath: paths.claudeSettingsPath, codexHooksPath: paths.codexHooksPath });
 
-    expect(spawned.cwd).toHaveLength(6);
+    // Each client's get, remove and add of Paraself's server, and a look at Decision's (none there, none taken out).
+    expect(spawned.cwd).toHaveLength(8);
     expect(new Set(spawned.cwd)).toEqual(new Set([homedir()]));
   });
 
@@ -211,10 +212,10 @@ describe("installIntegrations", () => {
     expect(
       JSON.parse(await readFile(paths.codexHooksPath, "utf8")),
     ).toMatchObject({ description: "Existing personal hooks" });
-    expect(runner).toHaveBeenCalledTimes(6);
+    expect(runner).toHaveBeenCalledTimes(8);
     expect(runner.mock.calls).toEqual([
-      ["claude", ["mcp", "get", "decision"]],
-      ["claude", ["mcp", "remove", "--scope", "user", "decision"]],
+      ["claude", ["mcp", "get", "paraself"]],
+      ["claude", ["mcp", "remove", "--scope", "user", "paraself"]],
       [
         "claude",
         [
@@ -222,27 +223,30 @@ describe("installIntegrations", () => {
           "add",
           "--scope",
           "user",
-          "decision",
+          "paraself",
           "--",
           bridgePath,
           "mcp",
           "claude-code",
         ],
       ],
-      ["codex", ["mcp", "get", "decision"]],
-      ["codex", ["mcp", "remove", "decision"]],
+      // Decision's, shown as none: not taken out.
+      ["claude", ["mcp", "get", "decision"]],
+      ["codex", ["mcp", "get", "paraself"]],
+      ["codex", ["mcp", "remove", "paraself"]],
       [
         "codex",
         [
           "mcp",
           "add",
-          "decision",
+          "paraself",
           "--",
           bridgePath,
           "mcp",
           "codex",
         ],
       ],
+      ["codex", ["mcp", "get", "decision"]],
     ]);
     expect(report.targets).toEqual([
       {
@@ -262,7 +266,7 @@ describe("installIntegrations", () => {
     ]);
     expect(
       (await readdir(paths.root, { recursive: true })).filter((path) =>
-        path.includes("decision-backup"),
+        /(?:paraself|decision)-backup/u.test(path),
       ),
     ).toEqual([]);
     expect(report.restartRequired).toBe(true);
@@ -292,7 +296,7 @@ describe("installIntegrations", () => {
       { client: "codex", status: "failed" },
     ]);
     expect(report.targets[1]?.detail).toMatch(/不是有效的 JSON/u);
-    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("DECISION_HOOK=1");
+    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=1");
     expect(await readFile(paths.codexHooksPath, "utf8")).toBe("{ invalid");
     expect(runner.mock.calls.every(([command]) => command === "claude")).toBe(true);
   });
@@ -376,7 +380,7 @@ describe("installIntegrations", () => {
       { client: "claude-code", status: "installed", detail: undefined },
       { client: "codex", status: "skipped", detail: "没有找到 codex 命令" },
     ]);
-    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("DECISION_HOOK=1");
+    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=1");
     expect(await readFile(paths.codexHooksPath, "utf8")).toBe(beforeCodex);
 
     // With neither command there, nothing is connected, and the reader is told what to install.
@@ -411,7 +415,7 @@ describe("installIntegrations", () => {
         { client: "codex", status: "failed" },
       ]);
       expect(report.targets[1]?.detail).toContain("无法写入");
-      expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("DECISION_HOOK=1");
+      expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=1");
     } finally {
       await chmod(codexFolder, 0o700);
     }
@@ -449,7 +453,7 @@ describe("installIntegrations", () => {
       unwritable.path = paths.claudeSettingsPath;
       const report = await installIntegrations({
         mode: "apply",
-        bridgePath: "C:\\Program Files\\Decision\\decision-bridge.cmd",
+        bridgePath: "C:\\Program Files\\Paraself\\paraself-bridge.cmd",
         platform: "win32",
         claudeSettingsPath: paths.claudeSettingsPath,
         codexHooksPath: paths.codexHooksPath,
@@ -470,7 +474,7 @@ describe("installIntegrations", () => {
     const paths = await makeConfig();
     const options = {
       mode: "apply" as const,
-      bridgePath: "C:\\Program Files\\Decision\\decision-bridge.cmd",
+      bridgePath: "C:\\Program Files\\Paraself\\paraself-bridge.cmd",
       platform: "win32" as const,
       claudeSettingsPath: paths.claudeSettingsPath,
       codexHooksPath: paths.codexHooksPath,
@@ -481,7 +485,7 @@ describe("installIntegrations", () => {
       const report = await installIntegrations(options);
       expect(report.targets[0]).toMatchObject({ client: "claude-code", status: "installed" });
       expect(heldOpen.count).toBe(0);
-      expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("DECISION_HOOK=2");
+      expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=2");
 
       // The client saved its own change while the rename waited: that is kept, and the reader asked to try again.
       await writeFile(paths.claudeSettingsPath, '{"model":"opus"}\n');
@@ -500,7 +504,7 @@ describe("installIntegrations", () => {
       const waited = await installIntegrations(options);
       expect(waited.targets[0]).toMatchObject({ client: "claude-code", status: "installed" });
       expect(heldOpen.reads).toBe(0);
-      expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("DECISION_HOOK=2");
+      expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=2");
     } finally {
       heldOpen.count = 0;
       heldOpen.reads = 0;
@@ -525,7 +529,7 @@ describe("installIntegrations", () => {
     });
 
     expect((await lstat(paths.claudeSettingsPath)).isSymbolicLink()).toBe(true);
-    expect(await readFile(managed, "utf8")).toContain("DECISION_HOOK=1");
+    expect(await readFile(managed, "utf8")).toContain("PARASELF_HOOK=1");
     expect((await status(managed)).mode & 0o777).toBe(0o644);
   });
 
@@ -549,17 +553,17 @@ describe("installIntegrations", () => {
     ]);
   });
 
-  it("leaves another tool's MCP server named decision alone, saying so, and replaces this app's from an old path", async () => {
+  it("leaves another tool's MCP server named paraself alone, saying so, and replaces this app's from an old path", async () => {
     const paths = await makeConfig();
     const before = await readFile(paths.claudeSettingsPath, "utf8");
     const runner = vi.fn<CommandRunner>(async (command, args) =>
       args[1] !== "get"
         ? { exitCode: 0 }
         : command === "claude"
-          ? { exitCode: 0, stdout: "decision:\n  Scope: User config\n  Type: stdio\n  Command: npx\n  Args: -y decision-journal-mcp\n" }
+          ? { exitCode: 0, stdout: "paraself:\n  Scope: User config\n  Type: stdio\n  Command: npx\n  Args: -y paraself-journal-mcp\n" }
           : {
               exitCode: 0,
-              stdout: "decision\n  enabled: true\n  transport: stdio\n  command: /Volumes/Old/Decision.app/Contents/Resources/bridge/decision-bridge\n  args: mcp codex\n",
+              stdout: `${args.at(-1)}\n  enabled: true\n  transport: stdio\n  command: /Volumes/Old/Paraself.app/Contents/Resources/bridge/paraself-bridge\n  args: mcp codex\n`,
             });
 
     const report = await installIntegrations({
@@ -574,10 +578,39 @@ describe("installIntegrations", () => {
       { client: "claude-code", status: "failed" },
       { client: "codex", status: "installed" },
     ]);
-    expect(report.targets[0]?.detail).toMatch(/^Claude Code 里已有一个名为 decision 的 MCP 服务器，运行的不是本应用的桥接程序，没有改动它/u);
+    expect(report.targets[0]?.detail).toMatch(/^Claude Code 里已有一个名为 paraself 的 MCP 服务器，运行的不是本应用的桥接程序，没有改动它/u);
     expect(await readFile(paths.claudeSettingsPath, "utf8")).toBe(before);
-    expect(runner.mock.calls.filter(([command]) => command === "claude")).toEqual([["claude", ["mcp", "get", "decision"]]]);
-    expect(runner.mock.calls.filter(([command]) => command === "codex").map(([, args]) => args[1])).toEqual(["get", "remove", "add"]);
+    expect(runner.mock.calls.filter(([command]) => command === "claude")).toEqual([["claude", ["mcp", "get", "paraself"]]]);
+    expect(runner.mock.calls.filter(([command]) => command === "codex").map(([, args]) => `${args[1]} ${args.at(-1)}`)).toEqual([
+      "get paraself", "remove paraself", "add codex", "get decision", "remove decision",
+    ]);
+  });
+
+  it("takes out the server Decision registered once Paraself's is in, only where it runs this app's bridge", async () => {
+    const paths = await makeConfig();
+    const runner = vi.fn<CommandRunner>(async (command, args) => {
+      if (args[1] !== "get") return { exitCode: 0 };
+      if (args.at(-1) === "paraself") return { exitCode: 1, stderr: "No MCP server found with name: paraself" };
+      // Claude Code's `decision` another tool's; Codex's the one Decision registered, from Decision.app.
+      return command === "claude"
+        ? { exitCode: 0, stdout: "decision:\n  Scope: User config\n  Type: stdio\n  Command: npx\n  Args: -y decision-journal-mcp\n" }
+        : { exitCode: 0, stdout: "decision\n  command: /Applications/Decision.app/Contents/Resources/bridge/decision-bridge\n  args: mcp codex\n" };
+    });
+
+    const report = await installIntegrations({
+      mode: "apply",
+      bridgePath,
+      claudeSettingsPath: paths.claudeSettingsPath,
+      codexHooksPath: paths.codexHooksPath,
+      runner,
+    });
+
+    expect(report.targets.map(({ client, status, detail }) => ({ client, status, detail }))).toEqual([
+      { client: "claude-code", status: "installed", detail: "名为 decision 的 MCP 服务器不是本应用的，没有动它" },
+      { client: "codex", status: "installed", detail: expect.not.stringContaining("decision") },
+    ]);
+    expect(runner.mock.calls.filter(([, args]) => args[1] === "remove" && args.at(-1) === "decision")).toEqual([["codex", ["mcp", "remove", "decision"]]]);
+    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=1");
   });
 
   it("runs one install or removal at a time: one sent while another runs waits for it", async () => {
@@ -603,18 +636,18 @@ describe("installIntegrations", () => {
 
   it("knows its own server by this run's bridge path, as a bridge not packaged is named", async () => {
     const paths = await makeConfig();
-    // Run from source, the bridge is its source file, with no "decision-bridge" in its name.
+    // Run from source, the bridge is its source file, with no "paraself-bridge" in its name.
     const source = "/repo/apps/bridge/src/cli.ts";
     const runner = vi.fn<CommandRunner>(async (command, args) =>
       args[1] === "get"
-        ? { exitCode: 0, stdout: `decision:\n  Scope: User config\n  Type: stdio\n  Command: ${source}\n  Args: mcp ${command === "claude" ? "claude-code" : "codex"}\n` }
+        ? { exitCode: 0, stdout: `${args.at(-1)}:\n  Scope: User config\n  Type: stdio\n  Command: ${source}\n  Args: mcp ${command === "claude" ? "claude-code" : "codex"}\n` }
         : { exitCode: 0 });
     const options = { claudeSettingsPath: paths.claudeSettingsPath, codexHooksPath: paths.codexHooksPath, platform: "darwin" as const, runner };
 
     // Connected once, a second 安装或修复 found its own server there and replaced it, rather than refusing.
     const again = await installIntegrations({ ...options, mode: "apply", bridgePath: source });
     expect(again.targets.map(({ status }) => status)).toEqual(["installed", "installed"]);
-    expect(runner.mock.calls.map(([, args]) => args[1])).toEqual(["get", "remove", "add", "get", "remove", "add"]);
+    expect(runner.mock.calls.map(([, args]) => args[1])).toEqual(["get", "remove", "add", "get", "remove", "get", "remove", "add", "get", "remove"]);
 
     const removed = await removeIntegrations({ ...options, mode: "apply", bridgePath: source });
     expect(removed.targets.map(({ status, detail }) => ({ status, detail }))).toEqual([
@@ -630,7 +663,7 @@ describe("installIntegrations", () => {
     const paths = await makeConfig();
     const runner = vi.fn<CommandRunner>(async (command, args) =>
       args[1] === "get"
-        ? { exitCode: 0, stdout: `decision\n  command: ${bridgePath}\n  args: mcp ${command === "claude" ? "claude-code" : "codex"}\n` }
+        ? { exitCode: 0, stdout: `${args.at(-1)}\n  command: ${bridgePath}\n  args: mcp ${command === "claude" ? "claude-code" : "codex"}\n` }
         : { exitCode: 0 });
     const options = { claudeSettingsPath: paths.claudeSettingsPath, codexHooksPath: paths.codexHooksPath, runner };
     await installIntegrations({ ...options, bridgePath, mode: "apply" });
@@ -642,7 +675,7 @@ describe("installIntegrations", () => {
       { changed: true, status: undefined },
     ]);
     expect(runner).not.toHaveBeenCalled();
-    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("DECISION_HOOK=1");
+    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=1");
 
     const report = await removeIntegrations({ ...options, mode: "apply" });
     expect(report.targets.map(({ client, changed, status, detail }) => ({ client, changed, status, detail }))).toEqual([
@@ -651,8 +684,12 @@ describe("installIntegrations", () => {
     ]);
     expect(report.note).toMatch(/技能和工作流没有删除/u);
     expect(runner.mock.calls.map(([command, args]) => `${command} ${args.join(" ")}`)).toEqual([
+      "claude mcp get paraself",
+      "claude mcp remove --scope user paraself",
       "claude mcp get decision",
       "claude mcp remove --scope user decision",
+      "codex mcp get paraself",
+      "codex mcp remove paraself",
       "codex mcp get decision",
       "codex mcp remove decision",
     ]);
@@ -664,7 +701,7 @@ describe("installIntegrations", () => {
     expect(again.targets.map((target) => target.changed)).toEqual([false, false]);
   });
 
-  it("leaves a server named decision that is not this app's, cleans the file of a client whose command is gone, and keeps the hooks of one whose server it could not remove", async () => {
+  it("leaves a server named paraself that is not this app's, cleans the file of a client whose command is gone, and keeps the hooks of one whose server it could not remove", async () => {
     const paths = await makeConfig();
     await installIntegrations({
       mode: "apply",
@@ -676,7 +713,7 @@ describe("installIntegrations", () => {
     const options = { mode: "apply" as const, claudeSettingsPath: paths.claudeSettingsPath, codexHooksPath: paths.codexHooksPath };
     const runner = vi.fn<CommandRunner>(async (command, args) => {
       if (command === "codex") throw Object.assign(new Error("spawn codex ENOENT"), { code: "ENOENT" });
-      return args[1] === "get" ? { exitCode: 0, stdout: "decision:\n  Command: npx\n  Args: -y decision-journal-mcp\n" } : { exitCode: 0 };
+      return args[1] === "get" ? { exitCode: 0, stdout: `${args.at(-1)}:\n  Command: npx\n  Args: -y decision-journal-mcp\n` } : { exitCode: 0 };
     });
 
     const failing = await removeIntegrations({
@@ -688,16 +725,35 @@ describe("installIntegrations", () => {
       { status: "failed", detail: "运行 claude mcp remove 没有成功（permission denied）" },
       { status: "failed", detail: "运行 codex mcp remove 没有成功（permission denied）" },
     ]);
-    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("DECISION_HOOK=1");
+    expect(await readFile(paths.claudeSettingsPath, "utf8")).toContain("PARASELF_HOOK=1");
 
     const report = await removeIntegrations({ ...options, runner });
     expect(report.targets.map(({ client, status, detail }) => ({ client, status, detail }))).toEqual([
-      { client: "claude-code", status: "removed", detail: "名为 decision 的 MCP 服务器不是本应用的，没有动它" },
+      { client: "claude-code", status: "removed", detail: "名为 paraself 的 MCP 服务器不是本应用的，没有动它" },
       { client: "codex", status: "removed", detail: "没有找到 codex 命令，没有删除它登记的 MCP 服务器" },
     ]);
     expect(runner.mock.calls.filter(([, args]) => args[1] === "remove")).toEqual([]);
-    expect(await readFile(paths.claudeSettingsPath, "utf8")).not.toContain("DECISION_HOOK=");
-    expect(await readFile(paths.codexHooksPath, "utf8")).not.toContain("DECISION_HOOK=");
+    expect(await readFile(paths.claudeSettingsPath, "utf8")).not.toMatch(/(?:PARASELF|DECISION)_HOOK=/u);
+    expect(await readFile(paths.codexHooksPath, "utf8")).not.toMatch(/(?:PARASELF|DECISION)_HOOK=/u);
+  });
+
+  it("leaves the server Decision registered, not this app's, on a disconnect, and takes out Paraself's", async () => {
+    const paths = await makeConfig();
+    await installIntegrations({ mode: "apply", bridgePath, claudeSettingsPath: paths.claudeSettingsPath, codexHooksPath: paths.codexHooksPath, runner: async () => ({ exitCode: 0 }) });
+    const runner = vi.fn<CommandRunner>(async (command, args) =>
+      args[1] !== "get"
+        ? { exitCode: 0 }
+        : args.at(-1) === "paraself"
+          ? { exitCode: 0, stdout: `paraself\n  command: ${bridgePath}\n  args: mcp ${command === "claude" ? "claude-code" : "codex"}\n` }
+          : { exitCode: 0, stdout: "decision:\n  Command: npx\n  Args: -y decision-journal-mcp\n" });
+
+    const report = await removeIntegrations({ mode: "apply", claudeSettingsPath: paths.claudeSettingsPath, codexHooksPath: paths.codexHooksPath, bridgePath, runner });
+
+    expect(report.targets.map(({ status, detail }) => ({ status, detail }))).toEqual([
+      { status: "removed", detail: "名为 decision 的 MCP 服务器不是本应用的，没有动它" },
+      { status: "removed", detail: "名为 decision 的 MCP 服务器不是本应用的，没有动它" },
+    ]);
+    expect(runner.mock.calls.filter(([, args]) => args[1] === "remove").map(([, args]) => args.at(-1))).toEqual(["paraself", "paraself"]);
   });
 
   it("leaves a hook group the reader left empty where it is, connecting and disconnecting alike", async () => {
@@ -723,8 +779,8 @@ describe("installIntegrations", () => {
     // Both clients there, neither with a server or a hook of this app's.
     const runner = vi.fn<CommandRunner>(async (command, args) =>
       args[1] === "get"
-        ? { exitCode: 1, stderr: "No MCP server found with name: decision" }
-        : { exitCode: 1, stderr: command === "claude" ? 'No MCP server named "decision" in user scope' : "MCP server decision does not exist" });
+        ? { exitCode: 1, stderr: `No MCP server found with name: ${args.at(-1)}` }
+        : { exitCode: 1, stderr: command === "claude" ? `No MCP server named "${args.at(-1)}" in user scope` : `MCP server ${args.at(-1)} does not exist` });
 
     const report = await removeIntegrations({ mode: "apply", claudeSettingsPath: paths.claudeSettingsPath, codexHooksPath: paths.codexHooksPath, runner });
 
@@ -843,7 +899,7 @@ describe("installIntegrations", () => {
 
     const written = JSON.parse(await readFile(paths.claudeSettingsPath, "utf8")) as { model?: string; hooks?: unknown };
     expect(written.model).toBe("opus");
-    expect(JSON.stringify(written.hooks)).toContain("DECISION_HOOK=");
+    expect(JSON.stringify(written.hooks)).toContain("PARASELF_HOOK=");
   });
 
   it("says a settings file broken while its commands ran is unreadable, not unwritable", async () => {
@@ -899,7 +955,7 @@ describe("installIntegrations", () => {
     const paths = await makeConfig();
     const runner = vi.fn<CommandRunner>(async () => ({
       exitCode: 1,
-      stderr: "MCP server other not found; configured servers: decision",
+      stderr: "MCP server other not found; configured servers: paraself",
     }));
 
     await expect(
@@ -917,7 +973,7 @@ describe("installIntegrations", () => {
     const paths = await makeConfig();
     const runner = vi.fn<CommandRunner>(async () => ({
       exitCode: 1,
-      stderr: "No MCP server found with name: decision-backup",
+      stderr: "No MCP server found with name: paraself-backup",
     }));
 
     await expect(
@@ -928,6 +984,6 @@ describe("installIntegrations", () => {
         codexHooksPath: paths.codexHooksPath,
         runner,
       }),
-    ).rejects.toThrow(/decision-backup/i);
+    ).rejects.toThrow(/paraself-backup/i);
   });
 });

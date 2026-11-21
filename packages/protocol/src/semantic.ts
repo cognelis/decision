@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { capturedDecisionContextSchema } from "./capture.js";
+import { capturedDecisionContextSchema, sourceClientSchema } from "./capture.js";
 
 export const SEMANTIC_PAIR_VERSION = 1 as const;
 export const CAPTURE_AUDIT_VERSION = 1 as const;
@@ -41,7 +41,7 @@ export const semanticDecisionPairSchema = z
   .object({
     version: z.literal(SEMANTIC_PAIR_VERSION),
     pairId: bounded(200),
-    sourceClient: z.enum(["claude-code", "codex"]),
+    sourceClient: sourceClientSchema,
     sessionId: bounded(500),
     assistantTurnId: bounded(500).optional(),
     userTurnId: bounded(500).optional(),
@@ -107,7 +107,7 @@ export const captureAuditReceiptSchema = z
   .object({
     version: z.literal(CAPTURE_AUDIT_VERSION),
     receiptId: bounded(200),
-    sourceClient: z.enum(["claude-code", "codex"]),
+    sourceClient: sourceClientSchema,
     sessionFingerprint: fingerprintSchema,
     turnFingerprint: fingerprintSchema.optional(),
     stage: captureAuditStageSchema,
@@ -129,6 +129,8 @@ export const semanticClassificationSchema = z
     answerRelation: answerRelationSchema,
     question: z.string().trim().min(1).max(4_000).nullable(),
     optionLabels: z.array(bounded(500)).max(8),
+    /** 1-based positions in optionLabels; omitted by classifiers predating semantic-v4. */
+    selectedOptionIndices: z.array(z.number().int().min(1).max(8)).max(8).optional(),
     answerExcerpt: z
       .string()
       .trim()

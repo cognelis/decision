@@ -1,7 +1,7 @@
 import { DEEPSEEK_2026_HOLIDAYS } from "../../shared/model-pricing.js";
 import { LocalQwenModelDialog } from "./LocalQwenModelDialog.js";
 import { IconButton, ActionIcon } from "./IconButton.js";
-import { modelPricingSchema, modelProxySchema, type ModelProxy } from "@cognelis/decision-protocol";
+import { modelPricingSchema, modelProxySchema, OPENROUTER_DECISIONS_URL, type ModelProxy } from "@cognelis/decision-protocol";
 import type {
   LocalModelClientStatus,
   ModelApiProtocol,
@@ -14,6 +14,8 @@ import {
   type DragEvent,
   type InputHTMLAttributes,
   type KeyboardEvent,
+  type ReactNode,
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -33,10 +35,37 @@ interface ModelProviderPanelProps {
 
 type RemoteKind = "openai" | "anthropic" | "openai-compatible";
 
-interface ProxyEditorState { proxyMode: ModelProxy["mode"]; proxyUrl: string; noProxy: string; }
-const proxyEditorFor = (profile?: RedactedModelProviderProfile): ProxyEditorState => ({ proxyMode: profile?.proxy?.mode ?? "environment", proxyUrl: profile?.proxy?.url ?? "", noProxy: profile?.proxy?.noProxy ?? "" });
-const proxyInput = (state: ProxyEditorState) => modelProxySchema.safeParse(state.proxyMode === "custom" ? { mode: state.proxyMode, url: state.proxyUrl.trim(), noProxy: state.noProxy.trim() } : { mode: state.proxyMode });
-const ProxyFields = ({ value, onChange, urlProps }: { value: ProxyEditorState; onChange: (value: ProxyEditorState) => void; urlProps?: InputHTMLAttributes<HTMLInputElement> }) => <fieldset className="provider-proxy-fields"><legend>网络代理</legend><label>连接方式<select aria-label="代理连接方式" value={value.proxyMode} onChange={(event) => onChange({ ...value, proxyMode: event.target.value as ModelProxy["mode"] })}><option value="environment">继承代理环境变量</option><option value="direct">直接连接（不继承代理变量）</option><option value="custom">自定义 HTTP/HTTPS 代理</option></select></label>{value.proxyMode === "custom" && <><label>代理地址<input aria-label="代理地址" {...urlProps} maxLength={2000} placeholder="http://127.0.0.1:7890" value={value.proxyUrl} onChange={(event) => onChange({ ...value, proxyUrl: event.target.value })} /></label><label>不走代理的主机（可选）<input aria-label="代理绕过主机" maxLength={2000} placeholder="localhost,127.0.0.1" value={value.noProxy} onChange={(event) => onChange({ ...value, noProxy: event.target.value })} /></label><p>主机用逗号或空格分隔。留空时不继承原有绕过规则；代理地址不填写账号密码，认证代理可通过环境变量配置。</p></>}<p>每个后端使用自己的代理配置，测试连接也采用相同设置。</p></fieldset>;
+interface ProxyEditorState { proxyMode: ModelProxy["mode"]; proxyUrl: string; }
+const proxyEditorFor = (profile?: RedactedModelProviderProfile): ProxyEditorState => ({ proxyMode: profile?.proxy?.mode ?? "environment", proxyUrl: profile?.proxy?.url ?? "" });
+const proxyInput = (state: ProxyEditorState) => modelProxySchema.safeParse(state.proxyMode === "custom" ? { mode: state.proxyMode, url: state.proxyUrl.trim() } : { mode: state.proxyMode });
+/** A backend's own proxy: how it connects, and where to when that is a proxy of its own (the forms' field layout). */
+const ProxyFields = ({ id, value, onChange, urlProps, urlError, allowLoopback = true }: { allowLoopback?: boolean; id: string; value: ProxyEditorState; onChange: (value: ProxyEditorState) => void; urlProps: InputHTMLAttributes<HTMLInputElement>; urlError: ReactNode }) => <>
+  <div className="form-field">
+    <label htmlFor={`${id}proxy-mode`}>网络代理</label>
+    <select id={`${id}proxy-mode`} aria-describedby={`${id}proxy-help`} value={value.proxyMode} onChange={(event) => onChange({ ...value, proxyMode: event.target.value as ModelProxy["mode"] })}><option value="environment">使用全局模型代理</option>{allowLoopback ? <option value="direct">仅本机 loopback 直连</option> : value.proxyMode === "direct" ? <option value="direct" disabled>直连已禁用，请选择代理</option> : null}<option value="custom">自定义 HTTP/HTTPS 代理</option></select>
+    <p id={`${id}proxy-help`}>外部模型必须经过代理。可在本页上方设置全局代理；未配置全局代理时使用这里的自定义地址。无有效代理或代理故障时请求失败，CLI 也遵守相同策略。</p>
+  </div>
+  {value.proxyMode === "custom" ? <div className="form-fields-row">
+    <div className="form-field">
+      <label htmlFor={urlProps.id}>代理地址</label>
+      <input {...urlProps} maxLength={2000} placeholder="http://127.0.0.1:7890" value={value.proxyUrl} onChange={(event) => onChange({ ...value, proxyUrl: event.target.value })} />
+      {urlError}
+      <p>不填写账号密码；认证代理通过 MODEL_PROXY_URL 配置。</p>
+    </div>
+  </div> : null}
+</>;
+
+/** A datalist offers only the options containing what is already typed: with gpt-6-luna filled in, Codex's eight models showed as
+ *  its two Luna ones. A menu lists every candidate, marks the one in use, and the field beside it still takes any name typed. */
+const ModelCandidates = ({ models, value, onPick }: { models: readonly { id: string; label?: string }[]; value: string; onPick: (model: string) => void }) => {
+  if (models.length === 0) return null;
+  // Matched by nothing, React would mark the first candidate as the one in use.
+  const current = models.some((model) => model.id === value) ? value : "";
+  return <select aria-label="选择候选模型" value={current} onChange={(event) => onPick(event.currentTarget.value)}>
+    {current === "" ? <option value="" disabled>选择候选模型</option> : null}
+    {models.map((model) => <option key={model.id} value={model.id}>{model.label ?? model.id}</option>)}
+  </select>;
+};
 
 interface EditorState extends ProxyEditorState {
   existing: RedactedModelProviderProfile | null;
@@ -67,6 +96,35 @@ interface CliEditorState extends ProxyEditorState {
   timeoutMs: string;
 }
 
+interface JudgeEditorState extends ProxyEditorState {
+  existing: RedactedModelProviderProfile | null;
+  label: string;
+  endpoint: string;
+  protocol: "systemone" | "openai";
+  model: string;
+  timeoutMs: string;
+  secret: string;
+}
+
+/** A decisions backend (a judge): in an ordered list of its own, apart from the one every generation route goes down. */
+const JUDGE_KIND = "openrouter-decisions";
+const judgeEditorFor = (profile?: RedactedModelProviderProfile): JudgeEditorState => ({
+  ...proxyEditorFor(profile),
+  existing: profile ?? null,
+  label: profile?.label ?? "jev",
+  endpoint: profile?.baseUrl ?? OPENROUTER_DECISIONS_URL,
+  protocol: profile?.decisionsProtocol ?? "systemone",
+  model: profile?.model ?? "typesafe/jev-1.14",
+  timeoutMs: String(profile?.timeoutMs ?? 30_000),
+  secret: "",
+});
+
+/** The decisions APIs known by their address and request shape; any other is typed in. */
+const JUDGE_PRESETS = [
+  { label: "OpenRouter", endpoint: OPENROUTER_DECISIONS_URL, protocol: "systemone", model: "typesafe/jev-1.14" },
+  { label: "OpenAI", endpoint: "https://api.openai.com/v1/decisions", protocol: "openai", model: "gpt-6-luna" },
+] as const;
+
 interface ProviderDropTarget {
   profileId: string;
   edge: "before" | "after";
@@ -80,6 +138,7 @@ const kindLabel: Record<ModelProviderKind, string> = {
   "openai-compatible": "OpenAI 兼容",
   "codex-cli": "Codex 本地客户端",
   "claude-code-cli": "Claude Code 本地客户端",
+  "openrouter-decisions": "判定模型",
 };
 
 const remoteKinds = new Set<ModelProviderKind>([
@@ -108,6 +167,9 @@ const clientStatusCopy = (status: LocalModelClientStatus): string => {
   }
   if (status.availability === "logged_out") {
     return "尚未登录";
+  }
+  if (status.availability === "proxy_required") {
+    return "需要配置网络代理";
   }
   if (status.availability === "unsupported") {
     return "当前版本缺少安全调用能力";
@@ -208,6 +270,9 @@ const siteOf = (value: string | undefined): string | null => {
   }
 };
 
+/** A key typed for one site is not kept for another: moved (a preset, a new address), the dialog asks for that site's. */
+const keyFor = (secret: string, from: string, to: string): string => (siteOf(from) === siteOf(to) ? secret : "");
+
 const secureEndpoint = (value: string): boolean => {
   try {
     const url = new URL(value);
@@ -242,6 +307,7 @@ const errorCodeCopy: Record<ModelInvocationErrorCode, string> = {
   cancelled: "测试已取消",
   authentication_failed: "认证失败",
   authorization_failed: "没有访问权限",
+  content_refused: "内容被服务商审核拒绝",
   rate_limited: "请求过于频繁",
   quota_exhausted: "额度或余额不足",
   provider_unavailable: "后端不可用",
@@ -301,6 +367,7 @@ const resultCopy = (result: ModelProviderTestResult): string => {
     result.tokenSource === undefined
       ? undefined
       : tokenSourceCopy[result.tokenSource],
+    result.costUsd === undefined ? undefined : `费用 $${result.costUsd}`,
   ]
     .filter((value) => value !== undefined)
     .join(" · ");
@@ -322,6 +389,14 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [localEditor, setLocalEditor] = useState<RedactedModelProviderProfile | null>(null);
   const [cliEditor, setCliEditor] = useState<CliEditorState | null>(null);
+  const [judgeEditor, setJudgeEditor] = useState<JudgeEditorState | null>(null);
+  const [judgeEditorOpenedWith, setJudgeEditorOpenedWith] = useState<JudgeEditorState | null>(null);
+  const openJudgeEditor = (opened: JudgeEditorState): void => {
+    setJudgeEditor(opened);
+    setJudgeEditorOpenedWith(opened);
+    setError(null);
+    setMessage(null);
+  };
   // What each editor opened with: changed since, Escape no longer closes it with the address, model and key typed.
   const [editorOpenedWith, setEditorOpenedWith] = useState<EditorState | null>(null);
   const [cliEditorOpenedWith, setCliEditorOpenedWith] = useState<CliEditorState | null>(null);
@@ -334,6 +409,11 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     setCliEditorOpenedWith(opened);
   };
   const [busy, setBusy] = useState(false);
+  const [pendingProfiles, setPendingProfiles] = useState<Record<string, boolean>>({});
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+  const profileUpdates = useRef(new Map<string, RedactedModelProviderProfile | null>());
+  const rowBusy = (profileId: string): boolean => busy || pendingProfiles[profileId] === true;
+  const orderingBlocked = busy || Object.keys(pendingProfiles).length > 0;
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // A value refused is said on its field, and the field is where focus goes (as ActiveRecordDialog's fieldProps do):
@@ -345,15 +425,45 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     setInvalidField(field);
     document.getElementById(`${fieldIds}${field}`)?.focus();
   };
-  const fieldProps = (field: string) => ({
-    id: `${fieldIds}${field}`,
-    "aria-invalid": (error !== null && invalidField === field) || undefined,
-    "aria-describedby": error !== null && invalidField === field ? `${fieldIds}error` : undefined,
-  });
+  // Described by what was refused about it first, then by its own help, as both are read under it.
+  const fieldProps = (field: string, help = false) => {
+    const refused = error !== null && invalidField === field;
+    return {
+      id: `${fieldIds}${field}`,
+      "aria-invalid": refused || undefined,
+      "aria-describedby": [refused ? `${fieldIds}error` : "", help ? `${fieldIds}${field}-help` : ""].filter(Boolean).join(" ") || undefined,
+    };
+  };
+  // What was refused, under the field it is about: said only below the form, it sat out of sight at the foot of a
+  // long one, and the save looked as if it had done nothing.
+  const fieldError = (field: string) => error !== null && invalidField === field
+    ? <p className="form-field-error" role="alert" id={`${fieldIds}error`}>{error}</p> : null;
+  /** One field as the forms draw it: its label, the control, what was refused about it, then its help. */
+  const formField = (field: string, label: string, control: ReactNode, help?: ReactNode) => <div className="form-field">
+    <label htmlFor={`${fieldIds}${field}`}>{label}</label>
+    {control}
+    {fieldError(field)}
+    {help ? <p id={`${fieldIds}${field}-help`}>{help}</p> : null}
+  </div>;
+  // A failure that belongs to no field (a save the keychain refused) is said at the form's foot: brought into view, as
+  // the body may be scrolled away from there.
+  const revealError = useCallback((node: HTMLElement | null) => { node?.scrollIntoView?.({ block: "nearest" }); }, []);
+  const formError = error !== null && invalidField === null
+    ? <p className="form-error" role="alert" id={`${fieldIds}error`} ref={revealError}>{error}</p> : null;
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  // Armed while focus stays on the bin or the question under its row: gone elsewhere, a stray click minutes and other
+  // actions later cannot delete the backend and its key.
+  const keepsDeleteArmed = (next: EventTarget | null, profileId: string): boolean =>
+    next instanceof Element && next.closest(`[data-delete-for="${profileId}"]`) !== null;
+  const disarmDelete = (profileId: string): void => {
+    setDeleteTarget(null);
+    document.querySelector<HTMLElement>(`button[data-delete-for="${profileId}"]`)?.focus();
+  };
   const [testResults, setTestResults] = useState<
     Record<string, ModelProviderTestResult>
   >({});
+  const [testingProfiles, setTestingProfiles] = useState<Record<string, boolean>>({});
+  const [testErrors, setTestErrors] = useState<Record<string, string>>({});
   const [clientStatuses, setClientStatuses] = useState<
     LocalModelClientStatus[] | null
   >(null);
@@ -361,6 +471,36 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
   const [dropTarget, setDropTarget] = useState<ProviderDropTarget | null>(null);
   // How much each backend was used, from the local call records: worth weighing when ordering or pricing them.
   const [usage, setUsage] = useState<ReadonlyMap<string, BackendUsage>>(new Map());
+  const [globalProxy, setGlobalProxy] = useState<{ url: string; environmentOverride: boolean } | null>(null);
+  const [globalProxySaving, setGlobalProxySaving] = useState(false);
+  const [globalProxyError, setGlobalProxyError] = useState<string | null>(null);
+  const [globalProxyMessage, setGlobalProxyMessage] = useState<string | null>(null);
+  const globalProxyInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    let active = true;
+    void api.getSnapshot().then(snapshot => {
+      if (active) setGlobalProxy({ url: snapshot.modelProxyUrl ?? "", environmentOverride: snapshot.modelProxyEnvironmentOverride ?? false });
+    }, () => { if (active) setGlobalProxyError("全局代理暂时读取失败，请重新打开模型页。"); });
+    return () => { active = false; };
+  }, [api]);
+  const saveGlobalProxy = async (): Promise<void> => {
+    if (globalProxy === null || globalProxySaving) return;
+    const url = globalProxy.url.trim();
+    setGlobalProxyError(null); setGlobalProxyMessage(null);
+    if (url && !modelProxySchema.safeParse({ mode: "custom", url }).success) {
+      setGlobalProxyError("请填写 HTTP/HTTPS 代理地址，不包含账号密码、路径或查询参数。");
+      globalProxyInput.current?.focus(); return;
+    }
+    setGlobalProxySaving(true);
+    try {
+      await api.setModelProxyUrl(url || null);
+      setGlobalProxy(current => current === null ? current : { ...current, url });
+      await load();
+      setGlobalProxyMessage("全局模型代理已保存，客户端状态已刷新。");
+    } catch { setGlobalProxyError("保存或刷新全局代理失败，请重试。"); }
+    finally { setGlobalProxySaving(false); }
+  };
+
   useEffect(() => {
     let active = true;
     void api.listModelTraces().then((traces) => {
@@ -378,19 +518,29 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     };
   }, [api]);
 
-  const profileValues = profiles ?? [];
+  const allProfiles = profiles ?? [];
+  const profileValues = allProfiles.filter((profile) => profile.kind !== JUDGE_KIND);
+  const judgeProfiles = allProfiles.filter((profile) => profile.kind === JUDGE_KIND);
+  const isJudge = (profileId: string): boolean => judgeProfiles.some((profile) => profile.profileId === profileId);
   const addingRemote = editor?.existing === null;
 
   // The newest read of the clients' status is the one shown: the first, still checking a slow client, came back
   // after 刷新模型候选 had and took its candidates away.
   const statusRead = useRef(0);
   const load = async (): Promise<void> => {
+    const updatesBefore = new Map(profileUpdates.current);
     const read = ++statusRead.current;
     const [profileValues, statusValues] = await Promise.all([
       api.listModelProviderProfiles(),
       api.listLocalModelClientStatuses(),
     ]);
-    setProfiles(profileValues);
+    // A row saved or deleted while this read waited for clients keeps its newer state.
+    setProfiles(profileValues.flatMap((profile) => {
+      const updated = profileUpdates.current.get(profile.profileId);
+      return updated !== undefined && updated !== updatesBefore.get(profile.profileId)
+        ? updated === null ? [] : [updated]
+        : [profile];
+    }));
     if (read === statusRead.current) setClientStatuses(statusValues);
   };
 
@@ -426,24 +576,41 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     };
   }, [api]);
 
-  const run = async (operation: () => Promise<void>): Promise<boolean> => {
-    setBusy(true);
-    setError(null);
-    setInvalidField(null);
-    setMessage(null);
+  const run = async (operation: () => Promise<void>, profileId?: string): Promise<boolean> => {
+    if (profileId === undefined) {
+      setBusy(true);
+      setError(null);
+      setInvalidField(null);
+      setMessage(null);
+    } else {
+      setPendingProfiles((current) => ({ ...current, [profileId]: true }));
+      setProfileErrors(({ [profileId]: _stale, ...rest }) => rest);
+    }
     try {
       await operation();
       return true;
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      const text = caught instanceof Error ? caught.message : String(caught);
+      if (profileId === undefined) setError(text);
+      else setProfileErrors((current) => ({ ...current, [profileId]: text }));
       return false;
     } finally {
-      setBusy(false);
+      if (profileId === undefined) setBusy(false);
+      else setPendingProfiles(({ [profileId]: _finished, ...rest }) => rest);
     }
   };
+  const saveSwitches = (profile: RedactedModelProviderProfile): Promise<boolean> => run(async () => {
+    const saved = await api.saveModelProviderProfile({ profile });
+    profileUpdates.current.set(profile.profileId, saved);
+    setProfiles((current) => current?.map((value) => value.profileId === profile.profileId ? saved : value) ?? null);
+  }, profile.profileId);
   // A test run before a change says nothing about the backend as it is now.
   const forgetTest = (profileId: string): void =>
     setTestResults(({ [profileId]: _stale, ...rest }) => rest);
+
+  // Priorities are unique across every profile, judges included.
+  const nextPriority = (): number =>
+    allProfiles.length === 0 ? 0 : Math.max(...allProfiles.map((profile) => profile.priority)) + 10;
 
   const saveEditor = async (): Promise<void> => {
     if (editor === null) {
@@ -478,9 +645,7 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     const profileId = editor.existing?.profileId ?? nextProfileId();
     const priority =
       editor.existing?.priority ??
-      (profileValues.length === 0
-        ? 0
-        : Math.max(...profileValues.map((profile) => profile.priority)) + 10);
+      nextPriority();
     const apiProtocol: ModelApiProtocol =
       editor.kind === "anthropic"
         ? "messages"
@@ -556,7 +721,10 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     if (sourceProfileId === targetProfileId) {
       return Promise.resolve();
     }
-    const currentOrder = profileValues.map((profile) => profile.profileId);
+    if (orderingBlocked) return Promise.resolve();
+    // Each list is ordered within itself: a backend let go over a judge, or a judge over a backend, stays put.
+    const judging = isJudge(sourceProfileId);
+    const currentOrder = (judging ? judgeProfiles : profileValues).map((profile) => profile.profileId);
     const order = currentOrder.filter(
       (profileId) => profileId !== sourceProfileId,
     );
@@ -569,7 +737,9 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
       return Promise.resolve();
     }
     return run(async () => {
-      await api.reorderModelProviderProfiles(order);
+      // The judges keep their place after the backends: the repository takes every profile's place at once.
+      const others = (judging ? profileValues : judgeProfiles).map((profile) => profile.profileId);
+      await api.reorderModelProviderProfiles(judging ? [...others, ...order] : [...order, ...others]);
       await load();
     });
   };
@@ -577,14 +747,15 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
   const moveWithKeyboard = (
     event: KeyboardEvent<HTMLButtonElement>,
     index: number,
+    list = profileValues,
   ): void => {
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
       return;
     }
     event.preventDefault();
     const offset = event.key === "ArrowUp" ? -1 : 1;
-    const target = profileValues[index + offset];
-    const source = profileValues[index];
+    const target = list[index + offset];
+    const source = list[index];
     if (source === undefined || target === undefined) {
       return;
     }
@@ -604,6 +775,8 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     event: DragEvent<HTMLLIElement>,
     profileId: string,
   ): void => {
+    // Not a place to drop it: the row being dragged belongs to the other list.
+    if (draggedProfileId !== null && isJudge(draggedProfileId) !== isJudge(profileId)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -628,6 +801,182 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
     if (sourceProfileId !== null) {
       reorder(sourceProfileId, targetProfileId, edge);
     }
+  };
+
+  const saveJudgeEditor = async (): Promise<void> => {
+    if (judgeEditor === null) return;
+    if (judgeEditor.label.trim().length === 0) { refuse("judgeLabel", "请输入名称。"); return; }
+    const endpoint = judgeEditor.endpoint.trim();
+    // The whole endpoint, without a query or fragment: a key could ride in one into the call records.
+    if (!secureEndpoint(endpoint) || /[?#]/u.test(endpoint)) { refuse("judgeEndpoint", "接口地址必须使用 HTTPS（本机回环地址可用 HTTP），不含账号密码、查询参数或片段。"); return; }
+    if (!/^~?[A-Za-z0-9._:-]+(?:\/[A-Za-z0-9._:-]+)*$/u.test(judgeEditor.model.trim())) { refuse("judgeModel", "请填写模型名，例如 typesafe/jev-1.14 或 gpt-6-luna。"); return; }
+    const timeoutMs = Number(judgeEditor.timeoutMs);
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 120_000) { refuse("judgeTimeout", "超时时间必须在 1000 到 120000 毫秒之间。"); return; }
+    if (judgeEditor.existing === null && judgeEditor.secret.trim().length === 0) { refuse("judgeSecret", "请输入 API 密钥。"); return; }
+    const proxy = proxyInput(judgeEditor);
+    if (!proxy.success) { refuse("judgeProxyUrl", "请填写有效的 HTTP/HTTPS 代理地址，不包含账号密码、路径或查询参数。"); return; }
+    const profile: RedactedModelProviderProfile = {
+      version: 1,
+      profileId: judgeEditor.existing?.profileId ?? nextProfileId(),
+      kind: JUDGE_KIND,
+      label: judgeEditor.label.trim(),
+      enabled: judgeEditor.existing?.enabled ?? true,
+      priority: judgeEditor.existing?.priority ?? nextPriority(),
+      model: judgeEditor.model.trim(),
+      timeoutMs,
+      proxy: proxy.data,
+      // OpenRouter's address and the System One shape are what a judge has when it sets neither: left unset, as before.
+      ...(endpoint === OPENROUTER_DECISIONS_URL ? {} : { baseUrl: endpoint }),
+      ...(judgeEditor.protocol === "systemone" ? {} : { decisionsProtocol: judgeEditor.protocol }),
+      ...(judgeEditor.existing?.fallbackOnFailure === undefined ? {} : { fallbackOnFailure: judgeEditor.existing.fallbackOnFailure }),
+      credentialConfigured: judgeEditor.existing?.credentialConfigured ?? false,
+    };
+    let saved = false;
+    await run(async () => {
+      await api.saveModelProviderProfile({ profile, ...(judgeEditor.secret.length === 0 ? {} : { secret: judgeEditor.secret }) });
+      saved = true;
+      forgetTest(profile.profileId);
+      setMessage("判定模型已保存。");
+      await load();
+    });
+    if (saved) setJudgeEditor(null);
+  };
+
+  const testProfile = async (profileId: string): Promise<void> => {
+    setTestingProfiles((current) => ({ ...current, [profileId]: true }));
+    forgetTest(profileId);
+    setTestErrors(({ [profileId]: _stale, ...rest }) => rest);
+    try {
+      const result = await api.testModelProviderProfile(profileId);
+      setTestResults((current) => ({ ...current, [profileId]: result }));
+    } catch (caught) {
+      setTestErrors((current) => ({ ...current, [profileId]: caught instanceof Error ? caught.message : String(caught) }));
+    } finally {
+      setTestingProfiles(({ [profileId]: _finished, ...rest }) => rest);
+    }
+  };
+
+  const testButton = (profile: RedactedModelProviderProfile) => (
+    <IconButton
+      type="button"
+
+      disabled={pendingProfiles[profile.profileId] || testingProfiles[profile.profileId]}
+      aria-busy={testingProfiles[profile.profileId] || undefined}
+      aria-label={`测试 ${profile.label}`}
+      onClick={(event) =>
+        keepSwitchFocus(event.currentTarget, testProfile(profile.profileId))
+      }
+    >
+      <ActionIcon name="test" />
+    </IconButton>
+  );
+
+  const deleteButton = (profile: RedactedModelProviderProfile) => (
+    <IconButton
+      type="button"
+      className="danger-text"
+      data-delete-for={profile.profileId}
+      disabled={rowBusy(profile.profileId) || testingProfiles[profile.profileId]}
+      aria-label={`删除 ${profile.label}`}
+      aria-expanded={deleteTarget === profile.profileId}
+      onBlur={(event) => {
+        if (deleteTarget === profile.profileId && !keepsDeleteArmed(event.relatedTarget, profile.profileId)) setDeleteTarget(null);
+      }}
+      // Asks under the row; a double-click lands both clicks here, never on the question's 删除.
+      onClick={() => setDeleteTarget(profile.profileId)}
+    >
+      <ActionIcon name="trash" />
+    </IconButton>
+  );
+
+  /** What a row shows under itself: its last test, and the question before its deletion. */
+  const rowFooter = (profile: RedactedModelProviderProfile) => {
+    const testResult = testResults[profile.profileId];
+    return <>
+      {profileErrors[profile.profileId] === undefined ? null : (
+        <div className="provider-test-result provider-test-failed" role="alert"><span className="provider-test-summary">操作失败 · {profileErrors[profile.profileId]}</span></div>
+      )}
+      {testingProfiles[profile.profileId] ? (
+        <div className="provider-test-result" role="status" aria-label={`${profile.label} 测试中`}><span className="provider-test-summary">正在测试…</span></div>
+      ) : null}
+      {testErrors[profile.profileId] === undefined ? null : (
+        <div className="provider-test-result provider-test-failed" role="alert"><span className="provider-test-summary">测试失败 · {testErrors[profile.profileId]}</span></div>
+      )}
+      {testResult === undefined ? null : (
+        <div
+          className={`provider-test-result ${
+            testResult.ok
+              ? "provider-test-ok"
+              : "provider-test-failed"
+          }`}
+          role="status"
+          aria-label={`${profile.label} 测试${
+            testResult.ok ? "通过" : "失败"
+          }`}
+        >
+          <ActionIcon name={testResult.ok ? "check" : "close"} />
+          <span className="provider-test-summary">
+            {resultCopy(testResult)}
+          </span>
+          {testResult.ok ||
+          testResult.diagnosticExcerpt === undefined ? null : (
+            <span className="provider-test-detail">
+              {testResult.diagnosticExcerpt}
+            </span>
+          )}
+          {testResult.ok ||
+          (testResult.processExitCode === undefined &&
+            testResult.providerRequestId === undefined) ? null : (
+            <span className="provider-test-meta">
+              {[
+                testResult.processExitCode === undefined
+                  ? undefined
+                  : `退出码：${testResult.processExitCode}`,
+                testResult.providerRequestId === undefined
+                  ? undefined
+                  : `请求 ID：${testResult.providerRequestId}`,
+              ]
+                .filter(
+                  (value): value is string => value !== undefined,
+                )
+                .join(" · ")}
+            </span>
+          )}
+        </div>
+      )}
+      {deleteTarget === profile.profileId ? (
+        <div
+          className="provider-delete-confirm"
+          role="group"
+          aria-label={`确认删除 ${profile.label}`}
+          data-delete-for={profile.profileId}
+          tabIndex={-1}
+          onBlur={(event) => {
+            if (!keepsDeleteArmed(event.relatedTarget, profile.profileId)) setDeleteTarget(null);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") disarmDelete(profile.profileId);
+          }}
+        >
+          <span>删除「{profile.label}」和它保存在本机的 API 密钥？</span>
+          <button type="button" className="secondary-button" disabled={rowBusy(profile.profileId)} onClick={() => disarmDelete(profile.profileId)}>取消</button>
+          <button
+            type="button"
+            className="primary-button danger-button"
+            aria-label={`确认删除 ${profile.label}`}
+            disabled={rowBusy(profile.profileId) || testingProfiles[profile.profileId]}
+            onClick={() => void run(async () => {
+              await api.deleteModelProviderProfile(profile.profileId);
+              profileUpdates.current.set(profile.profileId, null);
+              setProfiles((current) => current?.filter((value) => value.profileId !== profile.profileId) ?? null);
+              setDeleteTarget((current) => current === profile.profileId ? null : current);
+            }, profile.profileId)}
+          >
+            删除
+          </button>
+        </div>
+      ) : null}
+    </>;
   };
 
   const saveCliEditor = async (): Promise<void> => {
@@ -675,6 +1024,26 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
   };
 
   return (
+    <>
+      <section className="settings-card global-model-proxy-card" aria-labelledby={fieldIds + "global-proxy-title"}>
+        <header className="settings-card-header">
+          <div><h2 id={fieldIds + "global-proxy-title"}>全局模型代理</h2></div>
+        </header>
+        <p className="settings-card-description">统一用于模型后端和判定模型的外部请求（含 Codex、Claude CLI），保存后立即生效。</p>
+        <form className="global-model-proxy-form" aria-label="全局模型代理" onSubmit={event => { event.preventDefault(); void saveGlobalProxy(); }}>
+          <div className="form-field">
+            <label htmlFor={fieldIds + "global-proxy"}>全局模型代理地址</label>
+            <div className="global-model-proxy-controls">
+              <input id={fieldIds + "global-proxy"} ref={globalProxyInput} inputMode="url" autoComplete="off" maxLength={2000} placeholder="http://127.0.0.1:7890" value={globalProxy?.url ?? ""} disabled={globalProxy === null || globalProxySaving} aria-invalid={globalProxyError ? true : undefined} aria-describedby={[fieldIds + "global-proxy-help", globalProxyError ? fieldIds + "global-proxy-error" : ""].filter(Boolean).join(" ")} onChange={event => { setGlobalProxy(current => current === null ? current : { ...current, url: event.target.value }); setGlobalProxyError(null); setGlobalProxyMessage(null); }} />
+              <button type="submit" className="secondary-button" disabled={globalProxy === null || globalProxySaving}>{globalProxySaving ? "正在保存…" : "保存全局代理"}</button>
+            </div>
+            <p id={fieldIds + "global-proxy-help"}>留空时使用各后端的单独代理；都未设置时禁止外部请求。代理地址不填写账号密码。</p>
+            {globalProxy?.environmentOverride ? <p>启动环境已设置 MODEL_PROXY_URL，将优先使用该变量；这里保存的地址会在移除变量后生效。</p> : null}
+            {globalProxyError ? <p className="form-field-error" id={fieldIds + "global-proxy-error"} role="alert">{globalProxyError}</p> : null}
+            {globalProxyMessage ? <p className="settings-status" role="status">{globalProxyMessage}</p> : null}
+          </div>
+        </form>
+      </section>
     <section
       className="settings-card model-provider-card"
       aria-labelledby="model-provider-title"
@@ -683,7 +1052,6 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
       <header className="settings-card-header model-provider-header">
         <div>
           <h2 id="model-provider-title">模型后端</h2>
-          <span>按顺序尝试，可配置失败后是否继续</span>
         </div>
         <button
           type="button"
@@ -699,17 +1067,19 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
             setMessage(null);
           }}
         >
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4.5v11M4.5 10h11" /></svg>
           添加模型后端
         </button>
       </header>
+      <p className="settings-card-description">
+        按顺序尝试，拖动左侧把手调整顺序；关掉「失败后切换」，这个后端失败时就不再试下一个。
+      </p>
 
       {profiles === null && profilesError !== null ? (
-        <div className="model-provider-list model-provider-loading">
-          <p className="error-message" role="alert">
-            模型后端暂时无法读取：{profilesError}
-          </p>
+        <div className="load-failure" role="alert">
+          <span>模型后端暂时无法读取：{profilesError}</span>
           <button type="button" className="secondary-button" onClick={() => readProfiles()}>
-            重新读取
+            重试
           </button>
         </div>
       ) : profiles === null ? (
@@ -719,13 +1089,23 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
         >
           <p className="empty-copy">正在读取模型后端…</p>
         </div>
-      ) : profiles.length === 0 ? (
+      ) : profileValues.length === 0 ? (
         <div className="model-provider-list model-provider-loading">
           <p className="empty-copy">尚未配置模型后端。</p>
         </div>
       ) : (
+        <>
+        {/* What each column is, said once above the rows: every switch still carries its own name. */}
+        <div className="provider-columns" aria-hidden="true">
+          <span />
+          <span>后端</span>
+          <span>状态</span>
+          <span>启用</span>
+          <span>失败后切换</span>
+          <span />
+        </div>
         <ol className="model-provider-list">
-          {profiles.map((profile, index) => {
+          {profileValues.map((profile, index) => {
             const remote = remoteKinds.has(profile.kind);
             const localClient =
               profile.kind === "codex-cli" ||
@@ -734,8 +1114,6 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
             const clientStatus = clientStatuses?.find(
               (status) => status.kind === profile.kind,
             );
-            const deleting = deleteTarget === profile.profileId;
-            const testResult = testResults[profile.profileId];
             const statusLabel = localClient
               ? clientStatuses === null
                 ? "正在检查客户端…"
@@ -781,8 +1159,8 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
                   <IconButton
                     type="button"
                     className="provider-drag-handle"
-                    draggable={!busy}
-                    disabled={busy}
+                    draggable={!orderingBlocked}
+                    disabled={orderingBlocked}
                     aria-label={`拖拽排序 ${profile.label}，可用上下方向键调整`}
 
                     onDragStart={(event) => {
@@ -806,11 +1184,13 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
                     </svg>
                   </IconButton>
                   <div className="provider-copy">
+                    {/* The order the backends are tried in; the list already says it to a screen reader. */}
+                    <span className="provider-order" aria-hidden="true">{index + 1}</span>
                     <strong title={profile.label}>{profile.label}</strong>
                     <span>
                       {kindLabel[profile.kind]}
                       {profile.model === undefined ? "" : ` · ${profile.model}`}
-                      {remoteCallingKinds.has(profile.kind) ? ` · ${profile.proxy?.mode === "custom" ? "自定义代理" : profile.proxy?.mode === "direct" ? "直接连接" : "继承代理环境"}` : ""}
+                      {remoteCallingKinds.has(profile.kind) ? ` · ${profile.proxy?.mode === "custom" ? "自定义代理" : profile.proxy?.mode === "direct" ? "仅 loopback 直连" : "全局模型代理"}` : ""}
                     </span>
                     {usage.get(profile.profileId) === undefined ? null : (
                       <small className="provider-usage">
@@ -828,64 +1208,37 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
                     >
                       {statusLabel}
                     </span>
-                    <small>{statusDetail}</small>
+                    <small>{clientStatus?.availability === "proxy_required" ? "请在配置中填写有效代理后重新检查" : statusDetail}</small>
                   </div>
-                  {/* The main switch, named on screen; failing over is a setting of an enabled backend. */}
-                  <label className="provider-switch provider-enable-control" title={`${profile.label} 启停`}>
-                    启用
+                  {/* The main switch, named on screen by the column above it; failing over is a setting of an enabled backend. */}
+                  <label className="provider-switch" title={`${profile.label} 启停`}>
                     <input
                       type="checkbox"
                       role="switch"
                       checked={profile.enabled}
-                      disabled={busy}
+                      disabled={rowBusy(profile.profileId)}
+                      aria-busy={pendingProfiles[profile.profileId] || undefined}
                       aria-label={`启用 ${profile.label}`}
                       onChange={(event) => {
                         const enabled = event.currentTarget.checked;
-                        keepSwitchFocus(event.currentTarget, run(async () => {
-                          await api.saveModelProviderProfile({
-                            profile: {
-                              ...profile,
-                              enabled,
-                              ...(clientStatus?.executablePath === undefined
-                                ? {}
-                                : {
-                                    executablePath: clientStatus.executablePath,
-                                  }),
-                            },
-                          });
-                          await load();
+                        keepSwitchFocus(event.currentTarget, saveSwitches({
+                          ...profile,
+                          enabled,
+                          ...(clientStatus?.executablePath === undefined ? {} : { executablePath: clientStatus.executablePath }),
                         }));
                       }}
                     />
                   </label>
-                  <label className="provider-fallback-control">失败后切换<input type="checkbox" role="switch" aria-label={`${profile.label} 失败后切换`} checked={profile.fallbackOnFailure !== false} disabled={busy || !profile.enabled} onChange={(event) => { const fallbackOnFailure = event.currentTarget.checked; keepSwitchFocus(event.currentTarget, run(async () => { await api.saveModelProviderProfile({ profile: { ...profile, fallbackOnFailure } }); await load(); })); }} /></label>
+                  <label className="provider-fallback-control"><input type="checkbox" role="switch" aria-label={`${profile.label} 失败后切换`} checked={profile.fallbackOnFailure !== false} disabled={rowBusy(profile.profileId) || !profile.enabled} aria-busy={pendingProfiles[profile.profileId] || undefined} onChange={(event) => { const fallbackOnFailure = event.currentTarget.checked; keepSwitchFocus(event.currentTarget, saveSwitches({ ...profile, fallbackOnFailure })); }} /></label>
                   <div className="provider-actions">
-                    <IconButton
-                      type="button"
-
-                      disabled={busy}
-                      aria-label={`测试 ${profile.label}`}
-                      onClick={(event) =>
-                        keepSwitchFocus(event.currentTarget, run(async () => {
-                          const result = await api.testModelProviderProfile(
-                            profile.profileId,
-                          );
-                          setTestResults((current) => ({
-                            ...current,
-                            [profile.profileId]: result,
-                          }));
-                        }))
-                      }
-                    >
-                      <ActionIcon name="test" />
-                    </IconButton>
-                    {profile.kind === "qwen" ? <IconButton type="button" aria-haspopup="dialog" aria-label={`配置 ${profile.label}`} disabled={busy || localEditor !== null} onClick={() => setLocalEditor(profile)}><ActionIcon name="settings" /></IconButton> : null}
+                    {testButton(profile)}
+                    {profile.kind === "qwen" ? <IconButton type="button" aria-haspopup="dialog" aria-label={`配置 ${profile.label}`} disabled={rowBusy(profile.profileId) || testingProfiles[profile.profileId] || localEditor !== null} onClick={() => setLocalEditor(profile)}><ActionIcon name="settings" /></IconButton> : null}
                     {localClient ? (
                       <IconButton
                         type="button"
 
                         aria-haspopup="dialog"
-                        disabled={busy || editor !== null || cliEditor !== null}
+                        disabled={rowBusy(profile.profileId) || testingProfiles[profile.profileId] || editor !== null || cliEditor !== null}
                         aria-label={`配置 ${profile.label}`}
                         onClick={() => {
                           openCliEditor({
@@ -911,7 +1264,7 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
                           type="button"
 
                           aria-haspopup="dialog"
-                          disabled={busy || editor !== null}
+                          disabled={rowBusy(profile.profileId) || testingProfiles[profile.profileId] || editor !== null}
                           aria-label={`编辑 ${profile.label}`}
                           onClick={() => {
                             openEditor(editorFor(profile));
@@ -921,505 +1274,363 @@ export const ModelProviderPanel = ({ api }: ModelProviderPanelProps) => {
                         >
                           <ActionIcon name="edit" />
                         </IconButton>
-                        <IconButton
-                          type="button"
-                          className={deleting ? "icon-button-confirm danger-text" : "danger-text"}
-                          disabled={busy}
-                          aria-label={
-                            deleting
-                              ? `确认删除 ${profile.label}`
-                              : `删除 ${profile.label}`
-                          }
-                          // Armed until the reader goes elsewhere: kept, one stray click on it minutes and other
-                          // actions later deleted the backend and its key.
-                          onBlur={() => {
-                            if (deleting) setDeleteTarget(null);
-                          }}
-                          onClick={(event) => {
-                            if (!deleting) {
-                              setDeleteTarget(profile.profileId);
-                              return;
-                            }
-                            // The second click of a double-click lands on the confirmation the first just put
-                            // there: only a click of its own confirms, the one the reader saw it before.
-                            if (event.detail > 1) return;
-                            void run(async () => {
-                              await api.deleteModelProviderProfile(
-                                profile.profileId,
-                              );
-                              setDeleteTarget(null);
-                              await load();
-                            });
-                          }}
-                        >
-                          {deleting ? "确认删除" : <ActionIcon name="trash" />}
-                        </IconButton>
+                        {deleteButton(profile)}
                       </>
                     ) : null}
                   </div>
                 </div>
-                {testResult === undefined ? null : (
-                  <div
-                    className={`provider-test-result ${
-                      testResult.ok
-                        ? "provider-test-ok"
-                        : "provider-test-failed"
-                    }`}
-                    role="status"
-                    aria-label={`${profile.label} 测试${
-                      testResult.ok ? "通过" : "失败"
-                    }`}
-                  >
-                    <span className="provider-test-summary">
-                      {resultCopy(testResult)}
-                    </span>
-                    {testResult.ok ||
-                    testResult.diagnosticExcerpt === undefined ? null : (
-                      <span className="provider-test-detail">
-                        {testResult.diagnosticExcerpt}
-                      </span>
-                    )}
-                    {testResult.ok ||
-                    (testResult.processExitCode === undefined &&
-                      testResult.providerRequestId === undefined) ? null : (
-                      <span className="provider-test-meta">
-                        {[
-                          testResult.processExitCode === undefined
-                            ? undefined
-                            : `退出码：${testResult.processExitCode}`,
-                          testResult.providerRequestId === undefined
-                            ? undefined
-                            : `请求 ID：${testResult.providerRequestId}`,
-                        ]
-                          .filter(
-                            (value): value is string => value !== undefined,
-                          )
-                          .join(" · ")}
-                      </span>
-                    )}
-                  </div>
-                )}
+                {rowFooter(profile)}
               </li>
             );
           })}
         </ol>
+        </>
       )}
+
+      {profiles === null ? null : (
+        <section className="judge-provider-section" aria-labelledby="judge-provider-title">
+          <header className="settings-card-header model-provider-header">
+            <div>
+              <h3 id="judge-provider-title">判定模型（不参与生成）</h3>
+              <IconButton aria-label="判定模型使用说明" title="仅主动调用，不参与识别、问答或 PR 评审。失败后切换可关闭。调用内容保留90天，可在日志查看。仅 OpenRouter 的 System One 请求要求禁用留存，其他情况按服务政策处理。"><ActionIcon name="help" /></IconButton>
+            </div>
+            <button type="button" className="secondary-button model-provider-add-button" aria-haspopup="dialog" disabled={busy || judgeEditor !== null} onClick={() => openJudgeEditor(judgeEditorFor())}>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4.5v11M4.5 10h11" /></svg>
+              添加判定模型
+            </button>
+          </header>
+          <p className="settings-card-description">
+            可选，仅用于判断与评分，按本组顺序调用。
+          </p>
+          {judgeProfiles.length === 0 ? (
+            <div className="model-provider-list model-provider-loading">
+              <p className="empty-copy">未添加（可选）</p>
+            </div>
+          ) : (
+            <>
+            <div className="provider-columns" aria-hidden="true">
+              <span />
+              <span>判定模型</span>
+              <span>状态</span>
+              <span>启用</span>
+              <span>失败后切换</span>
+              <span />
+            </div>
+            <ol className="model-provider-list">
+              {judgeProfiles.map((profile, index) => (
+                <li
+                  key={profile.profileId}
+                  className={`provider-item${draggedProfileId === profile.profileId ? " dragging" : ""}${dropTarget?.profileId !== profile.profileId ? "" : dropTarget.edge === "before" ? " drop-before" : " drop-after"}`}
+                  onDragOver={(event) => dragOver(event, profile.profileId)}
+                  onDrop={(event) => drop(event, profile.profileId)}
+                >
+                  <div className="provider-row" data-disabled={profile.enabled ? undefined : true}>
+                    <IconButton
+                      type="button"
+                      className="provider-drag-handle"
+                      draggable={!orderingBlocked}
+                      disabled={orderingBlocked}
+                      aria-label={`拖拽排序 ${profile.label}，可用上下方向键调整`}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", profile.profileId);
+                        setDraggedProfileId(profile.profileId);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedProfileId(null);
+                        setDropTarget(null);
+                      }}
+                      onKeyDown={(event) => moveWithKeyboard(event, index, judgeProfiles)}
+                    >
+                      <svg viewBox="0 0 16 20" aria-hidden="true">
+                        <circle cx="5" cy="5" r="1.25" />
+                        <circle cx="11" cy="5" r="1.25" />
+                        <circle cx="5" cy="10" r="1.25" />
+                        <circle cx="11" cy="10" r="1.25" />
+                        <circle cx="5" cy="15" r="1.25" />
+                        <circle cx="11" cy="15" r="1.25" />
+                      </svg>
+                    </IconButton>
+                    <div className="provider-copy">
+                      <span className="provider-order" aria-hidden="true">{index + 1}</span>
+                      <strong title={profile.label}>{profile.label}</strong>
+                      <span>
+                        {new URL(profile.baseUrl ?? OPENROUTER_DECISIONS_URL).host} · {profile.model} · {profile.proxy?.mode === "custom" ? "自定义代理" : profile.proxy?.mode === "direct" ? "仅 loopback 直连" : "全局模型代理"}
+                      </span>
+                      {usage.get(profile.profileId) === undefined ? null : (
+                        <small className="provider-usage">
+                          调用记录：{usageLabel(usage.get(profile.profileId)!)}
+                        </small>
+                      )}
+                    </div>
+                    <div className="provider-status-cell">
+                      <span className={profile.credentialConfigured ? "provider-status-healthy" : "provider-status-attention"}>
+                        {profile.credentialConfigured ? "凭据已配置" : "尚未配置凭据"}
+                      </span>
+                      <small>远程调用</small>
+                    </div>
+                    <label className="provider-switch" title={`${profile.label} 启停`}>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={profile.enabled}
+                        disabled={rowBusy(profile.profileId)}
+                        aria-busy={pendingProfiles[profile.profileId] || undefined}
+                        aria-label={`启用 ${profile.label}`}
+                        onChange={(event) => {
+                          const enabled = event.currentTarget.checked;
+                          keepSwitchFocus(event.currentTarget, saveSwitches({ ...profile, enabled }));
+                        }}
+                      />
+                    </label>
+                    <label className="provider-fallback-control"><input type="checkbox" role="switch" aria-label={`${profile.label} 失败后切换`} checked={profile.fallbackOnFailure !== false} disabled={rowBusy(profile.profileId) || !profile.enabled} aria-busy={pendingProfiles[profile.profileId] || undefined} onChange={(event) => { const fallbackOnFailure = event.currentTarget.checked; keepSwitchFocus(event.currentTarget, saveSwitches({ ...profile, fallbackOnFailure })); }} /></label>
+                    <div className="provider-actions">
+                      {testButton(profile)}
+                      <IconButton type="button" aria-haspopup="dialog" disabled={rowBusy(profile.profileId) || testingProfiles[profile.profileId] || judgeEditor !== null} aria-label={`编辑 ${profile.label}`} onClick={() => openJudgeEditor(judgeEditorFor(profile))}>
+                        <ActionIcon name="edit" />
+                      </IconButton>
+                      {deleteButton(profile)}
+                    </div>
+                  </div>
+                  {rowFooter(profile)}
+                </li>
+              ))}
+            </ol>
+            </>
+          )}
+        </section>
+      )}
+
+      {judgeEditor === null ? null : (() => {
+        const close = () => { setJudgeEditor(null); setError(null); };
+        // Moved to another site (a preset, a relay), the saved key is not sent there: said before the save is refused.
+        const judgeSecretHint = judgeEditor.existing?.credentialConfigured !== true ? null
+          : siteOf(judgeEditor.endpoint) !== null && siteOf(judgeEditor.endpoint) !== siteOf(judgeEditor.existing.baseUrl ?? OPENROUTER_DECISIONS_URL)
+            ? "地址换到了另一个站点，需要填写这个站点的 API 密钥" : "已安全保存，留空则不更换";
+        return <ModalDialog
+          title={judgeEditor.existing === null ? "添加判定模型" : `编辑 ${judgeEditor.existing.label}`}
+          description="密钥仅保存在本机，存储方式遵循「通用」中的密钥设置"
+          dismissible={!busy}
+          unsaved={JSON.stringify(judgeEditor) !== JSON.stringify(judgeEditorOpenedWith)}
+          onClose={close}
+          footer={<>
+            <button type="button" className="secondary-button" disabled={busy} onClick={close}>取消</button>
+            <button type="submit" form="model-provider-judge-editor" className="primary-button" disabled={busy}>保存</button>
+          </>}
+        >
+          <form className="form-fields provider-form" id="model-provider-judge-editor" aria-label={judgeEditor.existing === null ? "添加判定模型表单" : `编辑 ${judgeEditor.existing.label}`} onSubmit={(event) => { event.preventDefault(); void saveJudgeEditor(); }}>
+            <fieldset className="form-fields" disabled={busy}>
+              <div className="form-fields-row">
+                {formField("judgeLabel", "显示名称", <input {...fieldProps("judgeLabel")} autoFocus value={judgeEditor.label} onChange={(event) => setJudgeEditor({ ...judgeEditor, label: event.currentTarget.value })} />)}
+                {formField("judgeTimeout", "超时（毫秒）", <input {...fieldProps("judgeTimeout")} inputMode="numeric" value={judgeEditor.timeoutMs} onChange={(event) => setJudgeEditor({ ...judgeEditor, timeoutMs: event.currentTarget.value })} />)}
+              </div>
+              <div className="provider-presets" role="group" aria-labelledby={`${fieldIds}judge-presets`}>
+                <span id={`${fieldIds}judge-presets`}>服务预设</span>
+                {JUDGE_PRESETS.map((preset) => (
+                  <button key={preset.label} type="button" className="secondary-button" onClick={() => setJudgeEditor({
+                    ...judgeEditor, label: preset.label, endpoint: preset.endpoint, protocol: preset.protocol, model: preset.model,
+                    secret: keyFor(judgeEditor.secret, judgeEditor.endpoint, preset.endpoint),
+                  })}>{preset.label}</button>
+                ))}
+              </div>
+              {formField("judgeEndpoint", "接口地址", <input {...fieldProps("judgeEndpoint", true)} value={judgeEditor.endpoint} onChange={(event) => setJudgeEditor({ ...judgeEditor, endpoint: event.currentTarget.value, secret: keyFor(judgeEditor.secret, judgeEditor.endpoint, event.currentTarget.value) })} />,
+                "完整地址，包含路径，例如 https://openrouter.ai/api/alpha/decisions、https://api.openai.com/v1/decisions。只有用 System One 协议发往 OpenRouter 时，才会要求服务商不留存数据。")}
+              <div className="form-fields-row">
+                <div className="form-field">
+                  <label htmlFor={`${fieldIds}judge-protocol`}>API 协议</label>
+                  <select id={`${fieldIds}judge-protocol`} value={judgeEditor.protocol} onChange={(event) => setJudgeEditor({ ...judgeEditor, protocol: event.currentTarget.value as JudgeEditorState["protocol"] })}>
+                    <option value="systemone">System One（OpenRouter、TypeSafe、Fireworks 等）</option>
+                    <option value="openai">OpenAI Decisions</option>
+                  </select>
+                </div>
+              </div>
+              {formField("judgeModel", "模型", <input {...fieldProps("judgeModel", true)} value={judgeEditor.model} onChange={(event) => setJudgeEditor({ ...judgeEditor, model: event.currentTarget.value })} />,
+                "这个服务上的决策模型名，例如 OpenRouter 的 typesafe/jev-1.14、openai/gpt-6-luna-decisions，OpenAI 的 gpt-6-luna；~typesafe/jev-latest 跟随最新版本。")}
+              {formField("judgeSecret", "API 密钥", <input {...fieldProps("judgeSecret", judgeSecretHint !== null)} type="password" autoComplete="new-password" value={judgeEditor.secret} onChange={(event) => setJudgeEditor({ ...judgeEditor, secret: event.currentTarget.value })} />,
+                judgeSecretHint)}
+              <hr className="form-fields-divider" />
+              <ProxyFields id={`${fieldIds}judge-`} value={judgeEditor} onChange={(proxy) => setJudgeEditor({ ...judgeEditor, ...proxy })} urlProps={fieldProps("judgeProxyUrl")} urlError={fieldError("judgeProxyUrl")} />
+            </fieldset>
+            {formError}
+          </form>
+        </ModalDialog>;
+      })()}
 
       {localEditor === null ? null : <LocalQwenModelDialog api={api} profile={localEditor} onClose={() => setLocalEditor(null)} onSaved={load} />}
-      {cliEditor === null ? null : (
-        <ModalDialog
+      {cliEditor === null ? null : (() => {
+        const close = () => { setCliEditor(null); setError(null); };
+        const source = clientStatuses?.find(status => status.kind === cliEditor.profile.kind)?.modelsSource;
+        return <ModalDialog
           title={`配置 ${cliEditor.profile.label}`}
           description="使用客户端现有登录状态"
-          dismissible={!busy && JSON.stringify(cliEditor) === JSON.stringify(cliEditorOpenedWith)}
-          onClose={() => {
-            setCliEditor(null);
-            setError(null);
-          }}
+          dismissible={!busy}
+          unsaved={JSON.stringify(cliEditor) !== JSON.stringify(cliEditorOpenedWith)}
+          onClose={close}
+          footer={<>
+            <button type="button" className="secondary-button" disabled={busy} onClick={close}>取消</button>
+            <button type="submit" form="model-provider-cli-editor" className="primary-button" disabled={busy}>保存客户端</button>
+          </>}
         >
-          <form
-            className="model-provider-dialog-form"
-            id="model-provider-cli-editor"
-            aria-label={`配置 ${cliEditor.profile.label}`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void saveCliEditor();
-            }}
-          >
-            <div className="provider-form-grid">
-              <label className="provider-url-field">
-                客户端路径
-                <input
-                  aria-label="客户端路径"
-                  {...fieldProps("cliPath")}
-                  autoFocus
-                  value={cliEditor.executablePath}
-                  onChange={(event) =>
-                    setCliEditor({
-                      ...cliEditor,
-                      executablePath: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                客户端模型
-                <input
-                  aria-label="客户端模型"
-                  list={`${fieldIds}cli-models`}
-                  value={cliEditor.model}
-                  onChange={(event) =>
-                    setCliEditor({
-                      ...cliEditor,
-                      model: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-              <datalist id={`${fieldIds}cli-models`}>
-                {(clientStatuses?.find(status => status.kind === cliEditor.profile.kind)?.models ?? []).map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
-              </datalist>
-              <label>
-                超时（毫秒）
-                <input
-                  aria-label="客户端超时（毫秒）"
-                  {...fieldProps("cliTimeout")}
-                  inputMode="numeric"
-                  value={cliEditor.timeoutMs}
-                  onChange={(event) =>
-                    setCliEditor({
-                      ...cliEditor,
-                      timeoutMs: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-            </div>
-            <ProxyFields value={cliEditor} onChange={(proxy) => setCliEditor({ ...cliEditor, ...proxy })} urlProps={fieldProps("cliProxyUrl")} />
-            <p className="provider-privacy-copy">可选择候选或手动输入；留空使用客户端默认模型。{(() => {
-              const source = clientStatuses?.find(status => status.kind === cliEditor.profile.kind)?.modelsSource;
-              return source === "server" ? "候选来源：服务端直查。" : source === "client" ? "候选来源：CLI 目录（可能使用客户端内部缓存）。" : source === "cache" ? "候选来源：本机缓存（服务端及 CLI 查询未成功）。" : "尚无模型候选；刷新时依次尝试服务端、CLI 目录和本机缓存。";
-            })()}</p>
-            <p className="provider-privacy-copy">
-              内容经本机客户端发送给 {cliEditor.profile.kind === "codex-cli" ? "OpenAI" : "Anthropic"} 的模型服务，可能消耗额度；不会修改、退出或复制客户端账户。
-            </p>
-            {error === null ? null : (
-              <p className="model-provider-dialog-error" role="alert" id={`${fieldIds}error`}>
-                {error}
-              </p>
-            )}
-            <div className="modal-form-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={busy}
-                onClick={() => {
-                  setCliEditor(null);
-                  setError(null);
-                }}
-              >
-                取消客户端配置
-              </button>
-              <button type="button" className="secondary-button" disabled={busy} onClick={() => void run(load)}>刷新模型候选</button>
-              <button type="submit" className="primary-button" disabled={busy}>
-                保存客户端
-              </button>
-            </div>
+          <form className="form-fields provider-form" id="model-provider-cli-editor" aria-label={`配置 ${cliEditor.profile.label}`} onSubmit={(event) => { event.preventDefault(); void saveCliEditor(); }}>
+            <fieldset className="form-fields" disabled={busy}>
+              {formField("cliPath", "客户端路径",
+                <input {...fieldProps("cliPath", true)} autoFocus value={cliEditor.executablePath} onChange={(event) => setCliEditor({ ...cliEditor, executablePath: event.currentTarget.value })} />,
+                `内容经本机客户端发送给 ${cliEditor.profile.kind === "codex-cli" ? "OpenAI" : "Anthropic"} 的模型服务，可能消耗额度；不会修改、退出或复制客户端账户。`)}
+              <div className="form-fields-row">
+                {/* The candidates are the field's own: read again beside it, not from among the dialog's closing buttons. */}
+                {formField("cliModel", "客户端模型",
+                  <div className="provider-model-control">
+                    <input {...fieldProps("cliModel", true)} value={cliEditor.model} onChange={(event) => setCliEditor({ ...cliEditor, model: event.currentTarget.value })} />
+                    <ModelCandidates models={clientStatuses?.find(status => status.kind === cliEditor.profile.kind)?.models ?? []} value={cliEditor.model} onPick={(model) => setCliEditor({ ...cliEditor, model })} />
+                    <IconButton type="button" aria-label="刷新模型候选" onClick={() => void run(load)}><ActionIcon name="refresh" /></IconButton>
+                  </div>,
+                  `可选择候选或手动输入；留空使用客户端默认模型。${source === "server" ? "候选来源：服务端直查。" : source === "client" ? "候选来源：CLI 目录（可能使用客户端内部缓存）。" : source === "cache" ? "候选来源：本机缓存（服务端及 CLI 查询未成功）。" : "尚无模型候选；刷新时依次尝试服务端、CLI 目录和本机缓存。"}`)}
+                {formField("cliTimeout", "超时（毫秒）",
+                  <input {...fieldProps("cliTimeout")} inputMode="numeric" value={cliEditor.timeoutMs} onChange={(event) => setCliEditor({ ...cliEditor, timeoutMs: event.currentTarget.value })} />)}
+              </div>
+              <hr className="form-fields-divider" />
+              <ProxyFields allowLoopback={false} id={fieldIds} value={cliEditor} onChange={(proxy) => setCliEditor({ ...cliEditor, ...proxy })} urlProps={fieldProps("cliProxyUrl")} urlError={fieldError("cliProxyUrl")} />
+            </fieldset>
+            {formError}
           </form>
-        </ModalDialog>
-      )}
+        </ModalDialog>;
+      })()}
 
-      {editor === null ? null : (
-        <ModalDialog
-          title={
-            editor.existing === null
-              ? "添加模型后端"
-              : `编辑 ${editor.existing.label}`
-          }
+      {editor === null ? null : (() => {
+        const close = () => { setEditor(null); setError(null); };
+        const compatible = editor.kind === "openai-compatible";
+        const peak = editor.pricingMode === "deepseek";
+        // Moved to another site (a preset, a relay), the saved key is not sent there: said before the save is refused.
+        const secretHint = !editor.existing?.credentialConfigured ? null
+          : siteOf(editor.baseUrl) !== null && siteOf(editor.baseUrl) !== siteOf(editor.existing.baseUrl)
+            ? "地址换到了另一个站点，需要填写这个站点的 API 密钥" : "已安全保存，留空则不更换";
+        const price = (field: "inputPrice" | "outputPrice" | "cachedInputPrice" | "peakInputPrice" | "peakOutputPrice" | "peakCachedInputPrice", label: string, placeholder?: string) =>
+          formField(field, label, <input {...fieldProps(field)} inputMode="decimal" placeholder={placeholder} value={editor[field]} onChange={(event) => setEditor({ ...editor, [field]: event.currentTarget.value })} />);
+        return <ModalDialog
+          title={editor.existing === null ? "添加模型后端" : `编辑 ${editor.existing.label}`}
           description="密钥仅保存在本机，存储方式遵循「通用」中的密钥设置"
-          dismissible={!busy && JSON.stringify(editor) === JSON.stringify(editorOpenedWith)}
-          onClose={() => {
-            setEditor(null);
-            setError(null);
-          }}
+          dismissible={!busy}
+          unsaved={JSON.stringify(editor) !== JSON.stringify(editorOpenedWith)}
+          onClose={close}
+          footer={<>
+            <button type="button" className="secondary-button" disabled={busy} onClick={close}>取消</button>
+            <button type="submit" form="model-provider-editor" className="primary-button" disabled={busy}>保存后端</button>
+          </>}
         >
-          <form
-            className="model-provider-dialog-form"
-            id="model-provider-editor"
-            aria-label={
-              editor.existing === null
-                ? "添加模型后端表单"
-                : `编辑 ${editor.existing.label}`
-            }
-            onSubmit={(event) => {
-              event.preventDefault();
-              void saveEditor();
-            }}
-          >
-            <div className="provider-form-grid">
-              <label>
-                后端类型
-                <select
-                  aria-label="后端类型"
-                  autoFocus={editor.existing === null}
-                  value={editor.kind}
-                  disabled={editor.existing !== null}
-                  onChange={(event) => {
-                    const kind = event.currentTarget.value as RemoteKind;
-                    setEditor((current) =>
-                      current === null
-                        ? current
-                        : {
-                            ...current,
-                            kind,
-                            ...defaultsFor(kind),
-                          },
-                    );
-                  }}
-                >
-                  <option value="openai">OpenAI</option>
-                  <option value="anthropic">Anthropic</option>
-                  <option value="openai-compatible">OpenAI 兼容</option>
-                </select>
-              </label>
-              <label>
-                显示名称
-                <input
-                  aria-label="显示名称"
-                  {...fieldProps("label")}
-                  autoFocus={editor.existing !== null}
-                  value={editor.label}
-                  onChange={(event) =>
-                    setEditor({
-                      ...editor,
-                      label: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-              {editor.kind === "openai-compatible" ? (
-                <div className="provider-presets">
-                  <span>服务预设</span>
-                  {COMPATIBLE_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      className="text-button"
-                      onClick={() =>
-                        setEditor({
-                          ...editor,
-                          label: preset.label,
-                          baseUrl: preset.baseUrl,
-                          apiProtocol: preset.apiProtocol,
-                          jsonMode: preset.jsonMode,
-                          model:
-                            editor.model.trim().length === 0
-                              ? preset.models[0]
-                              : editor.model,
-                        })
-                      }
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+          <form className="form-fields provider-form" id="model-provider-editor" aria-label={editor.existing === null ? "添加模型后端表单" : `编辑 ${editor.existing.label}`} onSubmit={(event) => { event.preventDefault(); void saveEditor(); }}>
+            <fieldset className="form-fields" disabled={busy}>
+              <div className="form-fields-row">
+                <div className="form-field">
+                  <label htmlFor={`${fieldIds}kind`}>后端类型</label>
+                  <select id={`${fieldIds}kind`} autoFocus={editor.existing === null} value={editor.kind} disabled={editor.existing !== null}
+                    onChange={(event) => {
+                      const kind = event.currentTarget.value as RemoteKind;
+                      setEditor((current) => current === null ? current : { ...current, kind, ...defaultsFor(kind), secret: keyFor(current.secret, current.baseUrl, defaultsFor(kind).baseUrl) });
+                    }}>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="openai-compatible">OpenAI 兼容</option>
+                  </select>
                 </div>
-              ) : null}
-              <label>
-                模型
-                <input
-                  aria-label="模型"
-                  {...fieldProps("model")}
-                  list="provider-model-suggestions"
-                  value={editor.model}
-                  onChange={(event) =>
-                    setEditor({
-                      ...editor,
-                      model: event.currentTarget.value,
-                    })
-                  }
-                />
-                <datalist id="provider-model-suggestions">
-                  {COMPATIBLE_PRESETS.flatMap((preset) =>
-                    preset.models.map((model) => (
-                      <option key={`${preset.id}:${model}`} value={model} />
-                    )),
-                  )}
-                </datalist>
-              </label>
-              <label className="provider-url-field">
-                服务地址
-                <input
-                  aria-label="服务地址"
-                  {...fieldProps("baseUrl")}
-                  value={editor.baseUrl}
-                  onChange={(event) =>
-                    setEditor({
-                      ...editor,
-                      baseUrl: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-              {editor.kind === "openai-compatible" ? (
-                <label>
-                  API 协议
-                  <select
-                    aria-label="API 协议"
-                    value={editor.apiProtocol}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        apiProtocol: event.currentTarget
-                          .value as EditorState["apiProtocol"],
-                      })
-                    }
-                  >
+                {formField("label", "显示名称", <input {...fieldProps("label")} autoFocus={editor.existing !== null} value={editor.label} onChange={(event) => setEditor({ ...editor, label: event.currentTarget.value })} />)}
+              </div>
+              {/* Filling these by hand is error-prone (DeepSeek only takes json_object): a row of its own under the type. */}
+              {compatible ? <div className="provider-presets" role="group" aria-labelledby={`${fieldIds}presets`}>
+                <span id={`${fieldIds}presets`}>服务预设</span>
+                {COMPATIBLE_PRESETS.map((preset) => (
+                  <button key={preset.id} type="button" className="secondary-button" onClick={() => setEditor({
+                    ...editor, label: preset.label, baseUrl: preset.baseUrl, apiProtocol: preset.apiProtocol, jsonMode: preset.jsonMode,
+                    secret: keyFor(editor.secret, editor.baseUrl, preset.baseUrl),
+                    model: editor.model.trim().length === 0 ? preset.models[0] : editor.model,
+                  })}>{preset.label}</button>
+                ))}
+              </div> : null}
+              {formField("baseUrl", "服务地址", <input {...fieldProps("baseUrl", true)} value={editor.baseUrl} onChange={(event) => setEditor({ ...editor, baseUrl: event.currentTarget.value, secret: keyFor(editor.secret, editor.baseUrl, event.currentTarget.value) })} />,
+                "此后端会收到语义识别所需的裁剪问答。")}
+              <div className="form-fields-row">
+                {formField("model", "模型", <div className="provider-model-control">
+                  <input {...fieldProps("model")} value={editor.model} onChange={(event) => setEditor({ ...editor, model: event.currentTarget.value })} />
+                  {/* The presets' models: an OpenAI or Anthropic backend was offered DeepSeek's. */}
+                  {compatible ? <ModelCandidates models={COMPATIBLE_PRESETS.flatMap((preset) => preset.models.map((id) => ({ id })))} value={editor.model} onPick={(model) => setEditor({ ...editor, model })} /> : null}
+                </div>)}
+                {formField("timeoutMs", "超时（毫秒）", <input {...fieldProps("timeoutMs")} inputMode="numeric" value={editor.timeoutMs} onChange={(event) => setEditor({ ...editor, timeoutMs: event.currentTarget.value })} />)}
+              </div>
+              {compatible ? <div className="form-fields-row">
+                <div className="form-field">
+                  <label htmlFor={`${fieldIds}protocol`}>API 协议</label>
+                  <select id={`${fieldIds}protocol`} value={editor.apiProtocol} onChange={(event) => setEditor({ ...editor, apiProtocol: event.currentTarget.value as EditorState["apiProtocol"] })}>
                     <option value="responses">Responses</option>
                     <option value="chat-completions">Chat Completions</option>
                   </select>
-                </label>
-              ) : null}
-              {editor.kind === "openai-compatible" ? (
-                <label>
-                  JSON 输出
-                  <select
-                    aria-label="JSON 输出"
-                    value={editor.jsonMode}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        jsonMode: event.currentTarget
-                          .value as EditorState["jsonMode"],
-                      })
-                    }
-                  >
+                </div>
+                <div className="form-field">
+                  <label htmlFor={`${fieldIds}json-mode`}>JSON 输出</label>
+                  <select id={`${fieldIds}json-mode`} value={editor.jsonMode} onChange={(event) => setEditor({ ...editor, jsonMode: event.currentTarget.value as EditorState["jsonMode"] })}>
                     <option value="schema">严格 Schema</option>
                     <option value="object">JSON 对象（DeepSeek 等）</option>
                   </select>
-                </label>
-              ) : null}
-              <label>
-                超时（毫秒）
-                <input
-                  aria-label="超时（毫秒）"
-                  {...fieldProps("timeoutMs")}
-                  inputMode="numeric"
-                  value={editor.timeoutMs}
-                  onChange={(event) =>
-                    setEditor({
-                      ...editor,
-                      timeoutMs: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-              <fieldset className="provider-pricing-fields">
-                <legend>计费单价（可选）</legend>
-                <div className="provider-form-grid">
-                <label>计费方式<select aria-label="计费方式" value={editor.pricingMode} onChange={(event) => setEditor({ ...editor, pricingMode: event.currentTarget.value === "deepseek" ? "deepseek" : "fixed" })}><option value="fixed">固定单价</option><option value="deepseek">DeepSeek 峰谷计费</option></select></label>
-                <label>参考价格<button type="button" className="secondary-button" aria-label="填入 DeepSeek Flash 参考价格" disabled={editor.model.trim() !== "deepseek-flash"} onClick={() => setEditor({ ...editor, pricingMode: "deepseek", currency: "¥", inputPrice: "1", cachedInputPrice: "0.02", outputPrice: "4", peakInputPrice: "2", peakCachedInputPrice: "0.04", peakOutputPrice: "8", holidayYear: "2026", holidays: DEEPSEEK_2026_HOLIDAYS.join("\n") })}>填入 Flash 参考价</button></label>
-
-                <label>
-                  货币
-                  <input
-                    aria-label="货币"
-                    {...fieldProps("currency")}
-                    maxLength={8}
-                    placeholder="¥"
-                    value={editor.currency}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        currency: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </label>
                 </div>
-                <label>{editor.pricingMode === "deepseek" ? "空闲时段 · 缓存命中输入 / 百万 token" : "缓存命中输入 / 百万 token（可选）"}<input aria-label="缓存命中输入单价" {...fieldProps("cachedInputPrice")} inputMode="decimal" value={editor.cachedInputPrice} onChange={(event) => setEditor({ ...editor, cachedInputPrice: event.currentTarget.value })} /></label>
-                <label>
-                  {editor.pricingMode === "deepseek" ? "空闲时段 · 缓存未命中输入 / 百万 token" : "输入 / 百万 token"}
-                  <input
-                    aria-label="输入单价"
-                    {...fieldProps("inputPrice")}
-                    inputMode="decimal"
-                    placeholder="1.0"
-                    value={editor.inputPrice}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        inputPrice: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  {editor.pricingMode === "deepseek" ? "空闲时段 · 输出 / 百万 token" : "输出 / 百万 token"}
-                  <input
-                    aria-label="输出单价"
-                    {...fieldProps("outputPrice")}
-                    inputMode="decimal"
-                    placeholder="2.0"
-                    value={editor.outputPrice}
-                    onChange={(event) =>
-                      setEditor({
-                        ...editor,
-                        outputPrice: event.currentTarget.value,
-                      })
-                    }
-                  />
-                </label>
-                {editor.pricingMode === "deepseek" ? <>
-                  {([["peakCachedInputPrice", "高峰缓存命中输入单价"], ["peakInputPrice", "高峰缓存未命中输入单价"], ["peakOutputPrice", "高峰输出单价"]] as const).map(([field, label]) => <label key={field}>{label} / 百万 token<input aria-label={label} {...fieldProps(field)} inputMode="decimal" value={editor[field]} onChange={(event) => setEditor({ ...editor, [field]: event.currentTarget.value })} /></label>)}
-                  <label>节假日日历年份<input aria-label="节假日日历年份" {...fieldProps("holidayYear")} inputMode="numeric" value={editor.holidayYear} onChange={(event) => setEditor({ ...editor, holidayYear: event.currentTarget.value })} /></label>
-                  <label className="provider-secret-field">全天按空闲价的节假日<textarea aria-label="空闲价节假日" {...fieldProps("holidays")} rows={3} value={editor.holidays} onChange={(event) => setEditor({ ...editor, holidays: event.currentTarget.value })} /></label>
-                  <p>北京时间周一至周五 09:00–12:00、14:00–18:00 为高峰。周末（含调休上班日）与已配置节假日全天为空闲。未覆盖年份或缓存用量缺失时显示估算范围。</p>
-                </> : null}
-                <p>价格由你配置；参考价核对于 2026-10-12。新调用保留当时价格，旧记录按当前价格估算。费用以服务商账单为准。</p>
-              </fieldset>
-              <label className="provider-secret-field">
-                API 密钥
-                <input
-                  aria-label="API 密钥"
-                  {...fieldProps("secret")}
-                  type="password"
-                  autoComplete="new-password"
-                  value={editor.secret}
-                  onChange={(event) =>
-                    setEditor({
-                      ...editor,
-                      secret: event.currentTarget.value,
-                    })
-                  }
-                />
-                {editor.existing?.credentialConfigured ? (
-                  // Moved to another site (a preset, a relay), the saved key is not sent there: said before the save is refused.
-                  <small>
-                    {siteOf(editor.baseUrl) !== null && siteOf(editor.baseUrl) !== siteOf(editor.existing.baseUrl)
-                      ? "地址换到了另一个站点，需要填写这个站点的 API 密钥"
-                      : "已安全保存，留空则不更换"}
-                  </small>
-                ) : null}
-              </label>
-            </div>
-            <p className="provider-privacy-copy">
-              此后端会收到语义识别所需的裁剪问答；密钥仅保存在本机，存储方式遵循「通用」中的密钥设置。
-            </p>
-            <ProxyFields value={editor} onChange={(proxy) => setEditor({ ...editor, ...proxy })} urlProps={fieldProps("proxyUrl")} />
-            {error === null ? null : (
-              <p className="model-provider-dialog-error" role="alert" id={`${fieldIds}error`}>
-                {error}
-              </p>
-            )}
-            <div className="modal-form-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={busy}
-                onClick={() => {
-                  setEditor(null);
-                  setError(null);
-                }}
-              >
-                {editor.existing === null ? "取消添加" : "取消编辑"}
-              </button>
-              <button type="submit" className="primary-button" disabled={busy}>
-                保存后端
-              </button>
-            </div>
+              </div> : null}
+              {formField("secret", "API 密钥", <input {...fieldProps("secret", secretHint !== null)} type="password" autoComplete="new-password" value={editor.secret} onChange={(event) => setEditor({ ...editor, secret: event.currentTarget.value })} />,
+                secretHint)}
+              <hr className="form-fields-divider" />
+              <div className="form-fields" role="group" aria-labelledby={`${fieldIds}pricing`}>
+                {/* The reference price is the group's: by its title, there only while the model it is for is the one set. */}
+                <div className="provider-group-head">
+                  <span id={`${fieldIds}pricing`}>计费单价（可选）</span>
+                  {editor.model.trim() === "deepseek-flash" ? <button type="button" className="text-button" onClick={() => setEditor({ ...editor, pricingMode: "deepseek", currency: "¥", inputPrice: "1", cachedInputPrice: "0.02", outputPrice: "4", peakInputPrice: "2", peakCachedInputPrice: "0.04", peakOutputPrice: "8", holidayYear: "2026", holidays: DEEPSEEK_2026_HOLIDAYS.join("\n") })}>填入 DeepSeek Flash 参考价格</button> : null}
+                </div>
+                <div className="form-fields-row">
+                  <div className="form-field">
+                    <label htmlFor={`${fieldIds}pricing-mode`}>计费方式</label>
+                    <select id={`${fieldIds}pricing-mode`} value={editor.pricingMode} onChange={(event) => setEditor({ ...editor, pricingMode: event.currentTarget.value === "deepseek" ? "deepseek" : "fixed" })}><option value="fixed">固定单价</option><option value="deepseek">DeepSeek 峰谷计费</option></select>
+                  </div>
+                  {formField("currency", "货币", <input {...fieldProps("currency")} maxLength={8} placeholder="¥" value={editor.currency} onChange={(event) => setEditor({ ...editor, currency: event.currentTarget.value })} />)}
+                </div>
+                {/* Three to a row, every label one line: their inputs line up (labels of one, two and three lines did not). */}
+                {peak ? <>
+                  <div className="provider-price-row">
+                    {price("inputPrice", "空闲缓存未命中输入单价", "1.0")}
+                    {price("outputPrice", "空闲输出单价", "2.0")}
+                    {price("cachedInputPrice", "空闲缓存命中输入单价")}
+                  </div>
+                  <div className="provider-price-row">
+                    {price("peakInputPrice", "高峰缓存未命中输入单价")}
+                    {price("peakOutputPrice", "高峰输出单价")}
+                    {price("peakCachedInputPrice", "高峰缓存命中输入单价")}
+                  </div>
+                  <div className="form-fields-row">
+                    {formField("holidayYear", "节假日日历年份", <input {...fieldProps("holidayYear")} inputMode="numeric" value={editor.holidayYear} onChange={(event) => setEditor({ ...editor, holidayYear: event.currentTarget.value })} />)}
+                    {formField("holidays", "全天按空闲价的节假日", <textarea {...fieldProps("holidays", true)} rows={3} value={editor.holidays} onChange={(event) => setEditor({ ...editor, holidays: event.currentTarget.value })} />,
+                      "每行一个日期（YYYY-MM-DD）。")}
+                  </div>
+                  <p className="provider-group-note">北京时间周一至周五 09:00–12:00、14:00–18:00 为高峰。周末（含调休上班日）与已配置节假日全天为空闲。未覆盖年份或缓存用量缺失时显示估算范围。</p>
+                </> : <div className="provider-price-row">
+                  {price("inputPrice", "输入单价", "1.0")}
+                  {price("outputPrice", "输出单价", "2.0")}
+                  {price("cachedInputPrice", "缓存命中输入单价")}
+                </div>}
+                <p className="provider-group-note">按每百万 token 计；缓存命中单价可以不填。价格由你配置，参考价核对于 2026-10-12；新调用保留当时价格，旧记录按当前价格估算。费用以服务商账单为准。</p>
+              </div>
+              <hr className="form-fields-divider" />
+              <ProxyFields id={fieldIds} value={editor} onChange={(proxy) => setEditor({ ...editor, ...proxy })} urlProps={fieldProps("proxyUrl")} urlError={fieldError("proxyUrl")} />
+            </fieldset>
+            {formError}
           </form>
-        </ModalDialog>
-      )}
+        </ModalDialog>;
+      })()}
 
-      {error === null || editor !== null || cliEditor !== null ? null : (
-        <p className="model-provider-message error" role="alert">
+      {error === null || editor !== null || cliEditor !== null || judgeEditor !== null ? null : (
+        <p className="settings-status error" role="alert">
           {error}
         </p>
       )}
       {message === null ? null : (
-        <p className="model-provider-message" role="status">
+        <p className="settings-status" role="status">
           {message}
         </p>
       )}
     </section>
+    </>
   );
 };

@@ -3,7 +3,9 @@ import {
 } from "node:child_process";
 import {
   mkdtemp,
+  readFile,
   rm,
+  writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -54,6 +56,52 @@ const request = async (
 });
 
 describe("ManagedChildProcessRunner", () => {
+  it("enforces a combined stdout/stderr cap without halving either individual stream budget", async () => {
+    const runner=new ManagedChildProcessRunner();
+    expect((await runner.run(await request("process.stdout.write('a'.repeat(80));process.stderr.write('b'.repeat(10))",{maximumOutputBytes:100}))).stdout).toHaveLength(80);
+    await expect(runner.run(await request("process.stdout.write('a'.repeat(60));process.stderr.write('b'.repeat(60))",{maximumOutputBytes:100}))).rejects.toMatchObject({code:"response_too_large"});
+  });
+  it.skipIf(process.platform === "win32")("waits for SIGKILL of a TERM-ignoring child after its parent closes", async () => {
+    const cwd = await temporaryDirectory();
+    const marker = join(cwd, "alive");
+    const ready = join(cwd, "ready");
+    const childFile = join(cwd, "child.cjs");
+    await writeFile(childFile, `const fs=require('node:fs');process.on('SIGTERM',()=>{});fs.writeFileSync(${JSON.stringify(ready)},'ready');setTimeout(()=>fs.writeFileSync(${JSON.stringify(marker)},'survived'),1200);setInterval(()=>{},1000);`);
+    const controller = new AbortController();
+    let pid: number | undefined;
+    const cleanup = vi.fn(async () => {
+      expect(await readFile(marker, "utf8").catch(() => null)).toBeNull();
+    });
+    const kills: NodeJS.Signals[] = [];
+    const runner = new ManagedChildProcessRunner({
+      spawnProcess: (executable, args, options) => {
+        const child = nodeSpawn(executable, [...args], options);
+        pid = child.pid;
+        return child;
+      },
+      killProcessGroup: (group, signal) => { kills.push(signal); process.kill(-group, signal); },
+    });
+    const pending = runner.run(await request(`require('node:child_process').spawn(process.execPath,[${JSON.stringify(childFile)}],{stdio:'ignore'});setInterval(()=>{},1000);`, { cwd, signal: controller.signal, cleanup })).catch(error => error);
+    try {
+      await vi.waitFor(async () => expect(await readFile(ready, "utf8")).toBe("ready"));
+      controller.abort();
+      expect(await pending).toMatchObject({ code: "cancelled" });
+      expect(kills).toContain("SIGKILL");
+      expect(cleanup).toHaveBeenCalledOnce();
+      await new Promise(resolve => setTimeout(resolve, 1300));
+      expect(await readFile(marker, "utf8").catch(() => null)).toBeNull();
+    } finally {
+      if (pid) try { process.kill(-pid, "SIGKILL"); } catch {}
+    }
+  });
+
+  it("preserves bounded stdout/stderr for opted-in nonzero tool exits but still rejects timeouts", async () => {
+    const runner = new ManagedChildProcessRunner();
+    const output = await runner.run(await request("process.stdout.write('TAP version 13\\n# fail 1\\n');process.stderr.write('test diagnostic');process.exitCode=1", { acceptNonzeroExit: true }));
+    expect(output).toMatchObject({ exitCode: 1, stdout: "TAP version 13\n# fail 1\n", stderr: "test diagnostic" });
+    await expect(runner.run(await request("setInterval(()=>{},1000)", { acceptNonzeroExit: true, timeoutMs: 100 }))).rejects.toMatchObject({ code: "timeout" });
+  });
+
   it("keeps stdin open for a bounded protocol exchange and closes it after completion", async () => {
     const input = await request("let n=0; process.stdin.on('data',()=>{process.stdout.write(++n===1?'ready\\n':'models\\n')}); process.stdin.on('end',()=>process.exit(0));", { stdin: "initialize\n" });
     let replied = false;
@@ -275,6 +323,37 @@ describe("ManagedChildProcessRunner", () => {
     expect(failure.diagnosticExcerpt).toContain("missing path");
     expect(failure.diagnosticExcerpt).toContain("invalid_json_schema");
     expect(failure.diagnosticExcerpt.length).toBeLessThanOrEqual(2000);
+  });
+
+  it("keeps what a client's reported API error calls itself, never the body it quotes", async () => {
+    // Claude Code reports an API error as "API Error: " and the SDK's message, which carries the whole response body,
+    // and Codex as "unexpected status …: " and the body: a moderation refusal names the flagged input in it.
+    const typed = "我们决定裁掉B项目团队";
+    const failed = async (overrides: Parameters<typeof request>) => new ManagedChildProcessRunner()
+      .run(await request(...overrides))
+      .then(() => { throw new Error("expected the client to fail"); }, (error: unknown) => error as ManagedProcessError);
+    const body = JSON.stringify({ error: { code: 403, message: "Your input was flagged for \"harassment\".", metadata: { reasons: ["harassment"], flagged_input: typed } } });
+    for (const [stdout, kept] of [
+      [JSON.stringify({ type: "result", is_error: true, result: `API Error: 403 ${body}` }), "API Error: 403"],
+      [`{"type":"turn.started"}\n${JSON.stringify({ type: "turn.failed", error: { message: `unexpected status 403 Forbidden: ${body}` } })}`, "unexpected status 403"],
+      [JSON.stringify({ type: "error", message: `unexpected status 403 Forbidden: ${body}` }), "unexpected status 403"],
+      // A body cut short is not read: only what came before it is kept.
+      [JSON.stringify({ type: "result", is_error: true, result: `API Error: 500 {"error":{"message":"${typed}` }), "API Error: 500"],
+    ] as const) {
+      const failure = await failed([`process.stdout.write(${JSON.stringify(stdout)}); process.exitCode = 1;`]);
+
+      expect(failure.diagnosticExcerpt).not.toContain(typed);
+      expect(failure.diagnosticExcerpt).toContain(kept);
+    }
+
+    // A reason with no body is kept to 300 characters, cleaned before it is cut: a path across the cut goes whole.
+    const home = "/Users/private-person";
+    const failure = await failed([
+      `process.stdout.write(${JSON.stringify(JSON.stringify({ type: "result", is_error: true, result: `${"w".repeat(290)}${home}/.claude is unreadable ${"v".repeat(500)}` }))}); process.exitCode = 1;`,
+      { environment: { PATH: process.env.PATH, HOME: home } },
+    ]);
+    expect(failure.diagnosticExcerpt).not.toContain("/Users/");
+    expect(failure.diagnosticExcerpt).not.toContain("v".repeat(100));
   });
 
   it("leaves what else a failed client printed on stdout out of the diagnostic: it may be the answer", async () => {

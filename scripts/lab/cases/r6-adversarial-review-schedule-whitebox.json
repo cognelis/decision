@@ -1,0 +1,412 @@
+[
+  {
+    "id": "R6RVSKWB-001",
+    "group": "slot-metrics",
+    "kind": "decision",
+    "texts": [
+      "Billing service: Monthly or Yearly?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "计费报表周期不是服务供应商选型；普通时间粒度占据 provider slot。"
+  },
+  {
+    "id": "R6RVSKWB-002",
+    "group": "slot-metrics",
+    "kind": "decision",
+    "texts": [
+      "For analytics: Click or Tap?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "埋点事件名/交互动作词占据 analytics 服务位。"
+  },
+  {
+    "id": "R6RVSKWB-003",
+    "group": "slot-metrics",
+    "kind": "decision",
+    "texts": [
+      "Monitoring platform: Daily or Weekly?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "监控聚合窗口，不是平台供应商。"
+  },
+  {
+    "id": "R6RVSKWB-004",
+    "group": "slot-metrics",
+    "kind": "decision",
+    "texts": [
+      "For payments: Success or Failure?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "支付状态枚举，不是支付服务商。"
+  },
+  {
+    "id": "R6RVSKWB-005",
+    "group": "slot-ui",
+    "kind": "decision",
+    "texts": [
+      "Auth service: Redirect or Popup?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "认证界面的导航/弹窗形式；界面词放在服务上下文里。"
+  },
+  {
+    "id": "R6RVSKWB-006",
+    "group": "slot-ui",
+    "kind": "decision",
+    "texts": [
+      "For email service: Plain or Rich?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "邮件内容呈现格式，而非邮件服务商。"
+  },
+  {
+    "id": "R6RVSKWB-007",
+    "group": "slot-ui",
+    "kind": "decision",
+    "texts": [
+      "SMS channel use Short or Long?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "短信分段长度值伪装成通道供应商；无明确专名。"
+  },
+  {
+    "id": "R6RVSKWB-008",
+    "group": "slot-ui",
+    "kind": "decision",
+    "texts": [
+      "For push notifications: Morning or Evening?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "推送发送时段，不是推送平台选型。"
+  },
+  {
+    "id": "R6RVSKWB-009",
+    "group": "slot-config",
+    "kind": "decision",
+    "texts": [
+      "Billing backend: Monthly or Yearly?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "计费周期配置值伪装成 billing backend 名称。"
+  },
+  {
+    "id": "R6RVSKWB-010",
+    "group": "slot-config",
+    "kind": "decision",
+    "texts": [
+      "For hosting: Public or Private?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "部署可见性/网络模式普通词，不是托管厂商。"
+  },
+  {
+    "id": "R6RVSKWB-011",
+    "group": "slot-config",
+    "kind": "decision",
+    "texts": [
+      "Gateway service: Fast or Safe?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "性能/安全目标值，不是网关供应商。"
+  },
+  {
+    "id": "R6RVSKWB-012",
+    "group": "slot-config",
+    "kind": "decision",
+    "texts": [
+      "Vector store: Exact or Approximate?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "搜索算法/检索模式，不是向量库产品名。"
+  },
+  {
+    "id": "R6RVSKWB-013",
+    "group": "slot-ui",
+    "kind": "decision",
+    "texts": [
+      "支付服务用 Left 还是 Right？"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "支付 UI 按钮位置被直接填入“服务”槽位。"
+  },
+  {
+    "id": "R6RVSKWB-014",
+    "group": "slot-ui",
+    "kind": "decision",
+    "texts": [
+      "监控平台用 Red 还是 Blue？"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "图表主题颜色冒充监控平台名。"
+  },
+  {
+    "id": "R6RVSKWB-015",
+    "group": "slot-metrics",
+    "kind": "decision",
+    "texts": [
+      "告警通道用 Immediate 还是 Batched？"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "告警发送策略/批处理指标，不是告警供应商。"
+  },
+  {
+    "id": "R6RVSKWB-016",
+    "group": "slot-ui",
+    "kind": "decision",
+    "texts": [
+      "邮件服务用 Formal 还是 Casual？"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "邮件语气选择被包装成邮件服务选型。"
+  },
+  {
+    "id": "R6RVSKWB-017",
+    "group": "slot-config",
+    "kind": "decision",
+    "texts": [
+      "短信供应商用 Domestic 还是 International？"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "线路范围/资费档位普通词，非供应商名称。"
+  },
+  {
+    "id": "R6RVSKWB-018",
+    "group": "slot-config",
+    "kind": "decision",
+    "texts": [
+      "支付通道用 Retail 还是 Wholesale？"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "业务客群档位普通词被放在支付服务位。"
+  },
+  {
+    "id": "R6RVSKWB-019",
+    "group": "slot-naming",
+    "kind": "decision",
+    "texts": [
+      "给支付服务命名：Stripe 还是 Paddle？"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "服务名字而非支付提供商；NAMING 全文本 veto 应抑制。"
+  },
+  {
+    "id": "R6RVSKWB-020",
+    "group": "slot-naming",
+    "kind": "decision",
+    "texts": [
+      "Name the SMS provider field “Twilio” or “Vonage”?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "字段命名问题含 provider 词，命名 veto 应生效。"
+  },
+  {
+    "id": "R6RVSKWB-021",
+    "group": "context-global",
+    "kind": "decision",
+    "texts": [
+      "短信服务用 Twilio 还是 Vonage？",
+      "设置页的按钮放在左边。"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "合法供应商选择后出现无关 UI 词；全局 onScreen 不应吞掉服务位选型。"
+  },
+  {
+    "id": "R6RVSKWB-022",
+    "group": "context-global",
+    "kind": "decision",
+    "texts": [
+      "For payments: Stripe or Adyen?",
+      "The event name is written in camelCase."
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "合法支付选型后提到无关命名；全局 naming 不应吞掉服务位选型。"
+  },
+  {
+    "id": "R6RVSKWB-023",
+    "group": "context-global",
+    "kind": "decision",
+    "texts": [
+      "监控平台用 Datadog 还是 New Relic？",
+      "支付服务的展示名称待定。"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "服务名称描述不应让另一条真实供应商选择失效。"
+  },
+  {
+    "id": "R6RVSKWB-024",
+    "group": "service-cn-positive",
+    "kind": "decision",
+    "texts": [
+      "收款服务用 Adyen 还是 Checkout.com？"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "服务位中是真实支付供应商名。"
+  },
+  {
+    "id": "R6RVSKWB-025",
+    "group": "service-cn-positive",
+    "kind": "decision",
+    "texts": [
+      "短信通道用 Twilio 还是 Sinch？"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "服务位中是真实短信供应商名。"
+  },
+  {
+    "id": "R6RVSKWB-026",
+    "group": "service-cn-positive",
+    "kind": "decision",
+    "texts": [
+      "向量库选 Pinecone 还是 Weaviate？"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "服务位中是真实向量数据库产品名。"
+  },
+  {
+    "id": "R6RVSKWB-027",
+    "group": "service-cn-positive",
+    "kind": "decision",
+    "texts": [
+      "Auth0 还是 Zitadel 做身份认证？"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "名字作身份服务的实现方，覆盖第二种语序。"
+  },
+  {
+    "id": "R6RVSKWB-028",
+    "group": "service-cn-positive",
+    "kind": "decision",
+    "texts": [
+      "监控平台采用 Datadog 或 New Relic？"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "服务位真实供应商，测试 CN 或者结构及多词产品名。"
+  },
+  {
+    "id": "R6RVSKWB-029",
+    "group": "service-cn-positive",
+    "kind": "decision",
+    "texts": [
+      "邮件服务接 Postmark 还是 Resend？"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "服务位中是真实邮件供应商名。"
+  },
+  {
+    "id": "R6RVSKWB-030",
+    "group": "service-en-positive",
+    "kind": "decision",
+    "texts": [
+      "For hosting: Fly.io or Render?"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "英文 for service 槽位语法，两个产品名。"
+  },
+  {
+    "id": "R6RVSKWB-031",
+    "group": "service-en-positive",
+    "kind": "decision",
+    "texts": [
+      "For vector store: Pinecone versus Weaviate?"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "英文服务位+versus 和产品名。"
+  },
+  {
+    "id": "R6RVSKWB-032",
+    "group": "service-en-positive",
+    "kind": "decision",
+    "texts": [
+      "Payments provider: Adyen or Checkout.com?"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "英文服务位 provider 后缀和多词名。"
+  },
+  {
+    "id": "R6RVSKWB-033",
+    "group": "service-en-positive",
+    "kind": "decision",
+    "texts": [
+      "For identity: Auth0 or WorkOS?"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "英文服务类型词 identity 与供应商对举。"
+  },
+  {
+    "id": "R6RVSKWB-034",
+    "group": "service-boundary",
+    "kind": "decision",
+    "texts": [
+      "For the auth service, should we use Auth0 or WorkOS?"
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "加入 the 与问句前缀，验证服务位语法边界。"
+  },
+  {
+    "id": "R6RVSKWB-035",
+    "group": "service-boundary",
+    "kind": "decision",
+    "texts": [
+      "For analytics, choose Amplitude or PostHog, then compare costs."
+    ],
+    "expectedOutcome": null,
+    "expected": "schedule",
+    "attack": "PAIR_END 允许“比较”后缀，应能保留产品选型。"
+  },
+  {
+    "id": "R6RVSKWB-036",
+    "group": "service-boundary",
+    "kind": "decision",
+    "texts": [
+      "收款服务用 Stripe 还是 Paddle，后续再比较价格。"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "对举后仍有句子内容，PAIR_END 的严格边界应拒绝跨句误匹配。"
+  },
+  {
+    "id": "R6RVSKWB-037",
+    "group": "service-boundary",
+    "kind": "decision",
+    "texts": [
+      "Email: Postmark or Resend for the service?"
+    ],
+    "expectedOutcome": null,
+    "expected": "no_schedule",
+    "attack": "名字置于服务类型之前但缺少 for 前缀，规则不应宽泛搜索中段。"
+  }
+]

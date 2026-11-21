@@ -2,12 +2,20 @@ import {
   mkdtemp,
   readFile,
   readdir,
+  rename,
   stat,
+  unlink,
   writeFile,
 } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("node:fs/promises", async original => {
+  const fs = await original<typeof import("node:fs/promises")>();
+  return { ...fs, unlink: vi.fn(fs.unlink), readFile: vi.fn(fs.readFile) };
+});
 
 import type { ModelTraceRecordInput } from "../src/index.js";
 import {
@@ -56,6 +64,66 @@ const successfulTraceInput = (
 });
 
 describe("ModelTraceStore", () => {
+  it("reports a failed request deletion so forgetting can retain its retry receipt", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-forget-failure-"));
+    const store = new ModelTraceStore(root);
+    const trace = await store.record(successfulTraceInput());
+    vi.mocked(unlink).mockRejectedValueOnce(Object.assign(new Error("synthetic trace deletion failure"), { code: "EACCES" }));
+    await expect(store.deleteRequest("request-1")).rejects.toMatchObject({ cause: { message: "synthetic trace deletion failure", code: "EACCES" } });
+    expect((await store.list()).some(entry => entry.traceId === trace.traceId)).toBe(true);
+    await expect(store.deleteRequest("request-1")).resolves.toBe(1);
+    expect(await store.list()).toEqual([]);
+  });
+  it("does not treat an unreadable target trace as an already completed deletion", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-forget-unreadable-"));
+    const store = new ModelTraceStore(root); await store.record(successfulTraceInput());
+    vi.mocked(readFile).mockRejectedValueOnce(Object.assign(new Error("synthetic trace read failure"), { code: "EACCES" }));
+    await expect(store.deleteRequest("request-1")).rejects.toThrow();
+    await expect(store.deleteRequest("request-1")).resolves.toBe(1);
+  });
+  it("reports deletion failure even when the matching trace has expired", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-forget-expired-"));
+    let now = new Date("2026-11-15T00:00:00Z");
+    const store = new ModelTraceStore(root, { now: () => now }); await store.record(successfulTraceInput());
+    now = new Date("2026-11-23T00:00:00Z");
+    vi.mocked(unlink).mockRejectedValueOnce(Object.assign(new Error("synthetic expired trace deletion failure"), { code: "EACCES" }));
+    await expect(store.deleteRequest("request-1")).rejects.toThrow();
+    await expect(store.deleteRequest("request-1")).resolves.toBe(1);
+  });
+  it("does not claim forgetting is complete while an interrupted trace file is unreadable", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-forget-temporary-"));
+    const store = new ModelTraceStore(root); const trace = await store.record(successfulTraceInput());
+    const path = join(root, `${createHash('sha256').update(trace.traceId).digest('hex')}.json`);
+    await unlink(path);
+    await writeFile(`${path}.${randomUUID()}.tmp`, '{"requestId":"request-1","input":');
+    await expect(store.deleteRequest("request-1")).rejects.toThrow();
+  });
+  it("clears a matching valid trace that was previously set aside", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-forget-quarantine-"));
+    const store = new ModelTraceStore(root); const trace = await store.record(successfulTraceInput());
+    const filename = `${createHash('sha256').update(trace.traceId).digest('hex')}.json`;
+    await rename(join(root, filename), join(root, 'quarantine', `${filename}.corrupt-${Date.now()}-${randomUUID()}`));
+    await expect(store.deleteRequest("request-1")).resolves.toBe(1);
+    expect(await readdir(join(root, 'quarantine'))).toEqual([]);
+  });
+  // R15-JEVSET: a purpose and a backend added to the protocol leave the records written before them readable.
+  it("still reads a trace written before the decisions backend, beside one of its own", async () => {
+    const root = await mkdtemp(join(tmpdir(), "trace-legacy-"));
+    const legacy = {
+      version: 1, traceId: "legacy-trace", requestId: "legacy-request", attemptId: "legacy-attempt", attemptIndex: 0,
+      purpose: "pr-review", contentMode: "metadata-only",
+      profile: { profileId: "remote-openai", backend: "openai", provider: "OpenAI", model: "gpt-test", promptVersion: "p", schemaVersion: "s" },
+      usage: { source: "provider_reported", inputTokens: 10, outputTokens: 2, totalTokens: 12, costUsd: 0.001 },
+      timing: { queuedMs: 0, providerMs: 20, totalMs: 20 }, status: "succeeded",
+      createdAt: new Date(Date.now() - 60_000).toISOString(), expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    };
+    const store = new ModelTraceStore(root, { contentMode: () => "metadata-only" });
+    await store.list();
+    await writeFile(join(root, `${createHash("sha256").update("legacy-trace", "utf8").digest("hex")}.json`), JSON.stringify(legacy), { mode: 0o600 });
+    await store.record(successfulTraceInput({ purpose: "structured-judgment", profile: { profileId: "jev", backend: "openrouter-decisions", provider: "jev", model: "typesafe/jev-1.14", promptVersion: "decisions-alpha", schemaVersion: "decisions-alpha" } }));
+    const traces = await new ModelTraceStore(root).list();
+    expect(traces.map((trace) => [trace.purpose, trace.profile.backend]).sort()).toEqual([["pr-review", "openai"], ["structured-judgment", "openrouter-decisions"]]);
+  });
   it("retains the call's peak and cache price snapshot across a metadata-only reload", async () => {
     const root = await mkdtemp(join(tmpdir(), "trace-price-snapshot-"));
     const pricing = { currency: "¥", inputPerMillion: 1, cachedInputPerMillion: 0.02, outputPerMillion: 4, peak: { inputPerMillion: 2, cachedInputPerMillion: 0.04, outputPerMillion: 8, holidayYear: 2026, holidays: ["2026-10-01"] } };

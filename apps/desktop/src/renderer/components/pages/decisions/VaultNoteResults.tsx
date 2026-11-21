@@ -272,7 +272,10 @@ export const VaultNoteResults = ({ api, query }: VaultNoteResultsProps) => {
             ? `${indexedNotes} 篇已索引`
             : searching
               ? "正在查找…"
-              : hasSearched
+              // Not searched is not none found: the count waits for a search that works.
+              : searchError !== null && !hasSearched
+                ? "—"
+                : hasSearched
                 ? `${results.length} 篇笔记`
                 : firstIndexing
                   ? "首次索引完成前请稍候"
@@ -314,23 +317,32 @@ export const VaultNoteResults = ({ api, query }: VaultNoteResultsProps) => {
           </button>
         </section>
 
+        {/* Said as every failure on these pages is: a line in the danger colour, a search's with its retry after it. */}
         {statusError === null ? null : (
-          <p className="error-message obsidian-status-error" role="alert">
+          <p className="form-error obsidian-status-error" role="alert">
             {statusError}
           </p>
         )}
         {searchError === null ? null : (
-          <p className="error-message obsidian-search-error" role="alert">
+          <p className="load-failure obsidian-search-error" role="alert">
             {searchError}
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={searching || query.trim().length === 0}
+              onClick={() => void runSearch(query.trim())}
+            >
+              重试
+            </button>
           </p>
         )}
         {rebuildError === null ? null : (
-          <p className="error-message obsidian-rebuild-error" role="alert">
+          <p className="form-error obsidian-rebuild-error" role="alert">
             {rebuildError}
           </p>
         )}
         {openError === null ? null : (
-          <p className="error-message obsidian-open-error" role="alert">
+          <p className="form-error obsidian-open-error" role="alert">
             {openError}
           </p>
         )}
@@ -392,7 +404,7 @@ export const VaultNoteResults = ({ api, query }: VaultNoteResultsProps) => {
             <p className="obsidian-search-instruction">
               首次索引完成前请稍候。
             </p>
-          ) : (
+          ) : searchError !== null ? null : (
             <p className="obsidian-search-instruction">
               上方的关键词同时搜索决策与笔记。
             </p>

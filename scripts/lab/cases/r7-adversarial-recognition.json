@@ -1,0 +1,322 @@
+[
+  {
+    "id": "R7IR-001",
+    "group": "discussion",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 needs a restart window.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "提及选项约束，没有选择承诺。"
+  },
+  {
+    "id": "R7IR-002",
+    "group": "discussion",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 需要先完成压测，我们还在讨论。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "讨论条件，没有选择。"
+  },
+  {
+    "id": "R7IR-003",
+    "group": "condition",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "If option 2 passes the load test, we could consider it.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "条件假设而非承诺。"
+  },
+  {
+    "id": "R7IR-004",
+    "group": "condition",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Would you choose option 2 if the budget is approved?",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "条件疑问。"
+  },
+  {
+    "id": "R7IR-005",
+    "group": "evaluation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is faster than option 1.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "单纯评价比较。"
+  },
+  {
+    "id": "R7IR-006",
+    "group": "evaluation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "我觉得 2 更稳，但还要看看成本。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "评价并继续讨论。"
+  },
+  {
+    "id": "R7IR-007",
+    "group": "mention",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The migration note mentions option 2 as an example.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "文档纯提及。"
+  },
+  {
+    "id": "R7IR-008",
+    "group": "mention",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 appears in the screenshot, not as our choice.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "界面/截图提及。"
+  },
+  {
+    "id": "R7IR-009",
+    "group": "question",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Should we pick 2, or do another benchmark first?",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "开放问题，没有决定。"
+  },
+  {
+    "id": "R7IR-010",
+    "group": "defer",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "先不定 2，等安全评审结束再说。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "明确暂缓。"
+  },
+  {
+    "id": "R7IR-011",
+    "group": "negation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I do not approve option 2 yet.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "否定批准。"
+  },
+  {
+    "id": "R7IR-012",
+    "group": "current-state",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Production still runs option 2; this is only a status update.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "描述现状。"
+  },
+  {
+    "id": "R7IR-013",
+    "group": "partial-mention",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 is approved in the draft, pending review; no final decision.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "草稿状态且待审。"
+  },
+  {
+    "id": "R7IR-014",
+    "group": "comparison",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 may be preferable to 3, but I am only comparing them.",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "偏好语句受比较限定。"
+  },
+  {
+    "id": "R7IR-015",
+    "group": "pure-evaluation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "选项 2 的风险比 1 低。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "纯评价。"
+  },
+  {
+    "id": "R7IR-016",
+    "group": "read-request",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "请检查第 2 项的迁移步骤。",
+    "decision": false,
+    "expectedSelected": [],
+    "attack": "查看请求。"
+  },
+  {
+    "id": "R7IR-017",
+    "group": "selection",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Choose option 2 for the migration.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "明确选择。"
+  },
+  {
+    "id": "R7IR-018",
+    "group": "selection",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "选 2，按这个方案推进。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "明确选择并行动。"
+  },
+  {
+    "id": "R7IR-019",
+    "group": "approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I approve option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "明确批准。"
+  },
+  {
+    "id": "R7IR-020",
+    "group": "approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "批准第 2 项，今天开始实施。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "明确批准和实施。"
+  },
+  {
+    "id": "R7IR-021",
+    "group": "commitment",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "We will use PostgreSQL, option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "未来承诺并映射选项。"
+  },
+  {
+    "id": "R7IR-022",
+    "group": "commitment",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 it is; proceed with rollout.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "口语确定表达。"
+  },
+  {
+    "id": "R7IR-023",
+    "group": "partial-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 2 is approved, but only for the staging environment.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "部分批准仍是决定。"
+  },
+  {
+    "id": "R7IR-024",
+    "group": "partial-approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "我同意先在灰度环境采用 2，生产另议。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "范围受限但已有决定。"
+  },
+  {
+    "id": "R7IR-025",
+    "group": "selection",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "I choose 3 over 2.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ],
+    "attack": "明确排除另一项并选定。"
+  },
+  {
+    "id": "R7IR-026",
+    "group": "selection",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "不要 1，采用 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "否定后明确选择。"
+  },
+  {
+    "id": "R7IR-027",
+    "group": "implementation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Set the new service to option 2 now.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "明确配置指令。"
+  },
+  {
+    "id": "R7IR-028",
+    "group": "implementation",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "请把生产切换到第 2 项。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "明确执行决定。"
+  },
+  {
+    "id": "R7IR-029",
+    "group": "approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "Option 3 is approved for the next release.",
+    "decision": true,
+    "expectedSelected": [
+      "3"
+    ],
+    "attack": "带时间范围的批准。"
+  },
+  {
+    "id": "R7IR-030",
+    "group": "commitment",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "We are going with 2, subject to the agreed date.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "有前提但承诺选项。"
+  },
+  {
+    "id": "R7IR-031",
+    "group": "selection",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "The final choice is option 2.",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "最终选择陈述。"
+  },
+  {
+    "id": "R7IR-032",
+    "group": "approval",
+    "assistantText": "1. Keep Redis\n2. Use PostgreSQL\n3. Switch to SQLite\n\nWhich option should we choose?",
+    "userText": "2 更稳，就用 2。",
+    "decision": true,
+    "expectedSelected": [
+      "2"
+    ],
+    "attack": "评价后紧跟采用行动。"
+  }
+]

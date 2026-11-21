@@ -2,6 +2,7 @@ import type { PendingDecisionAnalysis } from "@cognelis/decision-core";
 import {
   capturedDecisionContextSchema,
   capturedOptionSchema,
+  sourceClientSchema,
   type CapturedDecisionContext,
 } from "@cognelis/decision-protocol";
 import { renameReplacing } from "@cognelis/decision-storage";
@@ -18,7 +19,8 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 
-export type TextCaptureClient = "claude-code" | "codex";
+/** A client's id, as the registry names it. */
+export type TextCaptureClient = string;
 
 export interface LegacyPendingTextQuestion {
   version: 1;
@@ -109,6 +111,12 @@ const pendingKey = (
     .update(`${client}:${sessionId}`, "utf8")
     .digest("hex");
 
+/** Every version a pending turn on disk may carry, an older bridge's included. */
+const knownDetectorVersion = (
+  value: unknown,
+): value is PendingDecisionAnalysis["detectorVersion"] =>
+  value === "rules-v1" || value === "rules-v2" || value === "rules-v3" || value === "rules-v4" || value === "rules-v5" || value === "rules-v6" || value === "rules-v7" || value === "rules-v8" || value === "rules-v9" || value === "rules-v10";
+
 const parseAnalysis = (value: unknown): PendingDecisionAnalysis => {
   if (
     typeof value !== "object" ||
@@ -142,7 +150,7 @@ const parseAnalysis = (value: unknown): PendingDecisionAnalysis => {
         signal.length <= 100,
     ) ||
     input.signals.length > 32 ||
-    input.detectorVersion !== "rules-v1"
+    !knownDetectorVersion(input.detectorVersion)
   ) {
     throw new Error("Pending text analysis is invalid");
   }
@@ -152,7 +160,7 @@ const parseAnalysis = (value: unknown): PendingDecisionAnalysis => {
     ...(context === undefined ? {} : { context }),
     preScore: input.preScore as number,
     signals: [...input.signals] as string[],
-    detectorVersion: "rules-v1",
+    detectorVersion: input.detectorVersion,
   };
 };
 
@@ -169,8 +177,8 @@ const normalizePending = (value: unknown): PendingAssistantTurn => {
     (input.version !== 1 &&
       input.version !== 2 &&
       input.version !== 3) ||
-    (input.sourceClient !== "claude-code" &&
-      input.sourceClient !== "codex") ||
+    typeof input.sourceClient !== "string" ||
+    !sourceClientSchema.safeParse(input.sourceClient).success ||
     typeof input.sessionId !== "string" ||
     input.sessionId.length === 0 ||
     input.sessionId.length > 500 ||

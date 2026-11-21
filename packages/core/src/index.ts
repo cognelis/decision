@@ -31,6 +31,13 @@ export {
   prCommentSemanticKey,
   RESERVED_SECTION_TEXT,
 } from "./record.js";
+export {
+  defaultReviewSchedule,
+  REVIEW_SCHEDULE_DAYS,
+  REVIEW_SCHEDULE_REASON_LABELS,
+  reviewScheduleReasons,
+} from "./review-schedule.js";
+export type { ReviewScheduleReason } from "./review-schedule.js";
 export type {
   DecisionRecord,
   DecisionRecordSourceClient,
@@ -198,11 +205,13 @@ export {
   rationaleFactorLabel,
 } from "./rationale-factors.js";
 
-export { TextDecisionAnalyzer, isCompletedDecisionStatus } from "./text-decision-analyzer.js";
+export { answersNumbersNotAsked, QUESTION_LOCATED_PAST_CLOSING, TextDecisionAnalyzer, ruleReading, isCompletedDecisionStatus, readReply, selectedOptions } from "./text-decision-analyzer.js";
 export type {
   CompletedDecisionAnalysis,
   DecisionBand,
   DecisionTurnExcerpt,
+  OptionVerdict,
+  ReplyReading,
   PendingDecisionAnalysis,
 } from "./text-decision-analyzer.js";
 
@@ -217,3 +226,64 @@ export type {
 export { assessDecisionApplicability } from "./decision-applicability.js";
 export { buildDecisionLifecycle, decisionReferenceKey, decisionRelationKey, canonicalDecisionRelation, decisionRelationState } from "./decision-lifecycle.js";
 export type { DecisionLifecycleDocument } from "./decision-lifecycle.js";
+
+export { recommendationFollow, stripRecommendationMarker } from "./recommendation.js";
+export type { RecommendationAnswer } from "./recommendation.js";
+
+export {
+  TODO_STATUS_LABELS,
+  appendTodoItems,
+  changeTodoItem,
+  changeTodoItems,
+  deleteTodoItems,
+  createTodoList,
+  legacyRecorded,
+  moveTodoItem,
+  nextTodoNumber,
+  receiveTodoItems,
+  recordedTodoStatus,
+  removeMovedTodoItems,
+  setTodoListLongTerm,
+  todoCounts,
+  todoItemPending,
+  todoItemView,
+  todoListKey,
+  todoListNameKey,
+  todoListPending,
+  todoListView,
+  todoTitleKey,
+  updateTodoListSettings,
+  withObsidianChanges,
+} from "./todo.js";
+export { TodoDependencies } from "./todo-dependencies.js";
+export type {
+  MovedTodoItem,
+  TodoAppendResult,
+  TodoBatchChange,
+  TodoBatchResult,
+  TodoChangeOutcome,
+  TodoItemChangeInput,
+  TodoItemFields,
+  TodoItemRecord,
+  TodoListDraft,
+  TodoListNote,
+  TodoListRecord,
+  TodoListSource,
+} from "./todo.js";
+export {
+  createHistoricalDecision,
+  HISTORICAL_DECISION_REFUSALS,
+  historicalDecisionLink,
+  planHistoricalDecisionRecord,
+  planHistoricalDecisionUpdate,
+  HISTORICAL_REVERSIBILITY_LABELS,
+  HISTORICAL_SOURCE_LABELS,
+  HISTORICAL_STATUS_LABELS,
+  historicalChangeSummary,
+  historicalDecisionKey,
+  localCalendarDate,
+  relatedNoteLink,
+  reviseHistoricalDecision,
+  supersedesLoop,
+} from "./historical-decision.js";
+export type { HistoricalDecisionRecordPlan, HistoricalDecisionRevision, HistoricalDecisionUpdatePlan } from "./historical-decision.js";

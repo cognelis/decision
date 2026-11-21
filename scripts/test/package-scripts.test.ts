@@ -51,7 +51,8 @@ describe("root quality scripts", () => {
 
   it("keeps passing checks separate from semantic readiness", () => {
     expect(packageDocument.scripts).toMatchObject({
-      check: "npm run typecheck && npm test",
+      lint: "node scripts/lint-model-network.mjs",
+      check: "npm run lint && npm run typecheck && npm test",
       "check:semantic": "npm run evaluate:semantic",
       "report:semantic": "npm run evaluate:semantic -- --report-only",
     });
@@ -80,7 +81,6 @@ describe("root quality scripts", () => {
       const command = packageDocument.scripts?.[script];
       expect(command).toContain("npm run build:native");
       expect(command).not.toContain("build:foundation-helper");
-      expect(command).not.toContain("build:liquid-glass");
     },
   );
 

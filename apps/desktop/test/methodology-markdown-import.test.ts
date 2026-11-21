@@ -208,7 +208,7 @@ version: 1
 # 缺少内部结构`,
       }),
     // Its reason in words: the parser's English ("Methodology note … is invalid") went on to the page.
-    ).toThrow("Decision 方法论文件结构不完整：有属性的值不是 Decision 能读的格式");
+    ).toThrow("Paraself 方法论文件结构不完整：有属性的值不是 Paraself 能读的格式");
   });
 
   it("reads only bounded regular Markdown files and rejects symlinks", async () => {

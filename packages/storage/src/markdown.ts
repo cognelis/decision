@@ -10,10 +10,12 @@ import type {
   RecordSensitivity,
   RecordedDecisionOption,
   SelectedAnswer,
+  ReviewScheduleReason,
   SourceForm,
 } from "@cognelis/decision-core";
-import { rationaleFactorLabel, RESERVED_SECTION_TEXT } from "@cognelis/decision-core";
+import { rationaleFactorLabel, RESERVED_SECTION_TEXT, REVIEW_SCHEDULE_REASON_LABELS } from "@cognelis/decision-core";
 import {
+  CONTEXT_SUMMARY_LINES,
   decisionOutcomeStateSchema,
   captureModeSchema,
   capturedAnswerSchema,
@@ -142,6 +144,22 @@ const NO_OUTCOME_REVIEW = "（尚未复盘）";
 const DEFERRED_RATIONALE = "（稍后补充）";
 const NO_OUTCOME_LESSON = "（未填写复盘经验）";
 const NO_EXPECTED_OUTCOME = "（尚未记录）";
+const NO_OPTIONS = "（原生问答未提供预设方案）";
+const SKIPPED_RATIONALE = "（已跳过）";
+
+/**
+ * The lines every decision note holds whatever was decided, each as a whole line as written: its headings, and the
+ * placeholders standing where nothing is recorded yet, with the App's lines around an adopted summary of its context
+ * (CONTEXT_SUMMARY_LINES). `steps`: the headings of what follows a decision (what was expected, what came of it, the
+ * review), which say the step was taken once anything of the reader's stands under them. Searched as what a note
+ * says, the rest made every decision a match for 选择, 方案, 理由 and 上下文.
+ */
+export const DECISION_NOTE_TEMPLATE = {
+  headings: new Set(["# 决策点", "## 可选方案", "## 我的选择", "## 判断依据", "## 我的理由（原文）", "## 当时上下文", TASK_BACKGROUND_HEADING, DECISION_FRAMING_HEADING]),
+  steps: new Set(["## 预期结果", "## 后续结果", "## 复盘结论", "### 评价", "### 复盘经验"]),
+  placeholders: new Set([NO_OPTIONS, NO_NATIVE_CONTEXT, NO_ORIGINAL_RATIONALE, DEFERRED_RATIONALE, SKIPPED_RATIONALE, NO_EXPECTED_OUTCOME, NO_OUTCOME_REVIEW, NO_OUTCOME_LESSON,
+    ...Object.values(CONTEXT_SUMMARY_LINES)]),
+} as const;
 const DECISION_TYPES: readonly DecisionType[] = [
   "architecture",
   "scope",
@@ -293,14 +311,34 @@ const validCalendarDate = (value: string): boolean =>
   /^\d{4}-\d{2}-\d{2}$/u.test(value) &&
   new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
 
+/**
+ * The marker holds the choice in the shape every version reads: kind and
+ * values only. The reply it was read from is written as text under the choice
+ * instead, so a note written here still opens in a version without `reply`.
+ */
 const encodeSelection = (selection: SelectedAnswer): string =>
-  Buffer.from(JSON.stringify(selection), "utf8").toString("base64url");
+  Buffer.from(
+    JSON.stringify({ kind: selection.kind, values: selection.values }),
+    "utf8",
+  ).toString("base64url");
+
+const REPLY_LABEL = "原话：";
+
+/** The reply written under a choice read off it, if the note has one. */
+const replyUnder = (section: string, answer: SelectedAnswer): string | undefined => {
+  if (answer.kind === "custom") return undefined;
+  const lead = `## 我的选择\n\n${escapeNoteText(readableAnswer(answer))}\n\n${REPLY_LABEL}`;
+  if (!section.startsWith(lead)) return undefined;
+  const reply = unescapeNoteText(section.slice(lead.length)).trim();
+  return reply.length > 0 ? reply : undefined;
+};
 
 const decodeSelection = (body: string): SelectedAnswer => {
   // The marker under 我的选择: one earlier in the note, in an option an agent wrote, is not the user's choice.
   const chosen = /^## 我的选择$/mu.exec(body)?.index ?? 0;
-  const encoded = body.slice(chosen).match(SELECTION_MARKER)?.[1];
-  if (encoded === undefined) {
+  const marker = SELECTION_MARKER.exec(body.slice(chosen));
+  const encoded = marker?.[1];
+  if (marker === null || encoded === undefined) {
     throw new Error("Decision note is missing its selection marker");
   }
   const value = JSON.parse(
@@ -308,10 +346,9 @@ const decodeSelection = (body: string): SelectedAnswer => {
   ) as unknown;
   const parsed = capturedAnswerSchema.safeParse(value);
   if (parsed.success) {
-    return {
-      kind: parsed.data.kind,
-      values: [...parsed.data.values],
-    };
+    const answer = { ...parsed.data, values: [...parsed.data.values] };
+    const reply = replyUnder(body.slice(chosen, chosen + marker.index), answer);
+    return reply === undefined || answer.kind === "custom" ? answer : { ...answer, reply };
   }
   if (
     typeof value === "object" &&
@@ -341,9 +378,15 @@ const decodeSelection = (body: string): SelectedAnswer => {
 const readableAnswer = (answer: SelectedAnswer): string =>
   answer.values.join("、");
 
+/** The reply the options were read from, kept under them in the reader's words. */
+const replyLine = (answer: SelectedAnswer): string =>
+  answer.kind === "custom" || answer.reply === undefined
+    ? ""
+    : `\n${REPLY_LABEL}${escapeNoteText(answer.reply)}\n`;
+
 const readableOptions = (record: DecisionRecord): string =>
   record.options.length === 0
-    ? "（原生问答未提供预设方案）"
+    ? NO_OPTIONS
     : record.options.map((option) => {
       const tradeoffs =
         option.tradeoffs.length === 0
@@ -366,7 +409,7 @@ const rationaleBody = (record: DecisionRecord): string => {
   }
   return record.rationaleStatus === "captured"
     ? NO_ORIGINAL_RATIONALE
-    : "（已跳过）";
+    : SKIPPED_RATIONALE;
 };
 
 const rationaleFactorsSection = (record: DecisionRecord): string =>
@@ -428,6 +471,7 @@ export const serializeDecision = (record: DecisionRecord): string => {
   const properties = {
     id: record.id,
     created: record.created,
+    ...(record.confirmedAt === undefined ? {} : { confirmed_at: record.confirmedAt }),
     status: record.status,
     source_client: record.sourceClient,
     source_kind: record.sourceKind ?? null,
@@ -447,6 +491,8 @@ export const serializeDecision = (record: DecisionRecord): string => {
     capture_score: record.detection?.score ?? null,
     capture_detector:
       record.detection?.detectorVersion ?? null,
+    // Only when the capture had them: every other note keeps its exact text.
+    ...(record.detection?.signals === undefined ? {} : { capture_signals: record.detection.signals }),
     context_truncated: record.context?.truncated ?? null,
     llm_recommendation: record.llmRecommendation,
     rationale_status: record.rationaleStatus,
@@ -460,6 +506,8 @@ export const serializeDecision = (record: DecisionRecord): string => {
     ),
     supersedes: record.supersedes,
     review_due_date: record.reviewDueDate,
+    // Only on a decision scheduled as it was written (IMP-123): every other note stays as it always was.
+    ...(record.reviewScheduleReasons?.length ? { review_schedule_reasons: record.reviewScheduleReasons } : {}),
     outcome_verdict: record.outcomeReview?.verdict ?? null,
     outcome_reviewed_at: record.outcomeReview?.reviewedAt ?? null,
     outcome_lesson_present: record.outcomeReview?.lesson !== null,
@@ -493,7 +541,7 @@ ${optionsJson}
 ## 我的选择
 
 ${escapeNoteText(readableAnswer(record.selectedAnswer))}
-
+${replyLine(record.selectedAnswer)}
 <!-- decision:selection-base64 ${selectionMarker} -->
 
 ${rationaleFactorsSection(record)}## 我的理由（原文）
@@ -561,6 +609,7 @@ const resolveDeferredRationaleMarkdown = (
 
   const frontmatter = withProperties(markdown.slice(4, boundary), {
     status: resolution.status,
+    confirmed_at: new Date().toISOString(),
     rationale_status: resolution.rationaleStatus,
     rationale_original_present: resolution.rationaleOriginalPresent,
     reason_factors: resolution.reasonFactors,
@@ -599,7 +648,7 @@ export const skipDeferredRationaleMarkdown = (
     rationaleStatus: "skipped",
     rationaleOriginalPresent: false,
     reasonFactors: [],
-    rationale: "（已跳过）",
+    rationale: SKIPPED_RATIONALE,
   });
 
 /**
@@ -1077,10 +1126,15 @@ const parseDetection = (
       "Decision note capture detection metadata is invalid",
     );
   }
+  const signals = properties.capture_signals;
   return {
     band,
     score: score as number,
     detectorVersion,
+    // Bounded as a capture's own are (32, each up to 100 characters): a hand-edited list is read no further.
+    ...(Array.isArray(signals)
+      ? { signals: signals.filter((signal): signal is string => typeof signal === "string" && signal.length <= 100).slice(0, 32) }
+      : {}),
   };
 };
 
@@ -1153,8 +1207,17 @@ export const noteProblem = (message: string): string => {
   const section = /missing (?:its )?section (## \S+)/u.exec(message)?.[1];
   if (section !== undefined) return `缺少「${section}」一节`;
   if (/missing|unterminated/u.test(message)) return "App 写的某一节或它的标记被删改了";
-  if (/property|invalid|must be/u.test(message)) return "有属性的值不是 Decision 能读的格式";
-  return "不是 Decision 能读的笔记格式";
+  if (/property|invalid|must be/u.test(message)) return "有属性的值不是 Paraself 能读的格式";
+  return "不是 Paraself 能读的笔记格式";
+};
+
+/** Reasons this version knows; one a later version wrote is left out rather than the note refused. */
+const reviewScheduleOf = (properties: Record<string, unknown>): Pick<DecisionRecord, "reviewScheduleReasons"> => {
+  const value = properties.review_schedule_reasons;
+  const reasons = Array.isArray(value)
+    ? value.filter((reason): reason is ReviewScheduleReason => typeof reason === "string" && Object.hasOwn(REVIEW_SCHEDULE_REASON_LABELS, reason))
+    : [];
+  return reasons.length === 0 ? {} : { reviewScheduleReasons: reasons };
 };
 
 export const parseDecision = (note: string): DecisionRecord => {
@@ -1387,6 +1450,10 @@ export const parseDecision = (note: string): DecisionRecord => {
     throw new Error(`created 不是有效的日期时间：${typedCreated}`);
   }
   const created = createdAt.toISOString();
+  const confirmedAt = nullableString(properties, "confirmed_at");
+  if (confirmedAt !== null && !Number.isFinite(Date.parse(confirmedAt))) {
+    throw new Error("Decision note confirmed_at must be an ISO date time");
+  }
   const sensitivityValue = nullableString(properties, "sensitivity") ?? "private";
   if (!RECORD_SENSITIVITIES.some((value) => value === sensitivityValue)) {
     throw new Error(`Decision note has invalid sensitivity: ${sensitivityValue}`);
@@ -1395,6 +1462,7 @@ export const parseDecision = (note: string): DecisionRecord => {
   return {
     id: requiredString(properties, "id"),
     created,
+    ...(confirmedAt === null ? {} : { confirmedAt: new Date(confirmedAt).toISOString() }),
     status: writtenByHand === null ? status as PersistedDecisionStatus : "completed",
     sourceClient,
     project: requiredString(properties, "project"),
@@ -1430,6 +1498,7 @@ export const parseDecision = (note: string): DecisionRecord => {
     ),
     supersedes: nullableString(properties, "supersedes"),
     reviewDueDate,
+    ...reviewScheduleOf(properties),
     outcome,
     outcomeReview,
     sourceKind: sourceKindValue as ProactiveSourceKind | null,
@@ -1673,7 +1742,7 @@ export class MarkdownRepository {
   async updateDeferredRationale(
     id: string,
     input: DeferredRationaleUpdate,
-  ): Promise<ParsedStoredNote> {
+  ): Promise<ParsedStoredNote & { previousContentHash: string }> {
     const matches = await this.#notesHolding(id);
     if (matches.length === 0) {
       throw new DecisionLifecycleWriteError("source_unavailable");
@@ -1688,10 +1757,10 @@ export class MarkdownRepository {
     const source = await readFile(note.path, "utf8");
     const content = inFormOf(source, updateDeferredRationaleMarkdown(normalizedNote(source), input));
     await this.#writeContent(note.path, content, note.contentHash);
-    return this.read(note.path);
+    return { ...(await this.read(note.path)), previousContentHash: note.contentHash };
   }
 
-  async skipDeferredRationale(id: string): Promise<ParsedStoredNote> {
+  async skipDeferredRationale(id: string): Promise<ParsedStoredNote & { previousContentHash: string }> {
     const matches = await this.#notesHolding(id);
     if (matches.length === 0) {
       throw new DecisionLifecycleWriteError("source_unavailable");
@@ -1706,7 +1775,7 @@ export class MarkdownRepository {
     const source = await readFile(note.path, "utf8");
     const content = inFormOf(source, skipDeferredRationaleMarkdown(normalizedNote(source)));
     await this.#writeContent(note.path, content, note.contentHash);
-    return this.read(note.path);
+    return { ...(await this.read(note.path)), previousContentHash: note.contentHash };
   }
 
   async deferredLocalCopy(id: string, input: { rationale?: string; reasonFactors?: string[] }): Promise<ParsedStoredNote & { content: string }> {
@@ -1719,7 +1788,7 @@ export class MarkdownRepository {
     const captured = Boolean(rationale || factors.length || note.record.appliedPrincipleIds.length);
     const content = inFormOf(source, resolveDeferredRationaleMarkdown(normalizedNote(source), {
       status: captured ? "completed" : "rationale_skipped", rationaleStatus: captured ? "captured" : "skipped",
-      rationaleOriginalPresent: Boolean(rationale), rationale: rationale ?? "（已跳过）", reasonFactors: factors,
+      rationaleOriginalPresent: Boolean(rationale), rationale: rationale ?? SKIPPED_RATIONALE, reasonFactors: factors,
     }));
     return { ...note, record: parseDecision(content), content };
   }
@@ -1728,6 +1797,23 @@ export class MarkdownRepository {
     const matches = await this.#notesHolding(id);
     if (matches.length > 1) throw new Error(`有多篇笔记使用同一编号（${id}），请先处理重复笔记。`);
     return matches[0] ?? null;
+  }
+
+  /** The same writer/version guard as edits; the OS owns recovery from its trash. */
+  trashDecision(id: string, expectedContentHash: string, trashItem: (path: string) => Promise<void>): Promise<ParsedStoredNote> {
+    const deletion = this.#lifecycleTail.then(async () => {
+      const note = await this.findDecision(id);
+      if (note === null) throw new DecisionLifecycleWriteError("source_unavailable");
+      const move = this.#writeTail.then(async () => {
+        await this.#checkVersion(note.path, expectedContentHash);
+        await trashItem(note.path);
+        return note;
+      });
+      this.#writeTail = move.catch(() => undefined);
+      return move;
+    });
+    this.#lifecycleTail = deletion.catch(() => undefined);
+    return deletion;
   }
 
   async deleteDeferredRationale(id: string, expectedContentHash?: string): Promise<ParsedStoredNote> {
@@ -1748,7 +1834,7 @@ export class MarkdownRepository {
   }
 
   /** `basis`: the note's hash when the editor was opened; changed since (in Obsidian), the write is refused. */
-  async updateOutcome(id: string, outcome: string, basis?: string): Promise<ParsedStoredNote> {
+  async updateOutcome(id: string, outcome: string, basis?: string): Promise<ParsedStoredNote & { previousContentHash: string }> {
     return this.updateLifecycle(id, { outcome }, basis, false);
   }
 
@@ -1756,21 +1842,21 @@ export class MarkdownRepository {
     id: string,
     expectedOutcome: string,
     basis?: string,
-  ): Promise<ParsedStoredNote> {
+  ): Promise<ParsedStoredNote & { previousContentHash: string }> {
     return this.updateLifecycle(id, { expectedOutcome }, basis, false);
   }
 
   async updateReviewDueDate(
     id: string,
     reviewDueDate: string | null,
-  ): Promise<ParsedStoredNote> {
+  ): Promise<ParsedStoredNote & { previousContentHash: string }> {
     return this.updateLifecycle(id, { reviewDueDate });
   }
 
   async updateAppliedPrinciples(
     id: string,
     input: AppliedPrinciplesUpdate,
-  ): Promise<ParsedStoredNote> {
+  ): Promise<ParsedStoredNote & { previousContentHash: string }> {
     const matches = await this.#notesHolding(id);
     if (matches.length === 0) {
       throw new DecisionLifecycleWriteError("source_unavailable");
@@ -1782,14 +1868,14 @@ export class MarkdownRepository {
     const source = await readFile(note.path, "utf8");
     const content = inFormOf(source, updateDecisionAppliedPrinciplesMarkdown(normalizedNote(source), input));
     await this.#writeContent(note.path, content, note.contentHash);
-    return this.read(note.path);
+    return { ...(await this.read(note.path)), previousContentHash: note.contentHash };
   }
 
   async updateOutcomeReview(
     id: string,
     input: OutcomeReviewUpdate,
     basis?: string,
-  ): Promise<ParsedStoredNote> {
+  ): Promise<ParsedStoredNote & { previousContentHash: string }> {
     return this.updateLifecycle(id, { review: input }, basis, false);
   }
 
@@ -1802,7 +1888,7 @@ export class MarkdownRepository {
     input: DecisionLifecycleUpdate,
     expectedContentHash?: string,
     reviewMustBeAcknowledged = expectedContentHash !== undefined,
-  ): Promise<ParsedStoredNote> {
+  ): Promise<ParsedStoredNote & { previousContentHash: string }> {
     const write = this.#lifecycleTail.then(() => this.#updateLifecycle(id, input, expectedContentHash, reviewMustBeAcknowledged));
     this.#lifecycleTail = write.catch(() => undefined);
     return write;
@@ -1813,7 +1899,7 @@ export class MarkdownRepository {
     input: DecisionLifecycleUpdate,
     expectedContentHash: string | undefined,
     reviewMustBeAcknowledged: boolean,
-  ): Promise<ParsedStoredNote> {
+  ): Promise<ParsedStoredNote & { previousContentHash: string }> {
     // A failed scan must not hide a duplicate identifier; but only what could be this decision stops the
     // write: a folder that cannot be listed, a file it cannot read whose name carries this decision's
     // identifier, a note too large to edit or no decision at all whose `id:` line names this one. Other
@@ -1891,7 +1977,7 @@ export class MarkdownRepository {
     // As the file holds it: the vault read decodes past a BOM, and a write from the version it read is checked anyway.
     const written = content === original ? content : inFormOf(await readFile(note.path, "utf8").catch(() => note.content), content);
     if (content !== original) await this.#writeContent(note.path, written, note.contentHash);
-    return { id, path: note.path, contentHash: content === original ? note.contentHash : sha256(written), record };
+    return { id, path: note.path, contentHash: content === original ? note.contentHash : sha256(written), previousContentHash: note.contentHash, record };
   }
 
   #writeContent(target: string, content: string, expectedHash?: string): Promise<void> {

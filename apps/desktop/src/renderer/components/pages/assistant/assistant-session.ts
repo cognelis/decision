@@ -1,6 +1,9 @@
 import {
   assistantFeedbackRatingSchema,
   assistantMessageSchema,
+  onboardingEntrySchema,
+  onboardingSessionIdSchema,
+  type OnboardingEntry,
   retrievalAnswerCitationSchema,
   type AssistantFeedbackRating,
   type RetrievalAnswerCitation,
@@ -42,6 +45,11 @@ export interface AssistantConversation {
   draft: string;
   /** The rating given each answer, by turn: kept with the conversation, it was offered again after a restart. */
   ratings?: Record<string, AssistantFeedbackRating> | undefined;
+  /**
+   * A 接入新工具 conversation's own: what was said in it. Such a conversation searches nothing and is rated by no one;
+   * its card lives in memory alone, as the App's side of it does.
+   */
+  onboarding?: { sessionId: string | null; entries: OnboardingEntry[]; ended?: boolean | undefined } | undefined;
 }
 
 export interface AssistantSessions {
@@ -72,6 +80,10 @@ export const conversationTitle = (
     (message) => message.role === "user",
   );
   const content = opening?.content ?? conversation.draft;
+  if (conversation.onboarding !== undefined && opening === undefined) {
+    const first = conversation.onboarding.entries.find((entry) => entry.role === "user")?.text;
+    return first === undefined ? "接入新工具" : `接入：${first.length <= 20 ? first : `${clipText(first, 19)}…`}`;
+  }
   if (content.trim().length === 0) return "新对话";
   const text = `${opening === undefined ? "草稿：" : ""}${content.trim().replace(/\s+/gu, " ")}`;
   return text.length <= 24 ? text : `${clipText(text, 23)}…`;
@@ -112,6 +124,18 @@ const conversationSchema = z
     messageProviders: z.array(z.unknown()).catch([]),
     draft: z.string().catch(""),
     ratings: z.record(z.string().min(1).max(200), assistantFeedbackRatingSchema).optional().catch(undefined),
+    onboarding: z
+      .object({
+        sessionId: onboardingSessionIdSchema.nullable().catch(null),
+        entries: z.array(z.unknown()).catch([]).transform((entries) => entries.flatMap((entry) => {
+          const parsed = onboardingEntrySchema.safeParse(entry);
+          return parsed.success ? [parsed.data] : [];
+        })),
+        ended: z.boolean().optional().catch(undefined),
+      })
+      .strip()
+      .optional()
+      .catch(undefined),
   })
   .strip()
   .transform(({ messages, messageProviders, ...conversation }) => ({
@@ -226,6 +250,10 @@ export const saveSessions = (sessions: AssistantSessions, vault?: string | null)
             ...(conversation.ratings === undefined || Object.keys(conversation.ratings).length === 0
               ? {}
               : { ratings: conversation.ratings }),
+            // An older build ignores it, and shows the conversation as an empty one.
+            ...(conversation.onboarding === undefined
+              ? {}
+              : { onboarding: { sessionId: conversation.onboarding.sessionId, entries: conversation.onboarding.entries, ...(conversation.onboarding.ended === true ? { ended: true } : {}) } }),
           };
         }),
       }),

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
-import { prConnectionSchema, prConnectionInputSchema, prReviewLoadSchema, type PrConnectionInput, type PrConnection, type PrListQuery, type PrReviewDiffRequest, type PrActionRequest, type PrReviewCommentRequest, type PrGeneralCommentRequest, type PrReviewLoad } from "@cognelis/decision-protocol";
+import { prConnectionSchema, prConnectionInputSchema, prDescriptionReadSchema, type PrDescriptionRead, type PrDescriptionUpdate, prReviewLoadSchema, prReviewStatusRequestSchema, type PrReviewStatusList, type PrReviewStatusRequest, type PrConnectionInput, type PrConnection, type PrListQuery, type PrReviewDiffRequest, type PrActionRequest, type PrReviewCommentRequest, type PrGeneralCommentRequest, type PrReviewLoad } from "@cognelis/decision-protocol";
 import { atomicWrite } from "./atomic-write.js";
 import { CredentialVaultError, type CredentialVault } from "./model/credential-vault.js";
 import { HostedPrClient, ownsWebLink } from "./pr-platform-client.js";
@@ -80,7 +80,8 @@ export class PrConnections {
   }
   async account(id: string) { return (await this.client(z.string().uuid().parse(id))).account(); }
   async actionContext(request: PrReviewDiffRequest) { return (await this.client(request.connectionId)).actionContext(request); }
-  private async exclusive<T>(operation: () => Promise<T>): Promise<T> {
+  /** One write to a platform at a time, from the page or an agent: a second while one is under way is refused. */
+  async exclusive<T>(operation: () => Promise<T>): Promise<T> {
     if (this.actionPending) throw new Error("已有平台操作正在提交，请等待结果后再操作。");
     this.actionPending = true;
     try { return await operation(); }
@@ -89,13 +90,43 @@ export class PrConnections {
   performAction(request: PrActionRequest) { return this.exclusive(async () => (await this.client(request.connectionId)).performAction(request)); }
   publishComment(request: PrReviewCommentRequest) { return this.exclusive(async () => (await this.client(request.connectionId)).publishComment(request)); }
   publishGeneralComment(request: PrGeneralCommentRequest) { return this.exclusive(async () => (await this.client(request.connectionId)).publishGeneralComment(request)); }
+  /** The PR's description as its platform has it now, with the version a write back must match. */
+  async description(request: PrDescriptionRead) {
+    const { connectionId, reference } = prDescriptionReadSchema.parse(request);
+    return (await this.client(connectionId)).readDescription(reference);
+  }
+  updateDescription(request: PrDescriptionUpdate) { return this.exclusive(async () => (await this.client(request.connectionId)).updateDescription(request)); }
+  /**
+   * Each PR's build, approvals and open blockers, four read at a time. One that fails says why; past `deadline` (ms) the
+   * rest say they were not read in time, so a slow platform never holds up what asked.
+   */
+  async statuses(request: PrReviewStatusRequest, deadline = 20_000): Promise<PrReviewStatusList> {
+    const { connectionId, references } = prReviewStatusRequestSchema.parse(request);
+    const client = await this.client(connectionId);
+    const signal = AbortSignal.timeout(deadline);
+    const statuses: PrReviewStatusList["statuses"] = [];
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(4, references.length) }, async () => {
+      while (next < references.length) {
+        const index = next++, reference = references[index]!;
+        statuses[index] = await client.status(reference, signal).then((status) => ({ reference, status }),
+          (error: unknown) => ({ reference, status: null, error: signal.aborted ? "没有及时读到。" : (error instanceof Error ? error.message : String(error)).slice(0, 500) }));
+      }
+    }));
+    return { statuses };
+  }
   /** The PR's page on its platform, built from the link's own address. */
   async prWebUrl(request: PrReviewLoad) { return (await this.client(request.connectionId)).webUrl(request.reference); }
   async pullRequests(query: PrListQuery) { return (await this.client(query.connectionId)).list(query); }
-  /** The discussion already on one PR, read with that link's token: up to ten pages, newest first. */
+  /** The discussion already on one PR, read with that link's token: up to ten pages, newest first, line comments with their code. */
   async discussion(request: PrReviewLoad) {
     const { connectionId, reference } = prReviewLoadSchema.parse(request);
-    return (await this.client(connectionId)).commentPages(reference, 10);
+    return (await this.client(connectionId)).discussion(reference, 10);
+  }
+  /** The newest page of a PR's comments, without the code under them: what following a PR needs to read. */
+  async recentComments(request: PrReviewLoad) {
+    const { connectionId, reference } = prReviewLoadSchema.parse(request);
+    return (await this.client(connectionId)).commentPages(reference, 1);
   }
   /** Only a link under a connected platform opens, so a note cannot send the browser anywhere else. */
   async webLink(link: string): Promise<string> {

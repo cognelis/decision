@@ -12,6 +12,7 @@ const supportedModes = new Set([
   "compact",
   "indexing",
   "semantic-unavailable",
+  "journal-long",
 ]);
 
 if (!supportedThemes.has(theme)) {
@@ -117,6 +118,55 @@ const close = require("./electron-check-lifecycle.cjs").createElectronCheckLifec
   app, getWindow: () => window, getServer: () => server,
 });
 
+/*
+ * 偏好与想法 with a page of entries, a token that cannot break and every optional field: the list has to scroll inside
+ * its card to the last entry, nothing may push the card past the window, and what an entry recorded has to show.
+ * The page scroll is overflow:hidden, so an unbounded list there was cut off with nothing to scroll.
+ */
+const measureJournal = async () => {
+  await window.webContents.executeJavaScript(
+    `document.getElementById("knowledge-tab-journal").click()`,
+  );
+  await waitForPage(
+    `document.querySelectorAll(".journal-entry-card").length >= 20`,
+    "Journal entries did not render",
+  );
+  await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
+  const metrics = await window.webContents.executeJavaScript(`
+    (async () => {
+      const view = document.querySelector(".journal-entry-view");
+      const list = view.querySelector(".journal-entry-list");
+      const cards = [...list.querySelectorAll(".journal-entry-card")];
+      const listScrolls = list.scrollHeight > list.clientHeight + 1;
+      const viewBottom = view.getBoundingClientRect().bottom;
+      list.scrollTop = list.scrollHeight;
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      const last = cards.at(-1).getBoundingClientRect();
+      const listBox = list.getBoundingClientRect();
+      const text = view.textContent;
+      return {
+        mode: "journal-long",
+        cards: cards.length,
+        listScrolls,
+        viewInsideWindow: viewBottom <= innerHeight + 1,
+        lastCardReachable: last.bottom <= listBox.bottom + 1 && last.top >= listBox.top - 1,
+        // Positions, not scroll widths: a card the token widened grows with its view, and the page clips them both.
+        noHorizontalOverflow:
+          view.getBoundingClientRect().right <= innerWidth + 1 &&
+          [...cards, ...view.querySelectorAll(".journal-entry-toolbar select, .journal-entry-actions button")]
+            .every((element) => element.getBoundingClientRect().right <= view.getBoundingClientRect().right + 1),
+        missingFields: ["背景：", "补充说明：", "标签：", "未决问题：", "孵化日期：", "偏好强度：硬约束"]
+          .filter((label) => !text.includes(label)),
+      };
+    })()
+  `);
+  if (screenshotPath !== undefined) {
+    const image = await window.webContents.capturePage();
+    await writeFile(screenshotPath, image.toPNG());
+  }
+  return metrics;
+};
+
 const measureObsidianSearchLayout = async () => {
   const { createServer } = await import("vite");
   server = await createServer({
@@ -141,7 +191,8 @@ const measureObsidianSearchLayout = async () => {
   window = new BrowserWindow({
     width: compact ? 860 : 1160,
     height: compact ? 620 : 760,
-    show: true,
+    // Off screen, it renders all the same: shown, it made Electron the app in front (IMP-133).
+    show: false,
     frame: false,
     // Kept at this size on a smaller display (GitHub's macOS runner is 1024x768), which clamps a window otherwise.
     enableLargerThanScreen: true,
@@ -153,7 +204,10 @@ const measureObsidianSearchLayout = async () => {
     `http://127.0.0.1:${port}/?preview=decisions&theme=${theme}&interaction=${mode}`,
   );
   await require("./preview-sidebar.cjs").expandSidebar(window);
-  window.focus();
+  // The page told it has focus, as a headless browser is: window.focus(), even off screen, made Electron the app in
+  // front, taking the keyboard from the reader's (IMP-133).
+  window.webContents.debugger.attach("1.3");
+  await window.webContents.debugger.sendCommand("Emulation.setFocusEmulationEnabled", { enabled: true });
   window.webContents.focus();
 
   const shouldSearch = mode !== "indexing";
@@ -166,6 +220,7 @@ const measureObsidianSearchLayout = async () => {
     )`,
     "Knowledge page did not render",
   );
+  if (mode === "journal-long") return measureJournal();
   if (shouldSearch) {
     await window.webContents.executeJavaScript(`
       (() => {

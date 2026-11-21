@@ -70,7 +70,12 @@ export function PrReviewScopeDialog({ snapshot, chosen, unitChars, onClose, onCo
   const alone = (path: string) => plannedGroups(snapshot, [path], unitChars) ?? 0;
 
   // A changed selection is not thrown away by Escape out of habit; 取消 still leaves it.
-  return <ModalDialog title="选择评审文件" description="只评审勾选的文件；PR 概览和改进建议仍看整个 PR。" onClose={onClose} dismissible={!changed}>
+  return <ModalDialog title="选择评审文件" description="只评审勾选的文件；PR 概览和改进建议仍看整个 PR。" onClose={onClose} unsaved={changed}
+    footer={<>
+      <span className="modal-dialog-footer-start review-scope-count" role="status">已选 {picked.length} / {reviewable.length} 个文件 · 约 {cost(picked)} 组</span>
+      <button type="button" className="secondary-button" onClick={onClose}>取消</button>
+      <button type="button" className="primary-button" disabled={!picked.length} onClick={() => onConfirm(picked.length === reviewable.length ? null : picked)}>确定</button>
+    </>}>
     <div className="review-scope-dialog">
       <div className="review-scope-tools">
         <input type="search" aria-label="筛选文件路径" placeholder="筛选文件路径…" value={query} onChange={event => setQuery(event.target.value)} />
@@ -100,13 +105,6 @@ export function PrReviewScopeDialog({ snapshot, chosen, unitChars, onClose, onCo
         })}
       </ul>
       {!groups.length ? <p className="review-history-note">没有匹配的文件。</p> : null}
-      <div className="review-scope-footer">
-        <span role="status">已选 {picked.length} / {reviewable.length} 个文件 · 约 {cost(picked)} 组</span>
-        <div className="modal-form-actions">
-          <button type="button" className="secondary-button" onClick={onClose}>取消</button>
-          <button type="button" className="primary-button" disabled={!picked.length} onClick={() => onConfirm(picked.length === reviewable.length ? null : picked)}>确定</button>
-        </div>
-      </div>
     </div>
   </ModalDialog>;
 }

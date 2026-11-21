@@ -44,6 +44,22 @@ afterEach(async () => {
 });
 
 describe("HttpModelTransport", () => {
+  // R15-JEVSET-B5: a service echoing the key in its request id leaves it in neither the response nor the error.
+  it("cleans a request id that echoes the key, in a response and in an error", async () => {
+    const secret = "fake-echoed-secret-0123456789";
+    for (const status of [200, 401]) {
+      const url = await startServer((_request, response) => {
+        response.writeHead(status, { "content-type": "application/json", "x-request-id": `req-${secret}` });
+        response.end(status === 200 ? '{"ok":true}' : '{"error":{"message":"bad key"}}');
+      });
+      const outcome = await new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).postJson({ url, headers: { authorization: `Bearer ${secret}` }, body: {}, timeoutMs: 2000, maximumResponseBytes: 1000, secrets: [secret] })
+        .then((response) => response, (error: unknown) => error);
+      if (status === 200) expect(outcome).toMatchObject({ requestId: "req-[redacted]", json: { ok: true } });
+      else expect(outcome).toMatchObject({ code: "authentication_failed", providerRequestId: "req-[redacted]" });
+      expect(JSON.stringify(outcome) + String((outcome as { providerRequestId?: string }).providerRequestId)).not.toContain(secret);
+    }
+  });
+
   it("gets a catalog without a request body and keeps credentials in headers", async () => {
     let body = "";
     const url = await startServer((request, response) => {
@@ -53,7 +69,7 @@ describe("HttpModelTransport", () => {
       request.on("data", chunk => { body += chunk; });
       request.on("end", () => { response.writeHead(200, { "content-type": "application/json" }); response.end('{"models":[]}'); });
     });
-    expect(await new HttpModelTransport().getJson({ url, headers: { Authorization: "Bearer fake-catalog-token" }, timeoutMs: 2000, maximumResponseBytes: 100, secrets: ["fake-catalog-token"] })).toMatchObject({ json: { models: [] } });
+    expect(await new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).getJson({ url, headers: { Authorization: "Bearer fake-catalog-token" }, timeoutMs: 2000, maximumResponseBytes: 100, secrets: ["fake-catalog-token"] })).toMatchObject({ json: { models: [] } });
     expect(body).toBe("");
   });
 
@@ -62,10 +78,10 @@ describe("HttpModelTransport", () => {
     const target = await startServer((_request, response) => { redirected = true; response.end('{}'); });
     const redirect = await startServer((_request, response) => { response.writeHead(302, { location: target }); response.end(); });
     const input = { headers: { Authorization: "Bearer fake-catalog-token" }, timeoutMs: 2000, maximumResponseBytes: 100, secrets: ["fake-catalog-token"] };
-    await expect(new HttpModelTransport().getJson({ ...input, url: redirect })).rejects.toMatchObject({ code: "redirect_rejected" });
+    await expect(new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).getJson({ ...input, url: redirect })).rejects.toMatchObject({ code: "redirect_rejected" });
     expect(redirected).toBe(false);
     const rejected = await startServer((_request, response) => { response.writeHead(403); response.end('fake-catalog-token'); });
-    const error = await new HttpModelTransport().getJson({ ...input, url: rejected }).catch(error => error);
+    const error = await new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).getJson({ ...input, url: rejected }).catch(error => error);
     expect(error.code).toBe("authorization_failed");
     expect(error.diagnosticExcerpt).not.toContain("fake-catalog-token");
   });
@@ -85,7 +101,7 @@ describe("HttpModelTransport", () => {
         response.end(JSON.stringify({ ok: true }));
       });
     });
-    const transport = new HttpModelTransport();
+    const transport = new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" });
 
     const result = await transport.postJson({
       url: `${url}/v1/responses`,
@@ -116,7 +132,7 @@ describe("HttpModelTransport", () => {
       response.end(JSON.stringify({ ok: true }));
     });
     // A proxy nothing listens on: a request sent through it fails.
-    const transport = new HttpModelTransport({ HTTP_PROXY: "http://127.0.0.1:9", HTTPS_PROXY: "http://127.0.0.1:9" });
+    const transport = new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true", HTTP_PROXY: "http://127.0.0.1:9", HTTPS_PROXY: "http://127.0.0.1:9" });
 
     for (const proxy of [undefined, { mode: "custom" as const, url: "http://127.0.0.1:9" }]) {
       await expect(
@@ -136,7 +152,7 @@ describe("HttpModelTransport", () => {
   it("rejects timeout, oversized responses, redirects, and insecure remote HTTP", async () => {
     const timeoutUrl = await startServer(() => undefined);
     await expect(
-      new HttpModelTransport().postJson({
+      new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).postJson({
         url: timeoutUrl,
         headers: {},
         body: {},
@@ -153,7 +169,7 @@ describe("HttpModelTransport", () => {
       response.end(JSON.stringify({ value: "x".repeat(500) }));
     });
     await expect(
-      new HttpModelTransport().postJson({
+      new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).postJson({
         url: oversizedUrl,
         headers: {},
         body: {},
@@ -170,7 +186,7 @@ describe("HttpModelTransport", () => {
       response.end();
     });
     await expect(
-      new HttpModelTransport().postJson({
+      new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).postJson({
         url: redirectUrl,
         headers: {},
         body: {},
@@ -180,7 +196,7 @@ describe("HttpModelTransport", () => {
       }),
     ).rejects.toMatchObject({ code: "redirect_rejected" });
     await expect(
-      new HttpModelTransport().postJson({
+      new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).postJson({
         url: "http://api.example.com/v1/responses",
         headers: {},
         body: {},
@@ -195,7 +211,7 @@ describe("HttpModelTransport", () => {
     // A port nothing listens on: a proxy port typed wrong, say.
     const server = await startServer(() => undefined);
     await new Promise<void>((resolve) => servers.pop()!.close(() => resolve()));
-    const failure = await new HttpModelTransport()
+    const failure = await new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" })
       .postJson({ url: server, headers: {}, body: {}, timeoutMs: 2_000, maximumResponseBytes: 100, secrets: [] })
       .catch((error: unknown) => error);
 
@@ -210,7 +226,7 @@ describe("HttpModelTransport", () => {
       });
       response.end("{not-json");
     });
-    const malformed = await new HttpModelTransport().postJson({
+    const malformed = await new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" }).postJson({
       url: invalidUrl,
       headers: {},
       body: {},
@@ -246,7 +262,7 @@ describe("HttpModelTransport", () => {
           }),
         );
       });
-      const failure = await new HttpModelTransport()
+      const failure = await new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" })
         .postJson({
           url: errorUrl,
           headers: { authorization: `Bearer ${secret}` },
@@ -266,6 +282,70 @@ describe("HttpModelTransport", () => {
       expect(failure.diagnosticExcerpt).not.toContain(secret);
       expect(failure.diagnosticExcerpt).not.toContain(homedir());
       expect(failure.diagnosticExcerpt).not.toContain(temporaryPath);
+    }
+  });
+
+  it("describes a refusal by what the provider calls it, never quoting what the request sent", async () => {
+    // The trace keeps this excerpt with trace content off, and providers quote the request back in a refusal.
+    const typed = "我们决定裁掉B项目团队";
+    const refused = (url: string, body: unknown) => new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" })
+      .postJson({ url, headers: {}, body, timeoutMs: 2_000, maximumResponseBytes: 10_000, secrets: [] })
+      .then(() => { throw new Error("expected a refusal"); }, (error: unknown) => error as ModelProviderError);
+    for (const [status, body, kept] of [
+      // OpenRouter's moderation refusal names the flagged input.
+      [403, { error: { code: 403, message: "Your input was flagged for \"harassment\".", metadata: { reasons: ["harassment"], flagged_input: typed } } }, ["HTTP 403", "flagged for", "403"]],
+      // A FastAPI/Pydantic service echoes each invalid field's input.
+      [422, { detail: [{ type: "missing", loc: ["body", "model"], msg: "Field required", input: { messages: [{ role: "user", content: typed }] } }] }, ["HTTP 422", "Field required", "missing"]],
+      // Azure's content filter carries what it matched in innererror.
+      [400, { error: { code: "content_filter", message: "The response was filtered", status: 400, innererror: { code: "ResponsibleAIPolicyViolation", content_filter_result: { hate: { filtered: true, excerpt: typed } } } } }, ["HTTP 400", "content_filter", "was filtered"]],
+      // Ollama names the problem in a bare string.
+      [404, { error: "model \"llama3\" not found, try pulling it first", prompt: typed }, ["HTTP 404", "not found, try pulling it"]],
+      // What explains a failure is still there: the model, the context length, the key.
+      [404, { error: { message: "The model `gpt-x` does not exist", type: "invalid_request_error", code: "model_not_found", param: typed } }, ["model_not_found", "does not exist", "invalid_request_error"]],
+      [400, { type: "error", error: { type: "invalid_request_error", message: "prompt is too long: 210000 tokens > 200000 maximum" }, echo: typed }, ["prompt is too long"]],
+      // Gemini answers with a list of one error.
+      [401, [{ error: { code: 401, message: "API key not valid.", status: "UNAUTHENTICATED", details: [{ quoted: typed }] } }], ["API key not valid", "UNAUTHENTICATED"]],
+    ] as const) {
+      const url = await startServer((_request, response) => {
+        response.writeHead(status, { "content-type": "application/json" });
+        response.end(JSON.stringify(body));
+      });
+      const failure = await refused(url, { input: typed });
+
+      expect(failure.diagnosticExcerpt).not.toContain(typed);
+      for (const part of kept) expect(failure.diagnosticExcerpt).toContain(part);
+    }
+
+    // A body that is not JSON (a gateway's page, a plain sentence) is described by its length and shape alone.
+    const plain = await startServer((_request, response) => {
+      response.writeHead(502, { "content-type": "text/html" });
+      response.end(`<html><body>Upstream refused: ${typed}</body></html>`);
+    });
+    const failure = await refused(plain, {});
+    expect(failure).toMatchObject({ code: "provider_unavailable" });
+    expect(failure.diagnosticExcerpt).not.toContain(typed);
+    expect(failure.diagnosticExcerpt).toMatch(/^HTTP 502: the body is not JSON \(length=\d+, opens as markup\)$/u);
+  });
+
+  it("cleans what a refusal says before cutting it, so a key or a path across the cut is not left half there", async () => {
+    // Cut first, the key's first characters were all that was left of it, and no longer the key to replace. Joined
+    // here: written whole, it is a key's shape the release scan (release-portability) refuses to ship.
+    const key = ["AIza", "SyD0123456789abcdefghijklmnopqrstu"].join("");
+    for (const [secret, error] of [
+      [key, { message: `${"x".repeat(290)}${key} is not a valid key` }],
+      [homedir(), { message: `${"y".repeat(293)}${homedir()}/config is unreadable` }],
+      [key, { code: `${"z".repeat(95)}${key}`, message: "Bad key" }],
+    ] as const) {
+      const url = await startServer((_request, response) => {
+        response.writeHead(400, { "content-type": "application/json" });
+        response.end(JSON.stringify({ error }));
+      });
+      const failure = await new HttpModelTransport({ MODEL_ALLOW_LOOPBACK: "true" })
+        .postJson({ url, headers: {}, body: {}, timeoutMs: 2_000, maximumResponseBytes: 10_000, secrets: [key] })
+        .then(() => { throw new Error("expected a refusal"); }, (refusal: unknown) => refusal as ModelProviderError);
+
+      expect(failure.diagnosticExcerpt).not.toContain(secret.slice(0, 6));
+      expect(failure.diagnosticExcerpt).toContain("[reda");
     }
   });
 });

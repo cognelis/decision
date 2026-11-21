@@ -221,4 +221,30 @@ describe("DecisionCandidateQueue", () => {
       count: 0,
     });
   });
+
+  it("puts a skipped candidate behind the rest, a later arrival included, and keeps it waiting", async () => {
+    const onIgnore = vi.fn();
+    const queue = new DecisionCandidateQueue({
+      onPromote: vi.fn(),
+      onIgnore,
+      now: () => new Date("2026-07-01T00:00:00.000Z"),
+    });
+    queue.ingest({ ...candidateFixture("a", "2026-07-01T00:00:00.000Z"), expiresAt: "2026-08-01T00:00:00.000Z" });
+    queue.ingest({ ...candidateFixture("b", "2026-07-01T00:01:00.000Z"), expiresAt: "2026-08-01T00:00:00.000Z" });
+    const a = queue.snapshot().current!.candidateId;
+    queue.skip(a);
+    const b = queue.snapshot().current!.candidateId;
+    expect(b).not.toBe(a);
+    expect(queue.snapshot().count).toBe(2);
+    queue.ingest({ ...candidateFixture("c", "2026-07-01T00:02:00.000Z"), expiresAt: "2026-08-01T00:00:00.000Z" });
+    await queue.ignore(b);
+    expect(queue.snapshot().current!.candidateId).not.toBe(a);
+    await queue.ignore(queue.snapshot().current!.candidateId);
+    expect(queue.snapshot().current!.candidateId).toBe(a);
+
+    queue.skip(a); // Alone, there is nothing to skip to.
+    expect(queue.snapshot().current!.candidateId).toBe(a);
+    expect(() => queue.skip("someone-else")).toThrow(/current decision candidate/u);
+    expect(onIgnore).toHaveBeenCalledTimes(2);
+  });
 });

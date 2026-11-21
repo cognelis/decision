@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
 import { readFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { readDecisionEnvironment } from "../config/decision-environment.mjs";
+import { resolveUserData } from "../config/user-data-directory.mjs";
 
 const HIGH_PRECISION_THRESHOLD = 0.95;
 const HIGH_MEDIUM_RECALL_THRESHOLD = 0.9;
@@ -224,6 +223,10 @@ const providerMetricsFor = (provider, rows) => {
     costUsd: sumPresent(
       usages.map((usage) => usage?.costUsd),
     ),
+    modelFailures: rows.reduce((counts, { prediction }) => {
+      if (typeof prediction.modelFailure === "string") counts[prediction.modelFailure] = (counts[prediction.modelFailure] ?? 0) + 1;
+      return counts;
+    }, {}),
     tokenUsageUnavailable: usages.filter(
       (usage) =>
         usage === undefined ||
@@ -356,6 +359,7 @@ export const formatHumanReport = (report) => {
           : `${provider.inputTokens} input / ${provider.outputTokens ?? 0} output`
       }`,
       `  Usage unavailable  ${provider.tokenUsageUnavailable}`,
+      `  Model failures     ${Object.entries(provider.modelFailures).map(([code, count]) => `${code} ${count}`).join(", ") || "none"}`,
     );
   }
   return lines.join("\n");
@@ -373,7 +377,11 @@ const relationFromRule = (completed, userText) => {
   if (completed.signals.includes("answer_is_mixed")) {
     return "mixed";
   }
-  if (completed.signals.includes("answer_relation_uncertain")) {
+  if (
+    ["answer_relation_uncertain", "answer_defers_decision", "answer_is_question"].some(
+      (signal) => completed.signals.includes(signal),
+    )
+  ) {
     return "uncertain";
   }
   return mixedAnswer(userText) ? "mixed" : "answers";
@@ -412,7 +420,12 @@ export const createRulePredictor = async () => {
         userText: sample.taskBackground ?? null,
         assistantText: sample.assistantText,
       });
-      if (pending === null) {
+      // As the app reads it: a question found past a closing that reads low is no reading.
+      const completed = pending === null ? null : core.ruleReading(analyzer.complete(
+        pending,
+        sample.userText,
+      ));
+      if (completed === null) {
         return {
           band: "low",
           relation: "new_task",
@@ -421,10 +434,6 @@ export const createRulePredictor = async () => {
           signals: core.isCompletedDecisionStatus(sample.userText) ? ["answer_is_status_update"] : [],
         };
       }
-      const completed = analyzer.complete(
-        pending,
-        sample.userText,
-      );
       const relation = relationFromRule(
         completed,
         sample.userText,
@@ -463,25 +472,53 @@ export const createProviderPredictor = ({
   }
   return async (sample) => {
     const rule = await rulePredictor(sample);
-    const attempt = await invoke({
-      pairId: sample.id,
-      assistantText: sample.assistantText,
-      userText: sample.userText,
-      locale: sample.locale,
-    });
-    const classification = validateClassification(
-      {
+    let attempt;
+    let classification;
+    try {
+      attempt = await invoke({
+        pairId: sample.id,
         assistantText: sample.assistantText,
         userText: sample.userText,
-      },
-      attempt.classification,
-    );
+        locale: sample.locale,
+      });
+      classification = validateClassification(
+        {
+          assistantText: sample.assistantText,
+          userText: sample.userText,
+        },
+        attempt.classification,
+      );
+    } catch (error) {
+      // One sample's failed call is a row of the report, routed as the app routes it (a timeout holds the rules'
+      // high at medium, anything else leaves the rules alone), not the end of the run.
+      const code =
+        error?.failureCode === "timeout" ? "timeout"
+          : error?.name === "ZodError" ? "provider_invalid_output"
+          : typeof error?.code === "string" && /^[a-z][a-z0-9_]{0,99}$/u.test(error.code) ? error.code
+            : "provider_unavailable";
+      const route = routeDecision({
+        ruleBand: rule.band,
+        modelBand: "unavailable",
+        answerRelation: null,
+        ruleSignals: rule.signals ?? [],
+        modelTimedOut: code === "timeout",
+      });
+      return {
+        band: route.finalBand,
+        relation: rule.relation,
+        question: rule.question,
+        answerExcerpt: rule.answerExcerpt,
+        provider,
+        modelFailure: code,
+      };
+    }
     const route = routeDecision({
       ruleBand: rule.band,
       modelBand: classification.band,
       answerRelation: classification.answerRelation,
       ruleSignals: rule.signals ?? [],
       modelIntent: classification.decisionIntent,
+      userText: sample.userText,
     });
     return {
       band: route.finalBand,
@@ -499,29 +536,6 @@ export const createProviderPredictor = ({
       usage: attempt.usage,
     };
   };
-};
-
-const defaultUserData = () => {
-  if (process.platform === "darwin") {
-    return join(
-      homedir(),
-      "Library",
-      "Application Support",
-      "Decision",
-    );
-  }
-  if (process.platform === "win32") {
-    return join(
-      process.env.APPDATA ??
-        join(homedir(), "AppData", "Roaming"),
-      "Decision",
-    );
-  }
-  return join(
-    process.env.XDG_CONFIG_HOME ??
-      join(homedir(), ".config"),
-    "decision",
-  );
 };
 
 /**
@@ -570,7 +584,7 @@ const LIVE_EVALUATOR_KINDS = new Map([
         new module.AppleFoundationModelProvider({
           helperPath: resolve(
             repositoryRoot,
-            "dist/semantic/decision-foundation-model-helper",
+            "dist/semantic/paraself-foundation-model-helper",
           ),
           timeoutMs: profile.timeoutMs,
         }),
@@ -685,9 +699,8 @@ export const parseEvaluatorArgs = (args) => {
     predictions: null,
     provider: "rules",
     reportOnly: false,
-    userData:
-      readDecisionEnvironment(process.env, "USER_DATA") ??
-      defaultUserData(),
+    // Where the App's data is now, nothing moved from Decision's folder by an evaluation.
+    userData: resolveUserData(process.env, { migrate: false }).path,
   };
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];

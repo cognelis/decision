@@ -1,3 +1,4 @@
+import { ActionIcon, IconButton } from "./IconButton.js";
 import type { OutcomeVerdict } from "@cognelis/decision-core";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -12,6 +13,8 @@ import {
   submitShortcutLabel,
 } from "../keyboard.js";
 import { ModalDialog } from "./ModalDialog.js";
+import { renderMarkdown } from "./pages/assistant/markdown.js";
+import { plainHeadline, useClampedTitle } from "./question-title.js";
 
 /**
  * The other dashboard todo — 待补理由 — is finished where it is listed. This
@@ -37,6 +40,8 @@ interface DashboardReviewInboxProps {
   failed: boolean;
   onRetry(): void;
   onOpenDecision(id: string): void;
+  /** One that should never have been recorded, deleted from where it turned up. */
+  onDeleteDecision?(id: string): void;
   onOpenReviewInbox(): void;
   /** `basis`: the note's hash when the review was opened; changed since (in Obsidian), the save is refused. */
   onSaveOutcome(id: string, outcome: string, basis?: string): Promise<void>;
@@ -90,6 +95,7 @@ export const DashboardReviewInbox = ({
   failed,
   onRetry,
   onOpenDecision,
+  onDeleteDecision,
   onOpenReviewInbox,
   onSaveOutcome,
   onSaveReview,
@@ -156,7 +162,7 @@ export const DashboardReviewInbox = ({
       await onPostponeReview(active.id, reviewDueDate);
       close();
       // The date leads: a long question is what gets cut off, not when it comes back.
-      setNotice({ text: `推迟到${dueLabel(reviewDueDate)}复盘：「${active.question}」`, id: active.id, previous: active.reviewDueDate });
+      setNotice({ text: `推迟到${dueLabel(reviewDueDate)}复盘：「${plainHeadline(active.question)}」`, id: active.id, previous: active.reviewDueDate });
     } catch (caught) {
       setError(
         `复盘日期暂时无法保存：${
@@ -200,6 +206,10 @@ export const DashboardReviewInbox = ({
   };
 
   const canSave = step !== "outcome" || outcome.trim().length > 0;
+  // The question heads the dialog in two lines of plain text; cut short there, or flattened from lists, it is given
+  // whole under it, as written.
+  const [questionTitleRef, questionCut] = useClampedTitle<HTMLHeadingElement>(active?.question ?? "");
+  const formId = `${idPrefix}-review-form`;
 
   return (
     <>
@@ -213,39 +223,16 @@ export const DashboardReviewInbox = ({
             <h2 id="dashboard-review-inbox-title">复盘收件箱</h2>
           </div>
           <strong className={decisions.length === 0 ? "idle" : undefined}>
-            {decisions.length}
+            {/* Not read is not none: the count waits for a read that works. */}
+            {failed && decisions.length === 0 && !loading ? "—" : decisions.length}
           </strong>
         </header>
-        {notice === null ? null : (
-          <p className="dashboard-review-notice" role="status">
-            <span>{notice.text}</span>
-            {notice.previous === null ? null : (
-              <button
-                type="button"
-                className="text-button"
-                disabled={saving}
-                onClick={() => {
-                  const { id, previous } = notice;
-                  setSaving(true);
-                  void onPostponeReview(id, previous!)
-                    .then(() => setNotice(null))
-                    .catch(() =>
-                      setNotice({ ...notice, text: `${notice.text}；撤销没有成功，请在决策详情里调整日期` }),
-                    )
-                    .finally(() => setSaving(false));
-                }}
-              >
-                撤销
-              </button>
-            )}
-          </p>
-        )}
         {loading ? (
           <p className="dashboard-empty-copy">正在读取复盘计划…</p>
         ) : failed && decisions.length === 0 ? (
-          <p className="dashboard-empty-copy" role="alert">
+          <p className="load-failure" role="alert">
             复盘计划暂时无法读取。
-            <button type="button" className="text-button" onClick={onRetry}>
+            <button type="button" className="secondary-button" onClick={onRetry}>
               重试
             </button>
           </p>
@@ -259,7 +246,7 @@ export const DashboardReviewInbox = ({
                   onClick={() => onOpenDecision(decision.id)}
                 >
                   <span>
-                    <strong id={`${idPrefix}-${decision.id}`}>{decision.question}</strong>
+                    <strong id={`${idPrefix}-${decision.id}`}>{plainHeadline(decision.question)}</strong>
                     <small>{decision.project}</small>
                   </span>
                   <span aria-hidden="true">›</span>
@@ -276,6 +263,13 @@ export const DashboardReviewInbox = ({
                     ? "回填结果"
                     : "完成复盘"}
                 </button>
+                {onDeleteDecision === undefined ? null : (
+                  <IconButton className="row-delete-button" aria-label="删除" title="删除这条决策"
+                    aria-describedby={`${idPrefix}-${decision.id}`} disabled={saving}
+                    onClick={() => onDeleteDecision(decision.id)}>
+                    <ActionIcon name="trash" />
+                  </IconButton>
+                )}
               </li>
             ))}
           </ol>
@@ -298,6 +292,31 @@ export const DashboardReviewInbox = ({
         ) : (
           <p className="dashboard-empty-copy">目前没有需要处理的复盘。</p>
         )}
+        {/* What was just done, said at the bottom of the card it was done in, the question in two lines at most. */}
+        {notice === null ? null : (
+          <p className="settings-status dashboard-review-notice" role="status">
+            <span>{notice.text}</span>
+            {notice.previous === null ? null : (
+              <button
+                type="button"
+                className="text-button"
+                disabled={saving}
+                onClick={() => {
+                  const { id, previous } = notice;
+                  setSaving(true);
+                  void onPostponeReview(id, previous!)
+                    .then(() => setNotice(null))
+                    .catch(() =>
+                      setNotice({ ...notice, text: `${notice.text}；撤销没有成功，请在决策详情里调整日期` }),
+                    )
+                    .finally(() => setSaving(false));
+                }}
+              >
+                撤销
+              </button>
+            )}
+          </p>
+        )}
         {decisions.length === 0 ? null : (
           <footer className="dashboard-review-footer">
             <span>
@@ -319,58 +338,102 @@ export const DashboardReviewInbox = ({
       {active === null || step === null ? null : (
         <ModalDialog
           title={step === "outcome" ? "回填实际结果" : "完成复盘"}
+          // On the dialog, not its form: the footer's buttons sit outside the form, and ⌘↩ must work from them too.
+          onKeyDown={(event) => {
+            if (!isSubmitShortcut(event)) return;
+            event.preventDefault();
+            void save();
+          }}
           description={
             step === "outcome"
               ? "保存实际结果后，可继续对照当初的选择完成复盘。"
               : "对照当初的选择给出结论"
           }
           // Something written is let go of only by 取消: a stray Escape or click outside threw it away.
-          dismissible={!saving && outcome.trim().length === 0 && lesson.trim().length === 0}
+          dismissible={!saving}
+          unsaved={outcome.trim().length > 0 || lesson.trim().length > 0}
           size="wide"
           onClose={close}
+          // The one solid button is the one ⌘↩ presses, at the end (R1); going straight on to the review is beside it.
+          footer={
+            <>
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={saving}
+                onClick={close}
+              >
+                取消
+              </button>
+              {step === "outcome" ? (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={saving || !canSave}
+                  onClick={() => void save(true)}
+                >
+                  保存并继续复盘
+                </button>
+              ) : null}
+              <button
+                className="primary-button"
+                type="submit"
+                form={formId}
+                disabled={saving || !canSave}
+                aria-keyshortcuts={SUBMIT_SHORTCUT_KEYS}
+                title={`${submitShortcutLabel()} 保存`}
+              >
+                {step === "outcome" ? "保存结果" : "保存复盘"}
+                <kbd className="shortcut-hint" aria-hidden="true">
+                  {submitShortcutLabel()}
+                </kbd>
+              </button>
+            </>
+          }
         >
           <form
+            id={formId}
             className="dashboard-review-dialog-form"
             aria-label={step === "outcome" ? "回填实际结果表单" : "完成复盘表单"}
             onSubmit={(event) => {
               event.preventDefault();
               void save();
             }}
-            onKeyDown={(event) => {
-              if (!isSubmitShortcut(event)) return;
-              event.preventDefault();
-              void save();
-            }}
           >
             <header className="dashboard-rationale-question">
               <span>原问题</span>
-              <h3>{active.question}</h3>
+              <h3 ref={questionTitleRef}>{plainHeadline(active.question)}</h3>
             </header>
-            <div className="modal-decision-summary">
-              <span>当初选择：{active.selectedAnswer}</span>
-            </div>
-            {active.expectedOutcome ? (
-              <div className="modal-decision-summary">
-                <span>预期结果：{active.expectedOutcome}</span>
-              </div>
+            {questionCut ? (
+              <section className="dashboard-rationale-full-question" aria-labelledby={`${idPrefix}-full-question`}>
+                <h4 id={`${idPrefix}-full-question`}>问题</h4>
+                <div className="assistant-answer">{renderMarkdown(active.question)}</div>
+              </section>
             ) : null}
+            {/* What the result is weighed against, in one inset block. */}
+            <div className="modal-decision-summary">
+              <span>当初选择：{plainHeadline(active.selectedAnswer)}</span>
+              {active.expectedOutcome ? <span>预期结果：{active.expectedOutcome}</span> : null}
+              {step === "review" ? <span>实际结果：{active.outcome}</span> : null}
+            </div>
             {step === "outcome" ? (
               <>
-                <label htmlFor={`review-outcome-${active.id}`}>结果说明</label>
-                <textarea
-                  autoFocus
-                  className="glass-input"
-                  id={`review-outcome-${active.id}`}
-                  maxLength={MAX_TEXT}
-                  rows={5}
-                  value={outcome}
-                  disabled={saving}
-                  placeholder="记录实施后的实际效果、偏差或新的结论。"
-                  onChange={(event) => setOutcome(event.currentTarget.value)}
-                />
-                <span className="dashboard-review-counter">
-                  {outcome.length} / {MAX_TEXT}
-                </span>
+                <div className="form-field">
+                  <label htmlFor={`review-outcome-${active.id}`}>结果说明</label>
+                  <textarea
+                    autoFocus
+                    id={`review-outcome-${active.id}`}
+                    maxLength={MAX_TEXT}
+                    rows={5}
+                    value={outcome}
+                    disabled={saving}
+                    placeholder="记录实施后的实际效果、偏差或新的结论。"
+                    onChange={(event) => setOutcome(event.currentTarget.value)}
+                  />
+                  <p className="dashboard-review-counter">
+                    {outcome.length} / {MAX_TEXT}
+                  </p>
+                </div>
                 <div
                   className="dashboard-review-postpone"
                   role="group"
@@ -393,9 +456,6 @@ export const DashboardReviewInbox = ({
               </>
             ) : (
               <>
-                <div className="modal-decision-summary">
-                  <span>实际结果：{active.outcome}</span>
-                </div>
                 <fieldset className="decision-verdict-fieldset">
                   <legend>实际结果与当初选择相比</legend>
                   <div className="decision-verdict-options">
@@ -413,62 +473,31 @@ export const DashboardReviewInbox = ({
                     ))}
                   </div>
                 </fieldset>
-                <label htmlFor={`review-lesson-${active.id}`}>
-                  复盘经验（可选）
-                </label>
-                <textarea
-                  autoFocus
-                  className="glass-input"
-                  id={`review-lesson-${active.id}`}
-                  maxLength={MAX_TEXT}
-                  rows={5}
-                  value={lesson}
-                  disabled={saving}
-                  placeholder="哪些判断有效、哪里出现偏差、下次应如何调整。"
-                  onChange={(event) => setLesson(event.currentTarget.value)}
-                />
-                <span className="dashboard-review-counter">
-                  {lesson.length} / {MAX_TEXT}
-                </span>
+                <div className="form-field">
+                  <label htmlFor={`review-lesson-${active.id}`}>
+                    复盘经验（可选）
+                  </label>
+                  <textarea
+                    autoFocus
+                    id={`review-lesson-${active.id}`}
+                    maxLength={MAX_TEXT}
+                    rows={5}
+                    value={lesson}
+                    disabled={saving}
+                    placeholder="哪些判断有效、哪里出现偏差、下次应如何调整。"
+                    onChange={(event) => setLesson(event.currentTarget.value)}
+                  />
+                  <p className="dashboard-review-counter">
+                    {lesson.length} / {MAX_TEXT}
+                  </p>
+                </div>
               </>
             )}
             {error === null ? null : (
-              <p className="dashboard-rationale-error" role="alert">
+              <p className="form-error" role="alert">
                 {error}
               </p>
             )}
-            <div className="modal-form-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={saving}
-                onClick={close}
-              >
-                取消
-              </button>
-              {step === "outcome" ? (
-                <button
-                  className="primary-button"
-                  type="button"
-                  disabled={saving || !canSave}
-                  onClick={() => void save(true)}
-                >
-                  保存并继续复盘
-                </button>
-              ) : null}
-              <button
-                className={step === "outcome" ? "secondary-button" : "primary-button"}
-                type="submit"
-                disabled={saving || !canSave}
-                aria-keyshortcuts={SUBMIT_SHORTCUT_KEYS}
-                title={`${submitShortcutLabel()} 保存`}
-              >
-                {step === "outcome" ? "保存结果" : "保存复盘"}
-                <kbd className="shortcut-hint" aria-hidden="true">
-                  {submitShortcutLabel()}
-                </kbd>
-              </button>
-            </div>
           </form>
         </ModalDialog>
       )}

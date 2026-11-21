@@ -1,3 +1,5 @@
+import { plainHeadline } from "../../question-title.js";
+import { knownClients, sourceLabel } from "../../../client-labels.js";
 import { IconButton, ActionIcon } from "../../IconButton.js";
 import type {
   DecisionAnalyticsGroup,
@@ -35,13 +37,8 @@ const verdictLabels: Record<OutcomeVerdict, string> = {
   unclear: "暂无法判断",
 };
 
-const sourceLabels: Record<string, string> = {
-  codex: "Codex",
-  "claude-code": "Claude Code",
-  manual: "手动记录",
-  "pr-comment": "PR 评论",
-  test: "测试数据",
-};
+/** A source's name here: test data said as such. */
+const analyticsSourceLabel = (source: string): string => (source === "test" ? "测试数据" : sourceLabel(source));
 
 const monthLabel = (period: string): string => {
   const [year, month] = period.split("-");
@@ -77,6 +74,11 @@ const oneLine = (text: string): string => text.replace(/\s+/gu, " ").trim();
 /** Repeats, principles and projects past this many are counted, not listed. */
 const LISTED = 5;
 
+const recommendationSentence = ({
+  recommendation: { offered, followed },
+}: DecisionRetrospectivePeriod): string =>
+  `agent 标了推荐项的选择共 ${offered} 次，其中选了推荐项的 ${followed} 次（${percentage(followed, offered)}%）`;
+
 /**
  * The window as Markdown, to paste into a weekly note or a message: the same
  * counts, lessons, repeats and projects the section shows, nothing inferred.
@@ -98,6 +100,7 @@ export const retrospectiveMarkdown = (
         : `，${period.expectationMissing} 条尚未写预期`
     }`,
     `- 完成复盘 ${period.reviews} 条（前 ${period.days} 天 ${period.previousReviews} 条），当前待复盘 ${reviewAttention} 条`,
+    ...(period.recommendation.offered === 0 ? [] : [`- ${recommendationSentence(period)}`]),
     "",
     "### 写下的经验",
     "",
@@ -311,6 +314,12 @@ const RetrospectiveSection = ({
         </div>
       </dl>
 
+      {period.recommendation.offered === 0 ? null : (
+        <p className="analytics-retrospective-expect">
+          <span>{recommendationSentence(period)}。</span>
+        </p>
+      )}
+
       {/* Looking back is also the last chance to look ahead for what is unresolved. */}
       {browsePeriod === null || period.expectationMissing === 0 ? null : (
         <p className="analytics-retrospective-expect">
@@ -357,7 +366,7 @@ const RetrospectiveSection = ({
                       <em className={`decision-review-verdict ${lesson.verdict}`}>
                         {verdictLabels[lesson.verdict]}
                       </em>
-                      <strong>{lesson.question}</strong>
+                      <strong className="question-clamp">{plainHeadline(lesson.question)}</strong>
                       <time dateTime={lesson.reviewedAt}>
                         {dayLabel(lesson.reviewedAt)} 复盘
                       </time>
@@ -373,7 +382,7 @@ const RetrospectiveSection = ({
                     </p>
                     <small>
                       {lesson.project} ·{" "}
-                      {sourceLabels[lesson.sourceClient] ?? lesson.sourceClient}
+                      {analyticsSourceLabel(lesson.sourceClient)}
                     </small>
                   </button>
                 </li>
@@ -414,7 +423,7 @@ const RetrospectiveSection = ({
                             onBrowseDecisions({ query: questionSearchText(repeat.question) })
                           }
                         >
-                          <strong>{repeat.question}</strong>
+                          <strong className="question-clamp">{plainHeadline(repeat.question)}</strong>
                           <span>
                             本期 {repeat.decisionIds.length} 次 · {repeat.projects} 个项目 ·{" "}
                             {repeat.consistentAnswers ? (
@@ -651,15 +660,23 @@ const ConsultationCalibration = ({
               <dt>本地耗时</dt>
               <dd>{averageDuration} ms</dd>
               <span>
-                Claude {metrics?.byClient.claudeCode ?? 0} · Codex{" "}
-                {metrics?.byClient.codex ?? 0}
+                {[...new Set([...knownClients().map((client) => client.id), ...Object.keys(metrics?.byClient ?? {})])]
+                  .map((id) => `${sourceLabel(id)} ${metrics?.byClient[id] ?? 0}`)
+                  .join(" · ")}
               </span>
             </div>
           </dl>
         ) : (
-          <p className="consultation-calibration-error" role="status">
-            聚合指标暂时无法读取：{error}
-          </p>
+          <div className="load-failure consultation-calibration-error" role="alert">
+            <span>聚合指标暂时无法读取：{error}</span>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => void onMetricsChanged()}
+            >
+              重试
+            </button>
+          </div>
         )}
         <footer>
           <span>覆盖率只表示“找到了候选原则”，不代表建议正确。</span>
@@ -674,12 +691,32 @@ const ConsultationCalibration = ({
       {open ? (
         <ModalDialog
           title="试算决策前核对"
-          description="使用与 Claude Code、Codex 相同的本地匹配规则；关闭后不保留输入，只有主动评价会增加一个匿名计数。"
+          description="使用与各客户端相同的本地匹配规则；关闭后不保留输入，只有主动评价会增加一个匿名计数。"
           size="wide"
           dismissible={!busy}
           onClose={close}
+          footer={
+            <>
+              <button type="button" className="secondary-button" onClick={close} disabled={busy}>
+                关闭
+              </button>
+              <button
+                type="submit"
+                form="consultation-preview-form"
+                className="primary-button"
+                disabled={busy || question.trim().length === 0}
+              >
+                {running
+                  ? "正在匹配…"
+                  : result === null
+                    ? "查看实际结果"
+                    : "重新试算"}
+              </button>
+            </>
+          }
         >
           <form
+            id="consultation-preview-form"
             className="consultation-preview"
             onSubmit={(event) => {
               event.preventDefault();
@@ -702,10 +739,11 @@ const ConsultationCalibration = ({
                 .finally(() => setRunning(false));
             }}
           >
-            <div className="consultation-preview-fields">
-              <label>
-                <span>待决定的问题</span>
+            <div className="form-fields consultation-preview-fields">
+              <div className="form-field">
+                <label htmlFor="consultation-preview-question">待决定的问题</label>
                 <textarea
+                  id="consultation-preview-question"
                   rows={3}
                   maxLength={4_000}
                   required
@@ -713,8 +751,8 @@ const ConsultationCalibration = ({
                   placeholder="例如：正式上线前是否先做一轮小范围兼容验证？"
                   onChange={(event) => setQuestion(event.target.value)}
                 />
-              </label>
-              <fieldset>
+              </div>
+              <fieldset className="form-field">
                 <legend>候选选项（可选）</legend>
                 <div className="consultation-preview-options">
                   {options.map((value, index) => (
@@ -749,39 +787,44 @@ const ConsultationCalibration = ({
                     </div>
                   ))}
                 </div>
+                {/* A button that looks like one: with no padding, 添加选项 read as a label (审计 A22). */}
                 {options.length < 8 ? (
                   <button
                     type="button"
-                    className="text-button"
+                    className="secondary-button"
                     onClick={() => setOptions((current) => [...current, ""])}
                   >
                     添加选项
                   </button>
                 ) : null}
               </fieldset>
-              <label>
-                <span>必要上下文（可选）</span>
+              <div className="form-field">
+                <label htmlFor="consultation-preview-context">必要上下文（可选）</label>
                 <textarea
+                  id="consultation-preview-context"
                   rows={2}
                   maxLength={6_000}
                   value={context}
                   placeholder="只填写判断适用条件和失败边界所需的信息"
                   onChange={(event) => setContext(event.target.value)}
                 />
-              </label>
+              </div>
             </div>
+            <p className="methodology-dialog-note">
+              只读试算 · 不调用模型 · 不写入决策
+            </p>
 
             {/* Said as it comes: the matches appeared without a word, where "no match" was announced. */}
             <p className="sr-only" role="status">
               {result !== null && result.status !== "no_match" ? `试算找到 ${result.matches.length} 条可核对的原则` : ""}
             </p>
             {previewError === null ? null : (
-              <p className="consultation-preview-error" role="alert">
+              <p className="form-error" role="alert">
                 试算未完成：{previewError}
               </p>
             )}
             {result === null ? null : result.status === "no_match" ? (
-              <div className="consultation-preview-empty" role="status">
+              <div className="methodology-inbox-state consultation-preview-empty" role="status">
                 <strong>没有找到足够明确的原则</strong>
                 <span>客户端会继续独立分析，不会为了给出建议而强行套用历史原则。</span>
               </div>
@@ -806,6 +849,11 @@ const ConsultationCalibration = ({
                 ))}
               </ol>
             )}
+            {result?.principlesIncomplete === true ? (
+              <p className="form-error" role="status">
+                部分原则笔记这次没能读取，结果可能不完整；「原则」页顶部列出了是哪几篇。
+              </p>
+            ) : null}
 
             {result?.feedback === null || result === null ? null : (
               <section
@@ -827,7 +875,7 @@ const ConsultationCalibration = ({
                     <button
                       type="button"
                       key={rating}
-                      className={feedbackRating === rating ? "selected" : ""}
+                      className="secondary-button"
                       disabled={
                         feedbackStatus === "submitting" ||
                         feedbackStatus === "accepted"
@@ -844,24 +892,6 @@ const ConsultationCalibration = ({
                 )}
               </section>
             )}
-
-            <footer className="consultation-preview-actions">
-              <span>只读试算 · 不调用模型 · 不写入决策</span>
-              <button type="button" className="text-button" onClick={close} disabled={busy}>
-                关闭
-              </button>
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={busy || question.trim().length === 0}
-              >
-                {running
-                  ? "正在匹配…"
-                  : result === null
-                    ? "查看实际结果"
-                    : "重新试算"}
-              </button>
-            </footer>
           </form>
         </ModalDialog>
       ) : null}
@@ -895,7 +925,7 @@ const GroupTable = ({
       {groups.map((group) => (
         <div className="analytics-group-row" role="row" key={group.key}>
           <strong role="cell">
-            {source ? (sourceLabels[group.label] ?? group.label) : group.label}
+            {source ? (analyticsSourceLabel(group.label)) : group.label}
           </strong>
           <span role="cell">{group.decisionCount}</span>
           <span role="cell">{group.rationaleCaptured}</span>
@@ -995,10 +1025,10 @@ export const DecisionAnalyticsView = ({
           error={consultationError}
           onMetricsChanged={refreshConsultationMetrics}
         />
-        <div className="methodology-empty compact">
-          <strong>决策分析暂时不可用</strong>
-          <span>{error}</span>
-          <button type="button" className="text-button" onClick={() => void load()}>
+        {/* Said where it failed, as the other tabs say it: left-aligned, in the danger colour, with 重试. */}
+        <div className="load-failure" role="alert">
+          <span>决策分析暂时无法读取：{error}</span>
+          <button type="button" className="secondary-button" onClick={() => void load()}>
             重试
           </button>
         </div>

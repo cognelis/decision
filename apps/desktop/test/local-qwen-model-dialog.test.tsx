@@ -21,7 +21,7 @@ it("installs only the chosen model and preserves the profile switches when savin
   const user = userEvent.setup();
   render(<LocalQwenModelDialog api={api} profile={profile} onClose={onClose} onSaved={async () => undefined} />);
   await screen.findByText("已安装，文件校验通过。");
-  await user.selectOptions(screen.getByLabelText("Qwen 本地模型"), "qwen3.5-4b-q4-k-m");
+  await user.selectOptions(screen.getByLabelText("本地模型"), "qwen3.5-4b-q4-k-m");
   expect(screen.getByRole("button", { name: "保存模型选择" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "安装所选模型" }));
   expect(api.installManagedQwenModel).toHaveBeenCalledWith("qwen3.5-4b-q4-k-m");

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [{
+    "id": "fresh-vectors",
+    "description": "合成数据：在同一 App PID 内记录和复盘决策，纯同义查询必须能找到当前版本；允许后台补建，最多等待 8 秒且保留每次原始响应。",
+    "steps": [
+      {"id":"created","tool":"record_decision_journal_entry","args":{"kind":"decision","title":"瞬时故障恢复","content":"网络瞬时故障采用指数退避重试，等待时间翻倍并添加随机抖动，最多重试三次。","project":"lab","rationale":"合成：降低暂时性网络错误的影响。","expectedOutcome":"减少暂时性故障造成的请求失败。"},"expect":{"equals":{"record.status":"created"}}},
+      {"id":"fresh-recall","tool":"search_decision_context","args":{"query":"For transient network failures, retry at most three times with doubled waiting intervals and randomized jitter"},"eventuallyMs":8000,"expect":{"mustInclude":[{"$ref":"created.record.recordId"}],"k":3},"expectByMode":{"off":{"mustInclude":[],"mustExclude":[{"$ref":"created.record.recordId"}],"status":"no_match"}}},
+      {"id":"read-current","tool":"search_decision_context","args":{"source":"decisions","recordId":{"$ref":"created.record.recordId"}},"expect":{"mustInclude":[{"$ref":"created.record.recordId"}]}},
+      {"id":"reviewed","tool":"record_decision_outcome","args":{"source":"decisions","recordId":{"$ref":"created.record.recordId"},"expectedContentHash":{"$ref":"read-current.context.results.0.sourceRef.contentHash"},"outcome":"合成实测：请求失败减少，但拥塞时延迟增加。","review":{"verdict":"mixed","lesson":"合成经验：等待时间要有上限，避免重试风暴。"}},"expect":{"equals":{"outcomeUpdate.status":"saved"}}},
+      {"id":"reviewed-recall","tool":"search_decision_context","args":{"query":"For transient network failures, retry at most three times with doubled waiting intervals and randomized jitter"},"eventuallyMs":8000,"expect":{"mustInclude":[{"$ref":"created.record.recordId"}],"mustFlag":[{"id":{"$ref":"created.record.recordId"},"path":"outcomeState.review.verdict","equals":"mixed"}],"writeReadback":true,"k":3},"expectByMode":{"off":{"mustInclude":[],"mustFlag":[],"mustExclude":[{"$ref":"created.record.recordId"}],"status":"no_match"}}},
+      {"id":"review-keyword","tool":"search_decision_context","args":{"source":"decisions","recordId":{"$ref":"created.record.recordId"}},"expect":{"mustFlag":[{"id":{"$ref":"created.record.recordId"},"path":"outcomeState.review.verdict","equals":"mixed"}],"writeReadback":true}}
+    ]
+  }]
+}

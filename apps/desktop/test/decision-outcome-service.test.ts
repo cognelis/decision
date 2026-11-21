@@ -1,5 +1,5 @@
 import { DecisionContextRepository, DecisionScopeRepository, DecisionRelationRepository, DecisionStore, MarkdownRepository, parseDecision } from "@cognelis/decision-storage";
-import { decisionContextQuerySchema, decisionOutcomeUpdateSchema, decisionScopeUpdateSchema, decisionRelationUpdateSchema } from "@cognelis/decision-protocol";
+import { decisionContextQuerySchema, decisionOutcomeUpdateResultSchema, decisionOutcomeUpdateSchema, decisionScopeUpdateSchema, decisionRelationUpdateSchema } from "@cognelis/decision-protocol";
 import { copyFile, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -131,6 +131,34 @@ describe("conversational outcome backfill", () => {
     const warnings = (await service.update(request({ outcome: "后来整体换成了新方案", review: { verdict: "mixed", lesson: null } }))).warnings.join(" ");
     expect(warnings).toMatch(/后继记录 decisions\/second 本身也已被替代，当前有效的是 decisions\/third/u);
     expect(warnings).not.toContain("当前有效的是 decisions/second");
+  });
+
+  it("answers a backfill onto a decision split and replaced again within what a result holds, the index warning kept", async () => {
+    const { context, repository, service, request, read, index } = await setup();
+    const first = await read();
+    // Ids as captures make them (decision-<sha256>), questions of an ordinary length.
+    const write = (n: number, question: string) => repository.write(recordFixture({ id: `decision-${String(n).repeat(64)}`, question }));
+    const b = await write(2, "会话缓存改为 Redis 单实例，进程内只保留只读配置缓存是否可行？");
+    const c = await write(3, "限流计数也迁到 Redis 吗？还是继续用网关自带的本地计数器？");
+    const d = await write(4, "会话缓存从 Redis 单实例升级为 Redis Cluster，并按租户拆分键空间？");
+    const e = await write(5, "限流统一交给 API 网关的分布式限流插件，不再在业务服务里计数？");
+    const ref = (note: { id: string; contentHash: string }) => ({ source: "decisions", recordId: note.id, contentHash: note.contentHash });
+    const replaced = (older: ReturnType<typeof ref>, newer: ReturnType<typeof ref>) => context.updateRelation(decisionRelationUpdateSchema.parse({
+      first: older, second: newer, disposition: "supersedes", successor: "second", expectedRevision: 0, reason: "用户确认新决策替代旧决策",
+    }));
+    const a = ref({ id: first.id, contentHash: first.sourceRef.contentHash! });
+    // Split in two, each replaced again since: A → B → D, A → C → E.
+    await replaced(a, ref(b)); await replaced(a, ref(c)); await replaced(ref(b), ref(d)); await replaced(ref(c), ref(e));
+    index.upsert.mockImplementation(() => { throw new Error("index offline"); });
+
+    const result = await service.update(request({ outcome: "拆分后两条都被替换，原方案整体退役" }));
+    // Written to the note, and answered past the 500 characters a warning holds: the App answered 500 and the agent was
+    // told 结果回填没有保存, so wrote it again.
+    expect(result.status).toBe("saved");
+    expect(decisionOutcomeUpdateResultSchema.safeParse(result).success).toBe(true);
+    expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining("勿重复回填")]));
+    expect(result.warnings.join("\n")).toContain(`后继记录 decisions/${b.id} 本身也已被替代，当前有效的是 decisions/${d.id}`);
+    expect(result.warnings.join("\n")).toContain(`后继记录 decisions/${c.id} 本身也已被替代，当前有效的是 decisions/${e.id}`);
   });
 
   it("refuses duplicate IDs and linked source notes without modifying originals", async () => {

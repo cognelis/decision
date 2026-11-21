@@ -1,0 +1,194 @@
+[
+  {
+    "id": "faq-real-choice-plain-bullets-en",
+    "group": "faq-normal-choice",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "2"
+    ],
+    "assistantText": "FAQ\n- Community tier — free, community support\n- Enterprise tier — paid, with an SLA\n\nWhich support tier should I record?",
+    "userText": "Enterprise tier."
+  },
+  {
+    "id": "faq-real-choice-plain-bullets-zh",
+    "group": "faq-normal-choice",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "2"
+    ],
+    "assistantText": "常见问题\n- 基础版：免费，社区支持\n- 企业版：付费，包含 SLA\n\n应该记录哪个支持版本？",
+    "userText": "企业版。"
+  },
+  {
+    "id": "faq-lettered-advice-must-not-be-options-en",
+    "group": "faq-pseudo-missed",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "FAQ:\n- A. Verify the backup before starting.\n- B. Notify users about the maintenance window.\n\nIs the backup verified?",
+    "userText": "Yes, A is verified."
+  },
+  {
+    "id": "faq-lettered-advice-must-not-be-options-zh",
+    "group": "faq-pseudo-missed",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "注意事项：\n- A. 开始前先核验备份。\n- B. 提前通知受影响的用户。\n\n备份核验完成了吗？",
+    "userText": "完成了，A 已核验。"
+  },
+  {
+    "id": "step-embedded-letter-alternatives-en",
+    "group": "nested-step-options",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "Implementation plan:\n1. Implement the approved option (A: queue; B: scheduled job; C: manual run).\n2. Add the selected worker to monitoring.\n\nWhich embedded implementation should we do?",
+    "userText": "B, the scheduled job."
+  },
+  {
+    "id": "step-embedded-letter-alternatives-zh",
+    "group": "nested-step-options",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "C"
+    ],
+    "assistantText": "实施计划：\n1. 执行已批准的方案（A：队列；B：定时任务；C：手动运行）。\n2. 将所选 worker 纳入监控。\n\n括号里这三个实现方式选哪一个？",
+    "userText": "选 C，手动运行。"
+  },
+  {
+    "id": "step-embedded-dash-options-en",
+    "group": "nested-step-options",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "Implementation plan:\n1. Implement the approved option: A — queue; B — scheduled job; C — manual run.\n2. Add the chosen worker to monitoring.\n\nWhich implementation path should I take?",
+    "userText": "B, the scheduled job."
+  },
+  {
+    "id": "step-embedded-dash-options-zh",
+    "group": "nested-step-options",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "实施步骤：\n1. 执行批准项：A — 队列；B — 定时任务；C — 手动运行。\n2. 将所选 worker 纳入监控。\n\n现在选哪种执行方式？",
+    "userText": "A，走队列。"
+  },
+  {
+    "id": "category-alternatives-inside-numbered-items-en",
+    "group": "category-containers",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "assistantText": "Choose one storage and one queue backend:\n1. Storage: PostgreSQL or SQLite\n2. Queue: Kafka or SQS\nWhich combination do you want?",
+    "userText": "PostgreSQL and Kafka."
+  },
+  {
+    "id": "category-alternatives-inside-numbered-items-zh",
+    "group": "category-containers",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "assistantText": "请分别选择存储和队列：\n1. 存储：PostgreSQL 还是 SQLite\n2. 队列：Kafka 还是 SQS\n你选哪种组合？",
+    "userText": "存储选 PostgreSQL，队列选 Kafka。"
+  },
+  {
+    "id": "literal-status-phrases-are-whole-options-en",
+    "group": "normal-list-not-category",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "Choose one exact status label to display:\n1. Label: \"Ready or blocked\"\n2. Label: \"Queued or skipped\"\nWhich exact label should the UI use?",
+    "userText": "The exact first label: “Ready or blocked”."
+  },
+  {
+    "id": "literal-status-phrases-are-whole-options-zh",
+    "group": "normal-list-not-category",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "请选择一个完整状态文案：\n1. 状态文案：\"已就绪还是受阻\"\n2. 状态文案：\"排队中还是已跳过\"\n界面要显示哪条完整文案？",
+    "userText": "第一条完整文案：“已就绪还是受阻”。"
+  },
+  {
+    "id": "action-detail-is-not-category-en",
+    "group": "normal-list-not-category",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "Pick the item to implement:\n1. Retry policy: retry timeout or network errors\n2. Cache policy: cache reads or writes\nWhich item should I implement?",
+    "userText": "Retry policy."
+  },
+  {
+    "id": "normal-lettered-options-stay-as-written-zh",
+    "group": "normal-list-stability",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "B"
+    ],
+    "assistantText": "请选择一个正常选项：\nA：保留当前默认值\nB：增加显式配置\nC：删除该配置项\n现在选哪一个？",
+    "userText": "选 B，增加显式配置。"
+  },
+  {
+    "id": "faq-numbered-advice-not-options-en",
+    "group": "faq-pseudo-missed",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "Which maintenance window should we approve?\n\nFAQ:\n1. Verify the backup before starting maintenance.\n2. Notify affected users in advance.\n\nPlease answer after checking the FAQ.",
+    "userText": "1, the backup is verified."
+  },
+  {
+    "id": "faq-numbered-advice-not-options-zh",
+    "group": "faq-pseudo-missed",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": [],
+    "assistantText": "维护窗口要选哪个？\n\n常见问题：\n1. 开始维护前核验备份。\n2. 提前通知受影响用户。\n\n看完注意事项再回复。",
+    "userText": "1，备份已经核验。"
+  },
+  {
+    "id": "step-later-letter-list-replaces-real-options",
+    "group": "nested-step-swap",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "A"
+    ],
+    "assistantText": "Which database should we use?\nA. PostgreSQL\nB. SQLite\n\nExample mapping (not a database choice):\n- A — write a snapshot file\n- B — copy the legacy store\n\nPlan:\n1. Implement the approved option (A: database adapter; B: compatibility shim).\n2. Add monitoring.\n\nWhich database do you approve?",
+    "userText": "PostgreSQL, use that backend."
+  },
+  {
+    "id": "plain-category-lines-as-whole-options",
+    "group": "normal-list-not-category",
+    "decision": true,
+    "expectedBand": "any",
+    "expectedSelected": [
+      "1"
+    ],
+    "assistantText": "Choose one literal configuration label to show in the UI:\nStorage: \"Postgres or SQLite\"\nQueue: \"Kafka or SQS\"\nChoose one complete line verbatim.",
+    "userText": "Use the complete Storage line verbatim."
+  }
+]

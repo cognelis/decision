@@ -1,5 +1,5 @@
 import { renameReplacing } from "@cognelis/decision-storage";
-import { createHash, randomUUID } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import {
   access,
   chmod,
@@ -38,6 +38,29 @@ const BASE64_PATTERN =
   /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
 
 const SWITCH_MARK = "mode-switch";
+
+/**
+ * Local-credential mode keeps keys out of sight, not out of reach: no key reads in the file, so a glance, a grep or a
+ * secret scanner passes it by. The cipher's key is in this code, so anyone who can read the file and the app can
+ * read the key: that mode is the keychain's to protect (it is not used there).
+ */
+// ponytail: obfuscation with a fixed key; real protection is the keychain mode, or a user passphrase if ever wanted.
+const OBFUSCATION_KEY = createHash("sha256").update("paraself local credential obfuscation v1").digest();
+const OBFUSCATED = "x1:";
+
+const obfuscate = (secret: string): string => {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", OBFUSCATION_KEY, iv);
+  const sealed = Buffer.concat([cipher.update(secret, "utf8"), cipher.final()]);
+  return `${OBFUSCATED}${Buffer.concat([iv, cipher.getAuthTag(), sealed]).toString("base64")}`;
+};
+
+const unobfuscate = (value: string): string => {
+  const packed = Buffer.from(value.slice(OBFUSCATED.length), "base64");
+  const decipher = createDecipheriv("aes-256-gcm", OBFUSCATION_KEY, packed.subarray(0, 12));
+  decipher.setAuthTag(packed.subarray(12, 28));
+  return Buffer.concat([decipher.update(packed.subarray(28)), decipher.final()]).toString("utf8");
+};
 
 const isMissing = (error: unknown): boolean =>
   error !== null &&
@@ -156,7 +179,7 @@ export class CredentialVault {
   }
 
   #encode(secret: string, localMode: boolean): string {
-    if (localMode) return `local:${JSON.stringify(secret)}`;
+    if (localMode) return `local:${obfuscate(secret)}`;
     this.#requireEncryption();
     let encrypted: Buffer | undefined;
     try {
@@ -190,8 +213,9 @@ export class CredentialVault {
         throw new CredentialVaultError("credential_decryption_failed", "Credential could not be read");
       }
       const secret = this.#decode(serialized);
-      // Finish an interrupted migration using the persisted mode.
-      if (serialized.startsWith("local:") !== this.#localMode) {
+      // Finish an interrupted migration using the persisted mode; a key kept in the open before keys were obfuscated
+      // is written over as it is read.
+      if (serialized.startsWith("local:") !== this.#localMode || serialized.startsWith('local:"')) {
         await this.#secureDirectory();
         await this.#write(this.#credentialPath(reference), this.#encode(secret, this.#localMode));
       }
@@ -202,7 +226,8 @@ export class CredentialVault {
   #decode(serialized: string): string {
     if (serialized.startsWith("local:")) {
       try {
-        const secret: unknown = JSON.parse(serialized.slice(6));
+        const body = serialized.slice(6);
+        const secret: unknown = body.startsWith(OBFUSCATED) ? unobfuscate(body) : JSON.parse(body);
         if (typeof secret === "string" && secret.trim()) return secret;
       } catch { /* Report a sanitized error below. */ }
       throw new CredentialVaultError("credential_decryption_failed", "Local credential is invalid");

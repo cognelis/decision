@@ -1,0 +1,329 @@
+[
+  {
+    "id": "R5B2-001",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "比较下来还是选 2",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-002",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "比较之后选 2",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-003",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "对比之后用 1",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5B2-004",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "对比完还是 1",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5B2-005",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "看下来用 2 吧",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-006",
+    "group": "same-clause-decision",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "分析完了选 1",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "1"
+    ]
+  },
+  {
+    "id": "R5B2-007",
+    "group": "same-clause-decision",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show me the diff for 2 and merge it",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-008",
+    "group": "same-clause-decision",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Inspect 2 and use it",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-009",
+    "group": "same-clause-decision",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Review 2 and apply it",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-010",
+    "group": "same-clause-decision",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show me 2 then merge",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-011",
+    "group": "same-clause-decision",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Compare 1 and 2 — go with 2",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-012",
+    "group": "same-clause-decision",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show 2 and ship that",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-013",
+    "group": "assistant-already-continued",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\n我先按 1 做了，测试通过。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-014",
+    "group": "assistant-already-continued",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\n我已经按 2 改了，测试通过。",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-015",
+    "group": "assistant-already-continued",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\nI went ahead with option 1.",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-016",
+    "group": "assistant-already-continued",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\nI already applied option 1.",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-017",
+    "group": "assistant-already-continued",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\nI already implemented option 1.",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-018",
+    "group": "assistant-already-continued",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\nI already chose option 1.",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-019",
+    "group": "assistant-already-continued",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\nI already picked option 1.",
+    "userText": "好的",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-020",
+    "group": "information-after-options",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\n另外还需要你提供 Redis 的连接串。",
+    "userText": "redis://localhost:6379",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-021",
+    "group": "information-after-options",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\n还需要您给我服务地址。",
+    "userText": "redis://localhost:6379",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-022",
+    "group": "information-after-options",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\nI need you to provide a Redis connection string.",
+    "userText": "redis://localhost:6379",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-023",
+    "group": "information-after-options",
+    "assistantText": "两个方向，你选哪个？\n\n1. Redis：成熟\n2. 本地 LRU：零依赖\n\nI need your Redis connection string.",
+    "userText": "redis://localhost:6379",
+    "decision": false,
+    "expectedBand": "none",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-024",
+    "group": "unpointed-deictic",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "就它了",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-025",
+    "group": "unpointed-deictic",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "就这个吧",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-026",
+    "group": "unpointed-deictic",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "不过就这个了",
+    "decision": false,
+    "expectedBand": "any",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-027",
+    "group": "recommended-deictic",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n我推荐 2。你选哪个？",
+    "userText": "就它了",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-028",
+    "group": "referenced-deictic",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "2 看起来不错，就它了",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-029",
+    "group": "read-only-controls",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "比较 1 和 2，再决定。",
+    "decision": false,
+    "expectedBand": "low",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-030",
+    "group": "read-only-controls",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show 2 and do not merge it.",
+    "decision": false,
+    "expectedBand": "low",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-031",
+    "group": "read-only-controls",
+    "assistantText": "1. Add tracing\n2. Adjust timeout\n3. Add retry\n\nWhich changes should I apply?",
+    "userText": "Show 2, then apply it after I approve.",
+    "decision": false,
+    "expectedBand": "low",
+    "expectedSelected": []
+  },
+  {
+    "id": "R5B2-032",
+    "group": "same-clause-connectors",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "先比较然后选 2",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "2"
+    ]
+  },
+  {
+    "id": "R5B2-033",
+    "group": "same-clause-connectors",
+    "assistantText": "1. 保留缓存\n2. 使用队列\n3. 增加告警\n\n你选哪个？",
+    "userText": "分析后采用 1",
+    "decision": true,
+    "expectedBand": "high",
+    "expectedSelected": [
+      "1"
+    ]
+  }
+]

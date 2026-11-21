@@ -4,17 +4,28 @@ import { ModelProviderError } from "./http-model-transport.js";
 const LATE_DEADLINE_MS = 1_000;
 
 /**
+ * What ended a call its caller's signal aborted. A deadline the app sets itself (the capture's overall budget, the
+ * bound on a draft nobody can stop, a review's time limits) aborts with a TimeoutError: that is a timeout, as the
+ * caller reports it, and only a stop is a cancellation. Filed as cancelled, a call nobody stopped read 已取消 in the
+ * call log. Its message stays a stop's, which a caller shows as it is (a review's follow-up does).
+ */
+export const abortFailure = (signal: AbortSignal | undefined): ModelProviderError =>
+  (signal?.reason as { name?: unknown } | undefined)?.name === "TimeoutError"
+    ? new ModelProviderError("timeout", "Model call was cancelled", { diagnosticExcerpt: "Model call reached its caller's deadline" })
+    : new ModelProviderError("cancelled", "Model call was cancelled");
+
+/**
  * Bounds even an adapter that ignores abort; caller cancellation never triggers fallback. With no `timeoutMs`
  * it only cancels: for a backend that times its own calls (SemanticClassifier.queuesCalls).
  */
 export const withProviderDeadline = async <T>(operation: (signal: AbortSignal) => Promise<T>, timeoutMs: number | undefined, parent?: AbortSignal): Promise<T> => {
-  if (parent?.aborted) throw new ModelProviderError("cancelled", "Model call was cancelled");
+  if (parent?.aborted) throw abortFailure(parent);
   const armedAt = performance.now();
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let abort: (() => void) | undefined;
   const interrupted = new Promise<never>((_resolve, reject) => {
-    abort = () => { reject(new ModelProviderError("cancelled", "Model call was cancelled")); controller.abort(); };
+    abort = () => { reject(abortFailure(parent)); controller.abort(); };
     parent?.addEventListener("abort", abort, { once: true });
     if (timeoutMs === undefined) return;
     timer = setTimeout(() => {

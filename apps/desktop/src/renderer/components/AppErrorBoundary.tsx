@@ -24,7 +24,7 @@ export class AppErrorBoundary extends Component<
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
-    console.error("Decision renderer failed", error, info);
+    console.error("Paraself renderer failed", error, info);
   }
 
   #reload = (): void => {

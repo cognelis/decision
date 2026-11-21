@@ -40,7 +40,7 @@ interface ConfigureTrayOptions<Menu> {
   tray: TrayLike<Menu>;
   image: TrayImageLike;
   buildMenu(template: TrayMenuItem[]): Menu;
-  /** The home page's 待办 (pendingWorkTotal), reviews included. */
+  /** The home page's 待处理 (pendingWorkTotal), reviews included. */
   pendingCount: number;
   /** Those of them that are reviews, named so the tooltip can say one came due. */
   reviewDueCount?: number;
@@ -59,11 +59,11 @@ export const configureTray = <Menu>(
   const reviews = options.reviewDueCount ?? 0;
   const workload =
     options.pendingCount === 0
-      ? "暂无待办"
-      : `${options.pendingCount} 项待办${reviews > 0 ? `，其中 ${reviews} 条需复盘` : ""}`;
+      ? "暂无待处理"
+      : `${options.pendingCount} 项待处理${reviews > 0 ? `，其中 ${reviews} 条需复盘` : ""}`;
   options.image.setTemplateImage(true);
   options.tray.setTitle("");
-  options.tray.setToolTip(`Decision · ${workload}`);
+  options.tray.setToolTip(`Paraself · ${workload}`);
   const menu = options.buildMenu([
     {
       label: "首页",

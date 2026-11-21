@@ -23,6 +23,7 @@ import { renameReplacing } from "./replace-file.js";
 const DEFAULT_MAXIMUM_ITEMS = 1_000;
 const DEFAULT_MAXIMUM_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 const TRACE_FILE_PATTERN = /^[a-f0-9]{64}\.json$/u;
+const TRACE_TEMP_PATTERN = /^[a-f0-9]{64}\.json\.[a-f0-9-]{36}\.tmp$/u;
 /**
  * Retention from `record` runs at most this often. Every trace is read and
  * parsed by it: a fifth of a second per call at a thousand traces, and an answer
@@ -131,6 +132,8 @@ export class ModelTraceStore {
         ? {}
         : { processExitCode: input.processExitCode }),
       ...(input.request === undefined ? {} : { request: input.request }),
+      // A decisions call's request and response details (IMP-166): no prompt or answer text, so kept in either mode.
+      ...(input.decision === undefined ? {} : { decision: input.decision }),
       ...(input.diagnosticExcerpt === undefined
         ? {}
         : { diagnosticExcerpt: input.diagnosticExcerpt }),
@@ -210,15 +213,25 @@ export class ModelTraceStore {
   /** Every trace of these requests, the folder listed once however many are named. */
   async deleteRequest(requestId: string | readonly string[]): Promise<number> {
     const requests = new Set(typeof requestId === "string" ? [requestId] : requestId);
-    const entries = (await this.#listEntries()).filter(
-      (entry) => requests.has(entry.trace.requestId),
-    );
-    await Promise.all(
-      entries.map((entry) =>
-        unlink(entry.path).catch(() => undefined),
-      ),
-    );
-    return entries.length;
+    if (requests.size === 0) return 0;
+    await this.#secureDirectories();
+    let removed = 0; let failure: unknown;
+    // Display/retention scans may skip unreadable or expired logs; forgetting must account for them too.
+    for (const directory of [this.path, this.#quarantinePath()]) {
+      for (const filename of await readdir(directory)) {
+        if (directory === this.path && !TRACE_FILE_PATTERN.test(filename) && !TRACE_TEMP_PATTERN.test(filename)) continue;
+        const path = join(directory, filename);
+        try {
+          const trace = modelInvocationTraceSchema.parse(JSON.parse(await readFile(path, "utf8")));
+          if (!requests.has(trace.requestId)) continue;
+          await unlink(path); removed += 1;
+        } catch (error) {
+          if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) failure ??= error;
+        }
+      }
+    }
+    if (failure !== undefined) throw new Error("调用记录未能完整清理，已保留重试进度。", { cause: failure });
+    return removed;
   }
 
   async clear(): Promise<number> {

@@ -1,0 +1,962 @@
+[
+  {
+    "id": "faq-options-decoy-claude-sonnet-1",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "需要确认一下维护时间,下面附上注意事项:\n\n**运维提醒(FAQ)**\n- 维护期间服务会短暂中断,建议提前通知相关用户\n- 维护开始前请确认最新改动已备份/可回滚\n- 维护完成后请做一次基本功能检查(登录、核心接口)再关闭维护公告\n\n**时间选项**\n1. 周五下午\n2. 周六上午\n\n你倾向哪个?",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "faq-options-decoy-claude-sonnet-2",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "维护时间需要您确认一下。\n\n**建议说明（FAQ）：**\n- 维护期间相关服务会短暂不可用，请提前通知受影响用户\n- 建议选在访问低峰时段，减少影响范围\n- 维护完成后请做一次基本功能检查，确认恢复正常\n\n**请选择时间：**\n- Friday afternoon\n- Saturday morning\n\n麻烦回复您方便的时间～",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "faq-options-decoy-claude-sonnet-3",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "维护时间请您定一下，附带一些建议：\n\n**FAQ 建议**\n- 维护期间服务可能短暂不可用，建议提前通知相关方\n- 选低峰时段，减少影响面\n- 预留回滚时间，别卡着点收尾\n\n**两个可选时段**\n1. Friday afternoon\n2. Saturday morning\n\n您定哪个?",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "faq-options-decoy-claude-sonnet-4",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "您好,需要安排一次维护时间,请确认以下两个选项之一:\n\n- **周五下午**\n- **周六上午**\n\n小贴士:维护建议选择业务低峰时段,并提前通知相关方;如涉及数据库或核心服务变更,记得提前做好备份与回滚预案。\n\n请回复选择的时间段即可。",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "category-title-options-claude-sonnet-1",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**Storage: Postgres or SQLite**\n\n你想用哪个?",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "category-title-options-claude-sonnet-2",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**Storage: Postgres or SQLite**\n\n你想用哪个存储方案？",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "category-title-options-claude-sonnet-3",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**Storage: Postgres or SQLite**\n\n你想用哪个?",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "category-title-options-claude-sonnet-4",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**Storage: Postgres or SQLite**\n\n你想用哪个?",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "plan-step-options-claude-sonnet-1",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划补充这一步:\n\n4. 实施已批准的方案(A: 队列; B: 定时任务; C: 手动)\n\n三个嵌入式备选方案里,想先实施哪一个?",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "plan-step-options-claude-sonnet-2",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划第 N 步补充如下：\n\n**实施已批准的方案（A：队列；B：定时任务；C：手动）**\n\n这三个嵌入式替代方案里，要先落地哪一个?",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "plan-step-options-claude-sonnet-3",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划新增一步：\n\n4. 实现已批准的方案（A：队列；B：定时任务；C：手动）\n\n这一步里嵌入了三个备选方案，具体实现哪一个？",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "plan-step-options-claude-sonnet-4",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划已更新，补充这一步：\n\n4. Implement the approved option (A: queue; B: scheduled job; C: manual)\n\n哪种方案要落地——A(queue)、B(scheduled job) 还是 C(manual)?",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "codeblock-options-claude-sonnet-1",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```\nA/B\n```\n\n- A: local\n- B: cloud\n\n选 A 还是 B？",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "codeblock-options-claude-sonnet-2",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```\nA/B\n```\n\nA: local\nB: cloud\n\n你想选 A 还是 B?",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "codeblock-options-claude-sonnet-3",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```\nA/B\n```\n\n实际选项：\n- **A**: local\n- **B**: cloud\n\n你选哪个？",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "codeblock-options-claude-sonnet-4",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```\nA/B\n```\n\n实际选项：\n- **A**: local\n- **B**: cloud\n\n你选哪个？",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "quoted-options-claude-sonnet-1",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "之前的讨论里提到过两个选项:\n\n> A: REST\n> B: GraphQL\n\n现在把范围扩展一下,目前可选方案如下:\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你想选哪一个?或者需要我先说说各自的取舍?",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "quoted-options-claude-sonnet-2",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "As discussed before:\n\n> \"A: 用 REST，B: 用 GraphQL\"\n\n现在的选项更新为三个:\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你想选哪个?",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "quoted-options-claude-sonnet-3",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "回顾一下之前讨论过的内容，当时提到过：\n\n> A: REST, B: GraphQL\n\n现在把选项补全一下，目前可选方案是：\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你想选哪个？",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "quoted-options-claude-sonnet-4",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "之前的消息里提到过：\n\n> \"A: REST, B: GraphQL\"\n\n现在把选项更新一下,目前的方案是:\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你想选哪个?",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "normal-list-claude-sonnet-1",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择一个：\n\nA: SQLite\nB: Postgres\nC: MongoDB\n\n你选哪个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "normal-list-claude-sonnet-2",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择一个：\n\nA: SQLite\nB: Postgres\nC: MongoDB\n\n你选哪个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "normal-list-claude-sonnet-3",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择一个:\n\nA: SQLite\nB: Postgres\nC: MongoDB\n\n你选哪个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "normal-list-claude-sonnet-4",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择一个数据库:\n\nA: SQLite\nB: Postgres\nC: MongoDB\n\n你选哪个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "mixed-real-faq-decoy-claude-sonnet-1",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三个方案供选择:\n\n**A: 直接全量上线** — 一次性对所有用户生效,上线快,但出问题影响面最大。\n\n**B: 灰度发布** — 先对小比例用户/节点放量,观察指标后再逐步扩大,风险可控但周期更长。\n\n**C: 暂缓上线** — 先不发布,等待条件成熟(如资源、测试、时间窗口)再决定。\n\n**FAQ**\n\nQ: 如果上线后出问题怎么回滚?\nA: 回滚方式参考方案 A(直接全量操作),仅作信息性参考,不代表推荐选择。\n\n你想选哪个方案(A/B/C)?",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "mixed-real-faq-decoy-claude-sonnet-2",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "方案如下，请确认选哪个：\n\n**A. 直接全量上线**\n一次性对所有用户/节点生效，上线最快，但出问题影响面最大。\n\n**B. 灰度发布（canary）**\n先对小比例流量放量，观察指标后再逐步扩大，风险可控但周期更长。\n\n**C. 延期**\n暂不上线，留出时间做更多验证或等依赖就位。\n\n**FAQ**\n\nQ: 如果上线后出问题，怎么回滚？\nA: rollback: use option A（即直接切回全量旧版本作为回滚手段，仅供参考，不代表推荐的上线方案）。\n\n你要选哪个？",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "mixed-real-faq-decoy-claude-sonnet-3",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "以下是三个可选方案：\n\n**A. 直接全量上线** — 一次性对所有用户/节点发布，速度最快，但出问题影响面最大。\n\n**B. 灰度发布（canary）** — 先放小流量验证,再逐步扩大,风险最小,但耗时更长、需要监控配合。\n\n**C. 暂缓上线** — 先不发,等条件(测试、资源、时间窗口等)更成熟再做,零风险但会推迟收益。\n\n**FAQ**\n\n**Q: 如果上线后出问题，怎么回滚？**\nA: 回滚方式参考方案 A（直接操作，影响面大但速度快）——这只是信息性说明，不代表回滚等同于这次要选的方案。\n\n你想选哪个？",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "mixed-real-faq-decoy-claude-sonnet-4",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "这是一个纯文本对话任务,直接用中文输出即可,不涉及代码改动。\n\n以下是上线方案选项:\n\n**选项 A:直接上线(Direct rollout)**\n全量一次性发布给所有用户。优点是流程简单、见效快;缺点是一旦出问题影响面是全部用户,排查和止损压力大。\n\n**选项 B:灰度发布(Canary)**\n先对一小部分用户/流量放量,观察指标后再逐步扩大。优点是风险可控、能提前发现问题;缺点是周期更长,需要监控和分阶段放量的配套。\n\n**选项 C:推迟上线(Postpone)**\n暂不发布,等条件(时间、资源、确定性)更充分再启动。优点是规避当前不确定性;缺点是延迟交付,可能错过窗口期。\n\n---\n\n**FAQ**\n\n**Q: 如果上线后出问题,怎么回滚?**\nA: 回滚参考做法——使用选项 A(直接全量切回/重新部署上一个版本)。这里仅作信息性参考,不代表推荐的上线方式,实际回滚手段仍需按当时的发布渠道和基础设施确认是否可行。\n\n---\n\n三个选项里,你倾向选哪个:A、B,还是 C?",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "mixed-heading-and-list-claude-sonnet-1",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**Storage: Postgres or SQLite**\n\n- Postgres (managed)\n- SQLite (local)\n\n用哪个?",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 1
+  },
+  {
+    "id": "mixed-heading-and-list-claude-sonnet-2",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "Storage: Postgres or SQLite\n\n- Postgres (managed)\n- SQLite (local)\n\n你想用哪个?",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 2
+  },
+  {
+    "id": "mixed-heading-and-list-claude-sonnet-3",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**Storage: Postgres or SQLite**\n\n- Postgres (managed)\n- SQLite (local)\n\n用哪个?",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 3
+  },
+  {
+    "id": "faq-options-decoy-codex-1",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "维护时间您更方便选哪一个？\n\n- Friday afternoon\n- Saturday morning\n\n建议提前查看 FAQ，了解维护期间的服务影响和准备事项。",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "mixed-heading-and-list-claude-sonnet-4",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "**Storage: Postgres or SQLite**\n\n- Postgres (managed)\n- SQLite (local)\n\n用哪个?",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "claude-sonnet",
+    "modelId": "claude-sonnet-5-5",
+    "repetition": 4
+  },
+  {
+    "id": "faq-options-decoy-codex-2",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请问您希望将维护安排在什么时候？\n\n- Friday afternoon\n- Saturday morning\n\n建议先查看 FAQ，了解维护期间的影响和准备事项。",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "faq-options-decoy-codex-3",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "维护时间选哪个更合适？\n\n- Friday afternoon\n- Saturday morning\n\n建议提前更新 FAQ，写明维护的影响范围、预计时长和遇到问题时的联系方式。",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "faq-options-decoy-codex-4",
+    "group": "faq",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "维护前建议先查看 FAQ，了解可能的影响和准备事项。您方便安排在周五下午（Friday afternoon）还是周六上午（Saturday morning）？",
+    "userText": "Friday afternoon, please.",
+    "expectedSelected": [
+      "Friday afternoon"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "category-title-options-codex-1",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "### Storage: Postgres or SQLite\n\n请选择一个：Postgres 或 SQLite？",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "category-title-options-codex-2",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "### Storage: Postgres or SQLite\n\n请选择一个：Postgres 还是 SQLite？",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "category-title-options-codex-3",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "### Storage: Postgres or SQLite\n\n请选择一个：Postgres 还是 SQLite？",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "category-title-options-codex-4",
+    "group": "category-title",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "### Storage: Postgres or SQLite\n\n请选择一个：Postgres 还是 SQLite？",
+    "userText": "SQLite.",
+    "expectedSelected": [
+      "SQLite"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "plan-step-options-codex-1",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划步骤：Implement the approved option (A: queue; B: scheduled job; C: manual)。\n\n你希望实现哪一种：A: queue、B: scheduled job，还是 C: manual？",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "plan-step-options-codex-2",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划步骤：Implement the approved option (A: queue; B: scheduled job; C: manual)。\n\n请问要实施哪一种：A: queue、B: scheduled job，还是 C: manual？",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "plan-step-options-codex-3",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划步骤：Implement the approved option (A: queue; B: scheduled job; C: manual)\n\n请选择要实现的方案：A: queue、B: scheduled job，还是 C: manual？",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "plan-step-options-codex-4",
+    "group": "plan-step",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "计划步骤：Implement the approved option (A: queue; B: scheduled job; C: manual)。\n\n请选择要实施的方案：A: queue、B: scheduled job，还是 C: manual？",
+    "userText": "B, the scheduled job.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "codeblock-options-codex-1",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```\nA\nB\n```\n\n- A: local\n- B: cloud\n\n请选择 A 或 B。",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "codeblock-options-codex-2",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```text\nA/B\n```\n\n可选方案：\n\n- A: local\n- B: cloud\n\n请选择 A 或 B。",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "codeblock-options-codex-3",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```text\nA\nB\n```\n\n可选方案：\n- A: local\n- B: cloud\n\n请选择 A 或 B。",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "codeblock-options-codex-4",
+    "group": "codeblock",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "```text\nA\nB\n```\n\n- A: local\n- B: cloud\n\n请选择 A 或 B。",
+    "userText": "Choose B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "quoted-options-codex-1",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "我看不到此前列出 A/B 的消息，无法准确引用。当前选项是：\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你选哪一个？",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "quoted-options-codex-2",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "之前的消息：\n> A: REST  \n> B: GraphQL\n\n当前选项：\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你选哪一个？",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "quoted-options-codex-3",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "我看不到先前列出 A/B 的消息，无法准确引用原文。当前选项是：\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你选哪一个？",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "quoted-options-codex-4",
+    "group": "quoted",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "我没有看到那条列出 A/B 的旧消息，因此无法准确引用。\n\n当前选项：\n\n- A: REST\n- B: GraphQL\n- C: gRPC\n\n你选哪一个？",
+    "userText": "C, please.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "normal-list-codex-1",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: SQLite  \nB: Postgres  \nC: MongoDB  \n\n你选哪一个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "normal-list-codex-2",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: SQLite  \nB: Postgres  \nC: MongoDB  \n\n你选择哪一个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "normal-list-codex-3",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: SQLite  \nB: Postgres  \nC: MongoDB\n\n你选哪一个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "normal-list-codex-4",
+    "group": "normal-list",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "A: SQLite  \nB: Postgres  \nC: MongoDB\n\n你选择哪一个？",
+    "userText": "B.",
+    "expectedSelected": [
+      "B"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "mixed-real-faq-decoy-codex-1",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择实际方案：\n\n- A: direct rollout\n- B: canary\n- C: postpone\n\nFAQ：rollback: use option A（仅供参考，不代表已选择 A）。\n\n你的实际选择是 A、B 还是 C？",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "mixed-real-faq-decoy-codex-2",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择实际方案：\n\n- A: direct rollout\n- B: canary\n- C: postpone\n\nFAQ：rollback: use option A（仅供参考，不代表已选择 A）。\n\n你选择 A、B 还是 C？",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "mixed-real-faq-decoy-codex-3",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择实际方案：\n\n- A: direct rollout\n- B: canary\n- C: postpone\n\nFAQ：rollback: use option A（仅供参考，不代表已选择 A）。\n\n你选择 A、B 还是 C？",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "mixed-real-faq-decoy-codex-4",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "请选择实际方案：\n\n- A: direct rollout\n- B: canary\n- C: postpone\n\nFAQ：rollback: use option A（仅供参考，不代表已选择 A）。\n\n你的实际选择是 A、B 还是 C？",
+    "userText": "C, postpone the rollout.",
+    "expectedSelected": [
+      "C"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  },
+  {
+    "id": "mixed-heading-and-list-codex-1",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "# Storage: Postgres or SQLite\n\n- Postgres (managed)\n- SQLite (local)\n\n请选择使用哪一项？",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 1
+  },
+  {
+    "id": "mixed-heading-and-list-codex-2",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "# Storage: Postgres or SQLite\n\n- Postgres (managed)\n- SQLite (local)\n\n请选择使用哪一种？",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 2
+  },
+  {
+    "id": "mixed-heading-and-list-codex-3",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "## Storage: Postgres or SQLite\n\n- Postgres (managed)\n- SQLite (local)\n\n请选择使用哪一种？",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 3
+  },
+  {
+    "id": "mixed-heading-and-list-codex-4",
+    "group": "mixed",
+    "decision": true,
+    "expectedBand": "any",
+    "assistantText": "# Storage: Postgres or SQLite\n\n- Postgres (managed)\n- SQLite (local)\n\n请选择使用哪一个？",
+    "userText": "Postgres.",
+    "expectedSelected": [
+      "Postgres"
+    ],
+    "source": "synthetic-model-output",
+    "client": "codex",
+    "modelId": "gpt-6-sol",
+    "repetition": 4
+  }
+]

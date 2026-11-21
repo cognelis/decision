@@ -1,0 +1,90 @@
+[
+  {
+    "id": "pr-01",
+    "title": "精简权限检查入口",
+    "case": "pr-adversarial-r7/pr-01/case.json",
+    "labels": "pr-adversarial-r7/pr-01/labels.json",
+    "class": "counterexample",
+    "evidenceFile": "src/server.ts",
+    "searchSymbol": "handleUpdate",
+    "case_sha256": "22c188f7dbe7fe27def8989e04504a3abc045cc4333fd8d8d0068d7d2db9ede4",
+    "label_sha256": "4600a96de8d8e709a80abccc92de3eff49a44487ff61b4b870dc2b44ed0598df"
+  },
+  {
+    "id": "pr-02",
+    "title": "移除重复上传体积校验",
+    "case": "pr-adversarial-r7/pr-02/case.json",
+    "labels": "pr-adversarial-r7/pr-02/labels.json",
+    "class": "counterexample",
+    "evidenceFile": "src/upload.ts",
+    "searchSymbol": "storeUpload",
+    "case_sha256": "c35d6a5246d296a88cf781da1d1f26528dc99a697135e87b8dbbe7bc2afbaf11",
+    "label_sha256": "1a21d496d721a27cae8975a6e3b9ac847ad588ede5499cc928b6e0a742e86b8a"
+  },
+  {
+    "id": "pr-03",
+    "title": "简化事务写入函数",
+    "case": "pr-adversarial-r7/pr-03/case.json",
+    "labels": "pr-adversarial-r7/pr-03/labels.json",
+    "class": "counterexample",
+    "evidenceFile": "src/transaction.ts",
+    "searchSymbol": "writeRecord",
+    "case_sha256": "0341488572774454714542296283ee0070c1187c6f74e9e5e10d90c27632c308",
+    "label_sha256": "3c328c64e360921d4770fbbd7e936e03b4040f376d876818ae6e2ce867c446c7"
+  },
+  {
+    "id": "pr-04",
+    "title": "移除渲染器中的重复转义",
+    "case": "pr-adversarial-r7/pr-04/case.json",
+    "labels": "pr-adversarial-r7/pr-04/labels.json",
+    "class": "counterexample",
+    "evidenceFile": "src/page.ts",
+    "searchSymbol": "renderLabel",
+    "case_sha256": "d11570376004cd0d59bdb0c54ea07f3c24ba6cd9582416ec7ae395288993c138",
+    "label_sha256": "b1c779f18da4b9eef2bc69807fd744a9e8aed23ee3fa765d6f9315b1b561ca14"
+  },
+  {
+    "id": "pr-05",
+    "title": "避免缺失标题导致崩溃",
+    "case": "pr-adversarial-r7/pr-05/case.json",
+    "labels": "pr-adversarial-r7/pr-05/labels.json",
+    "class": "defect",
+    "evidenceFile": "src/caller.ts",
+    "searchSymbol": "formatTitle",
+    "case_sha256": "c6cb7b97f8ce8032661a1870a1d001cc7101056c8f57421f6bc4bb04ca322c07",
+    "label_sha256": "99a46c8833dff954a220dd15f2b62832795265e098304f54eacf76a27d2069e8"
+  },
+  {
+    "id": "pr-06",
+    "title": "保证并发扣减不超额",
+    "case": "pr-adversarial-r7/pr-06/case.json",
+    "labels": "pr-adversarial-r7/pr-06/labels.json",
+    "class": "defect",
+    "evidenceFile": "src/checkout.ts",
+    "searchSymbol": "debit",
+    "case_sha256": "488469eba60e32d34b268baf7f0ad278e08075a5f1ac4f5b8ebae33c64b6c276",
+    "label_sha256": "0eb9d92c49413832120072e26b1c7df341fcbd849d40ebfaa779805ceabb2a29"
+  },
+  {
+    "id": "pr-07",
+    "title": "修正分页游标起点",
+    "case": "pr-adversarial-r7/pr-07/case.json",
+    "labels": "pr-adversarial-r7/pr-07/labels.json",
+    "class": "defect",
+    "evidenceFile": "src/feed.ts",
+    "searchSymbol": "pageAfter",
+    "case_sha256": "095beebcfb60d0ff93d23b2a9cab8753fba35e20aa32d68d987a5483d5fe162a",
+    "label_sha256": "d885525e9be78bd5e223ed0700ea64caf8ec91fe0e7bf362367940d8c6dedf2f"
+  },
+  {
+    "id": "pr-08",
+    "title": "释放准备失败时占用的锁",
+    "case": "pr-adversarial-r7/pr-08/case.json",
+    "labels": "pr-adversarial-r7/pr-08/labels.json",
+    "class": "defect",
+    "evidenceFile": "src/worker.ts",
+    "searchSymbol": "runJob",
+    "case_sha256": "fa565842e965bbdce9a5f5437cb1bdf0878fd5e8636421db79575e23e545626a",
+    "label_sha256": "f8e7faedc64604d794cb9b9f98c1830c7c8305fb5d8ac18bcf15daa4606eca38"
+  }
+]

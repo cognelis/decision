@@ -95,3 +95,17 @@ describe("review rules in the code-meeseeks format", () => {
     });
   });
 });
+
+it("reads how hard a rule may be pressed: advisory unless said blocking, a value it does not know said and read as advisory", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "review-rules-enforcement-"));
+  try {
+    await writeFile(join(directory, "money.md"), "---\nenforcement: blocking\n---\n金额一律用整数分。\n");
+    await writeFile(join(directory, "plain.md"), "日志要带请求号。\n");
+    await writeFile(join(directory, "typo.md"), "---\nenforcement: blocker\n---\n接口要有错误码。\n");
+    const { rules, warnings } = await loadReviewRules(directory);
+    expect(Object.fromEntries(rules.map((rule) => [rule.id, rule.enforcement]))).toEqual({ "money.md": "blocking", "plain.md": "advisory", "typo.md": "advisory" });
+    expect(warnings).toEqual(["评审规则 typo.md 的 enforcement「blocker」不认识，按 advisory（只作建议）处理；可用的值：advisory、blocking。"]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

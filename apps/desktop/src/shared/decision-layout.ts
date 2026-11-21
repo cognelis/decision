@@ -7,5 +7,3 @@ export const DESKTOP_WINDOW_MIN_SIZE = {
   width: 860,
   height: 620,
 } as const;
-
-export type DecisionWindowMode = "desktop";

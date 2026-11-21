@@ -16,7 +16,7 @@ describe("server model catalog", () => {
     expect(await readCliCatalogCredential("codex", { CODEX_HOME: path })).toEqual({ token: "fake-access", accountId: "account-test" });
     const getJson = vi.fn<HttpModelTransport["getJson"]>(async () => response({ models: [{ slug: "latest", display_name: "Latest", visibility: "list", instructions: "private" }, { slug: "hidden", display_name: "Hidden", visibility: "hide" }] }));
     expect(await queryCliServerModels("codex", { CODEX_HOME: path }, { getJson }, "0.161.0")).toEqual([{ id: "latest", label: "Latest" }]);
-    expect(getJson.mock.calls[0]?.[0]).toMatchObject({ url: "https://chatgpt.com/backend-api/codex/models?client_version=0.161.0", headers: { Authorization: "Bearer fake-access", "Cache-Control": "no-cache, no-store", "ChatGPT-Account-ID": "account-test", originator: "decision_model_catalog" }, secrets: ["fake-access", "account-test"] });
+    expect(getJson.mock.calls[0]?.[0]).toMatchObject({ url: "https://chatgpt.com/backend-api/codex/models?client_version=0.161.0", headers: { Authorization: "Bearer fake-access", "Cache-Control": "no-cache, no-store", "ChatGPT-Account-ID": "account-test", originator: "paraself_model_catalog" }, secrets: ["fake-access", "account-test"] });
     expect(JSON.stringify(getJson.mock.calls)).not.toContain("never-use-refresh");
   });
 

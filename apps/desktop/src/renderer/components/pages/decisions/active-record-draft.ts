@@ -2,9 +2,16 @@ import { z } from "zod";
 
 const key = "decision.active-record.draft.v1";
 const text = z.string().max(32_000);
+/** What a 历史决定 holds beyond the fields every kind shares; absent from a draft kept before the kind was. */
+const historicalSchema = z.object({
+  decidedOn: text, tags: z.array(text).max(50), options: text, context: text, scope: text, participants: z.array(text).max(50),
+  reversibility: z.enum(["", "easy", "costly", "irreversible"]), references: text, relatedNotes: text, supersedesId: text,
+  revisitCondition: text, notes: text,
+});
 const draftSchema = z.object({
   version: z.literal(1),
-  kind: z.enum(["decision", "preference", "idea"]),
+  kind: z.enum(["decision", "historical", "preference", "idea"]),
+  historical: historicalSchema.optional(),
   title: text, content: text, project: text, rationale: text,
   expectedOutcome: text, reviewDueDate: text,
   appliesWhen: text, exceptions: text, whyInteresting: text, nextTest: text,

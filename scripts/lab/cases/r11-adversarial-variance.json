@@ -1,0 +1,1850 @@
+[
+  {
+    "id": "r11-neg-table-status-comment-claude-sonnet-5-2",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 部署区域 | 当前状态 |\n|---|---|\n| A | 健康 |\n| B | 延迟 |\n| C | 未启动 |\n\n你想了解哪个状态的详情？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-status-comment-claude-sonnet-5-1",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 区域 | 状态 |\n|---|---|\n| A | 健康 |\n| B | 延迟 |\n| C | 未开始 |\n\n你想了解哪个状态的详情？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-status-comment-claude-sonnet-5-3",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| Region | Status |\n|---|---|\n| A | Healthy |\n| B | Delayed |\n| C | Not started |\n\n你想了解哪个状态（A、B 还是 C）？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-status-comment-claude-sonnet-5-4",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 区域 | 状态 |\n|---|---|\n| A | 健康 |\n| B | 延迟 |\n| C | 未开始 |\n\n想详细了解哪个区域的状态？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-progress-question-claude-sonnet-5-2",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 任务 | 进度 |\n|---|---|\n| 1. 数据导出 | 80% |\n| 2. 校验 | 40% |\n| 3. 切流 | 0% |\n\n想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-progress-question-claude-sonnet-5-1",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 序号 | 任务 | 进度 |\n|---|---|---|\n| 1 | 数据导出 | 80% |\n| 2 | 校验 | 40% |\n| 3 | 切流 | 0% |\n\n你想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-progress-question-claude-sonnet-5-3",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 任务 | 进度 |\n|---|---|\n| 1 数据导出 | 80% |\n| 2 校验 | 40% |\n| 3 切流 | 0% |\n\n你想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-progress-question-claude-sonnet-5-4",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 任务 | 进度 |\n|---|---|\n| 1 数据导出 | 80% |\n| 2 校验 | 40% |\n| 3 切流 | 0% |\n\n你想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-test-results-claude-sonnet-5-2",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| unit | 120 passed |\n| integration | 2 failed |\n| e2e | not run |\n\n需要重跑计划（rerun plan),还是失败原因说明（failure explanation)?",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-test-results-claude-sonnet-5-1",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| unit | 120 passed |\n| integration | 2 failed |\n| e2e | not run |\n\n你想要重跑计划（rerun plan），还是失败原因说明（failure explanation）？",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-test-results-claude-sonnet-5-3",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| unit | 120 passed |\n| integration | 2 failed |\n| e2e | not run |\n\n你想要我给出重跑计划，还是解释一下失败原因？",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-test-results-claude-sonnet-5-4",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| unit | 120 passed |\n| integration | 2 failed |\n| e2e | not run |\n\n你是想要重跑计划（rerun plan），还是失败原因分析（failure explanation）？",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-claude-sonnet-5-1",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | option | latency | maintenance |\n|----|--------|---------|--------------|\n| 1 | PostgreSQL | 中等，复杂查询下延迟略高 | 成熟稳定，运维资料丰富，维护成本低 |\n| 2 | MongoDB | 简单查询延迟低，复杂聚合较高 | 灵活但 schema 治理需额外投入，维护成本中等 |\n| 3 | Redis | 延迟极低（内存级） | 功能单一，持久化/扩容需额外设计，维护成本中等偏低 |\n\n你想深入了解哪个选项？",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-claude-sonnet-5-2",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | option | latency | maintenance |\n|----|--------|---------|--------------|\n| 1 | PostgreSQL | 中等 | 中等 |\n| 2 | Redis | 低 | 低 |\n| 3 | MongoDB | 中等偏高 | 中等 |\n\n想详细了解哪个选项?",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-claude-sonnet-5-3",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | option | latency | maintenance |\n|---|---|---|---|\n| 1 | PostgreSQL | 中等，复杂查询下可能偏高 | 成熟稳定，运维资源丰富 |\n| 2 | MongoDB | 简单读写延迟低 | 水平扩展方便，但 schema 治理需要额外投入 |\n| 3 | Redis | 极低，内存级响应 | 轻量，但持久化和容量规划需要额外关注 |\n\n你想深入了解哪个选项？",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-claude-sonnet-5-4",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | option | latency | maintenance |\n|----|--------|---------|--------------|\n| 1 | PostgreSQL | 中等，复杂查询下可能变高 | 成熟稳定，运维资料和工具链丰富 |\n| 2 | MongoDB | 简单读写较低，复杂聚合较高 | Schema 灵活，但大规模分片运维复杂度上升 |\n| 3 | Redis | 极低，内存级响应 | 轻量，但需要额外考虑持久化和容量规划 |\n\n你想深入了解哪个选项？",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-other-topic-claude-sonnet-5-1",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 维度 | 方案 A | 方案 B | 方案 C |\n|---|---|---|---|\n| 一致性 | 待补充 | 待补充 | 待补充 |\n| 性能/延迟 | 待补充 | 待补充 | 待补充 |\n| 实现复杂度 | 待补充 | 待补充 | 待补充 |\n| 运维成本 | 待补充 | 待补充 | 待补充 |\n| 扩展性 | 待补充 | 待补充 | 待补充 |\n\n因为你没给出 A/B/C 具体是什么方案（比如本地缓存 vs 分布式缓存 vs 多级缓存，或者具体的 Redis/Memcached/Caffeine 之类选型），表格先按通用维度搭了框架。你想选哪一个，或者先告诉我这三个方案具体指什么，我再把内容填进去？",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-other-topic-claude-sonnet-5-2",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 核心思路 | 优点 | 缺点 | 适用场景 |\n|---|---|---|---|---|\n| A | 本地内存缓存（如进程内 Map/LRU） | 延迟最低，无网络开销，部署简单 | 多实例间不共享，重启后数据丢失，容量受单机内存限制 | 单实例、数据量小、可容忍缓存丢失 |\n| B | 集中式缓存（如 Redis） | 多实例共享一致视图，容量可独立扩展，支持持久化和过期策略 | 引入网络往返和外部依赖，需要额外运维 | 多实例部署、需要跨服务共享缓存数据 |\n| C | 本地 + 集中式多级缓存 | 兼顾低延迟和一致性，热点数据命中本地即可返回 | 架构复杂度高，需要处理两级之间的失效同步问题 | 读多写少、对延迟敏感且实例数较多的场景 |\n\n你想选哪一个？",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-other-topic-claude-sonnet-5-3",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 核心思路 | 优点 | 缺点 | 适用场景 |\n|---|---|---|---|---|\n| A | 本地内存缓存（如进程内 LRU） | 延迟最低，实现简单，无额外依赖 | 多实例间不共享，重启丢失，容量受限于单机内存 | 单机部署、数据量小、容忍重启失效 |\n| B | 集中式缓存（如 Redis） | 多实例共享一致，容量可扩展，支持过期/淘汰策略丰富 | 多一层网络开销，需要维护额外基础设施，存在单点/运维成本 | 多实例部署、需要跨节点共享缓存状态 |\n| C | 多级缓存（本地 + 集中式组合） | 兼顾低延迟和一致性，热点数据命中本地即可 | 实现复杂，需要处理缓存失效/一致性同步逻辑 | 高并发、对延迟和一致性都有较高要求的场景 |\n\n你想选哪一个？",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-other-topic-claude-sonnet-5-4",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 核心思路 | 优点 | 缺点 | 适用场景 |\n|---|---|---|---|---|\n| A：本地内存缓存（如 Caffeine/LRU） | 进程内缓存，数据存在应用内存中 | 读写延迟最低；无网络开销；实现简单 | 多实例间不共享、不一致；重启丢失；受单机内存限制 | 单实例部署、数据量小、容忍一定不一致 |\n| B：集中式缓存（如 Redis） | 独立缓存服务，多实例共享 | 多实例数据一致；容量可水平扩展；支持持久化和过期策略 | 多一次网络往返，延迟高于本地缓存；需要额外运维一套服务；存在单点/集群复杂度 | 多实例部署、需要跨节点共享状态、数据量较大 |\n| C：多级缓存（本地 + 集中式） | 本地缓存做一级，Redis 做二级，未命中逐级回源 | 兼顾延迟与一致性；减轻集中式缓存压力 | 实现复杂度最高；需要处理缓存失效/广播一致性问题；调试和排查成本高 | 高并发、对延迟敏感且数据量大、有专门维护能力 |\n\n你想选 A、B 还是 C？",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-review-question-claude-sonnet-5-1",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 频率 | 保留周期 | 适用场景 |\n|---|---|---|---|\n| A | 每日全量 | 7 天 | 数据变动频繁，需要精细回滚 |\n| B | 每周全量 + 每日增量 | 30 天 | 兼顾存储成本与恢复粒度 |\n| C | 每月全量 | 90 天 | 数据变动少，长期归档为主 |\n\n你更倾向哪一个？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-review-question-claude-sonnet-5-2",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 频率 | 保留时长 |\n|---|---|---|\n| A | 每日增量 | 保留 7 天 |\n| B | 每周全量 + 每日增量 | 保留 30 天 |\n| C | 每月全量 | 保留 12 个月 |\n\n你倾向哪一个？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-review-question-claude-sonnet-5-3",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 频率 | 保留时长 |\n|---|---|---|\n| A | 每天 | 7 天 |\n| B | 每周 | 4 周 |\n| C | 每小时 | 24 小时 |\n\n你更倾向哪一个？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-review-question-claude-sonnet-5-4",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 频率 | 保留周期 |\n|---|---|---|\n| A | 每日增量 | 保留 7 天 |\n| B | 每周全量 | 保留 4 周 |\n| C | 每日增量 + 每周全量 | 保留 30 天 |\n\n你更倾向哪一个？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-approval-comment-claude-sonnet-5-1",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度发布 | 未开始 |\n\n需要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-approval-comment-claude-sonnet-5-2",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度发布 | 未开始 |\n\n需要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-approval-comment-claude-sonnet-5-3",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度发布 | 未开始 |\n\n需要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-approval-comment-claude-sonnet-5-4",
+    "group": "r11-neg-table-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度发布 | 未开始 |\n\n要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-claude-sonnet-5-1",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备好了一个数据库索引迁移。现在批准执行吗？",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-claude-sonnet-5-2",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已经准备好了数据库索引迁移。是否批准现在执行？",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-claude-sonnet-5-3",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已经准备好了一份数据库索引迁移（database index migration）。Do you approve applying it now?",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-claude-sonnet-5-4",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已经准备好了数据库索引迁移。\n\nDo you approve applying it now?",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-preview-only-claude-sonnet-5-1",
+    "group": "r11-neg-preview-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已经准备好了一个报表导出（report export）功能，是否批准我实现它？",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-preview-only-claude-sonnet-5-2",
+    "group": "r11-neg-preview-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已经准备好了一个报表导出功能，是否批准实现它？",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-preview-only-claude-sonnet-5-3",
+    "group": "r11-neg-preview-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备好了一份报表导出功能，您是否同意我实施它？",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-preview-only-claude-sonnet-5-4",
+    "group": "r11-neg-preview-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备好了一份报告导出功能，是否批准实施？",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approves-other-item-claude-sonnet-5-1",
+    "group": "r11-neg-approves-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备把日志切换到 JSON 格式。这个改动你批准吗？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approves-other-item-claude-sonnet-5-2",
+    "group": "r11-neg-approves-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备把日志输出切换为 JSON 格式，这样便于日志采集和解析，但可能会影响现有依赖纯文本日志格式的脚本或监控规则。是否批准这个改动？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approves-other-item-claude-sonnet-5-3",
+    "group": "r11-neg-approves-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备把日志输出切换为 JSON 格式。这个改动你批准吗？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approves-other-item-claude-sonnet-5-4",
+    "group": "r11-neg-approves-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备把日志格式从当前格式切换为 JSON 格式。这个改动会影响日志的输出结构，可能需要同步调整下游的日志解析/采集逻辑。请问是否批准这个改动？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approval-definition-claude-sonnet-5-1",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "是否批准删除临时缓存目录？",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approval-definition-claude-sonnet-5-2",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "是否同意删除临时缓存目录？",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approval-definition-claude-sonnet-5-3",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你是否批准删除临时缓存目录？",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approval-definition-claude-sonnet-5-4",
+    "group": "r11-neg-approval-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "是否同意删除临时缓存目录？",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-claude-sonnet-5-2",
+    "group": "r11-neg-approve-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。是否批准现在执行？",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-claude-sonnet-5-1",
+    "group": "r11-neg-approve-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。请确认是否批准现在执行？",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-claude-sonnet-5-3",
+    "group": "r11-neg-approve-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。是否批准现在执行？",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-claude-sonnet-5-4",
+    "group": "r11-neg-approve-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。是否批准现在执行？请回复确认或告知修改意见。",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-claude-sonnet-5-2",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 构建（build）服务\n2. 运行测试（run tests）\n3. 部署（deploy）\n\n以上哪一步需要我再展开说明吗？",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-claude-sonnet-5-1",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "以下是部署服务的标准流程：\n\n1. **构建（Build）**：编译代码、打包依赖，生成可部署的构建产物（如 Docker 镜像或二进制文件）。\n2. **测试（Run Tests）**：对构建产物运行单元测试、集成测试（必要时还有端到端测试），确认无回归问题后才能继续。\n3. **部署（Deploy）**：将通过测试的构建产物发布到目标环境（如生产环境或预发布环境），并验证服务正常运行。\n\n如果你想深入了解其中某一步，欢迎告诉我。",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-claude-sonnet-5-4",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 构建（Build）：编译代码，生成可部署的构件（如 Docker 镜像或二进制包）。\n2. 测试（Run tests）：执行单元测试和集成测试，确认构建产物符合预期行为。\n3. 部署（Deploy）：将构件发布到目标环境，并验证服务正常运行。\n\n需要我针对其中某一步再展开说明吗？",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-claude-sonnet-5-3",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "部署流程如下：\n\n1. **Build（构建）**：编译代码、打包依赖，生成可部署的构建产物（如 Docker 镜像或二进制文件）。\n2. **Run tests（运行测试）**：对构建产物执行自动化测试（单元测试、集成测试等），确认没有引入回归问题。\n3. **Deploy（部署）**：将通过测试的构建产物发布到目标环境（如 staging 或 production）。\n\n如果你想了解其中某一步的更多细节，告诉我是哪一步就行。",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-log-output-claude-sonnet-5-2",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n你想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-log-output-claude-sonnet-5-1",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n你想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-log-output-claude-sonnet-5-3",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n你想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-log-output-claude-sonnet-5-4",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-instructions-claude-sonnet-5-2",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "API 凭据轮换可以按以下步骤进行：\n\n1. **创建替换凭据**：在身份提供方或密钥管理系统中生成新的 API credential（新的 key/secret 对），确保与旧凭据权限范围一致。\n2. **更新所有调用方**：将所有使用旧凭据的服务、脚本、配置文件（如环境变量、secret store）切换到新凭据，并验证各调用方均能正常鉴权。\n3. **吊销旧凭据**：确认所有调用方已成功迁移且运行正常后，撤销/停用旧的 credential，防止其被继续使用。\n\n是否需要我针对某一步做更详细的说明？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-instructions-claude-sonnet-5-1",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. **创建替换凭证**：在服务提供方（如 AWS IAM、数据库、第三方 API 后台)生成一个新的 API credential（API key / token / secret），确保新凭证的权限范围与旧凭证一致或按最小权限原则重新设定。\n\n2. **更新调用方**：将所有使用旧 credential 的服务、脚本、配置文件、环境变量（如 `.env`、CI/CD secrets、密钥管理服务如 Vault/Secrets Manager）切换为新凭证，并逐一验证每个 consumer 能正常认证和调用。\n\n3. **吊销旧凭证**：确认所有 consumer 都已成功切换且新凭证工作正常后，在同一服务提供方处将旧的 API credential 标记为 revoked/disabled，并检查日志确保旧凭证已无流量。\n\n以上三步中，有哪一步需要我进一步展开说明吗？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-instructions-claude-sonnet-5-3",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 创建替代凭证(replacement credential)：在服务商后台生成一个新的 API key/token，暂不启用，先确认其权限范围与旧凭证一致。\n2. 更新所有调用方(consumers)：把新凭证分发到各个使用方（服务、CI、脚本等），逐一替换配置或环境变量，并验证调用正常。\n3. 吊销旧凭证(revoke old credential)：确认所有调用方都已切换成功后，在服务商后台将旧凭证标记为失效/删除。\n\n需要我详细说明哪一步吗？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-instructions-claude-sonnet-5-4",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "以下是 API credential 轮换的标准步骤：\n\n1. **Create replacement**——生成新的 credential/key，先不要让它生效替换旧的。\n2. **Update consumers**——把所有调用该 credential 的服务、脚本、配置都切换到新 credential，并确认它们正常工作。\n3. **Revoke old credential**——确认所有 consumer 都已切换成功后，撤销旧的 credential，使其失效。\n\n有需要我详细展开某一步吗？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-progress-claude-sonnet-5-1",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 已完成单测\n2. 集成测试运行中\n3. 文档尚未开始\n\n需要查看状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-progress-claude-sonnet-5-2",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "任务状态如下：\n\n1. 单测：已完成\n2. 集成测试：运行中\n3. 文档：尚未开始\n\n需要查看状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-progress-claude-sonnet-5-3",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 已完成单测\n2. 集成测试运行中\n3. 文档尚未开始\n\n需要我展示状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-progress-claude-sonnet-5-4",
+    "group": "r11-neg-numbered-claude-sonnet-5",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 单元测试：已完成\n2. 集成测试：运行中\n3. 文档：尚未开始\n\n需要查看状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-claude-sonnet-5-1",
+    "group": "r11-pos-awkward-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Task |\n|----|------|\n| A | 为关键调用路径加上有界指数退避的重试策略：设定最大重试次数、初始退避间隔、退避倍数和随重试次数增长的时间上限（避免无限重试或等待时间失控），并在重试成功、最终失败、各次退避耗时等关键节点打点上报 metrics，方便后续监控重试频率和失败率是否异常。 |\n| B | 更换当前数据库：评估并选定新的数据库方案，设计数据迁移和双写/切换策略，处理 schema 转换、历史数据迁移校验、迁移期间的兼容性和回滚窗口，并协调上下游依赖该数据库的服务做相应适配。 |\n| C | 编写回滚操作手册：明确回滚的触发条件、具体执行步骤、所需权限和涉及的系统/服务，并列出操作人员在回滚前后需要逐项核对的检查项（如数据一致性、服务健康状态、监控指标是否恢复正常），确保非原作者也能照手册独立完成回滚。 |\n\n以上改动你批准哪些？可以选一个、多个，也可以都不批准，请直接回复。我会等你确认后再继续。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-claude-sonnet-5-2",
+    "group": "r11-pos-awkward-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Task |\n|----|------|\n| A | 为关键调用路径引入带指数退避（exponential backoff）且设置上限（bounded）的重试策略，退避时间随失败次数递增但不超过预设上限，避免因瞬时故障导致请求风暴；同时为重试次数、重试间隔、最终失败率等接入度量指标（metrics），便于后续观测重试行为是否合理并及时发现异常。 |\n| B | 将现有数据库整体替换为另一套存储方案，涉及数据迁移、兼容性适配、读写路径改造以及上下游依赖的联调验证，属于影响面较大、风险较高的基础设施变更，需要评估迁移窗口、数据一致性保障和回退方案。 |\n| C | 补充完整的回滚流程文档（rollback procedure），明确在变更失败或出现异常时的回退步骤、触发条件与责任人，并列出对应的操作员检查清单（operator checks），确保执行回滚前后都能快速确认系统状态是否恢复正常。 |\n\n以上三项改动，您批准哪些？可以选多个，也可以一个都不批准，请直接回复对应的 ID（例如 \"A、C\" 或 \"都不批准\"）。\n\n我会在这里等您的回复。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-claude-sonnet-5-3",
+    "group": "r11-pos-awkward-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "以下是三项提议变更，请审阅后回复批准哪些（可以多选，也可以都不批准）：\n\n| ID | Task |\n|----|------|\n| A | 为关键调用路径引入带上限的指数退避（bounded exponential backoff）重试策略：失败请求按指数增长的间隔重试，设置最大重试次数和最大等待时间上限以避免无限重试或雪崩效应，同时加入随机抖动（jitter）防止重试请求同时打到下游；并为重试次数、成功率、各阶段延迟等关键指标接入 metrics 上报，便于后续监控和告警配置。 |\n| B | 替换现有数据库（replace the database）：评估并选定新的数据库方案，设计数据迁移和双写/切换策略，处理 schema 转换、历史数据迁移、索引重建，并协调迁移窗口内的读写一致性与回滚预案，是影响面较大、涉及多个下游服务的变更。 |\n| C | 编写回滚流程（rollback procedure）与操作人员检查清单（operator checks）文档：明确触发回滚的判断条件、具体回滚步骤顺序、所需权限与命令，以及回滚前后需要人工核对的检查项（如服务健康状态、数据一致性、下游依赖状态等），确保非原作者的运维人员也能按文档独立安全执行。 |\n\n请告诉我批准哪些（A/B/C 任意组合，或全部不批准）。我会等你的回复。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-approval-with-tail-claude-sonnet-5-1",
+    "group": "r11-pos-approval-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加一个导出预览功能。是否批准我实施？\n\n我会等你答复后再继续。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-claude-sonnet-5-4",
+    "group": "r11-pos-awkward-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Task |\n|----|------|\n| A | 为关键调用路径引入带上限的指数退避（bounded exponential backoff）重试策略：设定最大重试次数、单次退避的上下限（cap）、随机抖动（jitter）以避免重试风暴，并在每次重试、最终失败、退避耗时等环节埋点上报 metrics（如重试次数分布、成功率、耗时直方图），便于后续在监控面板上观察重试行为是否合理、是否存在雪崩风险。 |\n| B | 将现有数据库整体替换为新的存储方案：需要评估目标数据库的选型依据（一致性模型、读写性能、运维成本）、设计数据迁移与双写/切换方案、梳理所有依赖现数据库的调用点并逐一改造，同时制定迁移过程中的数据校验与一致性检查步骤，覆盖面大、风险高，属于一次结构性变更。 |\n| C | 补充完整的回滚流程（rollback procedure）文档，明确在发布异常时如何安全退回上一版本，包含回滚前置条件检查、具体操作步骤、所需权限与工具、预计耗时；同时列出运维人员（operator）在回滚前后需要执行的检查清单（operator checks），例如确认流量切换状态、核对数据一致性、验证关键指标恢复正常等，确保回滚过程有据可依、可被非作者人员执行。 |\n\n以上三项改动你批准哪些？可以选一个、多个，或者都不批准，直接告诉我 A/B/C 的组合即可。我会先等你的回复。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-approval-with-tail-claude-sonnet-5-2",
+    "group": "r11-pos-approval-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加导出预览功能。是否批准我实施？\n\n我会等你答复后再继续。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-approval-with-tail-claude-sonnet-5-3",
+    "group": "r11-pos-approval-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加一个导出预览功能，让用户在正式导出前先看到结果样式。是否批准我实施？\n\n我会等你的答复。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-approval-with-tail-claude-sonnet-5-4",
+    "group": "r11-pos-approval-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加一个导出预览功能，让用户在正式导出前先看到生成结果的样子。是否批准我实施？\n\n我会等你答复再继续。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-numbered-partial-claude-sonnet-5-1",
+    "group": "r11-pos-numbered-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可以考虑以下三项修改，是否全部采纳还是只选其中一部分都可以：\n\n1. 把临时文件放到系统缓存目录\n2. 增加一个配置开关\n3. 给失败日志加请求 ID\n\n你看要做哪几项？",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-numbered-partial-claude-sonnet-5-2",
+    "group": "r11-pos-numbered-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可以考虑以下三项修改,您可以只选其中部分:\n\n1. 把临时文件放到系统缓存目录\n2. 增加一个配置开关\n3. 给失败日志加请求 ID\n\n请告诉我要做哪几项。",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-numbered-partial-claude-sonnet-5-3",
+    "group": "r11-pos-numbered-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可以考虑以下三项修改，哪些要做可以只选其中一部分，告诉我编号即可：\n\n1. 把临时文件放到系统缓存目录\n2. 增加一个配置开关\n3. 给失败日志加请求 ID\n\n等你答复。",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-numbered-partial-claude-sonnet-5-4",
+    "group": "r11-pos-numbered-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可选修改如下：\n\n1. 把临时文件放到系统缓存目录\n2. 增加一个配置开关\n3. 给失败日志加请求 ID\n\n可以只选其中一部分，告诉我要做哪几项就行。",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-bilingual-selection-claude-sonnet-5-1",
+    "group": "r11-pos-bilingual-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 说明 |\n|---|---|\n| A 保留现有解析器 | 不引入新依赖，维持现状,风险最低，但现有解析器的局限（功能缺失或维护成本）会继续存在 |\n| B 换用标准库解析器 | 用语言自带的标准库替换，依赖更轻、兼容性和长期维护有保障，但功能可能不如专用库丰富，可能需要适配现有调用方式 |\n| C 引入第三方依赖 | 功能通常最完善、开发效率高，但增加了依赖维护、版本升级和供应链风险 |\n\n你想选哪个？",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-bilingual-selection-claude-sonnet-5-2",
+    "group": "r11-pos-bilingual-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 说明 |\n|---|---|\n| A | 保留当前解析器：不改动现有逻辑，风险最低，但已知的局限和维护成本会继续存在 |\n| B | 换成标准库解析器：免去自己维护解析逻辑，通常更稳定，但可能要适配字段差异或牺牲一些定制能力 |\n| C | 引入第三方依赖：功能可能更完善，但会增加依赖管理、版本升级和安全审查的负担 |\n\n你想选哪个?",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-bilingual-selection-claude-sonnet-5-3",
+    "group": "r11-pos-bilingual-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 说明 |\n|---|---|\n| A | 保留现有解析器：不改动，风险最低，但已有的局限和技术债继续留着 |\n| B | 换成标准库解析器：减少自维护代码量，长期维护成本更低，但迁移需要改动调用点，还要确认能否覆盖现有解析器的全部场景 |\n| C | 引入第三方依赖：功能可能更丰富、更省事，但会带来新依赖的供应链风险、版本维护负担，需评估许可证和长期可靠性 |\n\n你选哪个？",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-bilingual-selection-claude-sonnet-5-4",
+    "group": "r11-pos-bilingual-claude-sonnet-5",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 说明 |\n|---|---|\n| A 保留现有解析器 | 不改动现有实现，避免引入新的迁移成本和回归风险，但原有的局限（性能、维护负担等)依然存在 |\n| B 采用标准库解析器 | 用语言/框架自带的解析能力替换现有实现，零外部依赖、兼容性和长期维护有保障，但功能或性能可能不如专门的第三方库 |\n| C 引入第三方依赖 | 换成专门的第三方解析库，通常功能更全、性能更好，但会增加依赖体积、版本维护和潜在的供应链风险 |\n\n你想选哪个？",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "claude-sonnet",
+    "model": "claude-sonnet-5",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-status-comment-gpt-6-sol-1",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 部署区域 | 当前状态 |\n|---|---|\n| A | 健康 |\n| B | 延迟 |\n| C | 尚未开始 |\n\n你想了解哪个区域的状态？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-status-comment-gpt-6-sol-2",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 部署区域 | 当前状态 |\n|---|---|\n| A | 健康 |\n| B | 延迟 |\n| C | 尚未开始 |\n\n你想了解哪个区域的状态？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-status-comment-gpt-6-sol-3",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 部署区域 | 当前状态 |\n|---|---|\n| A | 正常 |\n| B | 延迟 |\n| C | 尚未开始 |\n\n你想了解哪个区域的状态？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-status-comment-gpt-6-sol-4",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 部署区域 | 当前状态 |\n|---|---|\n| A | 健康（healthy） |\n| B | 延迟（delayed） |\n| C | 尚未开始（not started） |\n\n你想了解哪个区域的状态？",
+    "userText": "Region B looks odd: why is it delayed?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-progress-question-gpt-6-sol-1",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 序号 | 迁移任务 | 进度 |\n|---|---|---|\n| 1 | 数据导出 | 80% |\n| 2 | 校验 | 40% |\n| 3 | 切流 | 0% |\n\n你想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-progress-question-gpt-6-sol-2",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 序号 | 迁移任务 | 进度 |\n|---|---|---|\n| 1 | 数据导出 | 80% |\n| 2 | 校验 | 40% |\n| 3 | 切流 | 0% |\n\n你想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-progress-question-gpt-6-sol-3",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 序号 | 迁移任务 | 进度 |\n|---|---|---|\n| 1 | 数据导出 | 80% |\n| 2 | 校验 | 40% |\n| 3 | 切流 | 0% |\n\n你想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-progress-question-gpt-6-sol-4",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 序号 | 迁移任务 | 进度 |\n|---|---|---|\n| 1 | 数据导出 | 80% |\n| 2 | 校验 | 40% |\n| 3 | 切流 | 0% |\n\n你想先了解哪一行的进度？",
+    "userText": "第 2 行的 40% 是怎么算出来的？",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-test-results-gpt-6-sol-1",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| 单元测试 | 120 项通过 |\n| 集成测试 | 2 项失败 |\n| 端到端测试 | 未运行 |\n\n你想要重跑计划，还是失败原因说明？",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-test-results-gpt-6-sol-2",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| 单元测试 | 120 通过 |\n| 集成测试 | 2 失败 |\n| 端到端测试（e2e） | 未运行 |\n\n你想要重跑计划，还是失败原因说明？",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-test-results-gpt-6-sol-3",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| 单元测试 | 120 项通过 |\n| 集成测试 | 2 项失败 |\n| 端到端测试（e2e） | 未运行 |\n\n你想要重跑计划，还是失败原因说明？",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-test-results-gpt-6-sol-4",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 测试套件 | 结果 |\n|---|---|\n| 单元测试 | 120 项通过 |\n| 集成测试 | 2 项失败 |\n| 端到端测试 | 未运行 |\n\n你想要重跑计划，还是失败原因说明？",
+    "userText": "The integration failure is probably just a timeout, right?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-gpt-6-sol-1",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | option | latency | maintenance |\n|---|---|---|---|\n| 1 | SQLite | 本地读写延迟低 | 低；适合单机应用 |\n| 2 | PostgreSQL | 网络访问有额外延迟 | 中；需要管理服务和备份 |\n| 3 | Redis | 内存读写延迟极低 | 中；需要管理内存和持久化 |\n\n你想进一步了解哪个选项？",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-gpt-6-sol-2",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | 选项 | 延迟 | 维护 |\n|---|---|---|---|\n| 1 | PostgreSQL | 低，复杂查询取决于索引 | 中等，需管理索引、备份和升级 |\n| 2 | Redis | 极低，适合内存读写 | 中等，需关注内存和持久化 |\n| 3 | MongoDB | 低，取决于查询和数据模型 | 中等，需管理索引和副本集 |\n\n你想进一步了解哪个选项？",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-gpt-6-sol-3",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | 选项 | 延迟 | 维护 |\n|---|---|---|---|\n| 1 | PostgreSQL | 通常较低，取决于查询和部署方式 | 需要管理备份、升级和调优 |\n| 2 | MySQL | 通常较低，取决于查询和部署方式 | 需要管理备份、升级和调优 |\n| 3 | SQLite | 本地读写通常很快；并发写入可能受限 | 维护量较小 |\n\n你想进一步了解哪个选项？",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-comparison-row-only-gpt-6-sol-4",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| ID | option | latency | maintenance |\n|---|---|---|---|\n| 1 | SQLite | 本地读写通常很低；并发写入受限 | 低，基本无需独立运维 |\n| 2 | PostgreSQL | 网络访问有额外开销；复杂查询表现稳定 | 中，需管理备份、升级和索引 |\n| 3 | MongoDB | 简单文档读写通常较快；取决于查询与索引 | 中，需管理备份、索引和集群 |\n\n你想进一步了解哪一个选项？",
+    "userText": "Can you expand the maintenance cell for option B?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-other-topic-gpt-6-sol-1",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 做法 | 优点 | 主要代价 |\n|---|---|---|---|\n| A | 进程内缓存 | 实现简单、访问快 | 多实例间数据不共享 |\n| B | Redis 集中缓存 | 多实例共享、便于统一管理 | 需要维护 Redis |\n| C | 本地缓存 + Redis | 热点数据访问快，且能跨实例共享 | 一致性和失效逻辑更复杂 |\n\n这里暂按 A/B/C 分别代表以上三种常见方案。你想选哪一个？",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-other-topic-gpt-6-sol-2",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "以下按三种常见方案比较；如果你已有 A/B/C 的具体定义，可以发给我调整。\n\n| 方案 | 实现方式 | 优点 | 主要代价 |\n|---|---|---|---|\n| A | 应用内存缓存 | 速度快、实现简单 | 多实例间数据不共享 |\n| B | Redis 集中缓存 | 多实例共享、便于统一管理 | 需要维护 Redis 服务 |\n| C | 本地缓存 + Redis | 热点读取更快，兼顾共享 | 一致性和失效逻辑更复杂 |\n\n你想选 A、B 还是 C？",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-other-topic-gpt-6-sol-3",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 做法 | 优点 | 主要代价 | 适合场景 |\n|---|---|---|---|---|\n| A | 本地内存缓存 | 速度快、实现简单 | 多实例间数据不共享 | 单实例或允许短暂不一致 |\n| B | 集中式缓存（如 Redis） | 多实例共享、便于统一管理 | 需要额外服务，有网络开销 | 多实例且要求数据一致 |\n| C | 本地内存 + 集中式缓存 | 常用数据读取快，也能跨实例共享 | 实现和失效处理更复杂 | 访问量大、性能要求高 |\n\n你想选 A、B 还是 C？",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-other-topic-gpt-6-sol-4",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "假设 A/B/C 分别是**本地内存缓存、Redis 缓存、多级缓存**：\n\n| 方案 | 优点 | 主要代价 | 适合场景 |\n|---|---|---|---|\n| A 本地内存 | 访问快、实现简单 | 多实例间数据不一致，容量受单机限制 | 单实例或允许短暂不一致 |\n| B Redis | 多实例共享，容量更易扩展 | 增加网络请求和运维成本 | 多实例服务 |\n| C 多级缓存 | 热点数据访问快，兼顾共享 | 失效与一致性逻辑更复杂 | 高并发、读多写少 |\n\n你想选 A、B 还是 C？如果这三个字母已有特定方案，请把定义发给我，我再按实际方案比较。",
+    "userText": "先帮我解释一下刚才的 TypeScript 类型错误。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-review-question-gpt-6-sol-1",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 备份频率 | 适合情况 |\n|---|---|---|\n| A | 每天一次 | 数据变化较少 |\n| B | 每 6 小时一次 | 日常使用，兼顾安全与成本 |\n| C | 每小时一次 | 数据变化频繁，要求恢复点更近 |\n\n你更倾向哪一种？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-review-question-gpt-6-sol-2",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 备份频率 | 适合情况 |\n|---|---|---|\n| A | 每天一次 | 数据变化较少 |\n| B | 每 6 小时一次 | 日常使用 |\n| C | 每小时一次 | 数据频繁变化 |\n\n你更喜欢哪一种？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-review-question-gpt-6-sol-3",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 备份频率 | 适合情况 |\n|---|---|---|\n| A | 每小时 | 数据频繁变动 |\n| B | 每天 | 日常使用 |\n| C | 每周 | 数据较少变动 |\n\n你更喜欢哪一种？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-review-question-gpt-6-sol-4",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 方案 | 备份频率 | 适合情况 |\n|---|---|---|\n| A | 每天一次 | 数据变化较少 |\n| B | 每 6 小时一次 | 日常使用 |\n| C | 每小时一次 | 数据变化频繁 |\n\n你更倾向哪一种？",
+    "userText": "Does the current system already make daily backups?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-table-approval-comment-gpt-6-sol-1",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 发布检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度 | 未开始 |\n\n要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-table-approval-comment-gpt-6-sol-2",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 发布检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度 | 未开始 |\n\n要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-table-approval-comment-gpt-6-sol-3",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 发布检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度 | 未开始 |\n\n要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-table-approval-comment-gpt-6-sol-4",
+    "group": "r11-neg-table-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "| 发布检查项 | 状态 |\n|---|---|\n| 构建 | 通过 |\n| 签名 | 待处理 |\n| 灰度 | 未开始 |\n\n要查看详情吗？",
+    "userText": "签名这一项我看到了，应该没问题。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-gpt-6-sol-1",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已准备好数据库索引迁移。Do you approve applying it now?",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-gpt-6-sol-2",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "数据库索引迁移已准备好。Do you approve applying it now?",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-gpt-6-sol-3",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已准备好数据库索引迁移。Do you approve applying it now?",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approval-asks-detail-gpt-6-sol-4",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已准备好数据库索引迁移。Do you approve applying it now?",
+    "userText": "What is the expected write slowdown during the migration?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-preview-only-gpt-6-sol-1",
+    "group": "r11-neg-preview-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已准备好报表导出功能的实现方案。你批准我开始实现吗？我会等待你的回复。",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-preview-only-gpt-6-sol-2",
+    "group": "r11-neg-preview-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已准备好报表导出功能。你是否批准我实现？我会等待你的回复。",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-preview-only-gpt-6-sol-3",
+    "group": "r11-neg-preview-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已准备好报表导出功能的方案。你批准我开始实现吗？我会等你回复。",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-preview-only-gpt-6-sol-4",
+    "group": "r11-neg-preview-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我已准备好报表导出功能的实现方案。请问你批准我开始实现吗？我会等待你的回复。",
+    "userText": "I approve generating the preview, but do not implement or save anything yet.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approves-other-item-gpt-6-sol-1",
+    "group": "r11-neg-approves-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备将日志输出切换为 JSON 格式。你批准这个改动吗？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approves-other-item-gpt-6-sol-2",
+    "group": "r11-neg-approves-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备把日志输出切换为 JSON 格式。你批准这个改动吗？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approves-other-item-gpt-6-sol-3",
+    "group": "r11-neg-approves-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备将日志切换为 JSON 格式。请问你是否批准这项改动？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approves-other-item-gpt-6-sol-4",
+    "group": "r11-neg-approves-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备把日志切换为 JSON 格式。你批准这个改动吗？",
+    "userText": "文档里的截图可以更新，批准更新截图。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approval-definition-gpt-6-sol-1",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "请问你是否批准删除临时缓存目录？我会等待你的回复。",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approval-definition-gpt-6-sol-2",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你是否批准删除临时缓存目录？请回复“批准”或“不批准”；我会等待你的答复。",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approval-definition-gpt-6-sol-3",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你批准删除临时缓存目录吗？我会等你确认后再操作。",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approval-definition-gpt-6-sol-4",
+    "group": "r11-neg-approval-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "你是否批准删除临时缓存目录？请回复“批准”或“不批准”，我会等待你的答复。",
+    "userText": "What exactly will “delete” remove here?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-gpt-6-sol-1",
+    "group": "r11-neg-approve-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。你批准现在执行吗？我会等你回复后再继续。",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-gpt-6-sol-2",
+    "group": "r11-neg-approve-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。你批准现在执行吗？我会等待你的答复。",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-gpt-6-sol-3",
+    "group": "r11-neg-approve-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。你批准现在执行吗？我会等你回复后再继续。",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-approve-preview-not-run-gpt-6-sol-4",
+    "group": "r11-neg-approve-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "我准备执行一次数据库迁移。你批准现在执行吗？我会等你回复后再继续。",
+    "userText": "我同意先看迁移预览，确认影响后再决定是否执行。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-gpt-6-sol-1",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 构建：安装依赖并生成可部署的服务产物。\n2. 测试：运行自动化测试，确认全部通过。\n3. 部署：将产物发布到目标环境，并检查服务是否正常运行。\n\n需要我解释其中任何一步吗？",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-gpt-6-sol-2",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 构建服务，生成部署所需的产物。\n2. 运行测试，确认构建产物通过验证。\n3. 部署服务，并检查服务是否正常运行。\n\n你希望我进一步说明哪一步吗？",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-gpt-6-sol-3",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 构建服务：安装依赖，执行构建命令，确认构建成功。\n2. 运行测试：执行测试套件，修复失败项。\n3. 部署服务：将构建产物发布到目标环境，并检查服务是否正常运行。\n\n你希望我详细说明哪一步吗？",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-procedure-status-gpt-6-sol-4",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 构建服务，生成可部署的产物。\n2. 运行测试，确认测试全部通过。\n3. 部署服务，并检查部署后的运行状态。\n\n你希望我解释其中哪一步吗？",
+    "userText": "Step 2 is already complete.",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-log-output-gpt-6-sol-1",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n你想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-log-output-gpt-6-sol-2",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n你想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-log-output-gpt-6-sol-3",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n你想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-log-output-gpt-6-sol-4",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 服务启动\n2. 数据库连接成功\n3. 健康检查通过\n\n你想先看哪条日志的上下文？",
+    "userText": "第 2 条应该是连接池刚恢复。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-instructions-gpt-6-sol-1",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 创建新的 API 凭据，并妥善保存。\n2. 将所有使用旧凭据的服务和应用更新为新凭据，确认它们正常工作。\n3. 撤销旧凭据。\n\n需要我进一步说明哪一步吗？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-instructions-gpt-6-sol-2",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 创建新的 API 凭证，并妥善保存。\n2. 将所有使用旧凭证的服务和应用更新为新凭证，确认它们正常运行。\n3. 撤销旧凭证。\n\n需要我进一步说明哪一步吗？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-instructions-gpt-6-sol-3",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 创建新的 API 凭证，并妥善保存。\n2. 将所有使用旧凭证的服务和应用更新为新凭证，确认它们运行正常。\n3. 撤销旧凭证。\n\n需要我详细说明哪一步吗？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-instructions-gpt-6-sol-4",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 创建新的 API 凭证，并妥善保存。\n2. 将所有使用旧凭证的服务和应用更新为新凭证，确认调用正常。\n3. 撤销旧凭证，并检查是否还有服务尝试使用它。\n\n需要我进一步说明哪一步吗？",
+    "userText": "What does step 2 mean for the staging worker?",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-neg-numbered-progress-gpt-6-sol-1",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 已完成单测\n2. 集成测试运行中\n3. 文档尚未开始\n\n要查看状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-neg-numbered-progress-gpt-6-sol-2",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 已完成单测\n2. 集成测试运行中\n3. 文档尚未开始\n\n要查看状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-neg-numbered-progress-gpt-6-sol-3",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 单测已完成。\n2. 集成测试运行中。\n3. 文档尚未开始。\n\n要查看状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-neg-numbered-progress-gpt-6-sol-4",
+    "group": "r11-neg-numbered-gpt-6-sol",
+    "decision": false,
+    "expectedBand": "low",
+    "assistantText": "1. 已完成单测\n2. 集成测试运行中\n3. 文档尚未开始\n\n要查看状态细节吗？",
+    "userText": "2 已经跑了十分钟。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-gpt-6-sol-1",
+    "group": "r11-pos-awkward-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Task |\n|---|---|\n| A | 为可重试的操作增加重试策略：采用有上限的指数退避，明确最大重试次数、最长等待时间和不可重试的错误类型；同时记录重试次数、最终成功率、失败率及等待时间等指标，便于观察效果。 |\n| B | 替换现有数据库：梳理数据模型和读写路径，制定数据迁移与校验方案，更新应用连接及相关配置，并验证切换后的功能、性能和数据一致性。 |\n| C | 编写回滚操作文档：列出触发回滚的条件、执行步骤和恢复验证方法，并附上操作人员在切换前后需要检查的服务状态、关键指标、日志及数据一致性项目。 |\n\n请回复你批准的 ID，可多选（如 `A、C`），也可以回复“均不批准”。我会等待你的决定。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-gpt-6-sol-2",
+    "group": "r11-pos-awkward-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Task |\n|---|---|\n| A | 增加重试策略：仅对适合重试的失败进行重试，采用有上限的指数退避，限制最大尝试次数，并记录重试次数、最终失败数和等待时间等指标，便于观察效果。 |\n| B | 替换数据库：梳理现有数据模型、查询和依赖，制定数据迁移与校验方案，调整应用连接和读写逻辑，并规划切换及异常时的恢复步骤。 |\n| C | 编写回滚流程和操作员检查项：明确回滚触发条件、执行顺序、数据一致性检查、服务健康检查及完成后的确认方式，供操作员按步骤执行。 |\n\n请告诉我你批准哪些变更（可选多项，也可选“都不批准”）。我会等待你的回复。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-gpt-6-sol-3",
+    "group": "r11-pos-awkward-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Task |\n|---|---|\n| A | 为可重试的操作加入重试策略，采用有次数和总时长上限的指数退避，并记录重试次数、最终失败次数及等待时间等指标，以便观察策略效果和排查持续性故障。 |\n| B | 替换现有数据库，包括梳理数据模型与查询依赖、制定数据迁移和切换步骤，并验证新数据库上的数据完整性、关键功能及性能。 |\n| C | 编写回滚操作文档，明确触发条件、执行顺序和恢复验证方法；同时列出操作人员在切换前、切换中及切换后需要检查的服务状态、数据和告警。 |\n\n请回复你批准的 ID（可选多个，也可回复“都不批准”）。我会等待你的决定。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-awkward-table-multiselect-gpt-6-sol-4",
+    "group": "r11-pos-awkward-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| ID | Task |\n|---|---|\n| A | 为可重试的操作增加统一重试策略，采用有上限的指数退避，并明确最大尝试次数、超时和不可重试的错误类型；同时记录重试次数、最终失败率和退避耗时等指标，便于观察效果。 |\n| B | 替换现有数据库：先梳理数据模型、查询和依赖，再制定数据迁移与校验方案，调整应用连接和读写逻辑，并验证数据一致性、性能及切换后的运行情况。 |\n| C | 编写回滚操作手册，说明触发回滚的条件、执行步骤和恢复验证方法；列出操作人员在切换前后需要检查的服务状态、关键指标、日志及数据一致性项目。 |\n\n请回复你批准的变更 ID，可选多个（如 `A、C`），也可以回复“无”。我会等待你的选择。",
+    "userText": "Approve A and C now; leave B for later.",
+    "expectedSelected": [
+      "A",
+      "C"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-approval-with-tail-gpt-6-sol-1",
+    "group": "r11-pos-approval-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加导出预览，方便你在导出前检查内容。是否批准我实施？我会等你答复。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-approval-with-tail-gpt-6-sol-2",
+    "group": "r11-pos-approval-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加导出预览。是否批准我实施？我会等你答复。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-approval-with-tail-gpt-6-sol-3",
+    "group": "r11-pos-approval-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加导出预览，方便你在导出前检查内容。是否批准我实施？我会等你答复。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-approval-with-tail-gpt-6-sol-4",
+    "group": "r11-pos-approval-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "我准备增加导出预览，让你在导出前查看内容。是否批准我实施？我会等你答复。",
+    "userText": "批准，请实施导出预览。",
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-numbered-partial-gpt-6-sol-1",
+    "group": "r11-pos-numbered-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可选修改：\n\n1. 把临时文件放到系统缓存目录。\n2. 增加一个配置开关。\n3. 给失败日志加请求 ID。\n\n你想做哪几项？可以只选部分。我等你答复。",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-numbered-partial-gpt-6-sol-2",
+    "group": "r11-pos-numbered-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可选修改：\n\n1. 把临时文件放到系统缓存目录。\n2. 增加一个配置开关。\n3. 给失败日志加请求 ID。\n\n你想做哪几项？可以只选部分。等你答复后我再继续。",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-numbered-partial-gpt-6-sol-3",
+    "group": "r11-pos-numbered-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可选修改：\n\n1. 把临时文件放到系统缓存目录。\n2. 增加一个配置开关。\n3. 给失败日志加请求 ID。\n\n你想做哪几项？可以只选其中一部分，我等你答复。",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-numbered-partial-gpt-6-sol-4",
+    "group": "r11-pos-numbered-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "medium",
+    "assistantText": "可选修改：\n\n1. 把临时文件放到系统缓存目录。\n2. 增加一个配置开关。\n3. 给失败日志加请求 ID。\n\n你想做哪些？可以只选其中一部分。我等你答复。",
+    "userText": "编号 1 和 3 可以，那个开关先别加。",
+    "expectedSelected": [
+      "1",
+      "3"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  },
+  {
+    "id": "r11-pos-bilingual-selection-gpt-6-sol-1",
+    "group": "r11-pos-bilingual-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 方案 | 简要说明 |\n|---|---|---|\n| A | 保留现有解析器 | 改动最少，但需要继续自行维护。 |\n| B | 使用标准库解析器 | 减少维护成本，需确认功能是否满足需求。 |\n| C | 引入第三方依赖 | 可能提供更多功能，但会增加依赖管理成本。 |\n\n你选择 A、B 还是 C？",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 1
+  },
+  {
+    "id": "r11-pos-bilingual-selection-gpt-6-sol-2",
+    "group": "r11-pos-bilingual-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 做法 | 简要说明 |\n|---|---|---|\n| A | 保留当前解析器 | 改动最少，继续维护现有实现。 |\n| B | 使用标准库解析器 | 减少自维护代码，但可能需要调整现有行为。 |\n| C | 引入第三方依赖 | 可获得更多功能，但会增加依赖维护成本。 |\n\n你选择 A、B 还是 C？",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 2
+  },
+  {
+    "id": "r11-pos-bilingual-selection-gpt-6-sol-3",
+    "group": "r11-pos-bilingual-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 方案 | 简要说明 |\n|---|---|---|\n| A | 保留当前解析器 | 改动最少，但需要继续自行维护。 |\n| B | 使用标准库解析器 | 减少自维护代码，需确认它满足现有需求。 |\n| C | 引入第三方依赖 | 可能获得更多功能，但会增加依赖维护成本。 |\n\n你选择 A、B 还是 C？",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 3
+  },
+  {
+    "id": "r11-pos-bilingual-selection-gpt-6-sol-4",
+    "group": "r11-pos-bilingual-gpt-6-sol",
+    "decision": true,
+    "expectedBand": "high",
+    "assistantText": "| 选项 | 说明 |\n|---|---|\n| A：保留当前解析器 | 改动最少，但需要自行维护。 |\n| B：使用标准库解析器 | 减少维护工作，但可能需要调整现有行为。 |\n| C：引入第三方依赖 | 可能获得更丰富的功能，但会增加依赖管理成本。 |\n\n你选择 A、B 还是 C？",
+    "userText": "B 就按标准库来吧; C先不要。",
+    "expectedSelected": [
+      "B"
+    ],
+    "sourceClient": "codex",
+    "model": "gpt-6-sol",
+    "repeat": 4
+  }
+]

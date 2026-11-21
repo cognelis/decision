@@ -31,6 +31,20 @@ export class DecisionScopeRepository {
     this.#writeTail = save.catch(() => undefined);
     return save;
   }
+  /** As DecisionRelationRepository.rebind, for the scope recorded for the decision: 1 when it is left stale. */
+  rebind(reference: { source: string; recordId: string }, from: string, to: string): Promise<number> {
+    const rebind = this.#writeTail.then(async () => {
+      const scanned = await this.scan();
+      const key = identity(reference.source, reference.recordId);
+      if (scanned.inDoubt(key)) return -1;
+      const current = scanned.records.get(key);
+      if (current === undefined || current.contentHash === to) return 0;
+      if (current.contentHash === from && await this.#facts.replace({ ...current, contentHash: to }, scanned.hashes.get(key) ?? null) === "saved") return 0;
+      return 1;
+    });
+    this.#writeTail = rebind.catch(() => undefined);
+    return rebind;
+  }
   async #save(input: DecisionScopeUpdate): Promise<DecisionScopeUpdateResult> {
     const scanned = await this.scan();
     const key = identity(input.source, input.recordId);

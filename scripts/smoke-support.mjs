@@ -212,7 +212,7 @@ export const resolvePackagedSmokeTarget = ({
     bridgePath: paths.join(
       resourcesRoot,
       "bridge",
-      platform === "win32" ? "decision-bridge.cmd" : "decision-bridge",
+      platform === "win32" ? "paraself-bridge.cmd" : "paraself-bridge",
     ),
 
   };

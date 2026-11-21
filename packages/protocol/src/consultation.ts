@@ -24,6 +24,12 @@ export const decisionConsultationRequestSchema = z
      * recalled only where they meet; left out, such entries are recalled as before.
      */
     languages: z.array(consultationText(40)).max(8).optional(),
+    /**
+     * Where no `languages` were said: those a manifest at the repository's root would have shown and none does, as
+     * canonical ids. A preference or idea kept only for these is left out; one kept for a language no manifest names
+     * (Shell, SQL) is not. Sent as `languages`, the manifests found left out every preference kept for Shell.
+     */
+    absentLanguages: z.array(consultationText(40)).max(32).optional(),
   })
   .strict();
 
@@ -96,6 +102,17 @@ export const decisionConsultationResponseSchema = z
      * is then not none held. Unsaid, an agent went on as if the reader had stated no constraint at all.
      */
     signalsUnavailable: z.literal(true).optional(),
+    /**
+     * Some of the reader's preferences and ideas could not be read (a note iCloud moved off this Mac, one edited past
+     * reading): those listed may not be all the reader holds.
+     */
+    signalsIncomplete: z.literal(true).optional(),
+    /**
+     * Some principle notes could not be read (edited past reading, a sync conflict's copy beside one): what matched, or
+     * nothing matching, is then not all there is, and no `noMatchReason` is given. Unsaid, an agent was told the reader
+     * had adopted no principle while the page said one could not be read.
+     */
+    principlesIncomplete: z.literal(true).optional(),
     feedback: decisionConsultationFeedbackReceiptSchema.nullable().default(null),
     boundary: z
       .object({
@@ -142,7 +159,10 @@ export const CONSULTATION_SHAPE = "2";
 
 /** A consultation as Decision 1.1.0 answered one: without what was added since. */
 export const consultationAsReleased = (response: DecisionConsultationResponse): Record<string, unknown> => {
-  const { noMatchReason: _reason, signals: _signals, signalsUnavailable: _unavailable, boundary, ...released } = response;
+  const {
+    noMatchReason: _reason, signals: _signals, signalsUnavailable: _unavailable, signalsIncomplete: _signalsIncomplete,
+    principlesIncomplete: _principlesIncomplete, boundary, ...released
+  } = response;
   const { noPreferencePromoted: _promoted, ...releasedBoundary } = boundary;
   return { ...released, boundary: releasedBoundary };
 };
@@ -200,6 +220,23 @@ export const decisionConsultationFeedbackCountsSchema = z
   })
   .strict();
 
+/**
+ * Counts by client id. 1.2.0 and before kept them under fixed keys, Claude Code's as `claudeCode`: read as its id,
+ * so a snapshot written then still loads.
+ */
+const countsByClient = z.preprocess(
+  (value) =>
+    typeof value === "object" && value !== null && !Array.isArray(value)
+      ? Object.fromEntries(
+          Object.entries(value).map(([key, count]) => [key === "claudeCode" ? "claude-code" : key, count]),
+        )
+      : value,
+  z.record(sourceClientSchema, consultationMetricCount),
+);
+
+const sum = (counts: Record<string, number>): number =>
+  Object.values(counts).reduce((total, count) => total + count, 0);
+
 export const decisionConsultationMetricsPeriodSchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
@@ -226,21 +263,11 @@ export const decisionConsultationMetricsSnapshotSchema = z
     strongMatches: consultationMetricCount,
     possibleMatches: consultationMetricCount,
     durationMs: consultationMetricCount,
-    byClient: z
-      .object({
-        claudeCode: consultationMetricCount,
-        codex: consultationMetricCount,
-      })
-      .strict(),
+    byClient: countsByClient,
     feedback: decisionConsultationFeedbackCountsSchema
       .extend({
-        bySource: z
-          .object({
-            claudeCode: consultationMetricCount,
-            codex: consultationMetricCount,
-            preview: consultationMetricCount,
-          })
-          .strict(),
+        // `preview`: the App's own preview page, beside the clients.
+        bySource: countsByClient,
         byResult: z
           .object({
             strong: decisionConsultationFeedbackCountsSchema,
@@ -252,7 +279,7 @@ export const decisionConsultationMetricsSnapshotSchema = z
       .strict()
       .default({
         ...emptyFeedbackCounts,
-        bySource: { claudeCode: 0, codex: 0, preview: 0 },
+        bySource: {},
         byResult: {
           strong: emptyFeedbackCounts,
           possible: emptyFeedbackCounts,
@@ -276,16 +303,12 @@ export const decisionConsultationMetricsSnapshotSchema = z
     if (
       snapshot.matched + snapshot.noMatch !== snapshot.requests ||
       snapshot.strongMatches + snapshot.possibleMatches !== snapshot.matches ||
-      snapshot.byClient.claudeCode + snapshot.byClient.codex !==
-        snapshot.requests ||
+      sum(snapshot.byClient) !== snapshot.requests ||
       snapshot.feedback.helpful +
         snapshot.feedback.notHelpful +
         snapshot.feedback.misleading !==
         snapshot.feedback.total ||
-      snapshot.feedback.bySource.claudeCode +
-        snapshot.feedback.bySource.codex +
-        snapshot.feedback.bySource.preview !==
-        snapshot.feedback.total ||
+      sum(snapshot.feedback.bySource) !== snapshot.feedback.total ||
       snapshot.feedback.byResult.strong.total +
         snapshot.feedback.byResult.possible.total +
         snapshot.feedback.byResult.noMatch.total !==

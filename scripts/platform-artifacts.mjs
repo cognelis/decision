@@ -59,7 +59,7 @@ export const releaseTarget = ({
           artifactName,
         );
   const bridgeName =
-    platform === "win32" ? "decision-bridge.cmd" : "decision-bridge";
+    platform === "win32" ? "paraself-bridge.cmd" : "paraself-bridge";
   const resourcesRoot =
     platform === "win32"
       ? join(packageRoot, "resources")
@@ -72,7 +72,7 @@ export const releaseTarget = ({
     artifactName,
     artifactPath,
     checksumName: `${artifactName}.sha256`,
-    manifestName: `decision-${platform}-${arch}.json`,
+    manifestName: `paraself-${platform}-${arch}.json`,
     packageRoot,
     packagedExecutable:
       platform === "win32"

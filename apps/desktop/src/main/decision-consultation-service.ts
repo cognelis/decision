@@ -24,6 +24,8 @@ export const buildDecisionConsultation = (
   recalled?: MethodologyRecallMatch[],
   /** null: they could not be read this time, which the answer says (signalsUnavailable). */
   journal: JournalEntry[] | null = [],
+  /** Notes the reads passed over (unreadable, a sync conflict's copy): those listed are then not all there are. */
+  unread: { principles?: boolean; journal?: boolean } = {},
 ): DecisionConsultationResponse => {
   const request = decisionConsultationRequestSchema.parse(input);
   const byId = new Map(methodologies.map((record) => [record.id, record]));
@@ -67,9 +69,11 @@ export const buildDecisionConsultation = (
   const excerpt = (text: string): string =>
     text.length <= SIGNAL_TEXT_LIMIT ? text : `${clipText(text, SIGNAL_TEXT_LIMIT - 5)}…（节选）`;
   let journalMatches: ReturnType<typeof buildJournalRecall> = [];
+  const absent = new Set(request.absentLanguages ?? []);
   try {
     journalMatches = buildJournalRecall(
-      journal ?? [],
+      // Left out only when every language it is kept for is one the repository has no manifest of.
+      (journal ?? []).filter((entry) => entry.languages.length === 0 || entry.languages.some((language) => !absent.has(language))),
       {
         question: request.question,
         selectedAnswer: null,
@@ -100,14 +104,17 @@ export const buildDecisionConsultation = (
     consultationVersion: DECISION_CONSULTATION_VERSION,
     requestId: request.requestId,
     status: matches.length === 0 ? "no_match" : "matched",
-    ...(matches.length > 0 ? {} : {
+    // Not given while a principle note went unread: the one adopted principle beside its sync conflict's copy was
+    // answered no_accepted_principles, which a bridge from before tells the agent as 尚无可读取的已采纳原则.
+    ...(matches.length > 0 || unread.principles === true ? {} : {
       noMatchReason: methodologies.some((record) => record.status === "accepted")
         ? "no_relevant_principles" : "no_accepted_principles",
     }),
     generatedBy: "deterministic_local_match",
     matches,
     signals,
-    ...(journal === null ? { signalsUnavailable: true } : {}),
+    ...(journal === null ? { signalsUnavailable: true } : unread.journal === true ? { signalsIncomplete: true } : {}),
+    ...(unread.principles === true ? { principlesIncomplete: true } : {}),
     boundary: {
       advisoryOnly: true,
       noDecisionWritten: true,

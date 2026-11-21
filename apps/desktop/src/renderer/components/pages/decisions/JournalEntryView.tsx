@@ -8,6 +8,12 @@ import { zonedFormatter } from "../../../calendar-date.js";
 import { useSearchHighlight } from "../../../use-search-highlight.js";
 import { useSlashToFocus } from "../../../use-slash-focus.js";
 import { ModalDialog } from "../../ModalDialog.js";
+import { Chevron } from "./DecisionFeedbackPanel.js";
+import type { AmendmentRecordView } from "../../../../shared/renderer-api.js";
+import { AmendmentHistory, AmendmentList, OriginalWords, Rewritten } from "./AmendmentBlocks.js";
+import type { AmendmentFields, AmendmentState } from "@cognelis/decision-protocol";
+import { type HistoryRow, amendmentKey, clientLabel, fieldLabels, ignoreStale, isStaleIgnored, monthDayLabel, READER, restoreRequest, rewriteInForce, staleIgnored } from "./amendment-view.js";
+import { localDay } from "../todos/todo-dates.js";
 
 interface JournalEntryViewProps {
   api: DecisionApi;
@@ -20,7 +26,7 @@ interface JournalEntryViewProps {
 
 const draftFrom = (
   entry: JournalEntry,
-  overrides: Partial<Pick<JournalEntryDraft, "title" | "content" | "knowledgeStatus">> = {},
+  overrides: Partial<Pick<JournalEntryDraft, "title" | "content" | "knowledgeStatus">> & { appliesWhen?: string | null; exceptions?: string | null } = {},
 ): JournalEntryDraft =>
   entry.kind === "preference"
     ? {
@@ -32,8 +38,8 @@ const draftFrom = (
         rationale: entry.rationale,
         tags: [...entry.tags],
         languages: [...entry.languages],
-        appliesWhen: entry.appliesWhen,
-        exceptions: entry.exceptions,
+        appliesWhen: overrides.appliesWhen === undefined ? entry.appliesWhen : overrides.appliesWhen,
+        exceptions: overrides.exceptions === undefined ? entry.exceptions : overrides.exceptions,
         strength: entry.strength,
         evidenceMaturity: entry.evidenceMaturity,
       }
@@ -94,7 +100,18 @@ export const JournalEntryView = ({
   const idPrefix = useId();
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "preference" | "idea">("all");
-  const [status, setStatus] = useState<"all" | "inbox" | "active" | "archived">("all");
+  const [status, setStatus] = useState<"all" | "inbox" | "active" | "archived" | "withdrawn">("all");
+  // What agents added to, rewrote in or withdrew from the entries, by record; none read is none shown (said below).
+  const [amendments, setAmendments] = useState<Map<string, AmendmentRecordView>>(new Map());
+  const [amendmentsUnread, setAmendmentsUnread] = useState(false);
+  const [ignored, setIgnored] = useState<Set<string>>(() => staleIgnored());
+  const [shownRewrites, setShownRewrites] = useState<Set<string>>(new Set());
+  const [historyFor, setHistoryFor] = useState<JournalEntry | null>(null);
+  const [withdrawing, setWithdrawing] = useState<JournalEntry | null>(null);
+  const [withdrawReason, setWithdrawReason] = useState("");
+  const [restoring, setRestoring] = useState<{ entry: JournalEntry; row: HistoryRow; to: AmendmentFields } | null>(null);
+  // A revision begun from a rewrite that did not take: once saved, that rewrite is dealt with.
+  const rewriteFlow = useRef<string | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const listRef = useRef<HTMLOListElement>(null);
   // "/ 知识：聚焦搜索框" is the shortcut on this tab too: bound only to the decisions' field, it did nothing here.
@@ -138,11 +155,19 @@ export const JournalEntryView = ({
       const input: JournalEntryListQuery = {
         ...(query.trim().length === 0 ? {} : { query: query.trim() }),
         ...(kind === "all" ? {} : { kind }),
-        ...(status === "all" ? {} : { knowledgeStatus: status }),
+        ...(status === "all" || status === "withdrawn" ? {} : { knowledgeStatus: status }),
         limit: 200,
       };
       setLoading(true);
       setListError(null);
+      // A failure to read what agents added never takes the list with it: said above the list, the entries as written.
+      void Promise.resolve().then(() => api.listDecisionAmendments())
+        .then((overview) => {
+          if (!active) return;
+          setAmendments(new Map(overview.records.map((record) => [amendmentKey(record.source, record.recordId), record])));
+          setAmendmentsUnread(overview.unavailable);
+        })
+        .catch(() => { if (active) setAmendmentsUnread(true); });
       void api.listJournalEntries(input)
         .then(async (items) => {
           if (!active) return;
@@ -215,7 +240,7 @@ export const JournalEntryView = ({
     if (listed?.knowledgeStatus !== "archived" || status === "all" || status === "archived") refocusAfterArchive.current = null;
     const rows = listRef.current?.querySelectorAll<HTMLElement>(".journal-entry-card") ?? [];
     const row = listed !== undefined ? document.getElementById(`journal-entry-${pending.id}`) : rows[Math.min(pending.index, rows.length - 1)];
-    (row?.querySelector<HTMLElement>(".journal-entry-actions button") ?? searchRef.current)?.focus();
+    (row?.querySelector<HTMLElement>(".journal-entry-actions button[data-revise]") ?? searchRef.current)?.focus();
   }, [entries, status]);
 
   // Arriving at a flat list is arriving nowhere unless the list says which one
@@ -234,9 +259,22 @@ export const JournalEntryView = ({
     setError(null);
   };
 
-  const beginRevision = (entry: JournalEntry): void => {
+  const sourceOf = (entry: JournalEntry) => (entry.kind === "preference" ? "preferences" : "ideas") as "preferences" | "ideas";
+  const viewOf = (entry: JournalEntry): AmendmentRecordView | undefined => amendments.get(amendmentKey(sourceOf(entry), entry.id));
+  const isWithdrawn = (entry: JournalEntry): boolean => viewOf(entry)?.state.withdrawn != null;
+  const today = localDay(new Date());
+
+  // What the page lists under the chosen status: a withdrawn entry only under 全部 and 已撤回, the others as they were.
+  const shownEntries = entries.filter((entry) => status === "withdrawn" ? isWithdrawn(entry) : status === "all" || !isWithdrawn(entry));
+
+  const beginRevision = (entry: JournalEntry, fromRewrite: Record<string, string | null | undefined> | null = null): void => {
+    rewriteFlow.current = fromRewrite === null ? null : amendmentKey(sourceOf(entry), entry.id);
     setEditing(entry);
-    setDraft(draftFrom(entry));
+    setDraft(draftFrom(entry, fromRewrite === null ? {} : {
+      ...(typeof fromRewrite.summary === "string" ? { content: fromRewrite.summary } : {}),
+      ...(entry.kind === "preference" && "appliesWhen" in fromRewrite ? { appliesWhen: fromRewrite.appliesWhen ?? null } : {}),
+      ...(entry.kind === "preference" && "caution" in fromRewrite ? { exceptions: fromRewrite.caution ?? null } : {}),
+    }));
     setChangeNote("");
     setError(null);
     setNotice(null);
@@ -276,6 +314,13 @@ export const JournalEntryView = ({
         basis: journalEntryBasis(editing),
       });
       setEntries((current) => current.map((entry) => entry.id === revised.id ? revised : entry));
+      // The rewrite it was begun from is carried into the note now: not told of as lost again.
+      const fromRewrite = rewriteFlow.current;
+      if (fromRewrite !== null) {
+        const stale = amendments.get(fromRewrite);
+        if (stale !== undefined) { ignoreStale(fromRewrite, stale.state.revision); setIgnored(staleIgnored()); }
+        rewriteFlow.current = null;
+      }
       setEditing(null);
       setDraft(null);
       setLatest(null);
@@ -291,6 +336,51 @@ export const JournalEntryView = ({
       mutationPending.current = false;
       setSaving(false);
     }
+  };
+
+  /** The reader's own change to an amendment, through the same service and checks agents use; a refusal is read again. */
+  const amend = async (request: Parameters<DecisionApi["updateDecisionAmendment"]>[0], done: string): Promise<boolean> => {
+    if (mutationPending.current) return false;
+    mutationPending.current = true;
+    setSaving(true);
+    setError(null);
+    try {
+      const result = await api.updateDecisionAmendment(request);
+      if (result.status === "saved" || result.status === "unchanged") {
+        setNotice(done);
+        return true;
+      }
+      setError(({
+        source_changed: "这条记录在你打开之后改过，已重新读取，请核对后再试。",
+        revision_conflict: "这条记录的增补刚刚又有更新，已重新读取，请核对后再试。",
+        not_found: "找不到这条记录，列表已重新读取。",
+        source_unavailable: "来源或增补笔记没能完整读取，请检查笔记。",
+        not_allowed: "这条记录不能这样改。",
+        limit_reached: "这条记录的修订记录已满，不能再增加；请在 Obsidian 里整理旁路笔记。",
+        basis_required: "需要写明依据。",
+      } as Record<string, string>)[result.status] ?? "没有保存。");
+      return false;
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+      return false;
+    } finally {
+      mutationPending.current = false;
+      setSaving(false);
+      setRevision((value) => value + 1);
+    }
+  };
+
+  const restore = (entry: JournalEntry): Promise<boolean> => {
+    const view = viewOf(entry);
+    return amend({ amendVersion: 1, source: sourceOf(entry), recordId: entry.id, sourceClient: READER, action: "restore", basis: "user_said",
+      expectedRevision: view?.state.revision ?? 0, reason: "在页面上恢复" }, "已恢复。");
+  };
+
+  const withdraw = async (entry: JournalEntry): Promise<void> => {
+    const view = viewOf(entry);
+    const saved = await amend({ amendVersion: 1, source: sourceOf(entry), recordId: entry.id, sourceClient: READER, action: "withdraw", basis: "user_said",
+      expectedRevision: view?.state.revision ?? 0, reason: withdrawReason.trim() }, "已撤回，可在「已撤回」里恢复。");
+    if (saved) { setWithdrawing(null); setWithdrawReason(""); }
   };
 
   const archive = async (entry: JournalEntry): Promise<void> => {
@@ -332,7 +422,7 @@ export const JournalEntryView = ({
           ref={searchRef}
           type="search"
           aria-label="搜索偏好与想法"
-          placeholder="搜索偏好与想法"
+          placeholder="搜索偏好与想法（也搜增补内容）"
           value={query}
           onChange={(event) => setQuery(event.currentTarget.value)}
         />
@@ -346,13 +436,19 @@ export const JournalEntryView = ({
           <option value="inbox">待澄清</option>
           <option value="active">有效</option>
           <option value="archived">已归档</option>
+          <option value="withdrawn">已撤回</option>
         </select>
       </div>
+      {amendmentsUnread ? <p className="journal-entry-unreadable">增补与撤回记录这次没能读取：下面可能缺少 agent 的增补，也可能仍显示已撤回的条目。</p> : null}
 
-      {error === null || editing !== null ? null : <p className="error-message" role="alert">处理失败：{error}</p>}
-      {listError === null ? null : <p className="error-message" role="alert">读取失败：{listError}</p>}
-      {notice === null ? null : <p role="status">{notice}</p>}
-      {unreadableNotice === null ? null : <p className="error-message">{unreadableNotice}</p>}
+      {/* A read that failed is not an empty list: said in its place, with a way to read again. */}
+      {listError === null ? null : (
+        <p className="load-failure" role="alert">
+          读取失败：{listError}
+          <button type="button" className="secondary-button" disabled={loading} onClick={() => setRevision((value) => value + 1)}>重试</button>
+        </p>
+      )}
+      {unreadableNotice === null ? null : <p className="journal-entry-unreadable">{unreadableNotice}</p>}
       {/* Cut at 200 without a word, an older standing preference looked gone to anyone browsing. */}
       {loading || entries.length < 200 ? null : (
         <p className="decision-library-message">
@@ -363,7 +459,7 @@ export const JournalEntryView = ({
           revision history being read. */}
       {loading && entries.length === 0 ? (
         <p className="decision-library-message">正在读取记录…</p>
-      ) : entries.length === 0 ? (
+      ) : listError !== null && entries.length === 0 ? null : shownEntries.length === 0 ? (
         <div className="decision-library-empty">
           <strong>{query || kind !== "all" || status !== "all" ? "没有符合条件的记录" : "还没有偏好或想法"}</strong>
           {query || kind !== "all" || status !== "all" ? (
@@ -372,7 +468,36 @@ export const JournalEntryView = ({
         </div>
       ) : (
         <ol className="journal-entry-list" ref={listRef}>
-          {entries.map((entry) => (
+          {shownEntries.map((entry) => {
+            const view = viewOf(entry);
+            const state = view?.state;
+            const withdrawnState = state?.withdrawn ?? null;
+            const rewrite = rewriteInForce(state);
+            const labels = fieldLabels(sourceOf(entry));
+            const key = amendmentKey(sourceOf(entry), entry.id);
+            const staleRewrite = state?.revised?.stale === true && !isStaleIgnored(ignored, key, state.revision);
+            // The entry as it reads now: a rewrite in force in place of the words the reader wrote.
+            const nowContent = typeof rewrite?.summary === "string" ? rewrite.summary : entry.content;
+            const nowApplies = entry.kind === "preference" && rewrite !== null && "appliesWhen" in rewrite ? rewrite.appliesWhen ?? null : entry.kind === "preference" ? entry.appliesWhen : null;
+            const nowExceptions = entry.kind === "preference" && rewrite !== null && "caution" in rewrite ? rewrite.caution ?? null : entry.kind === "preference" ? entry.exceptions : null;
+            const originalLines = [
+              ...(typeof rewrite?.summary === "string" ? [{ name: labels.summary, text: entry.content }] : []),
+              ...(entry.kind === "preference" && rewrite !== null && "appliesWhen" in rewrite ? [{ name: labels.appliesWhen, text: entry.appliesWhen ?? "" }] : []),
+              ...(entry.kind === "preference" && rewrite !== null && "caution" in rewrite ? [{ name: labels.caution, text: entry.exceptions ?? "" }] : []),
+            ];
+            return withdrawnState !== null ? (
+              <li key={entry.id} id={`journal-entry-${entry.id}`} className={`journal-entry-card withdrawn ${entry.kind}`}>
+                <div className="journal-entry-card-copy">
+                  <span className="journal-entry-type">{entry.kind === "preference" ? "偏好" : "想法"} · 已撤回</span>
+                  <strong id={`${idPrefix}-${entry.id}`}>{entry.title}</strong>
+                  <small>{clientLabel(withdrawnState.client)} · {monthDayLabel(withdrawnState.at)} · 原因：{withdrawnState.reason}</small>
+                </div>
+                <div className="journal-entry-actions">
+                  <button type="button" className="text-button" aria-describedby={`${idPrefix}-${entry.id}`} onClick={() => setHistoryFor(entry)}>修订记录</button>
+                  <button type="button" className="text-button" aria-describedby={`${idPrefix}-${entry.id}`} disabled={saving} onClick={() => void restore(entry)}>恢复</button>
+                </div>
+              </li>
+            ) : (
             <li
               key={entry.id}
               id={`journal-entry-${entry.id}`}
@@ -382,35 +507,65 @@ export const JournalEntryView = ({
               {...(entry.id === highlightId ? { "aria-current": "true" } : {})}
             >
               <div className="journal-entry-card-copy">
-                <span className="journal-entry-type">{entry.kind === "preference" ? "偏好" : "想法"} · <em className={`journal-entry-status ${entry.knowledgeStatus}`}>{statusLabel[entry.knowledgeStatus]}</em></span>
+                <span className="journal-entry-type">{entry.kind === "preference" ? "偏好" : "想法"} · <em className={`journal-entry-status ${entry.knowledgeStatus}`}>{statusLabel[entry.knowledgeStatus]}</em>
+                  {rewrite !== null && state?.revised != null ? <span className="amendment-tag rewritten">已被 {clientLabel(state.revised.client)} 改写 · {monthDayLabel(state.revised.at)}</span> : null}
+                  {staleRewrite ? <span className="amendment-tag stale">改写未生效</span> : null}
+                  {state !== undefined && state.amendments.length > 0 ? <span className="amendment-tag count">增补 {state.amendments.length}</span> : null}
+                </span>
                 <strong id={`${idPrefix}-${entry.id}`}>{entry.title}</strong>
-                <p>{entry.content}</p>
+                <p>{typeof rewrite?.summary === "string" ? <Rewritten before={entry.content} after={nowContent} /> : entry.content}</p>
+                {originalLines.length === 0 ? null : <OriginalWords label={`原话（你写的 v${entry.revision}）`} lines={originalLines} />}
+                {staleRewrite && state?.revised != null ? (
+                  <div className="amendment-stale" role="note">
+                    <p>{clientLabel(state.revised.client)} {monthDayLabel(state.revised.at)}的改写基于旧版原文，这条之后又改过，所以那次改写没有应用。</p>
+                    {shownRewrites.has(key) ? (
+                      <OriginalWords open label="当时的改写文字" lines={(["summary", "appliesWhen", "caution"] as const).filter((field) => field in state.revised!.values).map((field) => ({ name: labels[field], text: state.revised!.values[field] ?? "" }))} />
+                    ) : null}
+                    <div className="amendment-stale-actions">
+                      <button type="button" className="text-button" aria-expanded={shownRewrites.has(key)} onClick={() => setShownRewrites((current) => { const next = new Set(current); if (!next.delete(key)) next.add(key); return next; })}>查看当时的改写文字</button>
+                      <button type="button" className="text-button" disabled={saving} onClick={() => beginRevision(entry, state.revised!.values)}>按新原文重新改写</button>
+                      <button type="button" className="text-button" onClick={() => { ignoreStale(key, state.revision); setIgnored(staleIgnored()); }}>忽略</button>
+                    </div>
+                  </div>
+                ) : null}
                 <ul className="journal-entry-languages" aria-label="适用语言">
                   {languagesShown(entry.languages).map((language) => <li key={language}>{language}</li>)}
                 </ul>
+                {/* What the entry says now, under the labels its history uses for what it said before: the card showed
+                    some of it, so a strength, a context or an open question was seen only by opening 修订. */}
                 {entry.kind === "preference" ? (
                   <>
-                    {entry.appliesWhen && <p>适用条件：{entry.appliesWhen}</p>}
-                    {entry.exceptions && <p>例外与边界：{entry.exceptions}</p>}
+                    {entry.strength !== "default" && <p>偏好强度：{entry.strength === "hard_constraint" ? "硬约束" : "弱信号"}</p>}
+                    {nowApplies && <p>适用条件：{rewrite !== null && "appliesWhen" in rewrite ? <Rewritten before={entry.appliesWhen} after={nowApplies} /> : nowApplies}</p>}
+                    {nowExceptions && <p>例外与边界：{rewrite !== null && "caution" in rewrite ? <Rewritten before={entry.exceptions} after={nowExceptions} /> : nowExceptions}</p>}
                   </>
                 ) : (
                   <>
                     {entry.whyInteresting && <p>保留理由：{entry.whyInteresting}</p>}
                     {entry.nextTest && <p>下一步验证：{entry.nextTest}</p>}
+                    {entry.openQuestions.length > 0 && <p>未决问题：{entry.openQuestions.join("\n")}</p>}
+                    {entry.incubateUntil && <p>孵化日期：{entry.incubateUntil}</p>}
                   </>
                 )}
-                <small>v{entry.revision} · {entry.sourceForm === "machine_summary" ? "机器归纳" : entry.sourceForm === "user_paraphrase" ? "用户转述" : "用户原文"}</small>
+                {entry.context && <p>背景：{entry.context}</p>}
+                {entry.rationale && <p>补充说明：{entry.rationale}</p>}
+                {entry.tags.length > 0 && <p>标签：{entry.tags.join("、")}</p>}
+                {state === undefined ? null : <AmendmentList state={state} title="增补" />}
+                <small>v{entry.revision} · {entry.sourceForm === "machine_summary" ? "机器归纳" : entry.sourceForm === "user_paraphrase" ? "用户转述" : "用户原文"}{state === undefined ? "" : ` · 修订 ${state.revision}`}</small>
                 {entry.revisionEvents.length === 0 ? null : (
                   <details className="journal-entry-history">
-                    <summary>修订历史 · {entry.revisionEvents.length}</summary>
+                    <summary><Chevron />修订历史 · {entry.revisionEvents.length}</summary>
                     <ol>
                       {[...entry.revisionEvents].reverse().map((event) => (
                         <li key={event.revision}>
-                          <strong>v{event.revision - 1} → v{event.revision}</strong>
-                          <time dateTime={event.changedAt}>{revisionTimeFormatter.format(new Date(event.changedAt))}</time>
+                          <span className="journal-entry-version">
+                            <strong>v{event.revision - 1} → v{event.revision}</strong>
+                            <time dateTime={event.changedAt}>{revisionTimeFormatter.format(new Date(event.changedAt))}</time>
+                          </span>
                           <p>变更原因：{event.changeNote}</p>
-                          <details>
-                            <summary>查看修订前内容（v{event.revision - 1}）</summary>
+                          {/* What it said before, set apart from what it says now by a rule down its side. */}
+                          <details className="journal-entry-previous">
+                            <summary><Chevron />查看修订前内容（v{event.revision - 1}）</summary>
                             <strong>{event.previous.title}</strong>
                             <p>{event.previous.content}</p>
                             <p>状态：{statusLabel[event.previous.knowledgeStatus]}</p>
@@ -439,22 +594,80 @@ export const JournalEntryView = ({
                 )}
               </div>
               <div className="journal-entry-actions">
-                <button type="button" className="text-button" aria-describedby={`${idPrefix}-${entry.id}`} disabled={saving} onClick={() => beginRevision(entry)}>修订</button>
+                <button type="button" className="text-button" aria-describedby={`${idPrefix}-${entry.id}`} onClick={() => setHistoryFor(entry)}>修订记录</button>
+                <button type="button" className="text-button" aria-describedby={`${idPrefix}-${entry.id}`} disabled={saving} data-revise onClick={() => beginRevision(entry)}>修订</button>
+                <button type="button" className="text-button" aria-describedby={`${idPrefix}-${entry.id}`} disabled={saving} onClick={() => { setWithdrawing(entry); setWithdrawReason(""); setError(null); }}>撤回</button>
                 {entry.knowledgeStatus === "archived" ? null : (
                   <button type="button" className="text-button" aria-describedby={`${idPrefix}-${entry.id}`} disabled={saving} onClick={() => void archive(entry)}>归档</button>
                 )}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ol>
       )}
+      {/* What was done to an entry, said at the bottom of the card it was done in. */}
+      {error !== null && editing === null ? (
+        <p className="settings-status error" role="alert">处理失败：{error}</p>
+      ) : notice === null ? null : (
+        <p className="settings-status" role="status">{notice}</p>
+      )}
 
+      {historyFor === null ? null : (() => {
+        const view = viewOf(historyFor);
+        const state: AmendmentState = view?.state ?? { revision: 0, relativePath: "", amendments: [], revised: null, withdrawn: null, history: [] };
+        const own = historyFor.revisionEvents.map((event) => ({ at: event.changedAt, what: `修订 v${event.revision}`, reason: event.changeNote }));
+        return (
+          <ModalDialog title="修订记录" description={historyFor.title} size="wide" onClose={() => setHistoryFor(null)}
+            footer={<button type="button" className="secondary-button" onClick={() => setHistoryFor(null)}>关闭</button>}>
+            <AmendmentHistory source={sourceOf(historyFor)} state={state} today={today} own={own} busy={saving}
+              onRestore={view?.contentHash == null ? undefined : (row, to) => setRestoring({ entry: historyFor, row, to })} />
+          </ModalDialog>
+        );
+      })()}
+      {restoring === null ? null : (
+        <ModalDialog title="恢复为这一版之前？" description="这会再写一次改写，把改动前的文字放回去；现在的改写留在修订记录里。" onClose={() => setRestoring(null)}
+          footer={<>
+            <button type="button" className="secondary-button" onClick={() => setRestoring(null)}>取消</button>
+            <button type="button" className="primary-button" disabled={saving} onClick={() => {
+              const view = viewOf(restoring.entry);
+              if (view?.contentHash == null) return;
+              void amend(restoreRequest(sourceOf(restoring.entry), restoring.entry.id, view.contentHash, view.state.revision, restoring.row.revision, restoring.row.time), "已恢复为那次改写之前。").then((saved) => { if (saved) { setRestoring(null); setHistoryFor(null); } });
+            }}>恢复</button>
+          </>}>
+          {Object.entries(restoring.to).map(([name, value]) => <p key={name}>{fieldLabels(sourceOf(restoring.entry))[name as keyof AmendmentFields]}：{value ?? "（空）"}</p>)}
+          {restoring.row.truncated ? <p className="amendment-stale" role="note">…（已截断，恢复会用完整原文）</p> : null}
+          {error === null ? null : <p className="form-error" role="alert">{error}</p>}
+        </ModalDialog>
+      )}
+      {withdrawing === null ? null : (
+        <ModalDialog title="撤回这条？" description="撤回后默认不出现在「有效」里，agent 检索和请教原则也不再返回它；可以在「已撤回」里恢复。" onClose={() => setWithdrawing(null)} dismissible={!saving}
+          unsaved={withdrawReason.trim().length > 0}
+          footer={<>
+            <button type="button" className="secondary-button" disabled={saving} onClick={() => setWithdrawing(null)}>取消</button>
+            <button type="submit" form={`${idPrefix}-withdraw`} className="primary-button" disabled={saving || withdrawReason.trim().length === 0}>{saving ? "撤回中…" : "撤回"}</button>
+          </>}>
+          <form id={`${idPrefix}-withdraw`} onSubmit={(event) => { event.preventDefault(); void withdraw(withdrawing); }}>
+            <p><strong>{withdrawing.title}</strong></p>
+            <div className="form-field">
+              <label htmlFor={`${idPrefix}-withdraw-reason`}>撤回原因</label>
+              <textarea id={`${idPrefix}-withdraw-reason`} rows={2} maxLength={2000} required value={withdrawReason} onChange={(event) => setWithdrawReason(event.currentTarget.value)} />
+            </div>
+            {error === null ? null : <p className="form-error" role="alert">{error}</p>}
+          </form>
+        </ModalDialog>
+      )}
       {editing === null || draft === null ? null : (
         // Only 取消 throws a revision away: a stray Escape or click outside took everything written in it.
         <ModalDialog title="修订记录" description={`当前版本 v${editing.revision}；保存后保留上一版快照。`} size="wide"
-          dismissible={!saving && changeNote.trim().length === 0 && JSON.stringify(draft) === JSON.stringify(draftFrom(editing))}
-          onClose={closeRevision}>
-          <form className="journal-revision-form" onSubmit={(event) => { event.preventDefault(); void saveRevision(); }}>
+          dismissible={!saving}
+          unsaved={changeNote.trim().length > 0 || JSON.stringify(draft) !== JSON.stringify(draftFrom(editing))}
+          onClose={closeRevision}
+          footer={<>
+            <button type="button" className="secondary-button" disabled={saving} onClick={closeRevision}>取消</button>
+            <button type="submit" form={`${idPrefix}-revision`} className="primary-button" disabled={saving || !canSave}>{saving ? "保存中…" : "保存修订"}</button>
+          </>}>
+          <form id={`${idPrefix}-revision`} className="journal-revision-form" onSubmit={(event) => { event.preventDefault(); void saveRevision(); }}>
             {latest === null ? null : (
               <div className="journal-entry-latest" role="note" aria-label="最新内容">
                 <p>它在你打开之后又被更新过，下面是最新内容；你的修订还在表单里，保存会以它替换最新内容。</p>
@@ -462,31 +675,66 @@ export const JournalEntryView = ({
                 <p>{latest.content}</p>
               </div>
             )}
-            <label><span>标题</span><input aria-label="修订标题" maxLength={500} disabled={saving} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.currentTarget.value })} /></label>
-            <label><span>内容</span><textarea aria-label="修订内容" rows={3} maxLength={8000} disabled={saving} value={draft.content} onChange={(event) => setDraft({ ...draft, content: event.currentTarget.value })} /></label>
-            {/* Left as typed (separators and all) while it is edited; the draft keeps the names it reads as. */}
-            <label><span>适用语言</span><input aria-label="适用语言" maxLength={400} disabled={saving} placeholder="如 Go、TypeScript；留空表示各语言通用" defaultValue={(draft.languages ?? []).map(languageLabel).join("、")} onChange={(event) => setDraft({ ...draft, languages: languagesTyped(event.currentTarget.value) })} /></label>
-            {languageProblem === null ? null : <p className="error-message" role="alert">{languageProblem}</p>}
-            {draft.kind === "preference" ? (
-              <>
-                <label><span>适用条件</span><textarea aria-label="适用条件" {...askedFor(draft.appliesWhen)} rows={2} maxLength={4000} disabled={saving} value={draft.appliesWhen ?? ""} onChange={(event) => setDraft({ ...draft, appliesWhen: event.currentTarget.value.trim() ? event.currentTarget.value : null })} /></label>
-                <label><span>例外与边界</span><textarea aria-label="例外与边界" {...askedFor(draft.exceptions)} rows={2} maxLength={4000} disabled={saving} value={draft.exceptions ?? ""} onChange={(event) => setDraft({ ...draft, exceptions: event.currentTarget.value.trim() ? event.currentTarget.value : null })} /></label>
-                <label><span>偏好强度</span><select aria-label="偏好强度" disabled={saving} value={draft.strength ?? "default"} onChange={(event) => setDraft({ ...draft, strength: event.currentTarget.value as "hard_constraint" | "default" | "weak_signal" })}><option value="hard_constraint">硬约束</option><option value="default">默认偏好</option><option value="weak_signal">弱信号</option></select></label>
-              </>
-            ) : (
-              <>
-                <label><span>为什么值得保留</span><textarea aria-label="为什么值得保留" {...askedFor(draft.whyInteresting)} rows={2} maxLength={4000} disabled={saving} value={draft.whyInteresting ?? ""} onChange={(event) => setDraft({ ...draft, whyInteresting: event.currentTarget.value.trim() ? event.currentTarget.value : null })} /></label>
-                <label><span>下一步验证</span><textarea aria-label="下一步验证" rows={2} maxLength={4000} disabled={saving} value={draft.nextTest ?? ""} onChange={(event) => setDraft({ ...draft, nextTest: event.currentTarget.value.trim() ? event.currentTarget.value : null })} /></label>
-              </>
-            )}
-            <label><span>记录状态</span><select aria-label="记录状态" disabled={saving} value={draft.knowledgeStatus ?? "inbox"} onChange={(event) => setDraft({ ...draft, knowledgeStatus: event.currentTarget.value as "inbox" | "active" | "archived" })}><option value="inbox">待澄清</option><option value="active">有效</option><option value="archived">已归档</option></select></label>
-            {incomplete && <p role="status" id={`${idPrefix}-incomplete`}>{draft.kind === "preference" ? "设为有效前，请填写适用条件和例外与边界。" : "设为有效前，请说明为什么值得保留。"}</p>}
-            <label><span>变更原因</span><textarea aria-label="变更原因" rows={2} maxLength={1000} disabled={saving} required value={changeNote} onChange={(event) => setChangeNote(event.currentTarget.value)} /></label>
-            {error === null ? null : <p className="error-message" role="alert">保存失败：{error}</p>}
-            <footer className="active-record-actions">
-              <button type="button" className="text-button" disabled={saving} onClick={closeRevision}>取消</button>
-              <button type="submit" className="primary-button" disabled={saving || !canSave}>{saving ? "保存中…" : "保存修订"}</button>
-            </footer>
+            <fieldset className="form-fields" disabled={saving}>
+              <div className="form-field">
+                <label htmlFor={`${idPrefix}-title`}>标题</label>
+                <input id={`${idPrefix}-title`} aria-label="修订标题" maxLength={500} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.currentTarget.value })} />
+              </div>
+              <div className="form-field">
+                <label htmlFor={`${idPrefix}-content`}>内容</label>
+                <textarea id={`${idPrefix}-content`} aria-label="修订内容" rows={3} maxLength={8000} value={draft.content} onChange={(event) => setDraft({ ...draft, content: event.currentTarget.value })} />
+              </div>
+              <div className="form-field">
+                <label htmlFor={`${idPrefix}-languages`}>适用语言</label>
+                {/* Left as typed (separators and all) while it is edited; the draft keeps the names it reads as. */}
+                <input id={`${idPrefix}-languages`} maxLength={400} placeholder="如 Go、TypeScript；留空表示各语言通用" defaultValue={(draft.languages ?? []).map(languageLabel).join("、")}
+                  aria-invalid={languageProblem === null ? undefined : true} aria-describedby={languageProblem === null ? undefined : `${idPrefix}-languages-error`}
+                  onChange={(event) => setDraft({ ...draft, languages: languagesTyped(event.currentTarget.value) })} />
+                {languageProblem === null ? null : <p className="form-field-error" role="alert" id={`${idPrefix}-languages-error`}>{languageProblem}</p>}
+              </div>
+              {draft.kind === "preference" ? (
+                <>
+                  <div className="form-field">
+                    <label htmlFor={`${idPrefix}-applies`}>适用条件</label>
+                    <textarea id={`${idPrefix}-applies`} {...askedFor(draft.appliesWhen)} rows={2} maxLength={4000} value={draft.appliesWhen ?? ""} onChange={(event) => setDraft({ ...draft, appliesWhen: event.currentTarget.value.trim() ? event.currentTarget.value : null })} />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor={`${idPrefix}-exceptions`}>例外与边界</label>
+                    <textarea id={`${idPrefix}-exceptions`} {...askedFor(draft.exceptions)} rows={2} maxLength={4000} value={draft.exceptions ?? ""} onChange={(event) => setDraft({ ...draft, exceptions: event.currentTarget.value.trim() ? event.currentTarget.value : null })} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="form-field">
+                    <label htmlFor={`${idPrefix}-why`}>为什么值得保留</label>
+                    <textarea id={`${idPrefix}-why`} {...askedFor(draft.whyInteresting)} rows={2} maxLength={4000} value={draft.whyInteresting ?? ""} onChange={(event) => setDraft({ ...draft, whyInteresting: event.currentTarget.value.trim() ? event.currentTarget.value : null })} />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor={`${idPrefix}-next`}>下一步验证</label>
+                    <textarea id={`${idPrefix}-next`} rows={2} maxLength={4000} value={draft.nextTest ?? ""} onChange={(event) => setDraft({ ...draft, nextTest: event.currentTarget.value.trim() ? event.currentTarget.value : null })} />
+                  </div>
+                </>
+              )}
+              <div className="form-fields-row">
+                {draft.kind === "preference" ? (
+                  <div className="form-field">
+                    <label htmlFor={`${idPrefix}-strength`}>偏好强度</label>
+                    <select id={`${idPrefix}-strength`} value={draft.strength ?? "default"} onChange={(event) => setDraft({ ...draft, strength: event.currentTarget.value as "hard_constraint" | "default" | "weak_signal" })}><option value="hard_constraint">硬约束</option><option value="default">默认偏好</option><option value="weak_signal">弱信号</option></select>
+                  </div>
+                ) : null}
+                <div className="form-field">
+                  <label htmlFor={`${idPrefix}-status`}>记录状态</label>
+                  <select id={`${idPrefix}-status`} value={draft.knowledgeStatus ?? "inbox"} onChange={(event) => setDraft({ ...draft, knowledgeStatus: event.currentTarget.value as "inbox" | "active" | "archived" })}><option value="inbox">待澄清</option><option value="active">有效</option><option value="archived">已归档</option></select>
+                  {incomplete && <p className="form-field-error" role="status" id={`${idPrefix}-incomplete`}>{draft.kind === "preference" ? "设为有效前，请填写适用条件和例外与边界。" : "设为有效前，请说明为什么值得保留。"}</p>}
+                </div>
+              </div>
+              <hr className="form-fields-divider" />
+              <div className="form-field">
+                <label htmlFor={`${idPrefix}-change`}>变更原因</label>
+                <textarea id={`${idPrefix}-change`} rows={2} maxLength={1000} required value={changeNote} onChange={(event) => setChangeNote(event.currentTarget.value)} />
+              </div>
+            </fieldset>
+            {error === null ? null : <p className="form-error" role="alert">保存失败：{error}</p>}
           </form>
         </ModalDialog>
       )}

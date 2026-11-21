@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "scenarios": [
+    {
+      "id": "r10-process-start-load-search",
+      "description": "冷启动首次查询必须在模型加载期间仍可用；先发请求再重复查询，观察启动窗口与恢复。",
+      "beforeSeed": [{"id":"first-search","tool":"search_decision_context","args":{"query":"启动时模型加载是否阻塞本地查询？","project":"lab","limit":3},"expect":{"isError":false}}],
+      "seed":{"files":[{"path":"Decision Journal/summarize/P1001.md","content":"---\nid: P1001\ncreated: \"2026-10-23\"\nstatus: accepted\nselected_option: \"隔离工作进程加载模型\"\nproject: lab\ntags: [synthetic]\nsupersedes: []\nsuperseded_by: null\n---\n# 模型启动\n模型加载和 Metal 初始化不应阻塞本地服务与检索。\n"}]},
+      "steps":[{"id":"after-seed","tool":"search_decision_context","args":{"query":"模型首次加载时服务仍要能响应","project":"lab","limit":3},"expect":{"mustInclude":["P1001"],"k":3}}]
+    },
+    {
+      "id": "r10-process-concurrent-load-mix",
+      "description": "模型载入期间对检索和分类入口施加并发压力；场景启动首查，脚本探针另发并发调用。",
+      "beforeSeed":[{"id":"early-query","tool":"search_decision_context","args":{"query":"并发启动检查","project":"lab","limit":1},"expect":{"isError":false}}],
+      "steps":[{"id":"steady-query","tool":"search_decision_context","args":{"query":"并发启动检查","project":"lab","limit":1},"expect":{"isError":false}}]
+    },
+    {
+      "id":"r10-process-query-restart-recovery",
+      "description":"模型服务暖机后重启 App，确认持久化检索与后续查询可恢复。",
+      "seed":{"files":[{"path":"Decision Journal/summarize/P1002.md","content":"---\nid: P1002\ncreated: \"2026-10-23\"\nstatus: accepted\nselected_option: \"请求使用幂等令牌\"\nproject: lab\ntags: [synthetic]\nsupersedes: []\nsuperseded_by: null\n---\n# 幂等\n请求重试通过幂等令牌避免重复执行。\n"}]},
+      "steps":[{"id":"first","tool":"search_decision_context","args":{"query":"请求重试如何避免重复执行？","project":"lab","limit":3},"expect":{"mustInclude":["P1002"],"k":3}},{"id":"restart","restart":true},{"id":"after-restart","tool":"search_decision_context","args":{"query":"请求重试如何避免重复执行？","project":"lab","limit":3},"expect":{"mustInclude":["P1002"],"k":3}}]
+    },
+    {
+      "id":"r10-process-repeated-restart",
+      "description":"连续多次重启同一隔离 root，确保进程状态恢复而非一次性成功。",
+      "seed":{"files":[{"path":"Decision Journal/summarize/P1003.md","content":"---\nid: P1003\ncreated: \"2026-10-23\"\nstatus: accepted\nselected_option: \"状态保存在 SQLite\"\nproject: lab\ntags: [synthetic]\nsupersedes: []\nsuperseded_by: null\n---\n# 持久化\n本地决策状态写入 SQLite。\n"}]},
+      "steps":[{"id":"q1","tool":"search_decision_context","args":{"query":"本地状态如何持久化？","project":"lab","limit":2},"expect":{"mustInclude":["P1003"],"k":2}},{"id":"restart1","restart":true},{"id":"q2","tool":"search_decision_context","args":{"query":"本地状态如何持久化？","project":"lab","limit":2},"expect":{"mustInclude":["P1003"],"k":2}},{"id":"restart2","restart":true},{"id":"q3","tool":"search_decision_context","args":{"query":"本地状态如何持久化？","project":"lab","limit":2},"expect":{"mustInclude":["P1003"],"k":2}}]
+    },
+    {
+      "id":"r10-process-cancel-long-call",
+      "description":"重复查询长文本，外部驱动在调用进行中取消请求并核对后续调用仍可用。",
+      "steps":[{"id":"long-query","tool":"search_decision_context","args":{"query":"检查长时间查询取消后是否仍能释放等待中的推理任务并接受后续请求","limit":20},"expect":{"isError":false}},{"id":"followup","tool":"search_decision_context","args":{"query":"取消后服务是否继续响应","project":"lab","limit":1},"expect":{"isError":false}}]
+    },
+    {
+      "id":"r10-process-abrupt-worker-loss",
+      "description":"外部探针在检索期间结束模型子进程；关键词退化、请求错误和下一次拉起在专用驱动中观察。",
+      "seed":{"files":[{"path":"Decision Journal/summarize/P1004.md","content":"---\nid: P1004\ncreated: \"2026-10-23\"\nstatus: accepted\nselected_option: \"读请求走本地索引\"\nproject: lab\ntags: [synthetic]\nsupersedes: []\nsuperseded_by: null\n---\n# 本地索引\n搜索请求通过本地索引读取。\n"}]},
+      "steps":[{"id":"worker-query","tool":"search_decision_context","args":{"query":"本地索引搜索请求","project":"lab","limit":2},"expect":{"mustInclude":["P1004"],"k":2}}]
+    },
+    {
+      "id":"r10-process-memory-latency-drift",
+      "description":"连续 40 次相同查询，记录延迟与进程 RSS 的漂移；不把一次性 warmup 当稳定值。",
+      "seed":{"files":[{"path":"Decision Journal/summarize/P1005.md","content":"---\nid: P1005\ncreated: \"2026-10-23\"\nstatus: accepted\nselected_option: \"只保留必要索引\"\nproject: lab\ntags: [synthetic]\nsupersedes: []\nsuperseded_by: null\n---\n# 索引维护\n索引需要持续查询并保持内存有界。\n"}]},
+      "steps":[{"id":"drift-sample","tool":"search_decision_context","args":{"query":"索引内存如何保持有界？","project":"lab","limit":3},"expect":{"mustInclude":["P1005"],"k":3}}]
+    },
+    {
+      "id":"r10-process-sigterm-after-model-ready",
+      "description":"模型已完成一次推理后发送 SIGTERM，检查正常退出和 runtime 标记清理。",
+      "steps":[{"id":"warm-model","tool":"consult_decision_principles","args":{"question":"如何验证进程正常关闭？","project":"lab"},"expect":{"isError":false}}]
+    },
+    {
+      "id":"r10-process-quit-in-flight",
+      "description":"多次启动后在模型调用中触发 quick-quit，观察是否有 native worker abort 或挂起。",
+      "steps":[{"id":"quit-window","tool":"search_decision_context","args":{"query":"退出时仍有推理任务怎么办？","limit":20},"expect":{"isError":false}}]
+    }
+  ]
+}

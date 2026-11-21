@@ -1,4 +1,4 @@
-export { modelPricingSchema, type ModelPricing } from "./model.js";
+export { modelKindSupportsGeneration, modelPricingSchema, type ModelPricing } from "./model.js";
 export { managedQwenModelIdSchema, managedQwenModelStatusSchema, type ManagedQwenModelId, type ManagedQwenModelStatus } from "./model.js";
 export {
   PROTOCOL_VERSION,
@@ -6,14 +6,47 @@ export {
 } from "./schemas.js";
 
 export {
+  amendableSourceSchema,
+  amendmentFieldsSchema,
+  amendmentStateSchema,
+  amendmentViewSchema,
+  DECISION_AMENDMENT_VERSION,
+  DECISION_ONLY_FIELDS,
+  decisionAmendmentRequestSchema,
+  decisionAmendmentResultSchema,
+} from "./decision-amendment.js";
+export type { AmendableSource, AmendmentFields, AmendmentState, DecisionAmendmentRequest, DecisionAmendmentResult } from "./decision-amendment.js";
+
+export {
+  CONTEXT_SHAPE,
+  CONTEXT_SHAPE_HEADER,
+  CONTEXT_SHAPE_SIGNALS,
   DECISION_CONTEXT_VERSION,
+  contextAsReleased,
+  contextShapeLevel,
+  contextShapeNeeded,
+  decisionContextExperienceSourceSchema,
+  contextSourcesOf,
+  decisionContextAnySourceSchema,
+  decisionContextModeSchema,
   decisionContextQuerySchema,
   decisionContextResponseSchema,
   decisionContextResultSchema,
+  decisionContextSignalSchema,
+  decisionContextSignalSourceSchema,
   decisionContextSourceSchema,
+  decisionSourceOf,
+  foundByMeaning,
+  isDecisionSource,
+  isSignalSource,
+  queryNeedsContextShape,
   otherProjectOf,
+  SEMANTIC_MATCH_PREFIX,
 } from "./decision-context.js";
 export type {
+  ContextShapeLevel,
+  DecisionContextAnySource,
+  DecisionContextMode,
   DecisionContextQuery,
   DecisionContextResponse,
   DecisionContextResult,
@@ -134,6 +167,7 @@ export {
   knowledgeStatusSchema,
   proactiveRecordRequestSchema,
   proactiveRecordResultSchema,
+  proactiveResultAsReleased,
   proactiveRecordSourceFormSchema,
   proactiveRecordSourceKindSchema,
   recordLanguagesSchema,
@@ -241,7 +275,52 @@ export * from "./decision-handoff.js";
 
 export * from "./decision-feedback.js";
 
-export { modelProxySchema } from "./model.js";
+export { modelProxySchema, OPENROUTER_DECISIONS_URL } from "./model.js";
 export type { ModelProxy } from "./model.js";
 export * from "./pr-review.js";
+export * from "./pr-review-risk.js";
+export * from "./pr-review-basis.js";
+export * from "./pr-review-history.js";
+export * from "./pr-review-tools.js";
+export * from "./review-quality.js";
+export * from "./review-escapes.js";
+export * from "./review-benchmark-runs.js";
+export * from "./review-promotions.js";
+export * from "./pr-review-approval.js";
+export * from "./pr-review-owners.js";
+export * from "./pr-review-description.js";
+export * from "./pr-review-responses.js";
 export { clipText, clipTextEnd } from "./text.js";
+export { adoptedSummaryContext, CONTEXT_SUMMARY_LINES } from "./context-summary.js";
+
+export {
+  CUSTOM_CLIENTS_VERSION,
+  clientCommandNameSchema,
+  customClientMcpSchema,
+  customClientSchema,
+  customClientsFileSchema,
+  customHookFileSchema,
+  hookEventNameSchema,
+  hookFieldPathSchema,
+  HOOK_FIELD_LIMITS,
+  HOOK_FILE_FORMATS,
+  hookFileFormatSchema,
+  TRANSCRIPT_FORMATS,
+  transcriptFormatSchema,
+  previewCustomClientSample,
+  readHookField,
+  readHookText,
+  upgradeCustomClientsFile,
+} from "./custom-client.js";
+export type { CustomClient, CustomClientSample, CustomClientsFile, HookFieldReading } from "./custom-client.js";
+export * from "./client-onboarding.js";
+export { CLIENT_CATALOG } from "./client-catalog.js";
+export type { CatalogClient } from "./client-catalog.js";
+export * from "./local-review.js";
+export * from "./local-review-tools.js";
+export * from "./todo.js";
+export * from "./historical-decision.js";
+export * from "./experience.js";
+export * from "./organization.js";
+export * from "./obsidian-notes.js";
+export * from "./review-benchmark.js";

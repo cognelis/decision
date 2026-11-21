@@ -20,48 +20,48 @@ describe("release platform contract", () => {
     expect(
       releaseTarget({
         repositoryRoot: "/repo",
-        productName: "Decision",
+        productName: "Paraself",
         version: "1.1.0",
         platform: "win32",
         arch: "x64",
       }),
     ).toMatchObject({
-      artifactName: "Decision-1.1.0-win-x64-Setup.exe",
+      artifactName: "Paraself-1.1.0-win-x64-Setup.exe",
       artifactPath: join(
         "/repo",
         "out",
         "make",
         "squirrel.windows",
         "x64",
-        "Decision-1.1.0-win-x64-Setup.exe",
+        "Paraself-1.1.0-win-x64-Setup.exe",
       ),
-      manifestName: "decision-win32-x64.json",
+      manifestName: "paraself-win32-x64.json",
       signature: "unsigned",
       packagedExecutable: join(
         "/repo",
         "out",
-        "Decision-win32-x64",
-        "Decision.exe",
+        "Paraself-win32-x64",
+        "Paraself.exe",
       ),
       bridgePath: join(
         "/repo",
         "out",
-        "Decision-win32-x64",
+        "Paraself-win32-x64",
         "resources",
         "bridge",
-        "decision-bridge.cmd",
+        "paraself-bridge.cmd",
       ),
     });
     expect(
       releaseTarget({
         repositoryRoot: "/repo",
-        productName: "Decision",
+        productName: "Paraself",
         version: "1.1.0",
         platform: "darwin",
         arch: "arm64",
       }),
     ).toMatchObject({
-      artifactName: "Decision-darwin-arm64-1.1.0.zip",
+      artifactName: "Paraself-darwin-arm64-1.1.0.zip",
       artifactPath: join(
         "/repo",
         "out",
@@ -69,18 +69,18 @@ describe("release platform contract", () => {
         "zip",
         "darwin",
         "arm64",
-        "Decision-darwin-arm64-1.1.0.zip",
+        "Paraself-darwin-arm64-1.1.0.zip",
       ),
-      manifestName: "decision-darwin-arm64.json",
+      manifestName: "paraself-darwin-arm64.json",
       signature: "ad-hoc",
       packagedExecutable: join(
         "/repo",
         "out",
-        "Decision-darwin-arm64",
-        "Decision.app",
+        "Paraself-darwin-arm64",
+        "Paraself.app",
         "Contents",
         "MacOS",
-        "Decision",
+        "Paraself",
       ),
     });
   });
@@ -89,7 +89,7 @@ describe("release platform contract", () => {
     expect(() =>
       releaseTarget({
         repositoryRoot: "/repo",
-        productName: "Decision",
+        productName: "Paraself",
         version: "1.1.0",
         platform: "linux",
         arch: "x64",
@@ -98,7 +98,7 @@ describe("release platform contract", () => {
     expect(() =>
       releaseTarget({
         repositoryRoot: "/repo",
-        productName: "Decision",
+        productName: "Paraself",
         version: "1.1.0",
         platform: "darwin",
         arch: "x64",

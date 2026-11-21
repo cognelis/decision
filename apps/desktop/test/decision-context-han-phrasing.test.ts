@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { DecisionContextService } from "../src/main/decision-context-service.js";
 
 const document = (id: string, overrides: Partial<DecisionContextDocument> = {}): DecisionContextDocument => ({
-  id, source: "summarize", kind: "historical_decision", title: id, project: "web", status: "accepted",
+  id, source: "summarize", kind: "summarized_decision", title: id, project: "web", status: "accepted",
   created: "2026-09-01", summary: "", appliesWhen: null, caution: null,
   tags: [], supersedes: [], supersededBy: [], relativePath: `Decision Journal/summarize/${id}.md`,
   client: null, sessionId: null, body: "", bodyStartLine: 4, ...overrides,

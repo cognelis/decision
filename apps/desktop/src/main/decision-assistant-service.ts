@@ -19,6 +19,7 @@ import {
   type RetrievalAnswerScope,
   type StructuredGenerationRequest,
   clipText,
+  decisionSourceOf,
 } from "@cognelis/decision-protocol";
 import { z } from "zod";
 
@@ -31,10 +32,12 @@ import type {
   ObsidianSearchResult,
 } from "../shared/obsidian-search.js";
 import {
+  modelFailureMessage,
   ProfiledModelGatewayError,
   type ProfiledStructuredGenerationResult,
 } from "./model/profiled-model-gateway.js";
 import { plainText } from "./obsidian-search/obsidian-search-service.js";
+import { journalContentHash } from "./decision-context-amendments.js";
 import { ModelProviderError } from "./model/http-model-transport.js";
 
 const ASSISTANT_PROMPT_VERSION = "decision-assistant-v1";
@@ -63,7 +66,7 @@ const MAX_SUCCESSOR_LOOKUPS = 3;
 const MAX_LINK_LOOKUPS = 3;
 const SCOPE_LABELS: Record<RetrievalAnswerScope, string> = {
   all: "全部",
-  decisions: "Decision 记录（决策、原则、偏好与想法）",
+  decisions: "Paraself 记录（决策、原则、偏好与想法）",
   obsidian: "Obsidian 笔记",
 };
 
@@ -126,6 +129,7 @@ interface Evidence {
    * treats either as settled is the failure this exists to prevent.
    */
   standing?: string;
+  journalFingerprint?: string;
   /** Full document text, once the agent has read it. */
   body: string | null;
   readFailed?: boolean;
@@ -201,12 +205,13 @@ const decisionEvidence = (
   index: number,
 ): Evidence => ({
   index,
-  kind: result.kind === "adopted_principle" ? "principle" : "decision",
+  // Only the decision sources' results come here: a preference, idea or experience is never cited as a decision.
+  kind: result.kind === "adopted_principle" ? "principle" : (decisionSourceOf(result), "decision"),
   title: clip(result.title, ASSISTANT_MAX_TITLE_CHARS),
   reference: result.sourceRef.relativePath,
-  // A historical-format decision is read straight from Markdown and may not be
+  // A summarized decision is read straight from Markdown and may not be
   // in the index at all, so its id would open nothing.
-  ...(result.kind === "historical_decision" ? {} : { recordId: result.id }),
+  ...(result.kind === "summarized_decision" ? {} : { recordId: result.id }),
   excerpt: clip(
     result.sourceRef.excerpt.trim().length > 0
       ? result.sourceRef.excerpt
@@ -304,6 +309,7 @@ const journalEvidence = (entry: JournalEntry, index: number): Evidence => {
     excerpt: journalText(entry, MAX_EXCERPT_CHARS),
     matchReason: `${entry.knowledgeStatus === "archived" ? "已归档的" : ""}${JOURNAL_KIND_LABEL[entry.kind]}记录`,
     standing: journalStanding(entry),
+    journalFingerprint: journalContentHash(entry),
     body: null,
   };
 };
@@ -637,7 +643,7 @@ export class DecisionAssistantService {
         Object.assign(item, { title: fresh.title, excerpt: fresh.excerpt, standing: fresh.standing });
         return;
       }
-      // A historical-format decision has no id to look up: found again by its title, the one with its note is read as it
+      // A summarized decision has no id to look up: found again by its title, the one with its note is read as it
       // now stands. Only checked to be there, one replaced since it was cited went back to the model as current, in a
       // follow-up and in 重新核对 alike.
       if (item.kind === "decision" && item.recordId === undefined) {
@@ -651,7 +657,7 @@ export class DecisionAssistantService {
           return;
         }
       }
-      // A note, or a historical decision not found so: its note is what there is to find.
+      // A note, or a summarized decision not found so: its note is what there is to find.
       if (item.kind === "note" || ((item.kind === "decision" || item.kind === "principle") && item.recordId === undefined)) {
         if (carriedOver && this.#noteExists !== undefined && !(await this.#noteExists(item.reference).catch(() => true))) gone.add(item);
         return;
@@ -749,6 +755,7 @@ export class DecisionAssistantService {
       // An answer the step limit forces is one made from what the turn had: the reader is told so.
       if (mustAnswer) truncated = true;
       let result: ProfiledStructuredGenerationResult<AgentStep> | null = null;
+      let refused = false;
       // Validate reads and citations against the current prompt, not every
       // source retrieved earlier and possibly omitted by the prompt budget.
       let shownEvidence: Evidence[] = [];
@@ -760,6 +767,13 @@ export class DecisionAssistantService {
           retryBudget -= 1;
         }
         try {
+          const unavailableJournal = await this.#refreshJournalEvidence(evidence, readOrder);
+          if (stopped()) return cancelled();
+          if (unavailableJournal.removed) {
+            if (request.selectedSources !== undefined) return { version: DECISION_ASSISTANT_VERSION, status: "unavailable", message: "指定的偏好或想法已撤回、删除或暂时无法核对，请重新选择材料。未扩大检索范围。" };
+            truncated = true;
+            record({ kind: "search", title: "来源受限：部分偏好或想法已撤回、删除或暂时无法核对，未继续使用旧摘录", hits: 0 });
+          }
           const built = this.#buildRequest(
             request, requestId, evidence, readOrder, steps, mustAnswer, searchExhausted,
           );
@@ -774,6 +788,13 @@ export class DecisionAssistantService {
             signal,
             profile.profileId,
           );
+          if (stopped()) { charge(result.usage); return cancelled(); }
+          const refreshed = await this.#refreshJournalEvidence(evidence, readOrder);
+          if (stopped()) { charge(result.usage); return cancelled(); }
+          if (refreshed.changed) {
+            charge(result.usage);
+            return { version: DECISION_ASSISTANT_VERSION, status: "unavailable", message: "偏好或想法在生成期间发生变化或无法核对，本次回答未采用，请重试。", ...tokens() };
+          }
           break;
         } catch (error) {
           // An abort is the reader's choice, not a provider failure. The call it cut may still be billed: counted, as
@@ -782,6 +803,9 @@ export class DecisionAssistantService {
           if (stopped()) { charge(error instanceof ProfiledModelGatewayError || error instanceof ModelProviderError ? error.usage : undefined); return cancelled(); }
           if (!(error instanceof ProfiledModelGatewayError)) throw error;
           charge(error.usage);
+          // The provider's moderation refused what the turn sent: sent again as it is, it is only refused again.
+          refused = error.failureCode === "content_refused";
+          if (refused) break;
         }
       }
       if (stopped()) { if (result !== null) charge(result.usage); return cancelled(); }
@@ -792,8 +816,10 @@ export class DecisionAssistantService {
           // The trace already records which it was — a timeout, output that
           // would not parse, a provider error — and the reader has no way to
           // guess. Say where it is written rather than leaving them to change
-          // models and hope.
-          message: `${profile.label} 这次没能回答。每一次调用的状态都记在「日志」里，可以先看是超时还是输出无法解析，再决定是调整这个后端还是换一个。`,
+          // models and hope. A moderation refusal is said outright: the log would only say so again.
+          message: refused
+            ? `${profile.label} 这次没能回答：${modelFailureMessage("content_refused")}`
+            : `${profile.label} 这次没能回答。每一次调用的状态都记在「日志」里，可以先看是超时还是输出无法解析，再决定是调整这个后端还是换一个。`,
           ...tokens(),
         };
       }
@@ -863,7 +889,7 @@ export class DecisionAssistantService {
           if (stopped()) return cancelled();
           target.readFailed = true;
           truncated = true;
-          record({ kind: "step_limit", title: clip(`未能读取全文，保留摘录：${target.title}`, ASSISTANT_MAX_TITLE_CHARS) });
+          record({ kind: "step_limit", title: clip(target.kind === "preference" || target.kind === "idea" ? "偏好或想法的现行状态无法核对，未继续使用旧摘录" : `未能读取全文，保留摘录：${target.title}`, ASSISTANT_MAX_TITLE_CHARS) });
           continue;
         }
         target.body = clip(text, MAX_DOCUMENT_CHARS);
@@ -1156,6 +1182,26 @@ export class DecisionAssistantService {
         maxOutputTokens: 1_024,
       },
     };
+  }
+
+  /** Recheck stances before each provider call, including retries and already-loaded selected material. */
+  async #refreshJournalEvidence(evidence: Evidence[], readOrder: Evidence[]): Promise<{ removed: boolean; changed: boolean }> {
+    const removed = new Set<Evidence>();
+    let changed = false;
+    await Promise.all(evidence.map(async item => {
+      if (item.kind !== "preference" && item.kind !== "idea") return;
+      const entry = await this.#readJournalEntry(item.recordId ?? item.reference).catch(() => null);
+      if (entry === null) { removed.add(item); return; }
+      const fresh = journalEvidence(entry, item.index);
+      const body = item.body === null ? null : clip(journalText(entry, MAX_DOCUMENT_CHARS), MAX_DOCUMENT_CHARS);
+      changed ||= item.journalFingerprint !== fresh.journalFingerprint || item.kind !== fresh.kind || item.title !== fresh.title || item.excerpt !== fresh.excerpt || item.standing !== fresh.standing || item.body !== body;
+      Object.assign(item, { kind: fresh.kind, title: fresh.title, excerpt: fresh.excerpt, standing: fresh.standing, journalFingerprint: fresh.journalFingerprint, body });
+    }));
+    if (removed.size === 0) return { removed: false, changed };
+    const kept = evidence.filter(item => !removed.has(item));
+    evidence.splice(0, evidence.length, ...kept.map((item, position) => Object.assign(item, { index: position + 1 })));
+    for (let index = readOrder.length - 1; index >= 0; index--) if (removed.has(readOrder[index]!)) readOrder.splice(index, 1);
+    return { removed: true, changed: true };
   }
 
   /** Refreshes evidence and reports new entries separately from source issues. */

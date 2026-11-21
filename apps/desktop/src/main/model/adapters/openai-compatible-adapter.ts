@@ -221,6 +221,23 @@ const normalizeChatUsage = (
   };
 };
 
+/**
+ * A chat answer its provider's content filter stopped: finish_reason "content_filter", content left out for a flag from
+ * the filters (OpenAI, Azure OpenAI; OpenRouter for a model's refusal). What it holds is nothing or a part, and reading
+ * it as output that would not parse sent the reader to the model's answer for what another backend may well take.
+ */
+const rejectFiltered = (
+  data: z.infer<typeof chatResponseSchema>,
+  providerRequestId: string | undefined,
+): void => {
+  if (!data.choices.some((choice) => choice.finish_reason === "content_filter")) return;
+  throw new ModelProviderError(
+    "content_refused",
+    `OpenAI-compatible endpoint stopped the answer at its content filter · ${emptyChatDiagnostic(data.choices)}`,
+    { providerRequestId, usage: normalizeChatUsage(data.usage) },
+  );
+};
+
 const decodeChatResponse = (
   response: HttpModelResponse,
   fallbackModel: string,
@@ -241,6 +258,7 @@ const decodeChatResponse = (
       responseRequestId,
     );
   }
+  rejectFiltered(parsed.data, responseRequestId);
   const visibleOutput =
     parsed.data.choices.find(
       (choice) =>
@@ -293,6 +311,7 @@ const decodeStructuredChatResponse = (
       responseRequestId,
     );
   }
+  rejectFiltered(parsed.data, responseRequestId);
   const visibleOutput =
     parsed.data.choices.find(
       (choice) =>
@@ -390,6 +409,8 @@ export class OpenAICompatibleAdapter {
     const protocol = this.#profile.apiProtocol;
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
+      provider: this.#profile.kind,
+      model: this.#profile.model,
       url: providerEndpoint(
         this.#profile.baseUrl!,
         protocol === "responses" ? "/responses" : "/chat/completions",
@@ -499,6 +520,8 @@ export class OpenAICompatibleAdapter {
     const protocol = this.#profile.apiProtocol;
     const startedAt = this.#clock();
     const response = await this.#transport.postJson({
+      provider: this.#profile.kind,
+      model: this.#profile.model,
       url: providerEndpoint(
         this.#profile.baseUrl!,
         protocol === "responses" ? "/responses" : "/chat/completions",

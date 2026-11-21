@@ -13,6 +13,7 @@ it("still says a finding went unverified on a PR whose files' sources could not 
     : { action: "finish_review", summary: "已核对", findings: JSON.parse(request.userPrompt.split("\n最近步骤")[0]!).currentDiff.some((item: { path: string }) => item.path === "f0.ts") ? [onFirst] : [] });
   vi.mocked(test.client.readFileContent).mockRejectedValue(new PrPlatformError(404));
   const report = await test.run();
-  expect(report.findings).toEqual([onFirst]);
-  expect(report.warnings).toContain("1 条问题没能完成核验，按原样保留。");
+  expect(report.findings).toEqual([]);
+  expect(report.needsContext).toEqual([expect.objectContaining({ finding: onFirst, reason: expect.stringMatching(/^核验调用失败/u) })]);
+  expect(report.warnings).toContain("1 条问题没能完成核验，单独列为待核实，不当作已确认问题。");
 });
